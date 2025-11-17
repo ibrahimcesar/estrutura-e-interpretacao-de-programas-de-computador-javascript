@@ -13,6 +13,7 @@ Criar um site estático com IDE interativo para executar exemplos de código Jav
 ### Opção 1: Docusaurus + CodeSandbox/StackBlitz (Recomendado)
 
 **Vantagens:**
+
 - ✅ Framework moderno e popular para documentação técnica
 - ✅ Suporte nativo para React/MDX (markdown com componentes interativos)
 - ✅ Deploy automático via GitHub Pages
@@ -21,12 +22,14 @@ Criar um site estático com IDE interativo para executar exemplos de código Jav
 - ✅ Usado por Meta, React, Jest, Redux
 
 **Implementação:**
+
 1. Configurar Docusaurus no projeto
 2. Migrar arquivos `.md` para a estrutura do Docusaurus
 3. Adicionar componentes customizados para código interativo
 4. Integrar com CodeSandbox Sandpack ou StackBlitz WebContainers
 
 **Exemplo de código interativo:**
+
 ```jsx
 import { Sandpack } from "@codesandbox/sandpack-react";
 
@@ -56,6 +59,7 @@ console.log(square(5)); // 25`
 ### Opção 2: VitePress + Codapi
 
 **Vantagens:**
+
 - ✅ Extremamente rápido (built on Vite)
 - ✅ Sintaxe Vue-based, mais simples que React
 - ✅ Usado pela documentação do Vue.js
@@ -63,6 +67,7 @@ console.log(square(5)); // 25`
 - ✅ Fácil configuração de código interativo
 
 **Implementação:**
+
 ```md
 # Exemplo de código interativo com Codapi
 
@@ -86,12 +91,14 @@ console.log(square(5));
 ### Opção 3: MkDocs + PyScript/Brython
 
 **Vantagens:**
+
 - ✅ Configuração muito simples (Python-based)
 - ✅ Material Theme é extremamente bonito
 - ✅ Ótima para documentação técnica
 - ✅ Suporte a temas customizados
 
 **Desvantagens:**
+
 - ⚠️ Precisa de integração manual para IDE JavaScript
 - ⚠️ Menos moderno que as outras opções
 
@@ -104,6 +111,7 @@ console.log(square(5));
 ### Opção 4: Integração com Source Academy (Mais Simples)
 
 **Vantagens:**
+
 - ✅ Usa a mesma infraestrutura do site original
 - ✅ Apenas link para o playground deles
 - ✅ Sem necessidade de manter infraestrutura própria
@@ -127,6 +135,7 @@ function square(x) {
 **Tempo estimado:** Algumas horas
 
 **Desvantagens:**
+
 - ⚠️ Depende de serviço externo
 - ⚠️ Interface não está em português
 - ⚠️ Leitores precisam sair do site
@@ -149,6 +158,7 @@ function square(x) {
 ### 🎯 Solução Recomendada: Docusaurus + Sandpack
 
 **Por quê?**
+
 1. **Ecossistema robusto:** Usado por grandes projetos open-source
 2. **IDE embutido:** Sandpack oferece experiência similar ao Source Academy
 3. **Internacionalização:** Suporte nativo para múltiplos idiomas
@@ -159,24 +169,28 @@ function square(x) {
 ### 🚀 Plano de Implementação (Fase 1 - MVP)
 
 #### Semana 1: Configuração Básica
+
 - [ ] Instalar e configurar Docusaurus
 - [ ] Migrar estrutura de capítulos 00/ e 01/
 - [ ] Configurar tema e branding em português
 - [ ] Setup de GitHub Actions para deploy automático
 
 #### Semana 2: IDE Interativo
+
 - [ ] Integrar Sandpack (CodeSandbox)
 - [ ] Criar componente customizado para exemplos de código
 - [ ] Adicionar botão "Executar código" em todos exemplos
 - [ ] Testar em diferentes navegadores
 
 #### Semana 3: Features Extras
+
 - [ ] Adicionar busca (Algolia)
 - [ ] Criar página de progresso da tradução
 - [ ] Adicionar navegação entre capítulos
 - [ ] Otimizar para mobile
 
 #### Semana 4: Lançamento
+
 - [ ] Testes finais
 - [ ] Documentação de contribuição atualizada
 - [ ] Deploy em GitHub Pages
@@ -186,7 +200,7 @@ function square(x) {
 
 ## Estrutura do Projeto (Após Implementação)
 
-```
+```text
 estrutura-e-interpretacao-de-programas-de-computador-javascript/
 ├── docs/                          # Conteúdo em Markdown
 │   ├── 00-prefacios/
@@ -227,18 +241,22 @@ estrutura-e-interpretacao-de-programas-de-computador-javascript/
 ## Recursos e Referências
 
 ### Docusaurus
+
 - Documentação: https://docusaurus.io/
 - Tutorial: https://docusaurus.io/docs/tutorial/create-a-doc
 
 ### Sandpack (CodeSandbox)
+
 - Documentação: https://sandpack.codesandbox.io/
 - Exemplos: https://sandpack.codesandbox.io/docs/getting-started/usage
 
 ### Codapi (Alternativa)
+
 - Site: https://codapi.org/
 - Integração: https://codapi.org/embed/
 
 ### Deploy
+
 - GitHub Pages: https://docusaurus.io/docs/deployment#deploying-to-github-pages
 - Netlify: https://docusaurus.io/docs/deployment#deploying-to-netlify
 - Vercel: https://docusaurus.io/docs/deployment#deploying-to-vercel
@@ -252,6 +270,7 @@ Se você quer algo **agora mesmo** sem esperar pela implementação completa do 
 ### Solução Temporária: GitHub Pages + Docsify
 
 **Vantagens:**
+
 - ✅ Zero build, apenas arquivos estáticos
 - ✅ Não precisa npm/node para rodar
 - ✅ Funciona direto com Markdown existente
@@ -260,6 +279,7 @@ Se você quer algo **agora mesmo** sem esperar pela implementação completa do 
 **Implementação:**
 
 1. Criar `index.html` na raiz:
+
 ```html
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -294,8 +314,8 @@ Se você quer algo **agora mesmo** sem esperar pela implementação completa do 
 </html>
 ```
 
-2. Ativar GitHub Pages nas configurações do repositório
-3. Pronto! Site rodando em `https://ibrahimcesar.github.io/estrutura-e-interpretacao-de-programas-de-computador-javascript/`
+1. Ativar GitHub Pages nas configurações do repositório
+2. Pronto! Site rodando em `https://ibrahimcesar.github.io/estrutura-e-interpretacao-de-programas-de-computador-javascript/`
 
 ---
 

@@ -1,6 +1,6 @@
 # Guia de Tradução - SICP.js
 
-**Estrutura e Interpretação de Programas de Computador - Adaptação em JavaScript**
+## Estrutura e Interpretação de Programas de Computador - Adaptação em JavaScript
 
 Este documento fornece diretrizes e boas práticas para contribuir com a tradução do livro SICP (Structure and Interpretation of Computer Programs) - JavaScript Adaptation para o português brasileiro.
 
@@ -90,7 +90,7 @@ git push origin traducao-secao-X.Y.Z
 
 O projeto está organizado por capítulos e seções:
 
-```
+```text
 00/                    # Prefácios e introdução
 ├── foreword84.md      # Prefácio de 1984
 ├── prefaces03.md      # Prefácio de 2003
@@ -106,6 +106,7 @@ O projeto está organizado por capítulos e seções:
 ### O Que Traduzir
 
 ✅ **Traduza:**
+
 - Todo o texto explicativo
 - Comentários em código
 - Legendas e descrições
@@ -113,6 +114,7 @@ O projeto está organizado por capítulos e seções:
 - Notas de rodapé
 
 ❌ **NÃO traduza:**
+
 - Código JavaScript (nomes de funções, variáveis, etc.)
 - Palavras-chave da linguagem (`function`, `const`, `let`, `return`, etc.)
 - URLs e links
@@ -122,6 +124,7 @@ O projeto está organizado por capítulos e seções:
 ### Exemplo de Tradução
 
 **Original (inglês):**
+
 ```markdown
 ## 1.1 The Elements of Programming
 
@@ -133,6 +136,7 @@ to form more complex ideas:
 ```
 
 **Traduzido (português):**
+
 ```markdown
 ## 1.1 Os Elementos da Programação
 
@@ -247,7 +251,7 @@ O projeto usa `markdownlint` para garantir formatação consistente. Execute `ma
 
 ## Estrutura do Projeto
 
-```
+```text
 .
 ├── .github/
 │   ├── workflows/
