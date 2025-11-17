@@ -1,6 +1,6 @@
 import React from 'react';
-import { Sandpack } from "@sandpack/react";
-import { nightOwl, aquaBlue } from "@sandpack/themes";
+import { Sandpack } from "@codesandbox/sandpack-react";
+import { nightOwl, aquaBlue } from "@codesandbox/sandpack-react";
 import { useColorMode } from '@docusaurus/theme-common';
 
 /**
