@@ -1,64 +1,85 @@
 # 1.1.2  Nomenclatura e o Ambiente
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 Um aspecto crítico de uma linguagem de programação são os meios que ela fornece para o uso de nomes para se referir a objetos computacionais, e nosso primeiro desses meios são *constantes*. Dizemos que o nome identifica uma constante cujo *valor* é o objeto.
 
 Em JavaScript, nomeamos constantes com *declarações de constantes*.
 
-```js
-const size = 2;
-```
+<CodePlayground
+  code={`const size = 2;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 faz com que o intepretador associe o valor 2 ao tamanho do nome.<sup>[1](#footnote-link-1)</sup> Depois que o nome `size` foi associado ao número 2, podemos nos referir ao valor 2 pelo nome:
 
-```js
-size; 
-```
+<CodePlayground
+  code={`size;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 2
 
-```js
-5 * size; 
-```
+<CodePlayground
+  code={`5 * size;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 10
 
 O interpretador JavaScript precisa executar a declaração constante `size` antes que o nome `size` possa ser usado em uma expressão. Neste livro online, as instruções que precisam ser avaliadas antes de uma nova instrução são omitidas por questões de brevidade. Porém, para ver e brincar com o programa, você pode clicar nele. O programa então aparece em uma nova aba do navegador, com a opção "Show Dependencies" (Mostrar Dependências). Assim, como resultado de clicar em
 
-```js
-5 * size; 
-```
+<CodePlayground
+  code={`5 * size;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 uma nova aba aparece contendo o programa e, após clicar em "Show Dependencies", você verá:
 
-```js
-const size = 2;
-5 * size; 
-```
+<CodePlayground
+  code={`const size = 2;
+5 * size;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 Aqui estão outros exemplos do uso de `const`:
 
-```js
-const pi = 3.14159; 
-```
+<CodePlayground
+  code={`const pi = 3.14159;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
-```js
-const radius = 10; 
+<CodePlayground
+  code={`const radius = 10;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
-```
-
-```js
-pi * radius * radius; 
-```
+<CodePlayground
+  code={`pi * radius * radius;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 314.159
 
-```js
-const circumference = 2 * pi * radius; 
-```
+<CodePlayground
+  code={`const circumference = 2 * pi * radius;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
-```js
-circumference; 
-```
+<CodePlayground
+  code={`circumference;`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 62.8318
 

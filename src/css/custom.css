@@ -103,6 +103,16 @@
   text-decoration: underline;
 }
 
+/* Footnote anchor links */
+.markdown a[name^="footnote-link-"] {
+  color: var(--ifm-link-color);
+  cursor: pointer;
+}
+
+.markdown a[name^="footnote-link-"]:hover {
+  color: var(--ifm-link-hover-color);
+}
+
 /* Tabelas */
 .markdown table {
   display: table;

@@ -1,5 +1,7 @@
 # 1.1.8 Funções como Abstrações de Caixa Preta
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 A função `sqrt` é nosso primeiro exemplo de um processo definido por um conjunto de funções definidas mutuamente. Observe que a declaração de `sqrt_iter` é recursiva; ou seja, a função é definida em termos de si mesma. A ideia de ser capaz de definir uma função em termos de si mesma pode ser perturbadora; pode parecer pouco claro como tal definição "circular" poderia fazer sentido, muito menos especificar um processo bem definido a ser executado por um computador. Isso será tratado com mais cuidado na seção [1.2](1.2.md). Mas primeiro vamos considerar alguns outros pontos importantes ilustrados pelo exemplo `sqrt`.
 
 Observe que o problema de calcular raízes quadradas se divide naturalmente em vários subproblemas: como saber se uma estimativa é boa o suficiente, como melhorar uma estimativa e assim por diante. Cada uma dessas tarefas é realizada por uma função separada. Todo o programa `sqrt` pode ser visto como um cluster de funções (mostrado na figura 1.2) que reflete a decomposição do problema em subproblemas.
@@ -7,28 +9,33 @@ Observe que o problema de calcular raízes quadradas se divide naturalmente em v
 <a name="fig-1.2"></a>
 ![figura-1.2-decomposição-funcional-do-sqrt](/img/ch1-sqrt-decomposition.svg)
 
-Figura 1.2 Decomposição funcional do programa sqrt.
+Figura 1.2 Decomposição funcional do programa `sqrt`.
 
 A importância dessa estratégia de decomposição não é simplesmente que se divida o programa em partes. Afinal, poderíamos pegar qualquer programa grande e dividi-lo em partes - as primeiras dez linhas, as próximas dez linhas, as próximas dez linhas e assim por diante. Em vez disso, é crucial que cada função realize uma tarefa identificável que pode ser usada como um módulo na definição de outras funções. Por exemplo, quando definimos a função `is_good_enough` em termos de `square`, podemos considerar a função `square` como uma "caixa preta". Não estamos, naquele momento, preocupados com a forma como a função calcula seu resultado, apenas com o fato de que ela calcula o `square`. Os detalhes de como o `square` é calculado podem ser suprimidos para serem considerados em um momento posterior. Na verdade, no que diz respeito à função `is_good_enough`, o `square` não é exatamente uma função, mas sim uma abstração de uma função, uma assim chamada abstração funcional. Nesse nível de abstração, qualquer função que calcule o `square` é igualmente boa.
 
+<a name="footnote-link-1"></a>
 Assim, considerando apenas os valores que eles retornam, as duas funções a seguir que elevam ao `square` um número devem ser indistinguíveis. Cada um recebe um argumento numérico e produz o `square` desse número como o valor.[<sup>1</sup>](#footnote-1)
 
-```js
-function square(x) {
+<CodePlayground
+  code={`function square(x) {
   return x * x;
 }
 
-square(14);
-```
+square(14);`}
+  height={200}
+  showLineNumbers={false}
+/>
 
-```js
-function square(x) {
+<CodePlayground
+  code={`function square(x) {
   return math_exp(double(math_log(x)));
 }
 function double(x) {
   return x + x;
-}
-```
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
 
 Portanto, uma função deve ser capaz de suprimir detalhes. Os usuários da função podem não ter escrito a função eles mesmos, mas podem tê-la obtido de outro programador como uma caixa preta. Um usuário não precisa saber como a função é implementada para usá-la.
 
@@ -36,46 +43,53 @@ Portanto, uma função deve ser capaz de suprimir detalhes. Os usuários da fun�
 
 Um detalhe da implementação de uma função que não deve importar para o usuário da função é a escolha do implementador de nomes para os parâmetros da função. Assim, as seguintes funções não devem ser distinguíveis:
 
-```js
-function square(x) {
+<CodePlayground
+  code={`function square(x) {
   return x * x;
 }
 
-square(14);
-```
+square(14);`}
+  height={200}
+  showLineNumbers={false}
+/>
 
-```js
-function square(y) {
+<CodePlayground
+  code={`function square(y) {
   return y * y;
 }
 
-square(14);
-```
+square(14);`}
+  height={200}
+  showLineNumbers={false}
+/>
 
 Esse princípio - de que o significado de uma função deve ser independente dos nomes dos parâmetros usados por seu autor - parece superficialmente evidente, mas suas consequências são profundas. A consequência mais simples é que os nomes dos parâmetros de uma função devem ser locais para o corpo da função. Por exemplo, usamos `square` na declaração de `is_good_enough` em nossa função de raiz quadrada:
 
-```js
-function is_good_enough(guess, x) {
+<CodePlayground
+  code={`function is_good_enough(guess, x) {
   return abs(square(guess) - x) < 0.001;
 }
 
-is_good_enough(1.41, 2);
-```
+is_good_enough(1.41, 2);`}
+  height={200}
+  showLineNumbers={false}
+/>
 
-A intenção do autor de `is_good_enough` é determinar se o `square` do primeiro argumento está dentro de uma dada tolerância do segundo argumento. Vemos que o autor de `is_good_enough` usou a suposição de nome para se referir ao primeiro argumento ex para se referir ao segundo argumento. O argumento do `square` é adivinhar. Se o autor de `square` usou x (como acima) para se referir a esse argumento, vemos que x em is_bom_bastante deve ser um x diferente do que está no `square`. A execução do `square` da função não deve afetar o valor de x que é usado por `is_good_enough`, porque esse valor de x pode ser necessário para `is_good_enough` depois que o `square` é concluído.
+A intenção do autor de `is_good_enough` é determinar se o `square` do primeiro argumento está dentro de uma dada tolerância do segundo argumento. Vemos que o autor de `is_good_enough` usou a suposição de nome para se referir ao primeiro argumento ex para se referir ao segundo argumento. O argumento do `square` é adivinhar. Se o autor de `square` usou x (como acima) para se referir a esse argumento, vemos que x em is_bom_bastante deve ser um x diferente do que está no `square`. A execução do `square` da função não deve afetar o valor de x que é usado por `is_good_enough`, porque esse valor de x pode ser necessário para `is_good_enough` depois que o `square` é concluída.
 
 Se os parâmetros não fossem locais para os corpos de suas respectivas funções, o parâmetro x no `square` poderia ser confundido com o parâmetro x em is_good_enough, e o comportamento de is_good_enough dependeria de qual versão do `square` usamos. Portanto, o `square` não seria a caixa preta que desejamos.
 
-Um parâmetro de uma função tem um papel muito especial na declaração da função, pois não importa o nome do parâmetro. Esse nome é chamado de _bound_ (vinculado) e dizemos que a declaração da função _binds_ (vincula) seus parâmetros. O significado de uma declaração de função permanece inalterado se um nome vinculado for consistentemente renomeado em toda a declaração.[<sup>2</sup>](#footnote-2) Se um nome não for vinculado, dizemos que ele é gratuito. O conjunto de instruções para as quais uma ligação declara um nome é chamado de escopo desse nome. Em uma declaração de função, os nomes vinculados declarados como os parâmetros da função têm o corpo da função como seu escopo.
+<a name="footnote-link-2"></a>
+Um parâmetro de uma função tem um papel muito especial na declaração da função, pois não importa o nome do parâmetro. Esse nome é chamado de *bound* (vinculado) e dizemos que a declaração da função *binds* (vincula) seus parâmetros. O significado de uma declaração de função permanece inalterado se um nome vinculado for consistentemente renomeado em toda a declaração.[<sup>2</sup>](#footnote-2) Se um nome não for vinculado, dizemos que ele é gratuito. O conjunto de instruções para as quais uma ligação declara um nome é chamado de escopo desse nome. Em uma declaração de função, os nomes vinculados declarados como os parâmetros da função têm o corpo da função como seu escopo.
 
-Na declaração de `is_good_enough` acima, `guess` e x são nomes vinculados, mas `abs` e `square` são livres. O significado de `is_good_enough` deve ser independente dos nomes que escolhemos para a `guess` e x, desde que sejam distintos e diferentes de `abs` e `square`. (Se renomearmos `guess` para `abs`, teríamos introduzido um _bug_ ao capturar o nome `abs`. Ele teria mudado de _free_ para _bound_.) O significado de `is_good_enough` não é independente da escolha de seus nomes livres, entretanto. Certamente depende do fato (externo a esta declaração) de que o nome `abs` se refere a uma função para calcular o valor absoluto de um número. A função `is_good_enough` computará uma função diferente se substituirmos `math_cos` (a função cosseno primitiva) por `abs` em sua declaração.
+Na declaração de `is_good_enough` acima, `guess` e x são nomes vinculados, mas `abs` e `square` são livres. O significado de `is_good_enough` deve ser independente dos nomes que escolhemos para a `guess` e x, desde que sejam distintos e diferentes de `abs` e `square`. (Se renomearmos `guess` para `abs`, teríamos introduzido um *bug* ao capturar o nome `abs`. Ele teria mudado de *free* para *bound*.) O significado de `is_good_enough` não é independente da escolha de seus nomes livres, entretanto. Certamente depende do fato (externo a esta declaração) de que o nome `abs` se refere a uma função para calcular o valor absoluto de um número. A função `is_good_enough` computará uma função diferente se substituirmos `math_cos` (a função cosseno primitiva) por `abs` em sua declaração.
 
 ## Declarações internas e estrutura de bloco
 
 Temos um tipo de isolamento de nome disponível até agora: os parâmetros de uma função são locais para o corpo da função. O programa de raiz quadrada ilustra outra maneira pela qual gostaríamos de controlar o uso de nomes. O programa existente consiste em funções separadas:
 
-```js
-function sqrt(x) {
+<CodePlayground
+  code={`function sqrt(x) {
   return sqrt_iter(1, x);
 }
 function sqrt_iter(guess, x) {
@@ -88,13 +102,15 @@ function improve(guess, x) {
   return average(guess, x / guess);
 }
 
-sqrt(5);
-```
+sqrt(5);`}
+  height={300}
+  showLineNumbers={false}
+/>
 
 O problema com este programa é que a única função importante para os usuários de `sqrt` é `sqrt`. As outras funções (`sqrt_iter`, `is_good_enough` e `improve`) apenas confundem suas mentes. Eles não podem declarar nenhuma outra função chamada `is_good_enough` como parte de outro programa para trabalhar junto com o programa de raiz quadrada, porque `sqrt` precisa disso. O problema é especialmente grave na construção de grandes sistemas por muitos programadores separados. Por exemplo, na construção de uma grande biblioteca de funções numéricas, muitas funções numéricas são calculadas como aproximações sucessivas e, portanto, podem ter funções chamadas `is_good_enough` e `imrpove` como funções auxiliares. Gostaríamos de localizar as subfunções, ocultando-as dentro de `sqrt` para que `sqrt` pudesse coexistir com outras aproximações sucessivas, cada uma com sua própria função privada `is_good_enough`. Para tornar isso possível, permitimos que uma função tenha declarações internas que são locais para essa função. Por exemplo, no problema da raiz quadrada, podemos escrever
 
-```js
-function sqrt(x) {
+<CodePlayground
+  code={`function sqrt(x) {
   function is_good_enough(guess, x) {
     return abs(square(guess) - x) < 0.001;
   }
@@ -107,13 +123,16 @@ function sqrt(x) {
   return sqrt_iter(1, x);
 }
 
-sqrt(5);
-```
+sqrt(5);`}
+  height={300}
+  showLineNumbers={false}
+/>
 
-Qualquer par de chaves correspondente designa um bloco e as declarações dentro do bloco são locais para o bloco. Esse aninhamento de declarações, chamado de estrutura de bloco, é basicamente a solução certa para o problema mais simples de empacotamento de nomes. Mas existe uma ideia melhor escondida aqui. Além de internalizar as declarações das funções auxiliares, podemos simplificá-las. Como x está vinculado à declaração de `sqrt`, as funções `is_good_enough`, `improve` e `sqrt_iter`, que são declaradas internamente como `tosqrt`, estão no escopo de x. Portanto, não é necessário passar x explicitamente para cada uma dessas funções. Em vez disso, permitimos que x seja um nome livre nas declarações internas, conforme mostrado abaixo. Então x obtém seu valor do argumento com o qual a função envolvente `sqrt` é chamada. Esta disciplina é chamada de _escopo léxico_.[<sup>3</sup>](#footnote-3)
+<a name="footnote-link-3"></a>
+Qualquer par de chaves correspondente designa um bloco e as declarações dentro do bloco são locais para o bloco. Esse aninhamento de declarações, chamado de estrutura de bloco, é basicamente a solução certa para o problema mais simples de empacotamento de nomes. Mas existe uma ideia melhor escondida aqui. Além de internalizar as declarações das funções auxiliares, podemos simplificá-las. Como x está vinculado à declaração de `sqrt`, as funções `is_good_enough`, `improve` e `sqrt_iter`, que são declaradas internamente como `tosqrt`, estão no escopo de x. Portanto, não é necessário passar x explicitamente para cada uma dessas funções. Em vez disso, permitimos que x seja um nome livre nas declarações internas, conforme mostrado abaixo. Então x obtém seu valor do argumento com o qual a função envolvente `sqrt` é chamada. Esta disciplina é chamada de *escopo léxico*.[<sup>3</sup>](#footnote-3)
 
-```js
-function sqrt(x) {
+<CodePlayground
+  code={`function sqrt(x) {
   function is_good_enough(guess) {
     return abs(square(guess) - x) < 0.001;
   }
@@ -126,17 +145,20 @@ function sqrt(x) {
   return sqrt_iter(1);
 }
 
-sqrt(5);
-```
+sqrt(5);`}
+  height={300}
+  showLineNumbers={false}
+/>
 
+<a name="footnote-link-4"></a>
 Usaremos a estrutura de blocos extensivamente para nos ajudar a quebrar grandes programas em partes tratáveis.[<sup>4</sup>](#footnote-4) A ideia da estrutura de blocos originou-se com a linguagem de programação Algol 60. Ela aparece na maioria das linguagens de programação avançadas e é uma ferramenta importante para ajudar a organizar a construção de grandes programas.
 
 ---
 
-<a name="#footnote-1"></a> [[1]](#footnote-link-1) Ainda não está claro qual dessas funções é uma implementação mais eficiente. Isso depende do hardware disponível. Existem máquinas para as quais a implementação "óbvia" é a menos eficiente. Considere uma máquina que possui extensas tabelas de logaritmos e antilogaritmos armazenados de uma maneira muito eficiente.
+<a name="footnote-1"></a> [[1]](#footnote-link-1) Ainda não está claro qual dessas funções é uma implementação mais eficiente. Isso depende do hardware disponível. Existem máquinas para as quais a implementação "óbvia" é a menos eficiente. Considere uma máquina que possui extensas tabelas de logaritmos e antilogaritmos armazenados de uma maneira muito eficiente.
 
-<a name="#footnote-2"></a> [[2]](#footnote-link-2) O conceito de renomeação consistente é realmente sutil e difícil de definir formalmente. Lógicos famosos cometeram erros embaraçosos aqui.
+<a name="footnote-2"></a> [[2]](#footnote-link-2) O conceito de renomeação consistente é realmente sutil e difícil de definir formalmente. Lógicos famosos cometeram erros embaraçosos aqui.
 
-<a name="#footnote-3"></a> [[3]](#footnote-link-3) O escopo léxico dita que nomes livres em uma função são considerados como referências a associações feitas por declarações de função inclusas; ou seja, eles são pesquisados no ambiente em que a função foi declarada. Veremos como isso funciona em detalhes no capítulo 3, quando estudarmos os ambientes e o comportamento detalhado do interpretador.
+<a name="footnote-3"></a> [[3]](#footnote-link-3) O escopo léxico dita que nomes livres em uma função são considerados como referências a associações feitas por declarações de função inclusas; ou seja, eles são pesquisados no ambiente em que a função foi declarada. Veremos como isso funciona em detalhes no capítulo 3, quando estudarmos os ambientes e o comportamento detalhado do interpretador.
 
-<a name="#footnote-4"></a> [[4]](#footnote-link-4) As declarações incorporadas devem vir primeiro em um corpo de função. A gerência não se responsabiliza pelas consequências da execução de programas que entrelaçam declaração e uso; ver também notas de rodapé [2] e [4] na seção [1.3.2](1.3.2.md).
+<a name="footnote-4"></a> [[4]](#footnote-link-4) As declarações incorporadas devem vir primeiro em um corpo de função. A gerência não se responsabiliza pelas consequências da execução de programas que entrelaçam declaração e uso; ver também notas de rodapé [2] e [4] na seção [1.3.2](1.3.2.md).
