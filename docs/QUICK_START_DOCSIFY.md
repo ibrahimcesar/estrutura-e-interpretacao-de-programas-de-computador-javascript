@@ -133,7 +133,8 @@ Crie um arquivo `index.html` na raiz do projeto:
 4. Aguarde alguns minutos
 
 Pronto! Seu site estará em:
-```
+
+```text
 https://ibrahimcesar.github.io/estrutura-e-interpretacao-de-programas-de-computador-javascript/
 ```
 
