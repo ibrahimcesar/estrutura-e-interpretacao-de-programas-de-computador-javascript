@@ -93,6 +93,7 @@ Agradecemos a todos os [contribuidores](https://github.com/ibrahimcesar/estrutur
 ## 🔗 Links Úteis
 
 - [SICP.js Original (inglês)](https://sourceacademy.org/sicpjs/index)
+- [Repositório Source Academy SICP (GitHub)](https://github.com/source-academy/sicp)
 - [SICP Original (Scheme)](https://mitpress.mit.edu/sites/default/files/sicp/index.html)
 - [Guia de Tradução](TRANSLATION.md)
 - [Como Contribuir](CONTRIBUTING.md)
