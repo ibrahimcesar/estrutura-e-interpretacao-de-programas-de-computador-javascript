@@ -471,14 +471,43 @@ pr: ## 🚀 Workflow completo: criar branch, add, commit, push e preparar PR
 	@echo "$(BOLD)$(CYAN)📊 Resumo:$(NC) Modificados=$$(git status --short 2>/dev/null | grep -c '^ M' || echo '0') | Adicionados=$$(git status --short 2>/dev/null | grep -c '^??' || echo '0') | Deletados=$$(git status --short 2>/dev/null | grep -c '^ D' || echo '0')"
 	@echo "$(BOLD)$(YELLOW)═══════════════════════════════════════════════════════════════════$(NC)"
 	@echo ""
-	@printf "$(BOLD)$(YELLOW)📝 Digite o nome da branch (ex: traducao-secao-1-2): $(NC)"; \
-	read branch_name; \
-	if [ -z "$$branch_name" ]; then \
+	@echo "$(BOLD)$(CYAN)📋 Selecione o tipo de mudança (Conventional Commits):$(NC)"; \
+	echo ""; \
+	echo "  $(GREEN)1.$(NC) feat     - Nova funcionalidade"; \
+	echo "  $(GREEN)2.$(NC) fix      - Correção de bug"; \
+	echo "  $(GREEN)3.$(NC) docs     - Documentação"; \
+	echo "  $(GREEN)4.$(NC) style    - Formatação, CSS"; \
+	echo "  $(GREEN)5.$(NC) refactor - Refatoração de código"; \
+	echo "  $(GREEN)6.$(NC) test     - Testes"; \
+	echo "  $(GREEN)7.$(NC) chore    - Manutenção, configs"; \
+	echo "  $(GREEN)8.$(NC) perf     - Performance"; \
+	echo ""; \
+	printf "$(BOLD)$(YELLOW)Digite o número (1-8): $(NC)"; \
+	read type_num; \
+	case "$$type_num" in \
+		1) commit_type="feat";; \
+		2) commit_type="fix";; \
+		3) commit_type="docs";; \
+		4) commit_type="style";; \
+		5) commit_type="refactor";; \
+		6) commit_type="test";; \
+		7) commit_type="chore";; \
+		8) commit_type="perf";; \
+		*) echo ""; \
+		   echo "$(BOLD)$(RED)✗ Erro: Opção inválida!$(NC)"; \
+		   echo ""; \
+		   exit 1;; \
+	esac; \
+	echo ""; \
+	printf "$(BOLD)$(YELLOW)📝 Descrição da mudança (será formatada em kebab-case): $(NC)"; \
+	read branch_desc; \
+	if [ -z "$$branch_desc" ]; then \
 		echo ""; \
-		echo "$(BOLD)$(RED)✗ Erro: Nome da branch não pode estar vazio!$(NC)"; \
+		echo "$(BOLD)$(RED)✗ Erro: Descrição não pode estar vazia!$(NC)"; \
 		echo ""; \
 		exit 1; \
 	fi; \
+	branch_name="$$commit_type/$$(echo \"$$branch_desc\" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')"; \
 	echo ""; \
 	echo "$(BOLD)$(CYAN)🌿 Criando e mudando para a branch: $$branch_name$(NC)"; \
 	if git checkout -b "$$branch_name" 2>/dev/null; then \
@@ -540,16 +569,30 @@ pr: ## 🚀 Workflow completo: criar branch, add, commit, push e preparar PR
 	echo ""; \
 	echo "$(BOLD)$(GREEN)✅ Todos os testes passaram!$(NC)"; \
 	echo ""; \
-	printf "$(BOLD)$(YELLOW)💬 Digite a mensagem do commit: $(NC)"; \
-	read commit_msg; \
-	if [ -z "$$commit_msg" ]; then \
+	printf "$(BOLD)$(YELLOW)💬 Descrição do commit (será formatada em minúsculas): $(NC)"; \
+	read commit_desc; \
+	if [ -z "$$commit_desc" ]; then \
 		echo ""; \
-		echo "$(BOLD)$(RED)✗ Erro: Mensagem do commit não pode estar vazia!$(NC)"; \
+		echo "$(BOLD)$(RED)✗ Erro: Descrição do commit não pode estar vazia!$(NC)"; \
 		echo ""; \
 		exit 1; \
 	fi; \
+	commit_desc_lower=$$(echo "$$commit_desc" | tr '[:upper:]' '[:lower:]'); \
+	case "$$commit_type" in \
+		feat) commit_emoji="✨";; \
+		fix) commit_emoji="🐛";; \
+		docs) commit_emoji="📝";; \
+		style) commit_emoji="💄";; \
+		refactor) commit_emoji="♻️";; \
+		test) commit_emoji="✅";; \
+		chore) commit_emoji="🔧";; \
+		perf) commit_emoji="⚡";; \
+	esac; \
+	commit_msg="$$commit_emoji $$commit_type: $$commit_desc_lower"; \
 	echo ""; \
-	echo "$(BOLD)$(CYAN)💾 Fazendo commit...$(NC)"; \
+	echo "$(BOLD)$(CYAN)💾 Fazendo commit com mensagem:$(NC)"; \
+	echo "  $(CYAN)$$commit_msg$(NC)"; \
+	echo ""; \
 	git commit -m "$$commit_msg"; \
 	echo "$(GREEN)✓ Commit realizado!$(NC)"; \
 	echo ""; \
