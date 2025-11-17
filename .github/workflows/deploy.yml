@@ -39,11 +39,20 @@ jobs:
       - name: Build website
         run: npm run build
 
-      - name: Setup redirect from root to /pt_BR/
+      - name: Setup pt_BR directory structure and redirect
         run: |
+          # Create pt_BR directory
+          mkdir -p build/pt_BR
+          # Move all files except CNAME to pt_BR
+          find build -maxdepth 1 -type f ! -name 'CNAME' -exec mv {} build/pt_BR/ \;
+          # Move all directories to pt_BR
+          find build -maxdepth 1 -mindepth 1 -type d ! -name 'pt_BR' -exec mv {} build/pt_BR/ \;
+          # Copy redirect index.html to root
           cp .github/redirect-index.html build/index.html
-          echo "Redirect index.html created at root"
+          echo "Directory structure created:"
           ls -la build/
+          echo "pt_BR contents:"
+          ls -la build/pt_BR/
 
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
