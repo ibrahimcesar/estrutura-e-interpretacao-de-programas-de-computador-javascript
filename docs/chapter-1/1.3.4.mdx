@@ -1,0 +1,181 @@
+# 1.3.4 Funções Como Retorno
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Os exemplos abaixo demonstram como a habilidade de ter funções como argumentos melhora significativamente o poder da expressão de nossas linguagens de computação. Nos podemos alcançar ainda mais poder expressivo criando funções que tem seu retorno também sendo funções.
+
+Nos podemos ilustrar essa ideia olhando de novo para o exemplo de ponto fixo descrito no final da sessão 1.3.3. Nos formulamos uma nova versão da função de raiz quadrada como uma busca de ponto fixo, começando com a observação que $\sqrt{x}$ é um ponto fixo  da função $y \mapsto{x/y}$. Então nos usamos um amortecimento médio para fazer as aproximações convergirem. Amortecimento médio é uma técnica bem util no geral. Dada uma função $f$, nos consideramos a função a qual o valor em $x$ é igual ao média de $x$ e $f(x)$.
+
+Nos podemos expressar a ideia do amortecimento médio pela seguinte função:
+
+<CodePlayground
+  code={`function average_damp(f){
+    return x => average(x,f(x));
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+A função `average_damp` tem como argumento a função `f` e retorna como seu valor uma função (produzida pela expressão lambda) que, quando aplicada a um número `x`, produz a média de `x` e `f(X)`. Por exemplo, aplicando `average_damp` na função `square` produz uma função que o valor de um número $x$ e a média de $x$ e $x^2$. Aplicando essa função resultante em 10 obteremos a média de 10 e 100, ou 55<sup>[1](#footnote-link-1)</sup>
+
+<CodePlayground
+  code={`average_damp(square)(10);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+>55
+
+Usando `average_damp`, nós podemos reformular a função da raiz quadrada:
+
+<CodePlayground
+  code={`function sqrt(x){
+    return fixed_point(average_damp(y => x/y), 1);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Perceba como essa formulação faz uso explicito de três ideias no método: busca de ponto fixo, amortecimento médio e a função $y \mapsto{x/y}$. É intrusivo comparar essa reformulação com o método de raiz quadrada dado na seção 1.1.7. Tenha em mente que essas funções expressam o mesmo processo, e perceba o quão claro a ideia é quando nos expressamos o processo em termos dessas abstrações. No geral, existem muitas maneiras de transformar um processo numa função. Programadores experientes sabem como escolher as implementações particularmente perspicazes, e onde elementos úteis do processo são expostos como entidades separadas que podem ser utilizadas em outras aplicações. Como um simples exemplo de reutilização, note como a raiz cúbica de $x$ é um ponto fixo da função $y \mapsto{x/y^2}$, então nos podemos imediatamente generalizar nossa função de raiz quadrada para uma que extrai raiz cúbicas<sup>[2](#footnote-link-2)</sup>
+
+<CodePlayground
+  code={`function cube_root(x){
+    return fixed_point(average_damp(y => x/square(y)), 1);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+## Método de Newton
+
+Quando nós primeiros introduzimos a função da raiz quadrada, na seção 1.1.7, nos mencionamos que isso era um caso especial do  *Método de Newton*. Se $x \mapsto{g(x)}$ é uma função diferençável, então a solução da equação $g(x) = 0$ e um ponto fixo da função $x \mapsto{f(x)}$ onde:
+
+$f(x)  = x - \frac{g(x)}{Dg(x)}$
+
+E $Dg(x)$ é a derivada de $g$ calculada em $x$. O método de Newton faz uso do ponto fixo como vimos acima para aproximar uma solução da equação encontrando um ponto fixo da função $f$ <sup>[3](#footnote-link-3)</sup>. Para muitas funções $g$ e para suposições iniciais suficientemente boas para $x$. O método de Newton converge muito rapidamente para uma solução de $g(x) = 0$.<sup>[4](#footnote-link-4)</sup>
+
+Para implementar o método de Newton como uma função, primeiro devemos expressas a ideia de uma derivada. Note que "derivada", como um amortecimento médio, é algo que transforma a função em outra função, por exemplo, a derivada da função $x \mapsto{x^3}$ e a função $x \mapsto{3x^2}$. No geral, se $g$ é uma função e $dx$ é um número pequeno, então a derivada $Dg$ de $g$ é a função a qual o valor em qualquer número $x$ pe dado (no limite do pequeno $dx$) por:
+
+$Dg(x) = \frac{g(x+dx)-g(x)}{dx}$
+
+Assim podemos expressar a ideia de derivada (tomando $dx$ como sendo, digamos, 0.00001) como a função:
+
+<CodePlayground
+  code={`function deriv(g) {
+    return x => (g(x+dx) - g(x)) / dx;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+junto com a declaração:
+
+<CodePlayground
+  code={`const dx = 0.00001;`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Semelhante a `average_damp`, `deriv` é uma função que recebe uma função como argumento e retorna uma função. Por exemplo para aproximar a derivada de $x \mapsto{x^3}$ em 5 (o qual o valor exato é 75), nos podemos calcular:
+
+<CodePlayground
+  code={`function cubo(x) { return x * x * x; }
+
+deriv(cube)(5);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+>75.00014999664018
+
+Com a ajuda de `deriv`, podemos expressar o método de Newton como um processo de ponto fixo:
+
+<CodePlayground
+  code={`function newton_transform(g) {
+    return x=> x - g(x) / deriv(g)(x)
+}
+
+function newtons_method(g, guess) {
+    return fixed_point(newton_transform(g), guess);
+}`}
+  height={200}
+/>
+
+A função `newton_transform` expressa a formula dada no começo dessa seção, e `newtons_method` e prontamente definido em termos termos disso. Tem como argumento uma função que computa a função pela qual nos queremos achar zero, junto com uma suposição inicial. Por exemplo, para achar a raiz quadrada de $x$, nos podemos usar o método de Newton para achar o zero da função $y \mapsto{y^2-x}$ partindo de uma suposição inicial de 1.<sup>[5](#footnote-link-5)</sup> Isso prove ainda outra forma da função da raiz quadrada:
+
+<CodePlayground
+  code={`function sqrt(x) {
+    return newtons_method(y => square(y) - x, 1);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+## Abstrações e funções de primeira classe
+
+Nos vemos duas maneiras para expressas a computação da raiz quadrada, como uma instância mais geral do método, uma com uma busca de ponto fixo e outra utilizando o método de Newton que foi expresso como um processo de ponto fixo, na verdade nos vimos duas maneiras de computar raízes quadradas como pontos fixos. Cada método começa com uma função e acha um ponto fixo de alguma transformação da função. Nos podemos expressar a ideia geral como sendo a função:
+
+<CodePlayground
+  code={`function fixed_point_of_transform(g, transform, guess) {
+    return fixed_point(transform(g), guess);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Essa função genérica tem como argumento uma função $g$, e uma suposição inicial. O resultado é um ponto fixo da transformada da função.
+
+Utilizando essa abstração, nos podemos refazer a primeira computação dessa seção (onde nos procuramos um ponto fixo na versão do amortecimento médio da função $y \mapsto{x/y}$) como uma instância desse método geral.
+
+<CodePlayground
+  code={`function sqrt(x) {
+    return fixed_point_of_transform(
+        y => x/y,
+        average_damp,
+        1);
+}`}
+  height={200}
+/>
+
+De maneira similar, nos podemos expressar a segunda maneira de computar a raiz quadrada dessa seção (a que instanciámos o método de Newton que acha um ponto fixo pela transformada de Newton da função $y \mapsto{y^2 -x}$) como:
+
+<CodePlayground
+  code={`function sqrt(x) {
+    return fixed_point_of_transform(
+        y => square(y) - x,
+        newton_transform,
+        1);
+}`}
+  height={200}
+/>
+
+Nós começamos a seção 1.3 com a observação que funções compostas são um mecanismo de abstração crucial, porque eles permitem que possamos expressas métodos gerais de computação como elementos explícitos na linguagem de programação. Agora nós vimos como funções de ordem-maior permitem que nós possamos manipular esses métodos para criar ainda mais abstrações.
+
+Como programadores, nós devemos ficar alerta a oportunidades para identificar abstrações subjacentes nos nossos programas e construir elas para generalizá-las afim que criar abstrações mais poderosas. Isso não quer dizer que você sempre deve escrever programas da maneira mais abstrata possível; programadores experientes sabem como escolher o nível de abstração apropriado para cada tarefa. Porém é importante ser capaz de pensar in termos dessas abstrações, então temos que estar preparados para aplicar elas em novos contextos. A importância de funções de ordem-maior é que elas permites que nos possamos representar essas abstrações explicitamente como elementos de nossa linguagem de programação, para que elas possam ser manipuladas como qualquer outro elemento computacional.
+
+No geral, linguagens de programação impõem restrições na maneira com o que os elementos computacionais podem ser manipulados. Elemento com menores restrições são ditos como tendo status de *primeira-classe*. Alguns dos "direitos e privilégios" dos elementos de primeira-classe são:<sup>[6](#footnote-link-6)</sup>
+
+- Eles podem ser chamados por nomes.
+- Eles podem ser passados como argumentos para funções.
+- Eles podem ser retornado como resultado de funções
+- Eles podem ser incluídos em estruturas de dados.<sup>[7](#footnote-link-7)</sup>
+
+Javascript, como qualquer outra linguagem de programação de alto-nível, considera funções como elementos de primeira-classe. Isso desafia implementações mais eficientes, mas o ganho em expressividade é enorme.<sup>[8](#footnote-link-8)</sup>
+
+----
+
+<a name="footnote-link-1"></a> [1] Observe que essa é uma aplicação que a funcionalidade expressa uma aplicação. O exercício 1.4 já demonstra a habilidade dessas aplicações, mas como esse era o único exemplo. Aqui estamos para começar a ver a real necessidade de tais aplicações - ao aplicar uma função que é obtida como retorno de uma função de maior ordem.
+
+<a name="footnote-link-2"></a> [2] Veja o exercício 1.45 para uma maior generalização.
+
+<a name="footnote-link-3"></a> [3] Livros de cálculo elementar geralmente descrevem o método de Newton em termos da sequência de aproximações $x_{n+1} = x_{n} - g(x_{n})/Dg(x_{n})$. Ter uma linguagem para falar sobre esses processos e usar a ideia de pontos fixos, simplifica a descrição desse método.
+
+<a name="footnote-link-4"></a> [4] O método de Newton nem sempre converge para uma resposta, mas é mostrado que em casos favoráveis cada iteração a acurácia da aproximação da solução dobra. O método de Newton vai convergir muito mais rapidamente que o método da Bissecção.
+
+<a name="footnote-link-5"></a> [5] Para achar raízes quadradas, o método de Newton converge rapidamente para a solução de qualquer ponto de partida.
+
+<a name="footnote-link-6"></a> [6] A notação de status de primeira-classe de elementos de linguagem de programação vem do cientista de computador britânico Christopher Strachey (1916-1975)
+
+<a name="footnote-link-7"></a> [7] Nos vamos ver exemplos que introduzem estruturas de dados no capitulo 2.
+
+<a name="footnote-link-8"></a> [8] O maior custo de implementação de funções de primeira-classe é que permitir funções serem retornadas como valor requer reservar armazenamento para uma função, ter espaço livre e nome livres ate mesmo enquanto a função não esta executando. Em JavaScript a implementação nos vamos estudar na seção 4.1, essas funções e seus nomes são armazenadas no escopo da função de maior-ordem.

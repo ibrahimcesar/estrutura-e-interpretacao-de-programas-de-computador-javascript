@@ -1,5 +1,7 @@
 # 1.1.3 Avaliando Combinações de Operadores
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 Um de nossos objetivos neste capítulo é isolar questões sobre o pensamento processual. Como um caso em questão, consideremos que, ao avaliar combinações de operadores, o próprio interpretador está seguindo um procedimento.
 
 - Para avaliar uma combinação de operadores, faça o seguinte:
@@ -10,9 +12,11 @@ Mesmo essa regra simples ilustra alguns pontos importantes sobre os processos em
 
 Observe como a ideia de recursão pode ser usada sucintamente para expressar o que, no caso de uma combinação profundamente aninhada, seria visto como um processo bastante complicado. Por exemplo, avaliando
 
-```js
-(2 + 4 * 6) * (3 + 12); 
-```
+<CodePlayground
+  code={`(2 + 4 * 6) * (3 + 12);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 requer que a regra de avaliação seja aplicada a quatro combinações diferentes. Podemos obter uma imagem desse processo representando a combinação na forma de uma árvore, conforme mostrado na figura [1.1](#fig-1.1). Cada combinação é representada por um nó com ramificações correspondentes ao operador e aos operandos da combinação que dele decorrem. Os nós terminais (ou seja, nós sem ramificações derivadas deles) representam operadores ou números. Vendo a avaliação em termos de árvore, podemos imaginar que os valores dos operandos percolam para cima, começando nos nós terminais e depois combinando em níveis cada vez mais altos. Em geral, veremos que a recursão é uma técnica muito poderosa para lidar com objetos hierárquicos semelhantes a árvores. Na verdade, a forma de "filtrar os valores para cima" da regra de avaliação é um exemplo de um tipo geral de processo conhecido como `acumulação de árvore`.
 

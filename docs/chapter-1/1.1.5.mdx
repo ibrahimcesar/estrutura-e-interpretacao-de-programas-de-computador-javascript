@@ -1,5 +1,7 @@
 # 1.1.5 O modelo de substituição para a aplicação de função
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 Para avaliar uma aplicação de função, o interpretador segue o processo descrito na seção [1.1.4](1.1.4.md). Ou seja, o interpretador avalia os elementos da aplicação e aplica a função (que é o valor da expressão da função da aplicação) aos argumentos (que são os valores das expressões de argumento do aplicação).
 
 Podemos assumir que a aplicação de funções primitivas é feita pelo interpretador ou bibliotecas. Para funções compostas, o processo de aplicação é o seguinte:
@@ -9,9 +11,11 @@ Podemos assumir que a aplicação de funções primitivas é feita pelo interpre
 
 Para ilustrar esse processo, vamos avaliar a aplicação
 
-```js
-f(5);
-```
+<CodePlayground
+  code={`f(5);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 onde `f` é a função declarada na seção [1.1.4](1.1.4.md). Começamos recuperando a expressão de retorno de `f`:
 

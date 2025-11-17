@@ -1,5 +1,7 @@
 # 1.2.2 Recursão em Árvore
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 Outro padrão comum de computação é chamado de *recursão em árvore*. Como exemplo, considere o cálculo da sequência de números de Fibonacci, na qual cada número é a soma dos dois anteriores:
 
 0, 1, 1, 2, 3, 5, 8, 13, 21, ...
@@ -12,15 +14,16 @@ Em geral, os números de Fibonacci podem ser definidos pela regra:
 
 Podemos traduzir imediatamente esta definição em uma função recursiva para calcular números de Fibonacci:
 
-```js
-function fib(n) {
+<CodePlayground
+  code={`function fib(n) {
     return n === 0
            ? 0
            : n === 1
            ? 1
            : fib(n - 1) + fib(n - 2);
-}
-```
+}`}
+  height={200}
+/>
 
 ![O processo recursivo em árvore gerado ao calcular fib(5)](/img/ch1-fibonacci-tree.svg)
 
@@ -45,16 +48,17 @@ b ← a
 
 Não é difícil mostrar que, após aplicar essa transformação n vezes, *a* e *b* serão iguais, respectivamente, a Fib(n + 1) e Fib(n). Assim, podemos calcular números de Fibonacci iterativamente usando a função:
 
-```js
-function fib(n) {
+<CodePlayground
+  code={`function fib(n) {
     return fib_iter(1, 0, n);
 }
 function fib_iter(a, b, count) {
     return count === 0
            ? b
            : fib_iter(a + b, a, count - 1);
-}
-```
+}`}
+  height={200}
+/>
 
 Este segundo método para calcular Fib(n) é uma iteração linear. A diferença no número de passos necessários pelos dois métodos — um linear em n, outro crescendo tão rápido quanto o próprio Fib(n) — é enorme, mesmo para entradas pequenas.
 
@@ -81,8 +85,8 @@ Assim, podemos reduzir recursivamente o problema de trocar uma determinada quant
 
 Podemos facilmente traduzir esta descrição em uma função recursiva:
 
-```js
-function count_change(amount) {
+<CodePlayground
+  code={`function count_change(amount) {
     return cc(amount, 5);
 }
 
@@ -104,14 +108,17 @@ function first_denomination(kinds_of_coins) {
          : kinds_of_coins === 4 ? 25
          : kinds_of_coins === 5 ? 50
          : 0;
-}
-```
+}`}
+  height={300}
+/>
 
 (A função `first_denomination` recebe como entrada o número de tipos de moedas disponíveis e retorna a denominação do primeiro tipo. Aqui estamos pensando nas moedas como organizadas em ordem da maior para a menor, mas qualquer ordem funcionaria igualmente bem.) Agora podemos responder nossa pergunta original sobre trocar um dólar:
 
-```js
-count_change(100);
-```
+<CodePlayground
+  code={`count_change(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 ```text
 292

@@ -2,7 +2,7 @@
 # Structure and Interpretation of Computer Programs - JavaScript Adaptation
 # Estrutura e Interpretação de Programas de Computador - Adaptação em JavaScript
 
-.PHONY: help lint spell-check link-check check format clean install test colaborar translation-status docker-check wordlist-stats ci-local reorder-wordlist
+.PHONY: help lint spell-check link-check check format clean install test colaborar translation-status docker-check wordlist-stats ci-local reorder-wordlist pr
 
 # Default target
 .DEFAULT_GOAL := help
@@ -37,8 +37,11 @@ install: ## 📦 Instala todas as dependências necessárias (Node.js, Python, a
 	@echo "$(BOLD)$(CYAN)🚀 Instalando dependências...$(NC)"
 	@echo ""
 	@if command -v npm >/dev/null 2>&1; then \
-		echo "$(GREEN)✓ Node.js encontrado! Instalando ferramentas...$(NC)"; \
-		npm install -g markdownlint-cli markdown-link-check; \
+		echo "$(GREEN)✓ Node.js encontrado! Instalando dependências do projeto...$(NC)"; \
+		echo ""; \
+		npm install; \
+		echo ""; \
+		echo "$(GREEN)✓ Dependências Node.js instaladas localmente!$(NC)"; \
 	else \
 		echo "$(BOLD)$(RED)✗ Erro: npm não encontrado!$(NC)"; \
 		echo "$(YELLOW)➜ Por favor, instale o Node.js primeiro:$(NC)"; \
@@ -85,8 +88,8 @@ install: ## 📦 Instala todas as dependências necessárias (Node.js, Python, a
 lint: ## 📝 Verifica formatação dos arquivos Markdown (.md)
 	@echo "$(BOLD)$(CYAN)🔍 Verificando formatação do Markdown...$(NC)"
 	@echo ""
-	@if command -v markdownlint >/dev/null 2>&1; then \
-		if markdownlint **/*.md --ignore node_modules --config .github/markdownlint.yml; then \
+	@if [ -f node_modules/.bin/markdownlint ]; then \
+		if npm run lint; then \
 			echo ""; \
 			echo "$(BOLD)$(GREEN)✅ Formatação do Markdown está perfeita!$(NC)"; \
 			echo ""; \
@@ -133,8 +136,8 @@ spell-check: ## 📖 Verifica ortografia em português nos arquivos
 link-check: ## 🔗 Verifica se há links quebrados nos arquivos Markdown
 	@echo "$(BOLD)$(CYAN)🔗 Verificando links em arquivos Markdown...$(NC)"
 	@echo ""
-	@if command -v markdown-link-check >/dev/null 2>&1; then \
-		if find . -name "*.md" -not -path "./node_modules/*" -exec markdown-link-check --quiet --config .github/markdown-link-check.json {} \; ; then \
+	@if [ -f node_modules/.bin/markdown-link-check ]; then \
+		if npm run link-check; then \
 			echo ""; \
 			echo "$(BOLD)$(GREEN)✅ Todos os links estão funcionando!$(NC)"; \
 			echo ""; \
@@ -169,8 +172,8 @@ test: check ## 🧪 Alias para 'check' - executa todas as verificações
 format: ## ✨ Formata automaticamente os arquivos Markdown
 	@echo "$(BOLD)$(CYAN)✨ Formatando arquivos Markdown...$(NC)"
 	@echo ""
-	@if command -v markdownlint >/dev/null 2>&1; then \
-		markdownlint **/*.md --ignore node_modules --config .github/markdownlint.yml --fix; \
+	@if [ -f node_modules/.bin/markdownlint ]; then \
+		npm run lint:fix; \
 		echo ""; \
 		echo "$(BOLD)$(GREEN)✅ Arquivos Markdown formatados!$(NC)"; \
 		echo ""; \
@@ -452,3 +455,144 @@ colaborar: ## 🌟 Mostra guia completo para colaboradores (iniciantes bem-vindo
 	@echo ""
 	@echo "$(BOLD)$(CYAN)🚀 Comece agora mesmo! Boa sorte na sua contribuição! 🚀$(NC)"
 	@echo ""
+
+pr: ## 🚀 Workflow completo: criar branch, add, commit, push e preparar PR
+	@echo "$(BOLD)$(MAGENTA)╔═══════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BOLD)$(MAGENTA)║  🚀 Workflow Completo para Pull Request                          ║$(NC)"
+	@echo "$(BOLD)$(MAGENTA)╚═══════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(BOLD)$(CYAN)Workflow:$(NC) Branch → Stage → Teste → Commit → Push → PR"
+	@echo ""
+	@echo "$(BOLD)$(YELLOW)═══════════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(BOLD)$(YELLOW)📂 Arquivos modificados:$(NC)"
+	@echo ""
+	@git status --short 2>/dev/null | pr -t -3 -w 80 2>/dev/null || git status --short 2>/dev/null || echo "$(YELLOW)Nenhuma modificação detectada$(NC)"
+	@echo ""
+	@echo "$(BOLD)$(CYAN)📊 Resumo:$(NC) Modificados=$$(git status --short 2>/dev/null | grep -c '^ M' || echo '0') | Adicionados=$$(git status --short 2>/dev/null | grep -c '^??' || echo '0') | Deletados=$$(git status --short 2>/dev/null | grep -c '^ D' || echo '0')"
+	@echo "$(BOLD)$(YELLOW)═══════════════════════════════════════════════════════════════════$(NC)"
+	@echo ""
+	@printf "$(BOLD)$(YELLOW)📝 Digite o nome da branch (ex: traducao-secao-1-2): $(NC)"; \
+	read branch_name; \
+	if [ -z "$$branch_name" ]; then \
+		echo ""; \
+		echo "$(BOLD)$(RED)✗ Erro: Nome da branch não pode estar vazio!$(NC)"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)🌿 Criando e mudando para a branch: $$branch_name$(NC)"; \
+	if git checkout -b "$$branch_name" 2>/dev/null; then \
+		echo "$(GREEN)✓ Branch criada com sucesso!$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  A branch já existe. Mudando para ela...$(NC)"; \
+		git checkout "$$branch_name"; \
+	fi; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)📦 Adicionando arquivos ao staging...$(NC)"; \
+	git add .; \
+	echo "$(GREEN)✓ Arquivos adicionados!$(NC)"; \
+	echo ""; \
+	git status --short; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)🧪 Executando testes de qualidade...$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)⏳ Verificando formatação Markdown...$(NC)"; \
+	if [ -f node_modules/.bin/markdownlint ]; then \
+		if NODE_NO_WARNINGS=1 npm run lint --silent 2>&1 >/dev/null; then \
+			echo "$(GREEN)  ✓ Lint passou!$(NC)"; \
+		else \
+			echo ""; \
+			echo "$(BOLD)$(YELLOW)⚠️  Problemas de formatação encontrados. Corrigindo automaticamente...$(NC)"; \
+			echo ""; \
+			NODE_NO_WARNINGS=1 npm run lint:fix --silent 2>&1 >/dev/null; \
+			echo ""; \
+			echo "$(YELLOW)  ⏳ Verificando novamente após correção...$(NC)"; \
+			if NODE_NO_WARNINGS=1 npm run lint --silent 2>&1 >/dev/null; then \
+				echo "$(GREEN)  ✓ Formatação corrigida automaticamente!$(NC)"; \
+				echo "$(YELLOW)  ℹ️  Os arquivos formatados serão incluídos no commit.$(NC)"; \
+			else \
+				echo ""; \
+				echo "$(BOLD)$(RED)✗ Erro: Problemas de formatação persistem após auto-correção!$(NC)"; \
+				echo "$(YELLOW)➜ Por favor, corrija manualmente e execute $(CYAN)make pr$(NC) novamente.$(NC)"; \
+				echo ""; \
+				exit 1; \
+			fi \
+		fi \
+	fi; \
+	echo ""; \
+	echo "$(YELLOW)⏳ Verificando ortografia (pode levar alguns segundos)...$(NC)"; \
+	if command -v pyspelling >/dev/null 2>&1; then \
+		if timeout 30 pyspelling --config .github/pyspelling.yml 2>&1 | grep -q "Spelling check passed" 2>/dev/null; then \
+			echo "$(GREEN)  ✓ Spell-check passou!$(NC)"; \
+		elif [ $$? -eq 124 ]; then \
+			echo "$(YELLOW)  ⚠️  Spell-check timeout (30s). Pulando verificação ortográfica.$(NC)"; \
+		else \
+			echo ""; \
+			echo "$(BOLD)$(YELLOW)⚠️  Problemas de ortografia detectados$(NC)"; \
+			echo "$(YELLOW)➜ Execute $(CYAN)make spell-check$(NC) para ver detalhes$(NC)"; \
+			echo "$(YELLOW)➜ Ou adicione palavras em .github/wordlist.txt$(NC)"; \
+			echo "$(YELLOW)➜ Continuando mesmo assim...$(NC)"; \
+			echo ""; \
+		fi \
+	else \
+		echo "$(YELLOW)  ⚠️  pyspelling não instalado, pulando verificação ortográfica$(NC)"; \
+	fi; \
+	echo ""; \
+	echo "$(BOLD)$(GREEN)✅ Todos os testes passaram!$(NC)"; \
+	echo ""; \
+	printf "$(BOLD)$(YELLOW)💬 Digite a mensagem do commit: $(NC)"; \
+	read commit_msg; \
+	if [ -z "$$commit_msg" ]; then \
+		echo ""; \
+		echo "$(BOLD)$(RED)✗ Erro: Mensagem do commit não pode estar vazia!$(NC)"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)💾 Fazendo commit...$(NC)"; \
+	git commit -m "$$commit_msg"; \
+	echo "$(GREEN)✓ Commit realizado!$(NC)"; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)🚀 Fazendo push para o GitHub...$(NC)"; \
+	git push -u origin "$$branch_name"; \
+	echo ""; \
+	echo "$(BOLD)$(GREEN)╔═══════════════════════════════════════════════════════════════════╗$(NC)"; \
+	echo "$(BOLD)$(GREEN)║  ✅ Push realizado com sucesso!                                  ║$(NC)"; \
+	echo "$(BOLD)$(GREEN)║  ✅ Todos os testes de qualidade passaram!                       ║$(NC)"; \
+	echo "$(BOLD)$(GREEN)╚═══════════════════════════════════════════════════════════════════╝$(NC)"; \
+	echo ""; \
+	echo "$(BOLD)$(YELLOW)═══════════════════════════════════════════════════════════════════$(NC)"; \
+	echo "$(BOLD)$(YELLOW)  📋 PRÓXIMOS PASSOS - Como abrir seu Pull Request$(NC)"; \
+	echo "$(BOLD)$(YELLOW)═══════════════════════════════════════════════════════════════════$(NC)"; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)Opção 1: Via Web (Recomendado)$(NC)"; \
+	echo ""; \
+	echo "  $(GREEN)1.$(NC) Acesse seu fork no GitHub:"; \
+	echo "     $(CYAN)https://github.com/$$(git config user.name 2>/dev/null || echo 'SEU-USUARIO')/estrutura-e-interpretacao-de-programas-de-computador-javascript$(NC)"; \
+	echo ""; \
+	echo "  $(GREEN)2.$(NC) Você verá um banner amarelo com o botão $(BOLD)\"Compare & pull request\"$(NC)"; \
+	echo "     Clique nele!"; \
+	echo ""; \
+	echo "  $(GREEN)3.$(NC) Preencha:"; \
+	echo "     • $(BOLD)Título:$(NC) Seja claro e descritivo"; \
+	echo "     • $(BOLD)Descrição:$(NC) Explique suas mudanças"; \
+	echo "     • Clique em $(BOLD)\"Create Pull Request\"$(NC)"; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)Opção 2: Via GitHub CLI (se você tem 'gh' instalado)$(NC)"; \
+	echo ""; \
+	echo "  Execute:"; \
+	echo "  $(CYAN)gh pr create --web$(NC)"; \
+	echo ""; \
+	echo "$(BOLD)$(YELLOW)═══════════════════════════════════════════════════════════════════$(NC)"; \
+	echo ""; \
+	echo "$(BOLD)$(MAGENTA)💡 Dicas para um bom Pull Request:$(NC)"; \
+	echo ""; \
+	echo "  ✓ Use um título claro: $(CYAN)\"feat: Adiciona tradução da seção 1.2\"$(NC)"; \
+	echo "  ✓ Descreva o que foi feito e por quê"; \
+	echo "  ✓ Mencione issues relacionadas: $(CYAN)\"Fixes #123\"$(NC) ou $(CYAN)\"Related to #456\"$(NC)"; \
+	echo "  ✓ Se houver screenshots ou exemplos, adicione!"; \
+	echo ""; \
+	echo "$(BOLD)$(GREEN)🎉 Parabéns! Você está prestes a contribuir para o projeto! 🎉$(NC)"; \
+	echo ""; \
+	echo "$(MAGENTA)💚 A comunidade agradece sua contribuição! 💚$(NC)"; \
+	echo ""

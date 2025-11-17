@@ -1,5 +1,7 @@
 # 1.1.4 Funções Compostas
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 Identificamos em JavaScript alguns dos elementos que devem aparecer em qualquer linguagem de programação poderosa:
 
 - Números e operações aritméticas são dados primitivos e funções primitivas.
@@ -10,11 +12,13 @@ Agora aprenderemos sobre as *declarações de funções*, uma técnica de abstra
 
 Começamos examinando como expressar a ideia de "multiplicação ao quadrado" *(squaring)*. Podemos dizer: "Para o quadrado perfeito de algo, retorna ele vezes ele mesmo". Isso é expresso em nossa linguagem como
 
-```js
-function square(x) {
+<CodePlayground
+  code={`function square(x) {
     return x * x;
-}
-```
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 Podemos entender isso da seguinte forma:
 
@@ -37,9 +41,11 @@ O *nome* é um símbolo a ser associado à definição da função no ambiente.[
 
 Tendo declarado `square`, agora podemos usá-lo em uma expressão de *aplicação de função*, que transformamos em uma instrução usando um caractere de ponto e vírgula:
 
-```js
-square(21); 
-```
+<CodePlayground
+  code={`square(21);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 441
 
@@ -53,17 +59,21 @@ onde a expressão de função da aplicação especifica a função a ser aplicad
    1. Avalie as subexpressões da aplicação, a saber, a expressão de função e as expressões de argumento.
    2. Aplique a função que é o valor da expressão de função aos valores das expressões de argumento.
 
-```js
-square(2 + 5); 
-```
+<CodePlayground
+  code={`square(2 + 5);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 49
 
 Aqui, a expressão do argumento é ela própria uma expressão composta, a combinação de operadores `2 + 5`.
 
-```js
-square(square(3)); 
-```
+<CodePlayground
+  code={`square(square(3));`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 81
 
@@ -71,36 +81,46 @@ square(square(3));
 
 Também podemos usar a `square` como um bloco de construção na definição de outras funções. Por exemplo, `x² + y²` pode ser expressada como
 
-```js
-square(x) + square(y)
-```
+<CodePlayground
+  code={`square(x) + square(y)`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 <a name="footnote-link-4"></a>
 Podemos facilmente declarar uma função `sum_of_squares`[<sup>4</sup>](#footnote-4) que, dados quaisquer dois números como argumentos, produz a soma de seus quadrados:
 
-```js
-function sum_of_squares(x, y) {
+<CodePlayground
+  code={`function sum_of_squares(x, y) {
     return square(x) + square(y);
-}
-```
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
 
-```js
-sum_of_squares(3, 4); 
-```
+<CodePlayground
+  code={`sum_of_squares(3, 4);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 25
 
 Agora podemos usar `sum_of_squares` como um bloco de construção na construção de outras funções:
 
-```js
-function f(a) {
+<CodePlayground
+  code={`function f(a) {
     return sum_of_squares(a + 1, a * 2);
-}
-```
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
 
-```js
-f(5);
-```
+<CodePlayground
+  code={`f(5);`}
+  height={150}
+  showLineNumbers={false}
+/>
 
 136
 
