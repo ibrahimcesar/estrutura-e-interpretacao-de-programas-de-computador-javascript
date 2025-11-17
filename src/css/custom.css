@@ -158,13 +158,13 @@
 
 .menu__link--active {
   font-weight: 600;
-  background-color: var(--ifm-color-primary-lightest);
-  color: black;
+  background-color: #e3f2fd;
+  color: #1565c0;
 }
 
 [data-theme='dark'] .menu__link--active {
-  background-color: var(--ifm-color-primary-darkest);
-  color: black;
+  background-color: #1a2332;
+  color: #90caf9;
 }
 
 /* Table of Contents */
