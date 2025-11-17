@@ -4,6 +4,8 @@ slug: /
 title: Bem-vindo
 ---
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 # Estrutura e Interpretação de Programas de Computador
 
 ## Adaptação em JavaScript
@@ -31,15 +33,18 @@ Navegue pelos capítulos usando a barra lateral. Cada seção contém explicaç�
 ### Execute o Código
 Os exemplos de código neste site são **interativos**! Você pode executá-los diretamente no navegador usando o playground integrado.
 
-```javascript
-// Experimente executar este código!
+<CodePlayground
+  code={`// Experimente executar este código!
 function square(x) {
   return x * x;
 }
 
 console.log(square(5)); // 25
-console.log(square(10)); // 100
-```
+console.log(square(10)); // 100`}
+  height={250}
+  showLineNumbers={true}
+  autorun={false}
+/>
 
 ### Pratique com Exercícios
 Ao longo do livro, você encontrará exercícios para testar seu entendimento. Tente resolvê-los antes de ver as soluções!
