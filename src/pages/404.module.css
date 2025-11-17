@@ -1,0 +1,54 @@
+.notFoundContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 8rem;
+  font-weight: 900;
+  color: var(--ifm-color-primary);
+  margin: 0;
+  line-height: 1;
+}
+
+.subtitle {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  color: var(--ifm-heading-color);
+}
+
+.description {
+  font-size: 1.1rem;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 1rem;
+  max-width: 600px;
+}
+
+.suggestion {
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 2rem;
+  max-width: 600px;
+}
+
+@media screen and (max-width: 768px) {
+  .title {
+    font-size: 5rem;
+  }
+
+  .subtitle {
+    font-size: 1.5rem;
+  }
+
+  .description,
+  .suggestion {
+    font-size: 1rem;
+  }
+}
