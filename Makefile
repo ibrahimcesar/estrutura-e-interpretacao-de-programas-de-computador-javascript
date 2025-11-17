@@ -137,7 +137,7 @@ link-check: ## 🔗 Verifica se há links quebrados nos arquivos Markdown
 	@echo "$(BOLD)$(CYAN)🔗 Verificando links em arquivos Markdown...$(NC)"
 	@echo ""
 	@if [ -f node_modules/.bin/markdown-link-check ]; then \
-		if npm run link-check; then \
+		if NODE_NO_WARNINGS=1 npm run link-check 2>&1 | grep -v "DeprecationWarning"; then \
 			echo ""; \
 			echo "$(BOLD)$(GREEN)✅ Todos os links estão funcionando!$(NC)"; \
 			echo ""; \
@@ -638,4 +638,17 @@ pr: ## 🚀 Workflow completo: criar branch, add, commit, push e preparar PR
 	echo "$(BOLD)$(GREEN)🎉 Parabéns! Você está prestes a contribuir para o projeto! 🎉$(NC)"; \
 	echo ""; \
 	echo "$(MAGENTA)💚 A comunidade agradece sua contribuição! 💚$(NC)"; \
+	echo ""; \
+	echo ""; \
+	echo "$(BOLD)$(CYAN)🔄 Retornando para a branch main...$(NC)"; \
+	if git checkout main 2>/dev/null || git checkout master 2>/dev/null; then \
+		echo "$(GREEN)✓ Voltou para a branch principal!$(NC)"; \
+		echo ""; \
+		echo "$(YELLOW)ℹ️  Sua branch de feature ($$branch_name) foi preservada.$(NC)"; \
+		echo "$(YELLOW)ℹ️  Você pode deletá-la após o merge do PR com:$(NC)"; \
+		echo "   $(CYAN)git branch -d $$branch_name$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  Não foi possível retornar à branch principal automaticamente.$(NC)"; \
+		echo "$(YELLOW)➜ Execute manualmente: $(CYAN)git checkout main$(NC)"; \
+	fi; \
 	echo ""
