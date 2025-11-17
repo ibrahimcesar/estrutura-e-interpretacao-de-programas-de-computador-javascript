@@ -98,28 +98,28 @@ Agradecemos a todos os [contribuidores](https://github.com/ibrahimcesar/estrutur
 - [Guia de Tradução](TRANSLATION.md)
 - [Como Contribuir](CONTRIBUTING.md)
 
-## 🌍 Traduções para Outros Idiomas
+## 🌍 Translations to Other Languages
 
-Você gostaria de ver o SICP.js traduzido para outro idioma? Nós encorajamos e apoiamos a criação de traduções para diferentes línguas!
+Would you like to see SICP.js translated into another language? We encourage and support the creation of translations into different languages!
 
-### Como Adicionar um Novo Idioma
+### How to Add a New Language
 
-Se você está interessado em criar uma tradução para outro idioma:
+If you are interested in creating a translation into another language:
 
-1. **Abra uma issue** neste repositório descrevendo:
-   - O idioma para o qual deseja traduzir
-   - Seu interesse e disponibilidade para coordenar o projeto
-   - Qualquer experiência prévia com traduções técnicas
+1. **Open an issue** in this repository describing:
+   - The language you want to translate to
+   - Your interest and availability to coordinate the project
+   - Any previous experience with technical translations
 
-2. **Nós forneceremos**:
-   - Orientação sobre como estruturar o projeto de tradução
-   - Acesso aos recursos e ferramentas que usamos
-   - Suporte para configuração inicial
-   - Compartilhamento de boas práticas aprendidas neste projeto
+2. **We will provide**:
+   - Guidance on how to structure the translation project
+   - Access to the resources and tools we use
+   - Support for initial setup
+   - Sharing of best practices learned from this project
 
-3. **Você poderá criar** um repositório próprio seguindo a estrutura e processos que utilizamos aqui
+3. **You can create** your own repository following the structure and processes we use here
 
-Acreditamos que conhecimento de qualidade deve ser acessível a todos, independentemente do idioma. Ficaremos felizes em ajudar você a iniciar uma tradução para sua língua!
+We believe that quality knowledge should be accessible to everyone, regardless of language. We will be happy to help you start a translation into your language!
 
 ---
 
