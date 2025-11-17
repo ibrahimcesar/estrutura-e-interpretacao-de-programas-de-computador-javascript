@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1000" height="500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .node-rect { fill: #ecf0f1; stroke: #2c3e50; stroke-width: 2; rx: 8; }
+      .node-text { font-family: 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 16px; fill: #2c3e50; text-anchor: middle; dominant-baseline: middle; }
+      .line { stroke: #34495e; stroke-width: 1.5; fill: none; }
+      .base-case { fill: #d5f4e6; }
+    </style>
+  </defs>
+
+  <!-- Level 0: fib(5) -->
+  <rect x="475" y="10" width="70" height="35" class="node-rect"/>
+  <text x="510" y="28" class="node-text">fib(5)</text>
+
+  <!-- Level 1 -->
+  <line x1="495" y1="45" x2="320" y2="75" class="line"/>
+  <rect x="285" y="80" width="70" height="35" class="node-rect"/>
+  <text x="320" y="98" class="node-text">fib(4)</text>
+
+  <line x1="525" y1="45" x2="700" y2="75" class="line"/>
+  <rect x="665" y="80" width="70" height="35" class="node-rect"/>
+  <text x="700" y="98" class="node-text">fib(3)</text>
+
+  <!-- Level 2 -->
+  <line x1="300" y1="115" x2="200" y2="145" class="line"/>
+  <rect x="165" y="150" width="70" height="35" class="node-rect"/>
+  <text x="200" y="168" class="node-text">fib(3)</text>
+
+  <line x1="340" y1="115" x2="440" y2="145" class="line"/>
+  <rect x="405" y="150" width="70" height="35" class="node-rect"/>
+  <text x="440" y="168" class="node-text">fib(2)</text>
+
+  <line x1="685" y1="115" x2="600" y2="145" class="line"/>
+  <rect x="565" y="150" width="70" height="35" class="node-rect"/>
+  <text x="600" y="168" class="node-text">fib(2)</text>
+
+  <line x1="715" y1="115" x2="800" y2="145" class="line"/>
+  <rect x="765" y="150" width="70" height="35" class="node-rect base-case"/>
+  <text x="800" y="168" class="node-text">fib(1)</text>
+
+  <!-- Level 3 -->
+  <line x1="185" y1="185" x2="110" y2="215" class="line"/>
+  <rect x="75" y="220" width="70" height="35" class="node-rect"/>
+  <text x="110" y="238" class="node-text">fib(2)</text>
+
+  <line x1="215" y1="185" x2="290" y2="215" class="line"/>
+  <rect x="255" y="220" width="70" height="35" class="node-rect base-case"/>
+  <text x="290" y="238" class="node-text">fib(1)</text>
+
+  <line x1="425" y1="185" x2="370" y2="215" class="line"/>
+  <rect x="335" y="220" width="70" height="35" class="node-rect base-case"/>
+  <text x="370" y="238" class="node-text">fib(1)</text>
+
+  <line x1="455" y1="185" x2="510" y2="215" class="line"/>
+  <rect x="475" y="220" width="70" height="35" class="node-rect base-case"/>
+  <text x="510" y="238" class="node-text">fib(0)</text>
+
+  <line x1="585" y1="185" x2="530" y2="215" class="line"/>
+  <rect x="595" y="220" width="70" height="35" class="node-rect base-case"/>
+  <text x="630" y="238" class="node-text">fib(1)</text>
+
+  <line x1="615" y1="185" x2="690" y2="215" class="line"/>
+  <rect x="655" y="220" width="70" height="35" class="node-rect base-case"/>
+  <text x="690" y="238" class="node-text">fib(0)</text>
+
+  <!-- Level 4 (deepest) -->
+  <line x1="95" y1="255" x2="50" y2="285" class="line"/>
+  <rect x="15" y="290" width="70" height="35" class="node-rect base-case"/>
+  <text x="50" y="308" class="node-text">fib(1)</text>
+
+  <line x1="125" y1="255" x2="170" y2="285" class="line"/>
+  <rect x="135" y="290" width="70" height="35" class="node-rect base-case"/>
+  <text x="170" y="308" class="node-text">fib(0)</text>
+
+  <!-- Legend/Note -->
+  <text x="20" y="450" style="font-family: 'Latin Modern Math', serif; font-size: 14px; fill: #7f8c8d;">Casos base (fib(0) e fib(1)) destacados em verde</text>
+</svg>

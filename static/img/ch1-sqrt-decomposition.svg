@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="700" height="450" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 450">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .main-box { fill: #3498db; stroke: #2c3e50; stroke-width: 2; }
+      .helper-box { fill: #9b59b6; stroke: #2c3e50; stroke-width: 2; }
+      .primitive-box { fill: #e67e22; stroke: #2c3e50; stroke-width: 2; }
+      .box-text { font-family: 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 16px; fill: white; text-anchor: middle; dominant-baseline: middle; font-weight: bold; }
+      .line { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .label { font-family: 'Latin Modern Math', serif; font-size: 13px; fill: #2c3e50; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#34495e"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="350" y="25" style="font-family: 'Latin Modern Math', serif; font-size: 18px; fill: #2c3e50; text-anchor: middle; font-weight: bold;">Decomposição Funcional do Programa sqrt</text>
+
+  <!-- Main function: sqrt -->
+  <rect x="280" y="50" width="140" height="50" rx="5" class="main-box"/>
+  <text x="350" y="75" class="box-text">sqrt</text>
+
+  <!-- Level 1: Helper functions -->
+  <line x1="350" y1="100" x2="350" y2="140" class="line"/>
+
+  <rect x="100" y="150" width="140" height="50" rx="5" class="helper-box"/>
+  <text x="170" y="175" class="box-text">sqrt_iter</text>
+
+  <rect x="280" y="150" width="140" height="50" rx="5" class="helper-box"/>
+  <text x="350" y="175" class="box-text">is_good_enough</text>
+
+  <rect x="460" y="150" width="140" height="50" rx="5" class="helper-box"/>
+  <text x="530" y="175" class="box-text">improve</text>
+
+  <!-- Connections from sqrt to helpers -->
+  <line x1="320" y1="100" x2="170" y2="145" class="line"/>
+  <line x1="350" y1="100" x2="350" y2="145" class="line"/>
+  <line x1="380" y1="100" x2="530" y2="145" class="line"/>
+
+  <!-- Level 2: Primitive functions -->
+  <line x1="170" y1="200" x2="170" y2="260" class="line"/>
+  <line x1="350" y1="200" x2="350" y2="260" class="line"/>
+  <line x1="530" y1="200" x2="530" y2="260" class="line"/>
+
+  <!-- sqrt_iter calls -->
+  <rect x="30" y="270" width="100" height="40" rx="5" class="helper-box"/>
+  <text x="80" y="290" class="box-text" style="font-size: 14px;">is_good_enough</text>
+
+  <rect x="150" y="270" width="100" height="40" rx="5" class="helper-box"/>
+  <text x="200" y="290" class="box-text" style="font-size: 14px;">improve</text>
+
+  <line x1="140" y1="200" x2="80" y2="265" class="line"/>
+  <line x1="200" y1="200" x2="200" y2="265" class="line"/>
+
+  <!-- is_good_enough calls -->
+  <rect x="280" y="270" width="100" height="40" rx="5" class="primitive-box"/>
+  <text x="330" y="290" class="box-text" style="font-size: 14px;">square</text>
+
+  <rect x="400" y="270" width="100" height="40" rx="5" class="primitive-box"/>
+  <text x="450" y="290" class="box-text" style="font-size: 14px;">abs</text>
+
+  <line x1="330" y1="200" x2="330" y2="265" class="line"/>
+  <line x1="370" y1="200" x2="450" y2="265" class="line"/>
+
+  <!-- improve calls -->
+  <rect x="480" y="270" width="100" height="40" rx="5" class="primitive-box"/>
+  <text x="530" y="290" class="box-text" style="font-size: 14px;">average</text>
+
+  <line x1="530" y1="200" x2="530" y2="265" class="line"/>
+
+  <!-- Legend -->
+  <text x="50" y="370" class="label" style="font-weight: bold;">Legenda:</text>
+
+  <rect x="50" y="385" width="30" height="20" rx="3" class="main-box"/>
+  <text x="90" y="397" class="label">Função principal</text>
+
+  <rect x="230" y="385" width="30" height="20" rx="3" class="helper-box"/>
+  <text x="270" y="397" class="label">Funções auxiliares definidas pelo usuário</text>
+
+  <rect x="50" y="415" width="30" height="20" rx="3" class="primitive-box"/>
+  <text x="90" y="427" class="label">Funções primitivas (built-in)</text>
+</svg>
