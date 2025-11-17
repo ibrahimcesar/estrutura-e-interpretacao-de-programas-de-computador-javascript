@@ -12,7 +12,7 @@ import rehypeKatex from 'rehype-katex';
 const config = {
   title: 'SICP.js em Português',
   tagline: 'Estrutura e Interpretação de Programas de Computador - Adaptação JavaScript',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
 
   // Set the production url of your site here
   url: 'https://sicpjs.com',
@@ -82,8 +82,13 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      // Replace with your project's social card
+      // Social card and metadata
       image: 'img/sicp-social-card.jpg',
+      metadata: [
+        {name: 'theme-color', content: '#f7df1e'},
+        {name: 'apple-mobile-web-app-capable', content: 'yes'},
+        {name: 'apple-mobile-web-app-status-bar-style', content: '#f7df1e'},
+      ],
       navbar: {
         title: 'SICP.js',
         logo: {

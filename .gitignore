@@ -120,3 +120,4 @@ yarn-error.log*
 .github/wordlist.dict
 
 .claude/
+.vscode/branch-timer.json

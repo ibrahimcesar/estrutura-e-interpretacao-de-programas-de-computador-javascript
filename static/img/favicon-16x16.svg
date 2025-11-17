@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <!-- Background - JavaScript yellow -->
+  <rect width="16" height="16" fill="#f7df1e" rx="2"/>
+
+  <!-- JS text simplified for very small size -->
+  <text x="8" y="12"
+        font-family="Arial, sans-serif"
+        font-size="10"
+        font-weight="bold"
+        fill="#323330"
+        text-anchor="middle">JS</text>
+</svg>

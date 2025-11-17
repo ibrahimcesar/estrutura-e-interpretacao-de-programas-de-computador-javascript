@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <!-- Background - JavaScript yellow -->
+  <rect width="180" height="180" fill="#f7df1e" rx="20"/>
+
+  <!-- Shadow effect -->
+  <defs>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- JS text -->
+  <g filter="url(#shadow)">
+    <!-- J letter -->
+    <path d="M 55 45 L 55 115 Q 55 135 40 135 Q 25 135 25 115 L 35 115 Q 35 125 40 125 Q 45 125 45 115 L 45 45 Z"
+          fill="#323330"/>
+
+    <!-- S letter -->
+    <path d="M 70 65 L 70 55 Q 70 40 90 40 Q 110 40 110 55 L 100 55 Q 100 50 90 50 Q 80 50 80 55 L 80 65 Q 80 75 90 75 L 100 75 Q 110 75 110 90 L 110 105 Q 110 120 90 120 Q 70 120 70 105 L 80 105 Q 80 110 90 110 Q 100 110 100 105 L 100 90 Q 100 85 90 85 L 80 85 Q 70 85 70 75 Z"
+          fill="#323330"/>
+  </g>
+</svg>
