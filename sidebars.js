@@ -55,7 +55,17 @@ const sidebars = {
             'chapter-1/1.1.8',
           ],
         },
-        'chapter-1/1.2',
+        {
+          type: 'category',
+          label: '1.2 Funções e os Processos que geram',
+          link: {
+            type: 'doc',
+            id: 'chapter-1/1.2',
+          },
+          items: [
+            'chapter-1/1.2.2',
+          ],
+        },
         {
           type: 'category',
           label: '1.3 Abstrações de Ordem Superior',
