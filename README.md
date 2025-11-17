@@ -98,6 +98,8 @@ Agradecemos a todos os [contribuidores](https://github.com/ibrahimcesar/estrutur
 - [Guia de Tradução](TRANSLATION.md)
 - [Como Contribuir](CONTRIBUTING.md)
 
+<!-- spellcheck: disable -->
+
 ## 🌍 Translations to Other Languages
 
 Would you like to see SICP.js translated into another language? We encourage and support the creation of translations into different languages!
@@ -120,6 +122,8 @@ If you are interested in creating a translation into another language:
 3. **You can create** your own repository following the structure and processes we use here
 
 We believe that quality knowledge should be accessible to everyone, regardless of language. We will be happy to help you start a translation into your language!
+
+<!-- spellcheck: enable -->
 
 ---
 

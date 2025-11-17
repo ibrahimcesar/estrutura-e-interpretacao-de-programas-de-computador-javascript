@@ -3,6 +3,7 @@ matrix:
 - name: markdown
   sources:
   - '**/*.md'
+  - '!DNS_CONFIGURATION.md'
   aspell:
     lang: pt_BR
     d: pt_BR
@@ -25,3 +26,6 @@ matrix:
       # Ignore URLs in hyperlink
       - open: '\]\('
         close: '\)'
+      # Ignore HTML comments with spellcheck:disable
+      - open: '(?s)<!--\s*spellcheck:\s*disable\s*-->'
+        close: '<!--\s*spellcheck:\s*enable\s*-->'
