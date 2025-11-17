@@ -98,6 +98,29 @@ Agradecemos a todos os [contribuidores](https://github.com/ibrahimcesar/estrutur
 - [Guia de Tradução](TRANSLATION.md)
 - [Como Contribuir](CONTRIBUTING.md)
 
+## 🌍 Traduções para Outros Idiomas
+
+Você gostaria de ver o SICP.js traduzido para outro idioma? Nós encorajamos e apoiamos a criação de traduções para diferentes línguas!
+
+### Como Adicionar um Novo Idioma
+
+Se você está interessado em criar uma tradução para outro idioma:
+
+1. **Abra uma issue** neste repositório descrevendo:
+   - O idioma para o qual deseja traduzir
+   - Seu interesse e disponibilidade para coordenar o projeto
+   - Qualquer experiência prévia com traduções técnicas
+
+2. **Nós forneceremos**:
+   - Orientação sobre como estruturar o projeto de tradução
+   - Acesso aos recursos e ferramentas que usamos
+   - Suporte para configuração inicial
+   - Compartilhamento de boas práticas aprendidas neste projeto
+
+3. **Você poderá criar** um repositório próprio seguindo a estrutura e processos que utilizamos aqui
+
+Acreditamos que conhecimento de qualidade deve ser acessível a todos, independentemente do idioma. Ficaremos felizes em ajudar você a iniciar uma tradução para sua língua!
+
 ---
 
 **Quer ajudar?** Veja as [issues abertas](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/issues) ou abra uma nova para reivindicar uma seção para traduzir!
