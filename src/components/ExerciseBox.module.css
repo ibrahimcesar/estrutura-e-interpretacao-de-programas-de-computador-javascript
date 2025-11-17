@@ -31,7 +31,7 @@
 
 .solutionButton {
   background-color: var(--ifm-color-primary);
-  color: white;
+  color: black;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;

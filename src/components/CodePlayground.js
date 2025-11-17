@@ -34,7 +34,7 @@ export default function CodePlayground({
         <div style={{
           padding: '0.5rem 1rem',
           background: 'var(--ifm-color-primary)',
-          color: 'white',
+          color: 'black',
           fontWeight: 'bold',
           borderRadius: '8px 8px 0 0'
         }}>

@@ -6,13 +6,13 @@
 
 :root {
   /* Cores primárias */
-  --ifm-color-primary: #0066cc;
-  --ifm-color-primary-dark: #005bb8;
-  --ifm-color-primary-darker: #0052a3;
-  --ifm-color-primary-darkest: #00428f;
-  --ifm-color-primary-light: #0070e0;
-  --ifm-color-primary-lighter: #1a7ae6;
-  --ifm-color-primary-lightest: #3388eb;
+  --ifm-color-primary: #f7df1e;
+  --ifm-color-primary-dark: #ddc61b;
+  --ifm-color-primary-darker: #c9b318;
+  --ifm-color-primary-darkest: #a69414;
+  --ifm-color-primary-light: #f8e542;
+  --ifm-color-primary-lighter: #f9ea66;
+  --ifm-color-primary-lightest: #fbf08a;
 
   /* Código */
   --ifm-code-font-size: 95%;
@@ -31,13 +31,13 @@
 
 /* Modo escuro */
 [data-theme='dark'] {
-  --ifm-color-primary: #3388eb;
-  --ifm-color-primary-dark: #1a7ae6;
-  --ifm-color-primary-darker: #0070e0;
-  --ifm-color-primary-darkest: #0066cc;
-  --ifm-color-primary-light: #4d96ef;
-  --ifm-color-primary-lighter: #66a3f2;
-  --ifm-color-primary-lightest: #80b1f5;
+  --ifm-color-primary: #f7df1e;
+  --ifm-color-primary-dark: #ddc61b;
+  --ifm-color-primary-darker: #c9b318;
+  --ifm-color-primary-darkest: #a69414;
+  --ifm-color-primary-light: #f8e542;
+  --ifm-color-primary-lighter: #f9ea66;
+  --ifm-color-primary-lightest: #fbf08a;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 
   --ifm-background-color: #1b1b1d;
@@ -111,6 +111,7 @@
 
 .markdown table th {
   background-color: var(--ifm-color-primary-lightest);
+  color: black;
   font-weight: 600;
 }
 
@@ -158,12 +159,12 @@
 .menu__link--active {
   font-weight: 600;
   background-color: var(--ifm-color-primary-lightest);
-  color: var(--ifm-color-primary-darkest);
+  color: black;
 }
 
 [data-theme='dark'] .menu__link--active {
   background-color: var(--ifm-color-primary-darkest);
-  color: var(--ifm-color-primary-lightest);
+  color: black;
 }
 
 /* Table of Contents */
@@ -190,7 +191,7 @@
   padding: 4rem 2rem;
   text-align: center;
   background: linear-gradient(135deg, var(--ifm-color-primary-lightest) 0%, var(--ifm-color-primary-light) 100%);
-  color: white;
+  color: black;
 }
 
 .hero__title {
