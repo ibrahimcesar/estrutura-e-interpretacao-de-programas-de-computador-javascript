@@ -1,0 +1,61 @@
+{
+  "name": "sicp-js-pt-br",
+  "version": "1.0.0",
+  "description": "Estrutura e Interpretação de Programas de Computador - Adaptação JavaScript em Português",
+  "private": true,
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "docusaurus deploy",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve",
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.5.2",
+    "@docusaurus/preset-classic": "^3.5.2",
+    "@mdx-js/react": "^3.0.0",
+    "@sandpack/react": "^2.13.5",
+    "clsx": "^2.0.0",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.5.2",
+    "@docusaurus/tsconfig": "^3.5.2",
+    "@docusaurus/types": "^3.5.2"
+  },
+  "engines": {
+    "node": ">=18.0"
+  },
+  "keywords": [
+    "sicp",
+    "javascript",
+    "programação",
+    "educação",
+    "tradução",
+    "português"
+  ],
+  "author": "Comunidade SICP.js PT-BR",
+  "license": "CC-BY-SA-4.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  }
+}

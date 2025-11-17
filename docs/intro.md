@@ -1,0 +1,83 @@
+---
+sidebar_position: 1
+slug: /
+title: Bem-vindo
+---
+
+# Estrutura e Interpretação de Programas de Computador
+
+## Adaptação em JavaScript
+
+![SICP](http://source-academy.github.io/sicp/sicp.png)
+
+Bem-vindo à tradução em português brasileiro de **Structure and Interpretation of Computer Programs — JavaScript Adaptation** (SICP.js).
+
+## 📚 Sobre o Livro
+
+O SICP é um dos livros mais influentes sobre ciência da computação e programação, originalmente escrito por Harold Abelson e Gerald Jay Sussman. Esta adaptação em JavaScript, criada por Martin Henz e Tobias Wrigstad, torna os conceitos clássicos acessíveis usando uma linguagem moderna e amplamente utilizada.
+
+## 🎯 O Que Você Vai Aprender
+
+- **Abstrações com Funções**: Como construir programas complexos a partir de componentes simples
+- **Estruturas de Dados**: Técnicas para organizar e manipular informações
+- **Modularidade e Objetos**: Estratégias para programas grandes e sistemas
+- **Programação Metalinguística**: Como criar e interpretar linguagens de programação
+
+## 🚀 Como Usar Este Site
+
+### Leia o Conteúdo
+Navegue pelos capítulos usando a barra lateral. Cada seção contém explicações detalhadas, exemplos e exercícios.
+
+### Execute o Código
+Os exemplos de código neste site são **interativos**! Você pode executá-los diretamente no navegador usando o playground integrado.
+
+```javascript
+// Experimente executar este código!
+function square(x) {
+  return x * x;
+}
+
+console.log(square(5)); // 25
+console.log(square(10)); // 100
+```
+
+### Pratique com Exercícios
+Ao longo do livro, você encontrará exercícios para testar seu entendimento. Tente resolvê-los antes de ver as soluções!
+
+## 🤝 Como Contribuir
+
+Este é um projeto colaborativo da comunidade brasileira de programação. Você pode contribuir:
+
+- **Traduzindo seções** que ainda não foram traduzidas
+- **Revisando traduções** existentes
+- **Reportando erros** ou sugerindo melhorias
+- **Compartilhando** com outros estudantes
+
+Veja o [Guia de Tradução](/guia-traducao) e [Como Contribuir](/como-contribuir) para mais detalhes.
+
+## 📖 Estrutura do Livro
+
+- **[Prefácios](/prefaces/foreword84)**: Contexto histórico e filosófico do livro
+- **[Capítulo 1](/chapter-1/intro)**: Construindo Abstrações com Funções
+- **Capítulo 2**: Construindo Abstrações com Dados *(em andamento)*
+- **Capítulo 3**: Modularidade, Objetos e Estado *(em andamento)*
+- **Capítulo 4**: Programação Metalinguística *(em andamento)*
+- **Capítulo 5**: Computação com Máquinas de Registros *(em andamento)*
+
+## 🌟 Agradecimentos
+
+- **Harold Abelson e Gerald Jay Sussman**: Autores do SICP original
+- **Martin Henz e Tobias Wrigstad**: Adaptação para JavaScript
+- **Source Academy**: Plataforma interativa original
+- **Comunidade de tradutores**: Todos que contribuem para tornar este conhecimento acessível em português
+
+## 🔗 Links Úteis
+
+- [SICP.js Original (inglês)](https://sourceacademy.org/sicpjs/index)
+- [SICP Original (Scheme)](https://mitpress.mit.edu/sites/default/files/sicp/index.html)
+- [Repositório GitHub](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript)
+- [Source Academy](https://sourceacademy.org)
+
+---
+
+**Pronto para começar?** Comece pelos [Prefácios](/prefaces/foreword84) ou vá direto para o [Capítulo 1](/chapter-1/intro)!

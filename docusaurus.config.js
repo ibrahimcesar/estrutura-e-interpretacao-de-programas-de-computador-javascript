@@ -1,0 +1,178 @@
+// @ts-check
+// `@type` JSDoc annotations allow editor autocompletion and type checking
+// (when paired with `@ts-check`).
+// There are various equivalent ways to declare your Docusaurus config.
+// See: https://docusaurus.io/docs/api/docusaurus-config
+
+import {themes as prismThemes} from 'prism-react-renderer';
+
+/** @type {import('@docusaurus/types').Config} */
+const config = {
+  title: 'SICP.js em Português',
+  tagline: 'Estrutura e Interpretação de Programas de Computador - Adaptação JavaScript',
+  favicon: 'img/favicon.ico',
+
+  // Set the production url of your site here
+  url: 'https://ibrahimcesar.github.io',
+  // Set the /<baseUrl>/ pathname under which your site is served
+  // For GitHub pages deployment, it is often '/<projectName>/'
+  baseUrl: '/estrutura-e-interpretacao-de-programas-de-computador-javascript/',
+
+  // GitHub pages deployment config.
+  // If you aren't using GitHub pages, you don't need these.
+  organizationName: 'ibrahimcesar', // Usually your GitHub org/user name.
+  projectName: 'estrutura-e-interpretacao-de-programas-de-computador-javascript', // Usually your repo name.
+  deploymentBranch: 'gh-pages',
+  trailingSlash: false,
+
+  onBrokenLinks: 'warn',
+  onBrokenMarkdownLinks: 'warn',
+
+  // Even if you don't use internationalization, you can use this field to set
+  // useful metadata like html lang. For example, if your site is Chinese, you
+  // may want to replace "en" with "zh-Hans".
+  i18n: {
+    defaultLocale: 'pt-BR',
+    locales: ['pt-BR'],
+  },
+
+  presets: [
+    [
+      'classic',
+      /** @type {import('@docusaurus/preset-classic').Options} */
+      ({
+        docs: {
+          routeBasePath: '/', // Serve docs at the site's root
+          sidebarPath: './sidebars.js',
+          // Please change this to your repo.
+          // Remove this to remove the "edit this page" links.
+          editUrl:
+            'https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/edit/main/',
+          showLastUpdateAuthor: true,
+          showLastUpdateTime: true,
+        },
+        blog: false, // Disable the blog plugin
+        theme: {
+          customCss: './src/css/custom.css',
+        },
+      }),
+    ],
+  ],
+
+  themeConfig:
+    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
+    ({
+      // Replace with your project's social card
+      image: 'img/sicp-social-card.jpg',
+      navbar: {
+        title: 'SICP.js',
+        logo: {
+          alt: 'SICP.js Logo',
+          src: 'img/logo.svg',
+        },
+        items: [
+          {
+            type: 'docSidebar',
+            sidebarId: 'tutorialSidebar',
+            position: 'left',
+            label: 'Livro',
+          },
+          {
+            to: '/guia-traducao',
+            label: 'Guia de Tradução',
+            position: 'left',
+          },
+          {
+            to: '/como-contribuir',
+            label: 'Como Contribuir',
+            position: 'left',
+          },
+          {
+            href: 'https://sourceacademy.org/sicpjs',
+            label: 'Original (EN)',
+            position: 'right',
+          },
+          {
+            href: 'https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript',
+            label: 'GitHub',
+            position: 'right',
+          },
+        ],
+      },
+      footer: {
+        style: 'dark',
+        links: [
+          {
+            title: 'Conteúdo',
+            items: [
+              {
+                label: 'Prefácios',
+                to: '/prefaces/foreword84',
+              },
+              {
+                label: 'Capítulo 1',
+                to: '/chapter-1/intro',
+              },
+            ],
+          },
+          {
+            title: 'Comunidade',
+            items: [
+              {
+                label: 'GitHub Discussions',
+                href: 'https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/discussions',
+              },
+              {
+                label: 'Issues',
+                href: 'https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/issues',
+              },
+            ],
+          },
+          {
+            title: 'Mais',
+            items: [
+              {
+                label: 'Guia de Tradução',
+                to: '/guia-traducao',
+              },
+              {
+                label: 'Como Contribuir',
+                to: '/como-contribuir',
+              },
+              {
+                label: 'Source Academy',
+                href: 'https://sourceacademy.org',
+              },
+            ],
+          },
+        ],
+        copyright: `Copyright © ${new Date().getFullYear()} Projeto SICP.js PT-BR. Conteúdo licenciado sob CC BY-SA 4.0.`,
+      },
+      prism: {
+        theme: prismThemes.github,
+        darkTheme: prismThemes.dracula,
+        additionalLanguages: ['javascript', 'typescript', 'jsx', 'tsx'],
+      },
+      // Algolia Search (pode ser configurado depois)
+      // algolia: {
+      //   appId: 'YOUR_APP_ID',
+      //   apiKey: 'YOUR_SEARCH_API_KEY',
+      //   indexName: 'sicp-js-pt-br',
+      // },
+      colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
+        respectPrefersColorScheme: true,
+      },
+      announcementBar: {
+        id: 'work_in_progress',
+        content:
+          '🚧 Este site está em desenvolvimento. Quer ajudar? <a target="_blank" rel="noopener noreferrer" href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript">Contribua no GitHub</a>! 🚧',
+        backgroundColor: '#ffd700',
+        textColor: '#091E42',
+        isCloseable: true,
+      },
+    }),
+};
+
+export default config;
