@@ -118,3 +118,5 @@ yarn-error.log*
 
 # Pyspelling generated files
 .github/wordlist.dict
+
+.claude/
