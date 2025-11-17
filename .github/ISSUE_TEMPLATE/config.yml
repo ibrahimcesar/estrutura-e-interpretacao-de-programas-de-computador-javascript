@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Discussões Gerais
+    url: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/discussions
+    about: Para perguntas, ideias e discussões gerais sobre o projeto
+  - name: 📖 Guia de Tradução
+    url: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/TRANSLATION.md
+    about: Consulte o guia completo de tradução antes de começar
+  - name: 🌐 SICP.js Original
+    url: https://sourceacademy.org/sicpjs/index
+    about: Acesse o livro original em inglês
