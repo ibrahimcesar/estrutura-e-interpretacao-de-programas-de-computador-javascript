@@ -39,6 +39,12 @@ jobs:
       - name: Build website
         run: npm run build
 
+      - name: Setup redirect from root to /pt_BR/
+        run: |
+          cp .github/redirect-index.html build/index.html
+          echo "Redirect index.html created at root"
+          ls -la build/
+
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
