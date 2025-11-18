@@ -1,0 +1,66 @@
+# 1.2.3 Ordens de Crescimento
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Os exemplos anteriores ilustram que processos podem diferir consideravelmente nas taxas em que consomem recursos computacionais. Uma maneira conveniente de descrever essa diferença é usar a noção de *ordem de crescimento* para obter uma medida grosseira dos recursos exigidos por um processo à medida que as entradas se tornam maiores.
+
+Seja $n$ um parâmetro que mede o tamanho do problema, e seja $R(n)$ a quantidade de recursos que o processo requer para um problema de tamanho $n$. Em nossos exemplos anteriores, tomamos $n$ como sendo o número para o qual uma dada função deve ser calculada, mas há outras possibilidades. Por exemplo, se nosso objetivo é calcular uma aproximação da raiz quadrada de um número, poderíamos tomar $n$ como sendo o número de dígitos de precisão necessários. Para multiplicação de matrizes, poderíamos tomar $n$ como sendo o número de linhas nas matrizes. Em geral, há várias propriedades do problema com relação às quais será desejável analisar um dado processo. Da mesma forma, $R(n)$ pode medir o número de registradores de armazenamento interno usados, o número de operações elementares de máquina realizadas, e assim por diante. Em computadores que fazem apenas um número fixo de operações por vez, o tempo necessário será proporcional ao número de operações elementares de máquina realizadas.
+
+Dizemos que $R(n)$ tem ordem de crescimento $\Theta(f(n))$, escrito $R(n)=\Theta(f(n))$ (pronunciado "theta de $f(n)$"), se existem constantes positivas $k_1$ e $k_2$ independentes de $n$ tais que
+
+$$
+k_1\,f(n) \leq R(n) \leq k_2\,f(n)
+$$
+
+para qualquer valor suficientemente grande de $n$. (Em outras palavras, para $n$ grande, o valor $R(n)$ está sanduichado entre $k_1f(n)$ e $k_2f(n)$.)
+
+<a name="footnote-link-1"></a>
+Por exemplo, com o processo recursivo linear para calcular o fatorial descrito na seção 1.2.1, o número de passos cresce proporcionalmente à entrada $n$. Assim, os passos necessários para este processo crescem como $\Theta(n)$. Também vimos que o espaço necessário cresce como $\Theta(n)$. Para o fatorial iterativo, o número de passos ainda é $\Theta(n)$, mas o espaço é $\Theta(1)$ — isto é, constante.[<sup>1</sup>](#footnote-1) A computação de Fibonacci recursiva em árvore requer $\Theta(\phi^{n})$ passos e espaço $\Theta(n)$, onde $\phi$ é a razão áurea descrita na seção 1.2.2.
+
+Ordens de crescimento fornecem apenas uma descrição grosseira do comportamento de um processo. Por exemplo, um processo que requer $n^2$ passos e um processo que requer $1000n^2$ passos e um processo que requer $3n^2+10n+17$ passos todos têm ordem de crescimento $\Theta(n^2)$. Por outro lado, a ordem de crescimento fornece uma indicação útil de como podemos esperar que o comportamento do processo mude à medida que mudamos o tamanho do problema. Para um processo $\Theta(n)$ (linear), dobrar o tamanho aproximadamente dobrará a quantidade de recursos usados. Para um processo exponencial, cada incremento no tamanho do problema multiplicará a utilização de recursos por um fator constante. No restante da seção 1.2, examinaremos dois algoritmos cuja ordem de crescimento é logarítmica, de modo que dobrar o tamanho do problema aumenta o requisito de recursos por uma quantidade constante.
+
+## Exercício 1.14
+
+<a name="ex-1-14"></a>
+Desenhe a árvore ilustrando o processo gerado pela função `count_change` da seção 1.2.2 ao fazer troco de 11 centavos. Quais são as ordens de crescimento do espaço e do número de passos usados por este processo à medida que a quantia a ser trocada aumenta?
+
+## Exercício 1.15
+
+<a name="ex-1-15"></a>
+O seno de um ângulo (especificado em radianos) pode ser calculado fazendo uso da aproximação $\sin x\approx x$ se $x$ for suficientemente pequeno, e da identidade trigonométrica
+
+$$
+\sin x = 3\sin \frac{x}{3}-4\sin^3\frac{x}{3}
+$$
+
+para reduzir o tamanho do argumento de $\sin$. (Para fins deste exercício, um ângulo é considerado "suficientemente pequeno" se sua magnitude não for maior que 0.1 radianos.) Essas ideias são incorporadas nas seguintes funções:
+
+<CodePlayground
+  code={`function cube(x) {
+    return x * x * x;
+}
+function p(x) {
+    return 3 * x - 4 * cube(x);
+}
+function sine(angle) {
+    return ! (abs(angle) > 0.1)
+           ? angle
+           : p(sine(angle / 3));
+}`}
+  hiddenCode={`function abs(x) {
+    return x >= 0 ? x : -x;
+}`}
+  height={400}
+  showLineNumbers={false}
+/>
+
+**a.** Quantas vezes a função `p` é aplicada quando `sine(12.15)` é avaliado?
+
+**b.** Qual é a ordem de crescimento no espaço e no número de passos (como uma função de $a$) usados pelo processo gerado pela função `sine` quando `sine(a)` é avaliado?
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Estas afirmações mascaram uma grande quantidade de simplificação excessiva. Por exemplo, se contarmos passos do processo como "operações de máquina", estamos fazendo a suposição de que o número de operações de máquina necessárias para realizar, digamos, uma multiplicação é independente do tamanho dos números a serem multiplicados, o que é falso se os números forem suficientemente grandes. Observações similares valem para as estimativas de espaço. Como o design e a descrição de um processo, a análise de um processo pode ser realizada em vários níveis de abstração.

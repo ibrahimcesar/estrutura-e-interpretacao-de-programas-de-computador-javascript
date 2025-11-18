@@ -1,0 +1,378 @@
+# 1.3.3 Funções como Métodos Gerais
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Introduzimos funções compostas na seção 1.1.4 como um mecanismo para abstrair padrões de operações numéricas de modo a torná-los independentes dos números particulares envolvidos. Com funções de ordem superior, como a função `integral` da seção 1.3.1, começamos a ver um tipo mais poderoso de abstração: funções usadas para expressar métodos gerais de computação, independentemente das funções particulares envolvidas. Nesta seção discutimos dois exemplos mais elaborados — métodos gerais para encontrar zeros e pontos fixos de funções — e mostramos como esses métodos podem ser expressos diretamente como funções.
+
+## Encontrando raízes de equações pelo método da metade do intervalo
+
+O *método da metade do intervalo* é uma técnica simples mas poderosa para encontrar raízes de uma equação $f(x)=0$, onde $f$ é uma função contínua. A ideia é que, se nos forem dados pontos $a$ e $b$ tais que $f(a) < 0 < f(b)$, então $f$ deve ter pelo menos um zero entre $a$ e $b$. Para localizar um zero, seja $x$ a média de $a$ e $b$ e calcule $f(x)$. Se $f(x) > 0$, então $f$ deve ter um zero entre $a$ e $x$. Se $f(x) < 0$, então $f$ deve ter um zero entre $x$ e $b$. Continuando dessa maneira, podemos identificar intervalos cada vez menores nos quais $f$ deve ter um zero. Quando chegamos a um ponto onde o intervalo é pequeno o suficiente, o processo para. Como o intervalo de incerteza é reduzido pela metade em cada passo do processo, o número máximo de passos necessários cresce como $\Theta(\log(L/T))$, onde $L$ é o comprimento do intervalo original e $T$ é a tolerância de erro (isto é, o tamanho do intervalo que consideraremos "pequeno o suficiente").
+
+Aqui está uma função que implementa esta estratégia:
+
+<CodePlayground
+  code={`function search(f, neg_point, pos_point) {
+    const midpoint = average(neg_point, pos_point);
+    if (close_enough(neg_point, pos_point)) {
+        return midpoint;
+    } else {
+        const test_value = f(midpoint);
+        return positive(test_value)
+               ? search(f, neg_point, midpoint)
+               : negative(test_value)
+               ? search(f, midpoint, pos_point)
+               : midpoint;
+    }
+}`}
+  hiddenCode={`function average(x, y) {
+    return (x + y) / 2;
+}
+function positive(x) { return x > 0; }
+function negative(x) { return x < 0; }
+function close_enough(x, y) {
+    return abs(x - y) < 0.001;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}`}
+  height={450}
+  showLineNumbers={false}
+/>
+
+Assumimos que inicialmente recebemos a função $f$ juntamente com pontos nos quais seus valores são negativos e positivos. Primeiro calculamos o ponto médio dos dois pontos dados. Em seguida, verificamos se o intervalo dado é pequeno o suficiente e, se for, simplesmente retornamos o ponto médio como nossa resposta. Caso contrário, calculamos como um valor de teste o valor de $f$ no ponto médio. Se o valor de teste for positivo, continuamos o processo com um novo intervalo indo do ponto negativo original até o ponto médio. Se o valor de teste for negativo, continuamos com o intervalo do ponto médio ao ponto positivo. Finalmente, há a possibilidade de que o valor de teste seja 0, caso em que o ponto médio é em si a raiz que estamos procurando.
+
+<a name="footnote-link-1"></a>
+Para testar se os pontos finais estão "próximos o suficiente", podemos usar uma função similar à usada na seção 1.1.7 para calcular raízes quadradas:[<sup>1</sup>](#footnote-1)
+
+<CodePlayground
+  code={`function close_enough(x, y) {
+    return abs(x - y) < 0.001;
+}`}
+  hiddenCode={`function abs(x) {
+    return x >= 0 ? x : -x;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<a name="footnote-link-2"></a>
+A função `search` é complicada para usar diretamente, porque podemos acidentalmente fornecer pontos nos quais os valores de $f$ não têm o sinal necessário, caso em que obteríamos uma resposta errada. Em vez disso, usaremos `search` por meio da seguinte função, que verifica quais dos pontos finais tem um valor de função negativo e qual tem um valor positivo, e chama a função `search` de acordo. Se a função tiver o mesmo sinal nos dois pontos dados, o método da metade do intervalo não pode ser usado, caso em que a função sinaliza um erro.[<sup>2</sup>](#footnote-2)
+
+<CodePlayground
+  code={`function half_interval_method(f, a, b) {
+    const a_value = f(a);
+    const b_value = f(b);
+    return negative(a_value) && positive(b_value)
+           ? search(f, a, b)
+           : negative(b_value) && positive(a_value)
+           ? search(f, b, a)
+           : error("values are not of opposite sign");
+}`}
+  hiddenCode={`function average(x, y) {
+    return (x + y) / 2;
+}
+function positive(x) { return x > 0; }
+function negative(x) { return x < 0; }
+function close_enough(x, y) {
+    return abs(x - y) < 0.001;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+function search(f, neg_point, pos_point) {
+    const midpoint = average(neg_point, pos_point);
+    if (close_enough(neg_point, pos_point)) {
+        return midpoint;
+    } else {
+        const test_value = f(midpoint);
+        return positive(test_value)
+               ? search(f, neg_point, midpoint)
+               : negative(test_value)
+               ? search(f, midpoint, pos_point)
+               : midpoint;
+    }
+}
+function error(msg) {
+    throw new Error(msg);
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+O exemplo a seguir usa o método da metade do intervalo para aproximar $\pi$ como a raiz entre 2 e 4 de $\sin x = 0$:
+
+<CodePlayground
+  code={`half_interval_method(math_sin, 2, 4);`}
+  hiddenCode={`function average(x, y) {
+    return (x + y) / 2;
+}
+function positive(x) { return x > 0; }
+function negative(x) { return x < 0; }
+function close_enough(x, y) {
+    return abs(x - y) < 0.001;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+function search(f, neg_point, pos_point) {
+    const midpoint = average(neg_point, pos_point);
+    if (close_enough(neg_point, pos_point)) {
+        return midpoint;
+    } else {
+        const test_value = f(midpoint);
+        return positive(test_value)
+               ? search(f, neg_point, midpoint)
+               : negative(test_value)
+               ? search(f, midpoint, pos_point)
+               : midpoint;
+    }
+}
+function error(msg) {
+    throw new Error(msg);
+}
+function half_interval_method(f, a, b) {
+    const a_value = f(a);
+    const b_value = f(b);
+    return negative(a_value) && positive(b_value)
+           ? search(f, a, b)
+           : negative(b_value) && positive(a_value)
+           ? search(f, b, a)
+           : error("values are not of opposite sign");
+}
+const math_sin = Math.sin;`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Aqui está outro exemplo, usando o método da metade do intervalo para procurar uma raiz da equação $x^3 - 2x - 3 = 0$ entre 1 e 2:
+
+<CodePlayground
+  code={`half_interval_method(x => x * x * x - 2 * x - 3, 1, 2);`}
+  hiddenCode={`function average(x, y) {
+    return (x + y) / 2;
+}
+function positive(x) { return x > 0; }
+function negative(x) { return x < 0; }
+function close_enough(x, y) {
+    return abs(x - y) < 0.001;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+function search(f, neg_point, pos_point) {
+    const midpoint = average(neg_point, pos_point);
+    if (close_enough(neg_point, pos_point)) {
+        return midpoint;
+    } else {
+        const test_value = f(midpoint);
+        return positive(test_value)
+               ? search(f, neg_point, midpoint)
+               : negative(test_value)
+               ? search(f, midpoint, pos_point)
+               : midpoint;
+    }
+}
+function error(msg) {
+    throw new Error(msg);
+}
+function half_interval_method(f, a, b) {
+    const a_value = f(a);
+    const b_value = f(b);
+    return negative(a_value) && positive(b_value)
+           ? search(f, a, b)
+           : negative(b_value) && positive(a_value)
+           ? search(f, b, a)
+           : error("values are not of opposite sign");
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+## Encontrando pontos fixos de funções
+
+Um número $x$ é chamado de *ponto fixo* de uma função $f$ se $x$ satisfaz a equação $f(x)=x$. Para algumas funções $f$ podemos localizar um ponto fixo começando com um palpite inicial e aplicando $f$ repetidamente,
+
+$$
+f(x), \quad f(f(x)), \quad f(f(f(x))), \quad \ldots
+$$
+
+até que o valor não mude muito. Usando esta ideia, podemos desenvolver uma função `fixed_point` que recebe como entradas uma função e um palpite inicial e produz uma aproximação de um ponto fixo da função. Aplicamos a função repetidamente até encontrarmos dois valores sucessivos cuja diferença é menor que alguma tolerância prescrita:
+
+<CodePlayground
+  code={`const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
+}`}
+  hiddenCode={`function abs(x) {
+    return x >= 0 ? x : -x;
+}`}
+  height={450}
+  showLineNumbers={false}
+/>
+
+Por exemplo, podemos usar este método para aproximar o ponto fixo do cosseno, começando com 1 como palpite inicial:[<sup>3</sup>](#footnote-3)
+
+<CodePlayground
+  code={`fixed_point(math_cos, 1);`}
+  hiddenCode={`const math_cos = Math.cos;
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Da mesma forma, podemos encontrar uma solução da equação $y = \sin y + \cos y$:
+
+<CodePlayground
+  code={`fixed_point(y => math_sin(y) + math_cos(y), 1);`}
+  hiddenCode={`const math_sin = Math.sin;
+const math_cos = Math.cos;
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+O processo de busca de ponto fixo nos lembra o processo que usamos para encontrar raízes quadradas. Ambos são baseados na ideia de melhorar repetidamente um palpite até que o resultado satisfaça algum critério. De fato, podemos formular facilmente a computação de raiz quadrada como uma busca de ponto fixo. Calcular a raiz quadrada de algum número $x$ requer encontrar um $y$ tal que $y^2 = x$. Colocando essa equação na forma equivalente $y = x/y$, reconhecemos que estamos procurando um ponto fixo da função $y \mapsto x/y$, e podemos, portanto, tentar calcular raízes quadradas como
+
+```javascript
+function sqrt(x) {
+    return fixed_point(y => x / y, 1);
+}
+```
+
+Infelizmente, esta busca de ponto fixo não converge. Considere um palpite inicial $y_1$. O próximo palpite é $y_2 = x/y_1$ e o próximo palpite é $y_3 = x/y_2 = x/(x/y_1) = y_1$. Isso resulta em um loop infinito no qual os dois palpites $y_1$ e $y_2$ se repetem indefinidamente, oscilando em torno da resposta.
+
+Uma maneira de controlar tais oscilações é evitar que os palpites mudem tanto. Como a resposta está sempre entre nosso palpite $y$ e $x/y$, podemos fazer um novo palpite que não está tão longe de $y$ quanto $x/y$ fazendo a média de $y$ com $x/y$, para que o próximo palpite após $y$ seja $(1/2)(y + x/y)$ em vez de $x/y$. O processo de fazer tal sequência de palpites é simplesmente o processo de procurar por um ponto fixo de $y \mapsto (1/2)(y + x/y)$:
+
+<CodePlayground
+  code={`function sqrt(x) {
+    return fixed_point(y => average(y, x / y), 1);
+}`}
+  hiddenCode={`function average(x, y) {
+    return (x + y) / 2;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+(Observe que $y = (1/2)(y + x/y)$ é uma transformação simples da equação $y = x/y$; para derivar isso, some $y$ a ambos os lados da equação e divida por 2.)
+
+Com essa modificação, a função de raiz quadrada funciona. Na verdade, se desenrolarmos as declarações, podemos ver que a sequência de aproximações ao ponto fixo de busca de ponto fixo é precisamente a mesma sequência gerada pela nossa função de raiz quadrada original da seção 1.1.7. Este método de fazer a média de aproximações sucessivas a uma solução, uma técnica que chamamos de *amortecimento médio*, geralmente ajuda a convergência de buscas de ponto fixo.
+
+## Exercício 1.35
+
+<a name="ex-1-35"></a>
+Mostre que a razão áurea $\phi$ (seção 1.2.2) é um ponto fixo da transformação $x \mapsto 1 + 1/x$, e use isso para calcular $\phi$ por meio da função `fixed_point`.
+
+## Exercício 1.36
+
+<a name="ex-1-36"></a>
+Modifique `fixed_point` para que ela imprima a sequência de aproximações que gera, usando a função primitiva `display` mostrada no exercício 1.22. Então encontre uma solução de $x^x = 1000$ encontrando um ponto fixo de $x \mapsto \log(1000)/\log(x)$. (Use a função primitiva `math_log` do JavaScript, que calcula logaritmos naturais.) Compare o número de passos necessários com e sem amortecimento médio. (Observe que você não pode iniciar `fixed_point` com um palpite de 1, pois isso causaria divisão por $\log(1) = 0$.)
+
+## Exercício 1.37
+
+<a name="ex-1-37"></a>
+**a.** Uma *fração contínua infinita* é uma expressão da forma
+
+$$
+f = \frac{N_1}{D_1 + \frac{N_2}{D_2 + \frac{N_3}{D_3 + \cdots}}}
+$$
+
+Como exemplo, pode-se mostrar que a expansão em fração contínua infinita com os $N_i$ e os $D_i$ todos iguais a 1 produz $1/\phi$, onde $\phi$ é a razão áurea (descrita na seção 1.2.2). Uma forma de aproximar uma fração contínua infinita é truncá-la após um dado número de termos. Tal truncamento — uma chamada *fração contínua de $k$ termos* — tem a forma
+
+$$
+\frac{N_1}{D_1 + \frac{N_2}{\ddots + \frac{N_K}{D_K}}}
+$$
+
+Suponha que `n` e `d` sejam funções de um argumento (o índice do termo $i$) que retornam os $N_i$ e $D_i$ dos termos da fração contínua. Declare uma função `cont_frac` tal que avaliar `cont_frac(n, d, k)` calcule o valor de uma fração contínua de $k$ termos. Verifique sua função aproximando $1/\phi$ usando
+
+```javascript
+cont_frac(i => 1, i => 1, k)
+```
+
+para valores sucessivos de `k`. Quão grande você tem que fazer `k` para obter uma aproximação que é precisa em 4 casas decimais?
+
+**b.** Se sua função `cont_frac` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
+
+## Exercício 1.38
+
+<a name="ex-1-38"></a>
+Em 1737, o matemático suíço Leonhard Euler publicou um artigo *De Fractionibus Continuis*, que incluía uma expansão em fração contínua para $e - 2$, onde $e$ é a base dos logaritmos naturais. Nesta fração, os $N_i$ são todos 1, e os $D_i$ são sucessivamente 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, ... Escreva um programa que usa sua função `cont_frac` do exercício 1.37 para aproximar $e$, baseado na expansão de Euler.
+
+## Exercício 1.39
+
+<a name="ex-1-39"></a>
+Uma fração contínua para a função tangente foi publicada em 1770 pelo matemático alemão J.H. Lambert:
+
+$$
+\tan x = \frac{x}{1 - \frac{x^2}{3 - \frac{x^2}{5 - \cdots}}}
+$$
+
+onde $x$ está em radianos. Declare uma função `tan_cf(x, k)` que calcula uma aproximação da função tangente baseada na fórmula de Lambert. A constante `k` especifica o número de termos a calcular, como no exercício 1.37.
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Usamos 0.001 como um número "pequeno" representativo para indicar uma tolerância para o erro aceitável em um cálculo. A tolerância apropriada para um cálculo real depende do problema a ser resolvido e das limitações do computador e do algoritmo. Isso é muitas vezes uma consideração muito sutil, exigindo ajuda de um analista numérico ou algum outro tipo de mago.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Isso pode ser feito usando `error`, que recebe como argumento uma string que é exibida como mensagem de erro juntamente com a informação de que o programa foi interrompido.
+
+<a name="footnote-3"></a>
+**[3](#footnote-link-3)** Tente isso durante um intervalo de ócio. Veja se você consegue usar isso para implementar a calculadora de ``logaritmo'' inventada pelo brincalhão mencionado na nota de rodapé da seção 1.3.3.

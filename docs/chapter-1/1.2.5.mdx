@@ -1,0 +1,60 @@
+# 1.2.5 Máximo Divisor Comum
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+O máximo divisor comum (MDC, ou GCD em inglês) de dois inteiros $a$ e $b$ é definido como sendo o maior inteiro que divide tanto $a$ quanto $b$ sem resto. Por exemplo, o MDC de 16 e 28 é 4. No capítulo 2, quando investigarmos como implementar aritmética de números racionais, precisaremos ser capazes de calcular MDCs a fim de reduzir números racionais aos menores termos. (Para reduzir um número racional aos menores termos, devemos dividir tanto o numerador quanto o denominador pelo seu MDC. Por exemplo, 16/28 reduz para 4/7.) Uma maneira de encontrar o MDC de dois inteiros é fatorá-los e procurar fatores comuns, mas existe um algoritmo famoso que é muito mais eficiente.
+
+<a name="footnote-link-1"></a>
+A ideia do algoritmo é baseada na observação de que, se $r$ é o resto quando $a$ é dividido por $b$, então os divisores comuns de $a$ e $b$ são precisamente os mesmos que os divisores comuns de $b$ e $r$. Assim, podemos usar a equação
+
+$$
+\textrm{MDC}(a, b) = \textrm{MDC}(b, r)
+$$
+
+para reduzir sucessivamente o problema de calcular um MDC ao problema de calcular o MDC de pares de inteiros cada vez menores. Por exemplo,
+
+$$
+\begin{array}{lll}
+\textrm{MDC}(206,40) &= &\textrm{MDC}(40,6) \\
+&= &\textrm{MDC}(6,4) \\
+&= &\textrm{MDC}(4,2) \\
+&= &\textrm{MDC}(2,0) \\
+&= &2
+\end{array}
+$$
+
+reduz $\textrm{MDC}(206, 40)$ a $\textrm{MDC}(2, 0)$, que é 2. É possível mostrar que começando com quaisquer dois inteiros positivos e realizando reduções repetidas sempre eventualmente produzirá um par onde o segundo número é 0. Então o MDC é o outro número no par. Este método para calcular o MDC é conhecido como *Algoritmo de Euclides*.[<sup>1</sup>](#footnote-1)
+
+É fácil expressar o Algoritmo de Euclides como uma função:
+
+<CodePlayground
+  code={`function gcd(a, b) {
+    return b === 0 ? a : gcd(b, a % b);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Isso gera um processo iterativo, cujo número de passos cresce como o logaritmo dos números envolvidos.
+
+<a name="footnote-link-2"></a>
+O fato de que o número de passos necessários pelo Algoritmo de Euclides tem crescimento logarítmico tem uma relação interessante com os números de Fibonacci:
+
+**Teorema de Lamé:** Se o Algoritmo de Euclides requer $k$ passos para calcular o MDC de algum par, então o menor número no par deve ser maior ou igual ao $k$-ésimo número de Fibonacci.[<sup>2</sup>](#footnote-2)
+
+Podemos usar este teorema para obter uma estimativa de ordem de crescimento para o Algoritmo de Euclides. Seja $n$ o menor dos dois argumentos de entrada da função. Se o processo leva $k$ passos, então devemos ter $n\geq \textrm{Fib}(k)\approx\phi^k/\sqrt{5}$. Portanto, o número de passos $k$ cresce como o logaritmo (na base $\phi$) de $n$. Portanto, a ordem de crescimento é $\Theta(\log n)$.
+
+## Exercício 1.20
+
+<a name="ex-1-20"></a>
+O processo que uma função gera é, claro, dependente das regras usadas pelo interpretador. Como exemplo, considere a função iterativa `gcd` dada acima. Suponha que fôssemos interpretar esta função usando avaliação em ordem normal, como discutido na seção 1.1.5. (A regra de avaliação em ordem normal para expressões condicionais é descrita no exercício 1.5.) Usando o método de substituição (para ordem normal), ilustre o processo gerado ao avaliar `gcd(206, 40)` e indique as operações `%` (resto) que são realmente realizadas. Quantas operações de resto são realmente realizadas na avaliação em ordem normal de `gcd(206, 40)`? Na avaliação em ordem aplicativa?
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** O Algoritmo de Euclides é assim chamado porque aparece nos *Elementos* de Euclides (Livro 7, ca. 300 a.C.). Segundo Knuth (1997a), ele pode ser considerado o mais antigo algoritmo não trivial conhecido. O antigo método egípcio de multiplicação (exercício 1.18) é certamente mais antigo, mas, como Knuth explica, o Algoritmo de Euclides é o mais antigo conhecido por ter sido apresentado como um algoritmo geral, em vez de como um conjunto de exemplos ilustrativos.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Este teorema foi provado em 1845 por Gabriel Lamé, um matemático e engenheiro francês conhecido principalmente por suas contribuições à física matemática. Para provar o teorema, consideramos pares $(a_k, b_k)$, onde $a_k\geq b_k$, para os quais o Algoritmo de Euclides termina em $k$ passos. A prova é baseada na afirmação de que, se $(a_{k+1}, b_{k+1}) \rightarrow (a_{k}, b_{k}) \rightarrow (a_{k-1}, b_{k-1})$ são três pares sucessivos no processo de redução, então devemos ter $b_{k+1}\geq b_{k} + b_{k-1}$. Para verificar a afirmação, considere que um passo de redução é definido aplicando a transformação $a_{k-1} = b_{k}$, $b_{k-1} = \textrm{resto de}\ a_{k}\ \textrm{dividido por}\ b_{k}$. A segunda equação significa que $a_{k} = qb_{k} + b_{k-1}$ para algum inteiro positivo $q$. E como $q$ deve ser pelo menos 1, temos $a_{k} = qb_{k} + b_{k-1} \geq b_{k} + b_{k-1}$. Mas no passo de redução anterior temos $b_{k+1}= a_{k}$. Portanto, $b_{k+1} = a_{k}\geq b_{k} + b_{k-1}$. Isso verifica a afirmação. Agora podemos provar o teorema por indução em $k$, o número de passos que o algoritmo requer para terminar. O resultado é verdadeiro para $k=1$, pois isso meramente requer que $b$ seja pelo menos tão grande quanto $\text{Fib}(1)=1$. Agora, assuma que o resultado é verdadeiro para todos os inteiros menores ou iguais a $k$ e estabeleça o resultado para $k+1$. Seja $(a_{k+1}, b_{k+1})\rightarrow(a_{k}, b_{k}) \rightarrow(a_{k-1}, b_{k-1})$ pares sucessivos no processo de redução. Por nossas hipóteses de indução, temos $b_{k-1}\geq \textrm{Fib}(k-1)$ e $b_{k}\geq \textrm{Fib}(k)$. Assim, aplicando a afirmação que acabamos de provar junto com a definição dos números de Fibonacci dá $b_{k+1} \geq b_{k} + b_{k-1}\geq \textrm{Fib}(k) + \textrm{Fib}(k-1) = \textrm{Fib}(k+1)$, o que completa a prova do Teorema de Lamé.

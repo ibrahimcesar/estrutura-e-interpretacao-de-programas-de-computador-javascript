@@ -1,0 +1,286 @@
+# 1.2.6 Exemplo: Testando Primalidade
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Esta seção descreve dois métodos para verificar a primalidade de um inteiro $n$, um com ordem de crescimento $\Theta(\sqrt{n})$, e um algoritmo "probabilístico" com ordem de crescimento $\Theta(\log n)$. Os exercícios ao final desta seção sugerem projetos de programação baseados nesses algoritmos.
+
+## Buscando divisores
+
+Desde os tempos antigos, matemáticos têm sido fascinados por problemas concernentes a números primos, e muitas pessoas trabalharam no problema de determinar maneiras de testar se números são primos. Uma maneira de testar se um número é primo é encontrar os divisores do número. O programa a seguir encontra o menor divisor integral (maior que 1) de um dado número $n$. Ele faz isso de uma maneira direta, testando $n$ para divisibilidade por inteiros sucessivos começando com 2.
+
+<CodePlayground
+  code={`function smallest_divisor(n) {
+    return find_divisor(n, 2);
+}
+function find_divisor(n, test_divisor) {
+    return square(test_divisor) > n
+           ? n
+           : divides(test_divisor, n)
+           ? test_divisor
+           : find_divisor(n, test_divisor + 1);
+}
+function divides(a, b) {
+    return b % a === 0;
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}`}
+  height={450}
+  showLineNumbers={false}
+/>
+
+Podemos testar se um número é primo da seguinte forma: $n$ é primo se e somente se $n$ é seu próprio menor divisor.
+
+<CodePlayground
+  code={`function is_prime(n) {
+    return n === smallest_divisor(n);
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function smallest_divisor(n) {
+    return find_divisor(n, 2);
+}
+function find_divisor(n, test_divisor) {
+    return square(test_divisor) > n
+           ? n
+           : divides(test_divisor, n)
+           ? test_divisor
+           : find_divisor(n, test_divisor + 1);
+}
+function divides(a, b) {
+    return b % a === 0;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<a name="footnote-link-1"></a>
+O teste de fim para `find_divisor` é baseado no fato de que se $n$ não é primo, ele deve ter um divisor menor ou igual a $\sqrt{n}$.[<sup>1</sup>](#footnote-1) Isso significa que o algoritmo só precisa testar divisores entre 1 e $\sqrt{n}$. Consequentemente, o número de passos necessários para identificar $n$ como primo terá ordem de crescimento $\Theta(\sqrt{n})$.
+
+## O teste de Fermat
+
+<a name="footnote-link-2"></a>
+O teste de primalidade $\Theta(\log n)$ é baseado em um resultado da teoria dos números conhecido como Pequeno Teorema de Fermat.[<sup>2</sup>](#footnote-2)
+
+**Pequeno Teorema de Fermat:** Se $n$ é um número primo e $a$ é qualquer inteiro positivo menor que $n$, então $a$ elevado à $n$-ésima potência é congruente a $a$ módulo $n$.
+
+(Dois números são ditos *congruentes módulo* $n$ se ambos têm o mesmo resto quando divididos por $n$. O resto de um número $a$ quando dividido por $n$ também é referido como o *resto de* $a$ *módulo* $n$, ou simplesmente como $a$ *módulo* $n$.)
+
+Se $n$ não é primo, então, em geral, a maioria dos números $a < n$ não satisfará a relação acima. Isso leva ao seguinte algoritmo para testar primalidade: Dado um número $n$, escolha um número aleatório $a < n$ e calcule o resto de $a^n$ módulo $n$. Se o resultado não for igual a $a$, então $n$ certamente não é primo. Se for $a$, então as chances são boas de que $n$ seja primo. Agora escolha outro número aleatório $a$ e teste-o com o mesmo método. Se ele também satisfizer a equação, então podemos estar ainda mais confiantes de que $n$ é primo. Testando mais e mais valores de $a$, podemos aumentar nossa confiança no resultado. Este algoritmo é conhecido como o teste de Fermat.
+
+Para implementar o teste de Fermat, precisamos de uma função que calcule o exponencial de um número módulo outro número:
+
+<CodePlayground
+  code={`function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? square(expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}
+function square(x) {
+    return x * x;
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+<a name="footnote-link-3"></a>
+Isso é muito similar à função `fast_expt` da seção 1.2.4. Ela usa sucessivas elevações ao quadrado, de modo que o número de passos cresce logaritmicamente com o expoente.[<sup>3</sup>](#footnote-3)
+
+O teste de Fermat é realizado escolhendo aleatoriamente um número $a$ entre 1 e $n-1$ inclusive e verificando se o resto módulo $n$ da $n$-ésima potência de $a$ é igual a $a$. O número aleatório $a$ é escolhido usando a função primitiva `math_random`, que retorna um número não-negativo menor que 1. Portanto, para obter um número aleatório entre 1 e $n-1$, multiplicamos o valor de retorno de `math_random` por $n-1$, arredondamos para baixo o resultado com a função primitiva `math_floor`, e adicionamos 1:
+
+<CodePlayground
+  code={`function fermat_test(n) {
+    function try_it(a) {
+        return expmod(a, n, n) === a;
+    }
+    return try_it(1 + math_floor(math_random() * (n - 1)));
+}`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}
+function square(x) {
+    return x * x;
+}
+function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? square(expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+A função a seguir executa o teste um dado número de vezes, conforme especificado por um parâmetro. Seu valor é verdadeiro se o teste tiver sucesso todas as vezes, e falso caso contrário.
+
+<CodePlayground
+  code={`function fast_is_prime(n, times) {
+    return times === 0
+           ? true
+           : fermat_test(n)
+           ? fast_is_prime(n, times - 1)
+           : false;
+}`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}
+function square(x) {
+    return x * x;
+}
+function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? square(expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}
+function fermat_test(n) {
+    function try_it(a) {
+        return expmod(a, n, n) === a;
+    }
+    return try_it(1 + math_floor(math_random() * (n - 1)));
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+## Métodos probabilísticos
+
+O teste de Fermat difere em caráter da maioria dos algoritmos familiares, nos quais se calcula uma resposta que é garantida ser correta. Aqui, a resposta obtida é apenas provavelmente correta. Mais precisamente, se $n$ alguma vez falhar no teste de Fermat, podemos ter certeza de que $n$ não é primo. Mas o fato de que $n$ passar no teste, embora seja uma indicação extremamente forte, ainda não é uma garantia de que $n$ seja primo. O que gostaríamos de dizer é que para qualquer número $n$, se realizarmos o teste vezes suficientes e descobrirmos que $n$ sempre passa no teste, então a probabilidade de erro em nosso teste de primalidade pode ser tornada tão pequena quanto quisermos.
+
+<a name="footnote-link-4"></a>
+Infelizmente, essa afirmação não está completamente correta. Existem números que enganam o teste de Fermat: números $n$ que não são primos e ainda têm a propriedade de que $a^n$ é congruente a $a$ módulo $n$ para todos os inteiros $a < n$. Tais números são extremamente raros, então o teste de Fermat é bastante confiável na prática.[<sup>4</sup>](#footnote-4) Existem variações do teste de Fermat que não podem ser enganadas. Nesses testes, como no método de Fermat, testa-se a primalidade de um inteiro $n$ escolhendo um inteiro aleatório $a < n$ e verificando alguma condição que depende de $n$ e $a$. (Veja o exercício 1.28 para um exemplo de tal teste.) Por outro lado, em contraste com o teste de Fermat, pode-se provar que, para qualquer $n$, a condição não é válida para a maioria dos inteiros $a < n$ a menos que $n$ seja primo. Assim, se $n$ passar no teste para alguma escolha aleatória de $a$, as chances são maiores que 50% de que $n$ seja primo. Se $n$ passar no teste para duas escolhas aleatórias de $a$, as chances são maiores que 3 em 4 de que $n$ seja primo. Executando o teste com mais e mais valores de $a$ escolhidos aleatoriamente, podemos tornar a probabilidade de erro tão pequena quanto quisermos.
+
+<a name="footnote-link-5"></a>
+A existência de testes para os quais se pode provar que a chance de erro torna-se arbitrariamente pequena despertou interesse em algoritmos deste tipo, que vieram a ser conhecidos como *algoritmos probabilísticos*. Há muita atividade de pesquisa nesta área, e algoritmos probabilísticos foram frutiferamente aplicados a muitos campos.[<sup>5</sup>](#footnote-5)
+
+## Exercício 1.21
+
+<a name="ex-1-21"></a>
+Use a função `smallest_divisor` para encontrar o menor divisor de cada um dos seguintes números: 199, 1999, 19999.
+
+## Exercício 1.22
+
+<a name="ex-1-22"></a>
+<a name="footnote-link-6"></a>
+Assuma uma função primitiva `get_time` sem argumentos que retorna o número de milissegundos que passaram desde 00:00:00 UTC de quinta-feira, 1 de janeiro de 1970.[<sup>6</sup>](#footnote-6) A função `timed_prime_test` a seguir, quando chamada com um inteiro $n$, imprime $n$ e verifica se $n$ é primo. Se $n$ é primo, a função imprime três asteriscos seguidos pela quantidade de tempo usada para realizar o teste.
+
+<CodePlayground
+  code={`function timed_prime_test(n) {
+    display(n);
+    return start_prime_test(n, get_time());
+}
+function start_prime_test(n, start_time) {
+    return is_prime(n)
+           ? report_prime(get_time() - start_time)
+           : false;
+}
+function report_prime(elapsed_time) {
+    display(" *** ");
+    display(elapsed_time);
+    return true;
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function smallest_divisor(n) {
+    return find_divisor(n, 2);
+}
+function find_divisor(n, test_divisor) {
+    return square(test_divisor) > n
+           ? n
+           : divides(test_divisor, n)
+           ? test_divisor
+           : find_divisor(n, test_divisor + 1);
+}
+function divides(a, b) {
+    return b % a === 0;
+}
+function is_prime(n) {
+    return n === smallest_divisor(n);
+}`}
+  height={400}
+  showLineNumbers={false}
+/>
+
+Usando esta função, escreva uma função `search_for_primes` que verifica a primalidade de inteiros ímpares consecutivos em um intervalo especificado. Use sua função para encontrar os três menores primos maiores que 1000; maiores que 10.000; maiores que 100.000; maiores que 1.000.000. Observe o tempo necessário para testar cada primo. Como o algoritmo de teste tem ordem de crescimento de $\Theta(\sqrt{n})$, você deve esperar que testar primos em torno de 10.000 leve cerca de $\sqrt{10}$ vezes mais tempo do que testar primos em torno de 1000. Seus dados de temporização confirmam isso? Quão bem os dados para 100.000 e 1.000.000 suportam a previsão de $\sqrt{n}$? Seu resultado é compatível com a noção de que programas em sua máquina executam em tempo proporcional ao número de passos necessários para o cálculo?
+
+## Exercício 1.23
+
+<a name="ex-1-23"></a>
+A função `smallest_divisor` mostrada no início desta seção faz muitos testes desnecessários: Depois que ela verifica se o número é divisível por 2, não há sentido em verificar se ele é divisível por qualquer número par maior. Isso sugere que os valores usados para `test_divisor` não deveriam ser 2, 3, 4, 5, 6, ... mas sim 2, 3, 5, 7, 9, ... Para implementar esta mudança, declare uma função `next` que retorna 3 se sua entrada for igual a 2 e caso contrário retorna sua entrada mais 2. Modifique a função `smallest_divisor` para usar `next(test_divisor)` em vez de `test_divisor + 1`. Com `timed_prime_test` incorporando esta versão modificada de `smallest_divisor`, execute o teste para cada um dos 12 primos encontrados no exercício 1.22. Como esta modificação reduz pela metade o número de passos de teste, você deve esperar que execute cerca de duas vezes mais rápido. Esta expectativa é confirmada? Se não, qual é a razão observada das velocidades dos dois algoritmos, e como você explica o fato de que ela é diferente de 2?
+
+## Exercício 1.24
+
+<a name="ex-1-24"></a>
+Modifique a função `timed_prime_test` do exercício 1.22 para usar `fast_is_prime` (o método de Fermat), e teste cada um dos 12 primos que você encontrou naquele exercício. Como o teste de Fermat tem crescimento $\Theta(\log n)$, como você esperaria que o tempo para testar primos perto de 1.000.000 se comparasse com o tempo necessário para testar primos perto de 1000? Seus dados confirmam isso? Você pode explicar qualquer discrepância que encontrar?
+
+## Exercício 1.25
+
+<a name="ex-1-25"></a>
+Alyssa P. Hacker reclama que fizemos muito trabalho extra ao escrever `expmod`. Afinal, ela diz, já que já sabemos como calcular exponenciais, poderíamos ter simplesmente escrito
+
+```javascript
+function expmod(base, exp, m) {
+    return fast_expt(base, exp) % m;
+}
+```
+
+Ela está correta? Esta função serviria tão bem para nosso testador de primos rápido? Explique.
+
+## Exercício 1.26
+
+<a name="ex-1-26"></a>
+Louis Reasoner está tendo grande dificuldade com o exercício 1.24. Seu teste `fast_is_prime` parece executar mais lentamente do que seu teste `is_prime`. Louis chama sua amiga Eva Lu Ator para ajudar. Quando eles examinam o código de Louis, descobrem que ele reescreveu a função `expmod` para usar uma multiplicação explícita, em vez de chamar `square`:
+
+```javascript
+function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? (  expmod(base, exp / 2, m)
+              * expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}
+```
+
+"Não vejo que diferença isso poderia fazer", diz Louis. "Eu vejo", diz Eva. "Ao escrever a função dessa forma, você transformou o processo $\Theta(\log n)$ em um processo $\Theta(n)$." Explique.
+
+## Exercício 1.27
+
+<a name="ex-1-27"></a>
+Demonstre que os números de Carmichael listados na nota de rodapé 4 realmente enganam o teste de Fermat. Isto é, escreva uma função que recebe um inteiro $n$ e testa se $a^n$ é congruente a $a$ módulo $n$ para todo $a < n$, e tente sua função nos números de Carmichael dados.
+
+## Exercício 1.28
+
+<a name="ex-1-28"></a>
+Uma variante do teste de Fermat que não pode ser enganada é chamada de *teste de Miller-Rabin* (Miller 1976; Rabin 1980). Este começa de uma forma alternativa do Pequeno Teorema de Fermat, que afirma que se $n$ é um número primo e $a$ é qualquer inteiro positivo menor que $n$, então $a$ elevado à $(n-1)$-ésima potência é congruente a 1 módulo $n$. Para testar a primalidade de um número $n$ pelo teste de Miller-Rabin, escolhemos um número aleatório $a < n$ e elevamos $a$ à $(n-1)$-ésima potência módulo $n$ usando a função `expmod`. No entanto, sempre que realizamos o passo de elevação ao quadrado em `expmod`, verificamos se descobrimos uma "raiz quadrada não trivial de 1 módulo $n$", isto é, um número diferente de 1 ou $n-1$ cujo quadrado é igual a 1 módulo $n$. É possível provar que se tal raiz quadrada não trivial de 1 existir, então $n$ não é primo. Também é possível provar que se $n$ é um número ímpar que não é primo, então, para pelo menos metade dos números $a < n$, calcular $a^{n-1}$ desta forma revelará uma raiz quadrada não trivial de 1 módulo $n$. (É por isso que o teste de Miller-Rabin não pode ser enganado.) Modifique a função `expmod` para sinalizar se ela descobrir uma raiz quadrada não trivial de 1, e use isso para implementar o teste de Miller-Rabin com uma função análoga a `fermat_test`. Verifique sua função testando vários primos e não-primos conhecidos. Dica: Uma maneira conveniente de fazer `expmod` sinalizar é fazê-la retornar 0.
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Se $d$ é um divisor de $n$, então também é $n/d$. Mas $d$ e $n/d$ não podem ambos ser maiores que $\sqrt{n}$.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Pierre de Fermat (1601–1665) é considerado o fundador da teoria dos números moderna. Ele obteve muitos resultados importantes em teoria dos números, mas geralmente anunciava apenas os resultados, sem fornecer suas provas. O Pequeno Teorema de Fermat foi declarado em uma carta que ele escreveu em 1640. A primeira prova publicada foi dada por Euler em 1736 (e uma prova anterior idêntica foi descoberta nos manuscritos não publicados de Leibniz). O mais famoso dos resultados de Fermat — conhecido como Último Teorema de Fermat — foi anotado em 1637 em sua cópia do livro *Aritmética* (do matemático grego do terceiro século Diofanto) com a observação "Descobri uma prova verdadeiramente notável, mas esta margem é muito pequena para contê-la." Encontrar uma prova do Último Teorema de Fermat tornou-se um dos desafios mais famosos da teoria dos números. Uma solução completa foi finalmente dada em 1995 por Andrew Wiles da Universidade de Princeton.
+
+<a name="footnote-3"></a>
+**[3](#footnote-link-3)** Os passos de redução nos casos onde o expoente $e$ é maior que 1 são baseados no fato de que, para quaisquer inteiros $x$, $y$ e $m$, podemos encontrar o resto de $x$ vezes $y$ módulo $m$ calculando separadamente os restos de $x$ módulo $m$ e $y$ módulo $m$, multiplicando-os, e então tomando o resto do resultado módulo $m$. Por exemplo, no caso onde $e$ é par, calculamos o resto de $b^{e/2}$ módulo $m$, elevamos ao quadrado, e tomamos o resto módulo $m$. Esta técnica é útil porque significa que podemos realizar nosso cálculo sem nunca ter que lidar com números muito maiores que $m$. (Compare o exercício 1.25.)
+
+<a name="footnote-4"></a>
+**[4](#footnote-link-4)** Números que enganam o teste de Fermat são chamados *números de Carmichael*, e pouco se sabe sobre eles além de que são extremamente raros. Existem 255 números de Carmichael abaixo de 100.000.000. Os primeiros poucos são 561, 1105, 1729, 2465, 2821 e 6601. Ao testar a primalidade de números muito grandes escolhidos aleatoriamente, a chance de tropeçar em um valor que engana o teste de Fermat é menor que a chance de que radiação cósmica faça o computador cometer um erro ao executar um algoritmo "correto". Considerar um algoritmo inadequado pela primeira razão, mas não pela segunda, ilustra a diferença entre matemática e engenharia.
+
+<a name="footnote-5"></a>
+**[5](#footnote-link-5)** Uma das aplicações mais marcantes do teste de primalidade probabilística tem sido para o campo da criptografia. Embora seja computacionalmente inviável fatorar um número arbitrário de 300 dígitos no momento desta escrita (2021), a primalidade de tal número pode ser verificada em alguns segundos com o teste de Fermat. Este fato forma a base de uma técnica para construir "códigos inquebráveis" sugerida por Rivest, Shamir e Adleman (1977). O *algoritmo RSA* resultante tornou-se uma técnica amplamente usada para aumentar a segurança das comunicações eletrônicas. Por causa deste e desenvolvimentos relacionados, o estudo de números primos, uma vez considerado o epítome de um tópico em matemática "pura" a ser estudado apenas por si próprio, agora se revela ter aplicações práticas importantes para criptografia, transferência eletrônica de fundos e recuperação de informações.
+
+<a name="footnote-6"></a>
+**[6](#footnote-link-6)** Esta data é chamada de *época UNIX* e faz parte da especificação de funções que lidam com tempo no sistema operacional UNIX™.
