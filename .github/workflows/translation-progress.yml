@@ -1,0 +1,229 @@
+name: 📊 Rastreamento de Progresso da Tradução
+
+on:
+  schedule:
+    # Executa toda segunda-feira às 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Permite execução manual
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**/*.md'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+jobs:
+  calculate-progress:
+    name: 📈 Calcular Progresso
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📊 Analisar progresso da tradução
+        id: progress
+        run: |
+          echo "Analisando arquivos Markdown em docs/..."
+
+          # Contar total de arquivos .md
+          total_files=$(find docs -name "*.md" -type f | wc -l)
+
+          # Contar palavras totais
+          total_words=$(find docs -name "*.md" -type f -exec cat {} \; | wc -w)
+
+          # Contar arquivos por capítulo
+          ch0_files=$(find docs/chapter-0 -name "*.md" 2>/dev/null | wc -l || echo 0)
+          ch1_files=$(find docs/chapter-1 -name "*.md" 2>/dev/null | wc -l || echo 0)
+          ch2_files=$(find docs/chapter-2 -name "*.md" 2>/dev/null | wc -l || echo 0)
+          ch3_files=$(find docs/chapter-3 -name "*.md" 2>/dev/null | wc -l || echo 0)
+          ch4_files=$(find docs/chapter-4 -name "*.md" 2>/dev/null | wc -l || echo 0)
+          ch5_files=$(find docs/chapter-5 -name "*.md" 2>/dev/null | wc -l || echo 0)
+          prefaces_files=$(find docs/prefaces -name "*.md" 2>/dev/null | wc -l || echo 0)
+
+          # Palavras por capítulo
+          ch0_words=$(find docs/chapter-0 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch1_words=$(find docs/chapter-1 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch2_words=$(find docs/chapter-2 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch3_words=$(find docs/chapter-3 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch4_words=$(find docs/chapter-4 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch5_words=$(find docs/chapter-5 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          prefaces_words=$(find docs/prefaces -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+
+          # Estimativa de progresso (assumindo ~500 palavras por arquivo no original)
+          # SICP tem aproximadamente 200 seções/arquivos
+          estimated_total_files=200
+          progress_percent=$(( (total_files * 100) / estimated_total_files ))
+
+          # Salvar outputs
+          echo "total_files=$total_files" >> $GITHUB_OUTPUT
+          echo "total_words=$total_words" >> $GITHUB_OUTPUT
+          echo "progress_percent=$progress_percent" >> $GITHUB_OUTPUT
+          echo "ch0_files=$ch0_files" >> $GITHUB_OUTPUT
+          echo "ch1_files=$ch1_files" >> $GITHUB_OUTPUT
+          echo "ch2_files=$ch2_files" >> $GITHUB_OUTPUT
+          echo "ch3_files=$ch3_files" >> $GITHUB_OUTPUT
+          echo "ch4_files=$ch4_files" >> $GITHUB_OUTPUT
+          echo "ch5_files=$ch5_files" >> $GITHUB_OUTPUT
+          echo "prefaces_files=$prefaces_files" >> $GITHUB_OUTPUT
+          echo "ch0_words=$ch0_words" >> $GITHUB_OUTPUT
+          echo "ch1_words=$ch1_words" >> $GITHUB_OUTPUT
+          echo "ch2_words=$ch2_words" >> $GITHUB_OUTPUT
+          echo "ch3_words=$ch3_words" >> $GITHUB_OUTPUT
+          echo "ch4_words=$ch4_words" >> $GITHUB_OUTPUT
+          echo "ch5_words=$ch5_words" >> $GITHUB_OUTPUT
+          echo "prefaces_words=$prefaces_words" >> $GITHUB_OUTPUT
+
+          echo "📊 Progresso calculado: $progress_percent%"
+          echo "📝 Total de arquivos: $total_files"
+          echo "📖 Total de palavras: $total_words"
+
+      - name: 📝 Gerar relatório de progresso
+        id: report
+        run: |
+          cat > progress-report.md << 'EOF'
+          # 📊 Relatório de Progresso da Tradução SICP.js PT-BR
+
+          **Data**: $(date '+%d/%m/%Y')
+
+          ## 📈 Visão Geral
+
+          - **Progresso estimado**: ${{ steps.progress.outputs.progress_percent }}%
+          - **Arquivos traduzidos**: ${{ steps.progress.outputs.total_files }}
+          - **Total de palavras**: ${{ steps.progress.outputs.total_words }}
+
+          ## 📚 Progresso por Capítulo
+
+          | Capítulo | Arquivos | Palavras |
+          |----------|----------|----------|
+          | Prefácios | ${{ steps.progress.outputs.prefaces_files }} | ${{ steps.progress.outputs.prefaces_words }} |
+          | Capítulo 0 | ${{ steps.progress.outputs.ch0_files }} | ${{ steps.progress.outputs.ch0_words }} |
+          | Capítulo 1 | ${{ steps.progress.outputs.ch1_files }} | ${{ steps.progress.outputs.ch1_words }} |
+          | Capítulo 2 | ${{ steps.progress.outputs.ch2_files }} | ${{ steps.progress.outputs.ch2_words }} |
+          | Capítulo 3 | ${{ steps.progress.outputs.ch3_files }} | ${{ steps.progress.outputs.ch3_words }} |
+          | Capítulo 4 | ${{ steps.progress.outputs.ch4_files }} | ${{ steps.progress.outputs.ch4_words }} |
+          | Capítulo 5 | ${{ steps.progress.outputs.ch5_files }} | ${{ steps.progress.outputs.ch5_words }} |
+
+          ## 📊 Barra de Progresso
+
+          ${{ steps.progress.outputs.progress_percent }}% concluído
+
+          ```
+          ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ${{ steps.progress.outputs.progress_percent }}%
+          ```
+
+          ## 🎯 Próximas Etapas
+
+          - [ ] Completar capítulo atual
+          - [ ] Revisar traduções existentes
+          - [ ] Adicionar exemplos interativos
+
+          ## 🤝 Como Contribuir
+
+          Quer ajudar a acelerar o progresso? Veja nosso [Guia de Contribuição](CONTRIBUTING.md)!
+
+          ---
+          *Relatório gerado automaticamente em $(date '+%d/%m/%Y %H:%M:%S UTC')*
+          EOF
+
+      - name: 💾 Upload do relatório como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: translation-progress-report-${{ github.run_number }}
+          path: progress-report.md
+          retention-days: 90
+
+      - name: 📊 Atualizar ou criar issue de progresso
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const progressPercent = '${{ steps.progress.outputs.progress_percent }}';
+            const totalFiles = '${{ steps.progress.outputs.total_files }}';
+            const totalWords = '${{ steps.progress.outputs.total_words }}';
+
+            const today = new Date().toLocaleDateString('pt-BR');
+
+            // Buscar issue de progresso existente
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'progresso-tradução,automated',
+            });
+
+            const progressIssue = issues.find(issue =>
+              issue.title.includes('Progresso da Tradução')
+            );
+
+            const reportBody = `## 📊 Atualização de Progresso - ${today}
+
+            ### 📈 Resumo
+
+            - **Progresso estimado**: ${progressPercent}%
+            - **Arquivos traduzidos**: ${totalFiles}
+            - **Total de palavras**: ${totalWords}
+
+            ### 📚 Progresso por Capítulo
+
+            | Capítulo | Arquivos | Palavras |
+            |----------|----------|----------|
+            | Prefácios | ${{ steps.progress.outputs.prefaces_files }} | ${{ steps.progress.outputs.prefaces_words }} |
+            | Capítulo 1 | ${{ steps.progress.outputs.ch1_files }} | ${{ steps.progress.outputs.ch1_words }} |
+            | Capítulo 2 | ${{ steps.progress.outputs.ch2_files }} | ${{ steps.progress.outputs.ch2_words }} |
+            | Capítulo 3 | ${{ steps.progress.outputs.ch3_files }} | ${{ steps.progress.outputs.ch3_words }} |
+            | Capítulo 4 | ${{ steps.progress.outputs.ch4_files }} | ${{ steps.progress.outputs.ch4_words }} |
+            | Capítulo 5 | ${{ steps.progress.outputs.ch5_files }} | ${{ steps.progress.outputs.ch5_words }} |
+
+            ### 📊 Barra de Progresso
+
+            \`\`\`
+            ${'█'.repeat(Math.floor(progressPercent / 2.5))}${'░'.repeat(40 - Math.floor(progressPercent / 2.5))} ${progressPercent}%
+            \`\`\`
+
+            ### 🎯 Como Contribuir
+
+            Quer ajudar a acelerar o progresso?
+
+            1. Veja as [issues abertas com label "tradução"](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/labels/tradução)
+            2. Escolha uma seção para traduzir
+            3. Leia o [Guia de Tradução](TRANSLATION.md)
+            4. Envie seu PR!
+
+            ---
+            *Atualização automática gerada em ${today}*`;
+
+            if (progressIssue) {
+              // Atualizar issue existente
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: progressIssue.number,
+                body: reportBody,
+              });
+              console.log(`Issue #${progressIssue.number} atualizada com novo progresso`);
+            } else {
+              // Criar nova issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '📊 Progresso da Tradução - Acompanhamento',
+                body: `${reportBody}\n\n---\n\n**Esta issue é atualizada automaticamente toda segunda-feira.**\n\nAcompanhe o progresso da tradução do SICP.js para português!`,
+                labels: ['progresso-tradução', 'automated', 'pinned'],
+              });
+              console.log(`Issue #${issue.data.number} criada com relatório de progresso`);
+            }
+
+      - name: ✅ Resumo
+        run: |
+          echo "✅ Análise de progresso concluída!"
+          echo "📊 Progresso: ${{ steps.progress.outputs.progress_percent }}%"
+          echo "📝 Arquivos: ${{ steps.progress.outputs.total_files }}"
+          echo "📖 Palavras: ${{ steps.progress.outputs.total_words }}"
