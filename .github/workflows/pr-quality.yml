@@ -196,7 +196,7 @@ jobs:
 
             const comment = `## ${sizeEmoji} Análise Automática do PR
 
-**Tamanho**: \`${sizeLabel}\`
+**Tamanho**: ${sizeLabel}
 
 | Métrica | Valor |
 |---------|-------|

@@ -1,0 +1,284 @@
+# 1.3.2 Construindo Funções Usando Expressões Lambda
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Ao usar `sum` como na seção 1.3.1, parece terrivelmente inconveniente ter que declarar funções triviais como `pi_term` e `pi_next` apenas para poder usá-las como argumentos para nossa função de ordem superior. Em vez de declarar `pi_next` e `pi_term`, seria mais conveniente ter uma forma de especificar diretamente "a função que retorna sua entrada incrementada em 4" e "a função que retorna o recíproco de sua entrada vezes sua entrada mais 2". Podemos fazer isso introduzindo a *expressão lambda* como uma forma sintática para criar funções. Usando expressões lambda, podemos descrever o que queremos como
+
+<CodePlayground
+  code={`x => x + 4`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+e
+
+<CodePlayground
+  code={`x => 1 / (x * (x + 2))`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Então podemos expressar nossa função `pi_sum` sem declarar nenhuma função auxiliar:
+
+<CodePlayground
+  code={`function pi_sum(a, b) {
+    return sum(x => 1 / (x * (x + 2)),
+               a,
+               x => x + 4,
+               b);
+}`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+Novamente, usando uma expressão lambda, podemos escrever a função `integral` sem ter que declarar a função auxiliar `add_dx`:
+
+<CodePlayground
+  code={`function integral(f, a, b, dx) {
+    return sum(f,
+               a + dx / 2,
+               x => x + dx,
+               b)
+           *
+           dx;
+}`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+<a name="footnote-link-1"></a>
+Em geral, expressões lambda são usadas para criar funções da mesma forma que declarações de funções, exceto que nenhum nome é especificado para a função e a palavra-chave `return` e as chaves são omitidas (se houver apenas um parâmetro, os parênteses em torno da lista de parâmetros também podem ser omitidos, como nos exemplos que vimos).[<sup>1</sup>](#footnote-1)
+
+```javascript
+(parâmetros) => expressão
+```
+
+A função resultante é tão uma função quanto uma que é criada usando uma instrução de declaração de função. A única diferença é que ela não foi associada a nenhum nome no ambiente. Consideramos
+
+<CodePlayground
+  code={`function plus4(x) {
+    return x + 4;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<a name="footnote-link-2"></a>
+como sendo equivalente a[<sup>2</sup>](#footnote-2)
+
+<CodePlayground
+  code={`const plus4 = x => x + 4;`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Podemos ler uma expressão lambda da seguinte forma:
+
+```text
+     x    =>    x     +     4
+//   ^          ^     ^     ^
+// parâmetro x  que retorna  x  mais  4
+```
+
+Como qualquer expressão que tem uma função como seu valor, uma expressão lambda pode ser usada como a expressão de função em uma aplicação, como em
+
+<CodePlayground
+  code={`((x, y, z) => x + y + square(z))(1, 2, 3);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+ou, de forma mais geral, em qualquer contexto onde normalmente usaríamos um nome de função.[<sup>3</sup>](#footnote-3)
+
+<a name="footnote-link-4"></a> <a name="footnote-link-5"></a>
+## Usando `const` para criar nomes locais
+
+Outra aplicação de expressões lambda é na criação de nomes locais. Frequentemente precisamos de nomes locais em nossas funções além daqueles que foram vinculados como parâmetros. Por exemplo, suponha que desejamos calcular a função
+
+$$
+f(x,y) = x(1+xy)^2 + y(1-y) + (1+xy)(1-y)
+$$
+
+que também poderíamos expressar como
+
+$$
+\begin{array}{lll}
+a &=& 1+xy\\
+b &=& 1-y\\
+f(x,y) &=& xa^2+yb+ab
+\end{array}
+$$
+
+Ao escrever uma função para calcular $f$, gostaríamos de incluir como nomes locais não apenas $x$ e $y$ mas também os nomes de quantidades intermediárias como $a$ e $b$. Uma maneira conveniente de declarar nomes locais é usando `const` dentro do corpo da função. Usando `const`, a função pode ser escrita como
+
+<CodePlayground
+  code={`function f(x, y) {
+    const a = 1 + x * y;
+    const b = 1 - y;
+    return x * square(a) + y * b + a * b;
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+Nomes que são declarados com `const` dentro de um bloco têm o corpo do bloco imediatamente envolvente como seu escopo.[<sup>4</sup>](#footnote-4)[<sup>5</sup>](#footnote-5)
+
+## Instruções condicionais
+
+Vimos que muitas vezes é útil declarar nomes que são locais para declarações de funções. Quando as funções ficam grandes, devemos manter o escopo dos nomes o mais restrito possível. Considere por exemplo `expmod` no exercício 1.26.
+
+<CodePlayground
+  code={`function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? (  expmod(base, exp / 2, m)
+              * expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+Esta função é desnecessariamente ineficiente, porque contém duas chamadas idênticas:
+
+```javascript
+expmod(base, exp / 2, m);
+```
+
+Embora isso possa ser facilmente corrigido neste exemplo usando a função `square`, isso não é tão fácil em geral. Sem usar `square`, seríamos tentados a introduzir um nome local para a expressão da seguinte forma:
+
+```javascript
+function expmod(base, exp, m) {
+    const half_exp = expmod(base, exp / 2, m);
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? (half_exp * half_exp) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}
+```
+
+Isso tornaria a função não apenas ineficiente, mas na verdade não terminante! O problema é que a declaração de constante aparece fora da expressão condicional, o que significa que ela é executada mesmo quando o caso base `exp === 0` é atendido. Para evitar esta situação, fornecemos *instruções condicionais* e permitimos que instruções de retorno apareçam nos ramos da instrução. Usando uma instrução condicional, podemos escrever a função `expmod` da seguinte forma:
+
+<CodePlayground
+  code={`function expmod(base, exp, m) {
+    if (exp === 0) {
+        return 1;
+    } else {
+        if (is_even(exp)) {
+            const half_exp = expmod(base, exp / 2, m);
+            return (half_exp * half_exp) % m;
+        } else {
+            return (base * expmod(base, exp - 1, m)) % m;
+        }
+    }
+}`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={450}
+  showLineNumbers={false}
+/>
+
+A forma geral de uma instrução condicional é
+
+```javascript
+if (predicado) { bloco-consequente } else { bloco-alternativo }
+```
+
+<a name="footnote-link-6"></a>
+Como nas expressões condicionais, o *predicado* é avaliado primeiro. Se ele for averdadeiro, o interpretador avalia o *bloco-consequente* (a sequência de instruções entre as chaves depois do predicado), e se ele for falso, o interpretador avalia o *bloco-alternativo* (a sequência de instruções entre as chaves depois de `else`).[<sup>6</sup>](#footnote-6)
+
+Observe que qualquer declaração de constante que ocorra em qualquer um dos blocos tem o respectivo bloco como seu escopo. Por exemplo, no `expmod` acima, o `half_exp` no consequente só é visível lá.
+
+## Exercício 1.34
+
+<a name="ex-1-34"></a>
+Suponha que declaramos
+
+<CodePlayground
+  code={`function f(g) {
+   return g(2);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Então temos
+
+<CodePlayground
+  code={`f(square);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function f(g) {
+   return g(2);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`f(z => z * (z + 1));`}
+  hiddenCode={`function f(g) {
+   return g(2);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+O que acontece se (perversamente) pedirmos ao interpretador para avaliar a aplicação `f(f)`? Explique.
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Na seção 2.1.3, estenderemos a sintaxe de expressões lambda para permitir um bloco como corpo em vez de apenas uma expressão, como nas instruções de declaração de função.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Em JavaScript, existem diferenças sutis entre as duas versões: Uma instrução de declaração de função é automaticamente "içada" (*hoisted*) (movida) para o início do bloco envolvente ou para o início do programa se ocorrer fora de qualquer bloco, enquanto uma declaração de constante não é movida. Nomes declarados com declaração de função podem ser reatribuídos usando atribuição (seção 3.1.1), enquanto nomes declarados com declarações de constante não podem. Neste livro, evitamos esses recursos e tratamos uma declaração de função como equivalente à declaração de constante correspondente.
+
+<a name="footnote-3"></a>
+**[3](#footnote-link-3)** Entender definições internas bem o suficiente para ter certeza de que um programa significa o que pretendemos requer um modelo mais elaborado do processo de avaliação do que apresentamos neste capítulo. No entanto, as sutilezas não surgem com definições internas de funções. Voltaremos a este problema nas seções 3.2.4 e 4.1.6, depois de aprendermos mais sobre a avaliação de blocos.
+
+<a name="footnote-4"></a>
+**[4](#footnote-link-4)** Observe que um nome declarado em um bloco não pode ser usado antes que a declaração seja totalmente avaliada, independentemente de o mesmo nome ser declarado fora do bloco. Assim, no programa abaixo, a tentativa de usar o `a` declarado no nível superior para fornecer um valor para o cálculo do `b` declarado em `f` não pode funcionar.
+
+```javascript
+const a = 1;
+function f(x) {
+    const b = a + x;
+    const a = 5;
+    return a + b;
+}
+f(10);
+```
+
+O programa leva a um erro, porque o `a` em `a + x` é usado antes que sua declaração seja avaliada. Retornaremos a este programa na seção 4.1.6 (exercício 4.19), depois que aprendermos mais sobre avaliação.
+
+<a name="footnote-5"></a>
+**[5](#footnote-link-5)** O modelo de substituição pode ser expandido para dizer que, para uma declaração de constante, o valor da expressão depois de `=` é substituído pelo nome antes de `=` no resto do corpo do bloco (após a declaração), semelhante à substituição de argumentos por parâmetros na avaliação de uma aplicação de função.
+
+<a name="footnote-6"></a>
+**[6](#footnote-link-6)** O nome "lambda" é usado porque a notação de expressão lambda tem suas raízes no *lambda calculus*, uma linguagem formal matemática introduzida pelo lógico matemático Alonzo Church (1941). Church desenvolveu o lambda calculus para fornecer uma base matemática rigorosa para estudar as noções de função e aplicação de função. O lambda calculus se tornou uma ferramenta básica para pesquisa matemática em semântica de linguagens de programação.

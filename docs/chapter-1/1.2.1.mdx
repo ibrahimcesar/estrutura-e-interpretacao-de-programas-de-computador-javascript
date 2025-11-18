@@ -1,0 +1,243 @@
+# 1.2.1 Recursão Linear e Iteração
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Começamos considerando a função fatorial, definida por
+
+$$
+n! = n\cdot(n-1)\cdot(n-2)\cdots3\cdot2\cdot1
+$$
+
+Existem muitas maneiras de calcular fatoriais. Uma maneira é fazer uso da observação de que $n!$ é igual a $n$ vezes $(n-1)!$ para qualquer inteiro positivo $n$:
+
+$$
+n! = n\cdot\left[(n-1)\cdot(n-2)\cdots3\cdot2\cdot1\right] = n \cdot(n-1)!
+$$
+
+Assim, podemos calcular $n!$ calculando $(n-1)!$ e multiplicando o resultado por $n$. Se adicionarmos a estipulação de que $1!$ é igual a 1, essa observação se traduz diretamente em uma função de computador:
+
+<CodePlayground
+  code={`function factorial(n) {
+    return n === 1
+           ? 1
+           : n * factorial(n - 1);
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Podemos usar o modelo de substituição da seção 1.1.5 para observar esta função em ação calculando $6!$, como mostrado na figura abaixo.
+
+![Um processo recursivo linear para calcular 6!](/img/ch1-Z-G-7.svg)
+
+*Figura: Um processo recursivo linear para calcular 6!.*
+
+Agora vamos tomar uma perspectiva diferente sobre o cálculo de fatoriais. Poderíamos descrever uma regra para calcular $n!$ especificando que primeiro multiplicamos 1 por 2, depois multiplicamos o resultado por 3, depois por 4, e assim por diante até chegarmos a $n$. Mais formalmente, mantemos um produto em execução, juntamente com um contador que conta de 1 até $n$. Podemos descrever a computação dizendo que o contador e o produto mudam simultaneamente de um passo para o próximo de acordo com a regra
+
+$$
+\begin{array}{lll}
+\textrm{produto} & \leftarrow & \textrm{contador} \cdot \textrm{produto}\\
+\textrm{contador} & \leftarrow & \textrm{contador} + 1
+\end{array}
+$$
+
+e estipulando que $n!$ é o valor do produto quando o contador excede $n$.
+
+<a name="footnote-link-1"></a>
+Mais uma vez, podemos reformular nossa descrição como uma função para calcular fatoriais:[<sup>1</sup>](#footnote-1)
+
+<CodePlayground
+  code={`function factorial(n) {
+    return fact_iter(1, 1, n);
+}
+function fact_iter(product, counter, max_count) {
+    return counter > max_count
+           ? product
+           : fact_iter(counter * product,
+                       counter + 1,
+                       max_count);
+}`}
+  height={350}
+  showLineNumbers={false}
+/>
+
+Como antes, podemos usar o modelo de substituição para visualizar o processo de calcular $6!$, como mostrado na figura abaixo.
+
+![Um processo iterativo linear para calcular 6!](/img/ch1-Z-G-10.svg)
+
+*Figura: Um processo iterativo linear para calcular 6!.*
+
+Compare os dois processos. De um ponto de vista, eles parecem quase não diferir de forma alguma. Ambos calculam a mesma função matemática no mesmo domínio, e cada um requer um número de passos proporcional a $n$ para calcular $n!$. De fato, ambos os processos até mesmo realizam a mesma sequência de multiplicações, obtendo a mesma sequência de produtos parciais. Por outro lado, quando consideramos as "formas" dos dois processos, descobrimos que eles evoluem de maneira bastante diferente.
+
+Considere o primeiro processo. O modelo de substituição revela uma forma de expansão seguida de contração, indicada pela seta na figura. A expansão ocorre à medida que o processo constrói uma cadeia de *operações diferidas* (neste caso, uma cadeia de multiplicações). A contração ocorre à medida que as operações são realmente realizadas. Este tipo de processo, caracterizado por uma cadeia de operações diferidas, é chamado de *processo recursivo*. Realizar este processo requer que o interpretador mantenha o controle das operações a serem realizadas posteriormente. No cálculo de $n!$, o comprimento da cadeia de multiplicações diferidas, e portanto a quantidade de informação necessária para mantê-la, cresce linearmente com $n$ (é proporcional a $n$), assim como o número de passos. Tal processo é chamado de *processo recursivo linear*.
+
+<a name="footnote-link-2"></a>
+Por contraste, o segundo processo não cresce e não encolhe. A cada passo, tudo o que precisamos controlar, para qualquer $n$, são os valores atuais dos nomes `product`, `counter` e `max_count`. Chamamos isso de *processo iterativo*. Em geral, um processo iterativo é aquele cujo estado pode ser resumido por um número fixo de *variáveis de estado*, juntamente com uma regra fixa que descreve como as variáveis de estado devem ser atualizadas à medida que o processo passa de estado para estado e um teste de fim (opcional) que especifica condições sob as quais o processo deve terminar. No cálculo de $n!$, o número de passos necessários cresce linearmente com $n$. Tal processo é chamado de *processo iterativo linear*.[<sup>2</sup>](#footnote-2)
+
+O contraste entre os dois processos pode ser visto de outra maneira. No caso iterativo, as variáveis de estado fornecem uma descrição completa do estado do processo em qualquer ponto. Se parássemos a computação entre passos, tudo o que precisaríamos fazer para retomar a computação seria fornecer ao interpretador os valores das três variáveis de estado. Não é assim com o processo recursivo. Neste caso, há alguma informação adicional "oculta", mantida pelo interpretador e não contida nas variáveis de estado, que indica "onde o processo está" ao negociar a cadeia de operações diferidas. Quanto mais longa a cadeia, mais informação deve ser mantida.
+
+Ao contrastar iteração e recursão, devemos ter cuidado para não confundir a noção de um processo *recursivo* com a noção de uma *função* recursiva. Quando descrevemos uma função como recursiva, estamos nos referindo ao fato sintático de que a declaração da função se refere (direta ou indiretamente) à própria função. Mas quando descrevemos um processo como seguindo um padrão que é, digamos, linearmente recursivo, estamos falando sobre como o processo evolui, não sobre a sintaxe de como uma função é escrita. Pode parecer perturbador que nos referimos a uma função recursiva como `fact_iter` como gerando um processo iterativo. No entanto, o processo realmente é iterativo: Seu estado é capturado completamente por suas três variáveis de estado, e um interpretador precisa manter o controle de apenas três nomes para executar o processo.
+
+<a name="footnote-link-3"></a> <a name="footnote-link-4"></a>
+Uma razão pela qual a distinção entre processo e função pode ser confusa é que a maioria das implementações de linguagens comuns (incluindo C, Java e Python) são projetadas de tal forma que a interpretação de qualquer função recursiva consome uma quantidade de memória que cresce com o número de chamadas de função, mesmo quando o processo descrito é, em princípio, iterativo. Como consequência, essas linguagens podem descrever processos iterativos apenas recorrendo a "construções de loop" de propósito especial, como `do`, `repeat`, `until`, `for` e `while`. A implementação de JavaScript que consideraremos no capítulo 5 não compartilha esse defeito. Ela executará um processo iterativo em espaço constante, mesmo que o processo iterativo seja descrito por uma função recursiva. Uma implementação com essa propriedade é chamada de *tail-recursive* (recursiva de cauda).[<sup>3</sup>](#footnote-3) Com uma implementação tail-recursive, a iteração pode ser expressa usando o mecanismo de chamada de função comum, de modo que construções de iteração especiais são úteis apenas como açúcar sintático.[<sup>4</sup>](#footnote-4)
+
+## Exercício 1.9
+
+<a name="ex-1-9"></a>
+Cada uma das duas funções a seguir define um método para adicionar dois inteiros positivos em termos das funções `inc`, que incrementa seu argumento em 1, e `dec`, que decrementa seu argumento em 1.
+
+<CodePlayground
+  code={`function plus(a, b) {
+    return a === 0 ? b : inc(plus(dec(a), b));
+}`}
+  hiddenCode={`function inc(x) {
+    return x + 1;
+}
+function dec(x) {
+    return x - 1;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`function plus(a, b) {
+    return a === 0 ? b : plus(dec(a), inc(b));
+}`}
+  hiddenCode={`function inc(x) {
+    return x + 1;
+}
+function dec(x) {
+    return x - 1;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Usando o modelo de substituição, ilustre o processo gerado por cada função ao avaliar `plus(4, 5)`. Esses processos são iterativos ou recursivos?
+
+## Exercício 1.10
+
+<a name="ex-1-10"></a>
+A função a seguir calcula uma função matemática chamada função de Ackermann.
+
+<CodePlayground
+  code={`function A(x, y) {
+    return y === 0
+           ? 0
+           : x === 0
+           ? 2 * y
+           : y === 1
+           ? 2
+           : A(x - 1, A(x, y - 1));
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+Quais são os valores das seguintes expressões?
+
+<CodePlayground
+  code={`A(1, 10);`}
+  hiddenCode={`function A(x, y) {
+    return y === 0
+           ? 0
+           : x === 0
+           ? 2 * y
+           : y === 1
+           ? 2
+           : A(x - 1, A(x, y - 1));
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`A(2, 4);`}
+  hiddenCode={`function A(x, y) {
+    return y === 0
+           ? 0
+           : x === 0
+           ? 2 * y
+           : y === 1
+           ? 2
+           : A(x - 1, A(x, y - 1));
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`A(3, 3);`}
+  hiddenCode={`function A(x, y) {
+    return y === 0
+           ? 0
+           : x === 0
+           ? 2 * y
+           : y === 1
+           ? 2
+           : A(x - 1, A(x, y - 1));
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Considere as seguintes funções, onde `A` é a função definida acima:
+
+<CodePlayground
+  code={`function f(n) {
+    return A(0, n);
+}
+function g(n) {
+    return A(1, n);
+}
+function h(n) {
+    return A(2, n);
+}
+function k(n) {
+    return 5 * n * n;
+}`}
+  hiddenCode={`function A(x, y) {
+    return y === 0
+           ? 0
+           : x === 0
+           ? 2 * y
+           : y === 1
+           ? 2
+           : A(x - 1, A(x, y - 1));
+}`}
+  height={350}
+  showLineNumbers={false}
+/>
+
+Dê definições matemáticas concisas para as funções calculadas pelas funções `f`, `g` e `h` para valores inteiros positivos de $n$. Por exemplo, `k(n)` calcula $5n^2$.
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Em um programa real, provavelmente usaríamos a estrutura de blocos introduzida na última seção para ocultar a declaração de `fact_iter`:
+
+```javascript
+function factorial(n) {
+    function iter(product, counter) {
+        return counter > n
+               ? product
+               : iter(counter * product,
+                      counter + 1);
+    }
+    return iter(1, 1);
+}
+```
+
+Evitamos fazer isso aqui para minimizar o número de coisas para pensar de uma vez.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Quando discutirmos a implementação de funções em máquinas de registradores no capítulo 5, veremos que qualquer processo iterativo pode ser realizado "em hardware" como uma máquina que tem um conjunto fixo de registradores e nenhuma memória auxiliar. Em contraste, realizar um processo recursivo requer uma máquina que usa uma estrutura de dados auxiliar conhecida como *pilha* (stack).
+
+<a name="footnote-3"></a>
+**[3](#footnote-link-3)** A recursão de cauda tem sido há muito conhecida como um truque de otimização de compilador. Uma base semântica coerente para recursão de cauda foi fornecida por Carl Hewitt (1977), que a explicou em termos do modelo de computação de "passagem de mensagens" que discutiremos no capítulo 3. Inspirado por isso, Gerald Jay Sussman e Guy Lewis Steele Jr. (veja Steele 1975) construíram um interpretador tail-recursive para Scheme. Steele mais tarde mostrou como a recursão de cauda é uma consequência da maneira natural de compilar chamadas de função (Steele 1977). O padrão IEEE para Scheme exige que as implementações de Scheme sejam tail-recursive. O padrão ECMA para JavaScript eventualmente seguiu o exemplo com o ECMAScript 2015 (ECMA 2015). Note, no entanto, que no momento desta escrita (2021), a maioria das implementações de JavaScript não está em conformidade com este padrão no que diz respeito à recursão de cauda.
+
+<a name="footnote-4"></a>
+**[4](#footnote-link-4)** O exercício 1.20 explora os loops `while` de JavaScript como açúcar sintático para funções que dão origem a processos iterativos. A linguagem JavaScript completa, como outras linguagens convencionais, apresenta uma profusão de formas sintáticas, todas as quais podem ser expressas de forma mais uniforme na linguagem Lisp. Isso, juntamente com o fato de que essas construções normalmente envolvem ponto e vírgulas cujas regras de posicionamento às vezes não são óbvias, levou Alan Perlis a fazer a piada: "Açúcar sintático causa câncer de ponto e vírgula."

@@ -111,8 +111,8 @@ Para informações detalhadas sobre o processo de tradução, convenções de es
 
 ```
 Tradução: 🟢 Em Andamento
-Capítulos Concluídos: 1/5
-Progresso Estimado: ~35%
+Capítulos Concluídos: 2/5
+Progresso Estimado: ~40%
 ```
 
 ### Detalhamento por Capítulo
@@ -138,27 +138,27 @@ Progresso Estimado: ~35%
 - ✅ 1.1.3 Avaliando Combinações de Operadores
 - ✅ 1.1.4 Funções Compostas
 - ✅ 1.1.5 O Modelo de Substituição para Aplicação de Função
-- ⬜ 1.1.6 Expressões Condicionais e Predicados
-- ⬜ 1.1.7 Exemplo: Raiz Quadrada pelo Método de Newton
+- ✅ 1.1.6 Expressões Condicionais e Predicados
+- ✅ 1.1.7 Exemplo: Raiz Quadrada pelo Método de Newton
 - ✅ 1.1.8 Funções como Abstrações de Caixa Preta
 
 ##### 1.2 Funções e os Processos que Geram
 - ✅ 1.2.md (Introdução da seção)
-- ⬜ 1.2.1 Recursão Linear e Iteração
+- ✅ 1.2.1 Recursão Linear e Iteração
 - ✅ 1.2.2 Recursão em Árvore
-- ⬜ 1.2.3 Ordens de Crescimento
-- ⬜ 1.2.4 Exponenciação
-- ⬜ 1.2.5 Máximo Divisor Comum
-- ⬜ 1.2.6 Exemplo: Testando a Primalidade
+- ✅ 1.2.3 Ordens de Crescimento
+- ✅ 1.2.4 Exponenciação
+- ✅ 1.2.5 Máximo Divisor Comum
+- ✅ 1.2.6 Exemplo: Testando Primalidade
 
 ##### 1.3 Formulação de Abstrações com Funções de Ordem Superior
 - ✅ 1.3.mdx (Introdução da seção)
-- ⬜ 1.3.1 Funções como Argumentos
-- ⬜ 1.3.2 Construindo Funções Usando Lambda
-- ⬜ 1.3.3 Funções como Métodos Gerais
+- ✅ 1.3.1 Funções como Argumentos
+- ✅ 1.3.2 Construindo Funções Usando Expressões Lambda
+- ✅ 1.3.3 Funções como Métodos Gerais
 - ✅ 1.3.4 Funções como Retorno
 
-**Status: 🟡 Em Andamento (12/22 - 55%)**
+**Status: ✅ Completo (22/22 - 100%)**
 
 ---
 
@@ -280,19 +280,9 @@ Progresso Estimado: ~35%
 
 ### 🎯 Próximas Prioridades de Tradução
 
-1. **Capítulo 1 - Seções Faltantes:**
-   - 1.1.6 Expressões Condicionais e Predicados
-   - 1.1.7 Exemplo: Raiz Quadrada pelo Método de Newton
-   - 1.2.1 Recursão Linear e Iteração
-   - 1.2.3 Ordens de Crescimento
-   - 1.2.4 Exponenciação
-   - 1.2.5 Máximo Divisor Comum
-   - 1.2.6 Exemplo: Testando a Primalidade
-   - 1.3.1 Funções como Argumentos
-   - 1.3.2 Construindo Funções Usando Lambda
-   - 1.3.3 Funções como Métodos Gerais
-
-2. **Capítulo 3 - Iniciar tradução completa**
+1. **Capítulo 3 - Modularidade, Objetos e Estado**
+   - Iniciar tradução completa de todas as seções
+   - Aproximadamente 25 seções a serem traduzidas
 
 ### 📊 Como Acompanhar o Progresso
 
