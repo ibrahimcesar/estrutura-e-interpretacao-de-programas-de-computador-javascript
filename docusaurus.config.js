@@ -92,7 +92,7 @@ const config = {
       navbar: {
         title: 'SICP.js',
         logo: {
-          alt: 'SICP.js Logo',
+          alt: '🧙 SICP.js',
           src: 'img/logo.svg',
         },
         items: [
