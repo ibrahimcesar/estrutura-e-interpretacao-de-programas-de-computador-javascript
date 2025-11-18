@@ -52,6 +52,8 @@ const sidebars = {
             'chapter-1/1.1.3',
             'chapter-1/1.1.4',
             'chapter-1/1.1.5',
+            'chapter-1/1.1.6',
+            'chapter-1/1.1.7',
             'chapter-1/1.1.8',
           ],
         },

@@ -23,6 +23,7 @@ Podemos traduzir imediatamente esta definição em uma função recursiva para c
            : fib(n - 1) + fib(n - 2);
 }`}
   height={200}
+  showLineNumbers={false}
 />
 
 ![O processo recursivo em árvore gerado ao calcular fib(5)](/img/ch1-fibonacci-tree.svg)
@@ -57,7 +58,8 @@ function fib_iter(a, b, count) {
            ? b
            : fib_iter(a + b, a, count - 1);
 }`}
-  height={200}
+  height={250}
+  showLineNumbers={false}
 />
 
 Este segundo método para calcular Fib(n) é uma iteração linear. A diferença no número de passos necessários pelos dois métodos — um linear em n, outro crescendo tão rápido quanto o próprio Fib(n) — é enorme, mesmo para entradas pequenas.
@@ -109,7 +111,8 @@ function first_denomination(kinds_of_coins) {
          : kinds_of_coins === 5 ? 50
          : 0;
 }`}
-  height={300}
+  height={400}
+  showLineNumbers={false}
 />
 
 (A função `first_denomination` recebe como entrada o número de tipos de moedas disponíveis e retorna a denominação do primeiro tipo. Aqui estamos pensando nas moedas como organizadas em ordem da maior para a menor, mas qualquer ordem funcionaria igualmente bem.) Agora podemos responder nossa pergunta original sobre trocar um dólar:
