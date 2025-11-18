@@ -1,0 +1,251 @@
+# 1.1.7 Exemplo: Raiz Quadrada pelo Método de Newton
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Funções, como introduzidas acima, são muito parecidas com funções matemáticas ordinárias. Elas especificam um valor que é determinado por um ou mais parâmetros. Mas há uma diferença importante entre funções matemáticas e funções de computador. Funções de computador devem ser efetivas.
+
+Como exemplo, considere o problema de calcular raízes quadradas. Podemos definir a função raiz quadrada como:
+
+$$
+\sqrt{x}\ =\text{ o }y\text{ tal que }y \geq 0\text{ e }
+y^2\ =\ x
+$$
+
+Isso descreve uma função matemática perfeitamente legítima. Poderíamos usá-la para reconhecer se um número é a raiz quadrada de outro, ou para derivar fatos sobre raízes quadradas em geral. Por outro lado, a definição não descreve uma função de computador. De fato, ela nos diz quase nada sobre como realmente encontrar a raiz quadrada de um número dado. Não ajudará reformular esta definição em pseudo-JavaScript:
+
+```javascript
+function sqrt(x) {
+    return the y with y >= 0 && square(y) === x;
+}
+```
+
+Isso apenas evita a questão.
+
+O contraste entre função matemática e função de computador é um reflexo da distinção geral entre descrever propriedades das coisas e descrever como fazer as coisas, ou, como às vezes é referido, a distinção entre conhecimento declarativo e conhecimento imperativo. Em matemática, geralmente estamos preocupados com descrições declarativas (o que é), enquanto em ciência da computação geralmente estamos preocupados com descrições imperativas (como fazer).[<sup>1</sup>](#footnote-1)
+
+Como se calcula raízes quadradas? A maneira mais comum é usar o método de Newton de aproximações sucessivas, que diz que sempre que temos um palpite *y* para o valor da raiz quadrada de um número *x*, podemos realizar uma manipulação simples para obter um palpite melhor (mais próximo da raiz quadrada real) fazendo a média de *y* com *x*/*y*.[<sup>2</sup>](#footnote-2) Por exemplo, podemos calcular a raiz quadrada de 2 da seguinte forma. Suponha que nosso palpite inicial seja 1:
+
+$$
+\begin{array}{lll}
+\textrm{Palpite} & \textrm{Quociente} & \textrm{Média}\\[1em]
+1      & {\displaystyle \frac{2}{1} = 2}           & {\displaystyle \frac{(2+1)}{2} = 1.5} \\[1em]
+1.5    & {\displaystyle \frac{2}{1.5} = 1.3333}    & {\displaystyle \frac{(1.3333+1.5)}{2} = 1.4167} \\[1em]
+1.4167 & {\displaystyle \frac{2}{1.4167} = 1.4118} & {\displaystyle \frac{(1.4167+1.4118)}{2} = 1.4142} \\[1em]
+1.4142 & \ldots & \ldots
+\end{array}
+$$
+
+Continuando este processo, obtemos aproximações cada vez melhores da raiz quadrada.
+
+Agora vamos formalizar o processo em termos de funções. Começamos com um valor para o radicando (o número cuja raiz quadrada estamos tentando calcular) e um valor para o palpite. Se o palpite é bom o suficiente para nossos propósitos, terminamos; se não, devemos repetir o processo com um palpite melhorado. Escrevemos esta estratégia básica como uma função:
+
+<CodePlayground
+  code={`function sqrt_iter(guess, x) {
+    return is_good_enough(guess, x)
+           ? guess
+           : sqrt_iter(improve(guess, x), x);
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Um palpite é melhorado fazendo a média dele com o quociente do radicando e o palpite antigo:
+
+<CodePlayground
+  code={`function improve(guess, x) {
+    return average(guess, x / guess);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+onde
+
+<CodePlayground
+  code={`function average(x, y) {
+    return (x + y) / 2;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Também temos que dizer o que queremos dizer com "bom o suficiente". O seguinte servirá para ilustração, mas não é realmente um teste muito bom. (Veja o exercício 1.7.) A ideia é melhorar a resposta até que ela esteja próxima o suficiente de modo que seu quadrado difira do radicando por menos do que uma tolerância predeterminada (aqui 0.001):[<sup>3</sup>](#footnote-3)
+
+<CodePlayground
+  code={`function is_good_enough(guess, x) {
+    return abs(square(guess) - x) < 0.001;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Finalmente, precisamos de uma maneira de começar. Por exemplo, podemos sempre supor que a raiz quadrada de qualquer número é 1:
+
+<CodePlayground
+  code={`function sqrt(x) {
+    return sqrt_iter(1, x);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Se digitarmos essas declarações no interpretador, podemos usar `sqrt` assim como podemos usar qualquer função:
+
+<CodePlayground
+  code={`sqrt(9);`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+```
+3.00009155413138
+```
+
+<CodePlayground
+  code={`sqrt(100 + 37);`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+```
+11.704699917758145
+```
+
+<CodePlayground
+  code={`sqrt(sqrt(2) + sqrt(3));`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+```
+1.7739279023207892
+```
+
+<CodePlayground
+  code={`square(sqrt(1000));`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+```
+1000.000369924366
+```
+
+O programa `sqrt` também ilustra que a linguagem funcional simples que introduzimos até agora é suficiente para escrever qualquer programa puramente numérico que se poderia escrever em, digamos, C ou Pascal. Isso pode parecer surpreendente, já que não incluímos em nossa linguagem nenhum construto iterativo (de loop) que direcione o computador a fazer algo repetidamente. A função `sqrt_iter`, por outro lado, demonstra como a iteração pode ser realizada sem usar nenhum construto especial além da capacidade ordinária de chamar uma função.[<sup>4</sup>](#footnote-4)
+
+---
+
+## Exercícios
+
+### Exercício 1.6
+
+Alyssa P. Hacker não gosta da sintaxe de expressões condicionais, envolvendo os caracteres `?` e `:`. "Por que não posso simplesmente declarar uma função condicional ordinária cuja aplicação funciona como expressões condicionais?" ela pergunta.[<sup>5</sup>](#footnote-5) A amiga de Alyssa, Eva Lu Ator, afirma que isso pode de fato ser feito, e ela declara uma função `conditional` da seguinte forma:
+
+<CodePlayground
+  code={`function conditional(predicate, then_clause, else_clause) {
+    return predicate ? then_clause : else_clause;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Eva demonstra o programa para Alyssa:
+
+<CodePlayground
+  code={`conditional(2 === 3, 0, 5);`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+```
+5
+```
+
+<CodePlayground
+  code={`conditional(1 === 1, 0, 5);`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+```
+0
+```
+
+Encantada, Alyssa usa `conditional` para reescrever o programa de raiz quadrada:
+
+<CodePlayground
+  code={`function sqrt_iter(guess, x) {
+    return conditional(is_good_enough(guess, x),
+                       guess,
+                       sqrt_iter(improve(guess, x),
+                                 x));
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+O que acontece quando Alyssa tenta usar isso para calcular raízes quadradas? Explique.
+
+**Resposta:** Qualquer chamada de `sqrt_iter` leva imediatamente a um loop infinito. A razão para isso é nossa avaliação de ordem aplicativa. A avaliação da expressão de retorno de `sqrt_iter` precisa avaliar seus argumentos primeiro, incluindo a chamada recursiva de `sqrt_iter`, independentemente de o predicado avaliar para verdadeiro ou falso. O mesmo acontece com a chamada recursiva, e assim a função `conditional` nunca é realmente aplicada.
+
+### Exercício 1.7
+
+O teste `is_good_enough` usado no cálculo de raízes quadradas não será muito eficaz para encontrar as raízes quadradas de números muito pequenos. Além disso, em computadores reais, operações aritméticas são quase sempre realizadas com precisão limitada. Isso torna nosso teste inadequado para números muito grandes. Explique essas afirmações, com exemplos mostrando como o teste falha para números pequenos e grandes. Uma estratégia alternativa para implementar `is_good_enough` é observar como `guess` muda de uma iteração para a próxima e parar quando a mudança for uma fração muito pequena do palpite. Projete uma função de raiz quadrada que usa esse tipo de teste final. Isso funciona melhor para números pequenos e grandes?
+
+**Resposta:** A tolerância absoluta de 0.001 é muito grande ao calcular a raiz quadrada de um valor pequeno. Por exemplo, `sqrt(0.0001)` resulta em 0.03230844833048122 em vez do valor esperado 0.01, um erro de mais de 200%.
+
+Por outro lado, para valores muito grandes, erros de arredondamento podem fazer com que o algoritmo nunca chegue próximo o suficiente da raiz quadrada, caso em que não terminará.
+
+O programa a seguir alivia o problema substituindo uma tolerância absoluta por uma tolerância relativa:
+
+<CodePlayground
+  code={`const relative_tolerance = 0.0001;
+function is_good_enough(guess, x) {
+    return abs(square(guess) - x) < guess * relative_tolerance;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+### Exercício 1.8
+
+O método de Newton para raízes cúbicas é baseado no fato de que se *y* é uma aproximação para a raiz cúbica de *x*, então uma aproximação melhor é dada pelo valor:
+
+$$
+\dfrac{x/y^{2}+2y}{3}
+$$
+
+Use esta fórmula para implementar uma função de raiz cúbica análoga à função de raiz quadrada. (Na seção 1.3.4 veremos como implementar o método de Newton em geral como uma abstração dessas funções de raiz quadrada e raiz cúbica.)
+
+**Resposta:**
+
+<CodePlayground
+  code={`function is_good_enough(guess, x) {
+    return abs(cube(guess) - x) < 0.001;
+}
+function div3(x, y) {
+     return (x + y) / 3;
+}
+function improve(guess, x) {
+    return div3(x / (guess * guess), 2 * guess);
+}
+function cube_root(guess, x) {
+    return is_good_enough(guess, x)
+           ? guess
+           : cube_root(improve(guess, x), x);
+}`}
+  height={350}
+  showLineNumbers={false}
+/>
+
+---
+
+<a name="footnote-1"></a> [[1]](#footnote-link-1) Descrições declarativas e imperativas estão intimamente relacionadas, como de fato estão a matemática e a ciência da computação. Por exemplo, dizer que a resposta produzida por um programa é "correta" é fazer uma declaração declarativa sobre o programa. Há uma grande quantidade de pesquisa voltada para estabelecer técnicas para provar que programas estão corretos, e muito da dificuldade técnica deste assunto tem a ver com a negociação da transição entre declarações imperativas (das quais os programas são construídos) e declarações declarativas (que podem ser usadas para deduzir coisas). De forma relacionada, designers de linguagens de programação exploraram as chamadas linguagens de muito alto nível, nas quais realmente se programa em termos de declarações declarativas. A ideia é tornar os interpretadores sofisticados o suficiente para que, dado o conhecimento "o que é" especificado pelo programador, eles possam gerar conhecimento "como fazer" automaticamente. Isso não pode ser feito em geral, mas há áreas importantes onde o progresso foi feito. Revisitaremos esta ideia no capítulo 4.
+
+<a name="footnote-2"></a> [[2]](#footnote-link-2) Este algoritmo de raiz quadrada é na verdade um caso especial do método de Newton, que é uma técnica geral para encontrar raízes de equações. O próprio algoritmo de raiz quadrada foi desenvolvido por Heron de Alexandria no primeiro século EC. Veremos como expressar o método geral de Newton como uma função JavaScript na seção 1.3.4.
+
+<a name="footnote-3"></a> [[3]](#footnote-link-3) Geralmente daremos nomes de predicados começando com `is_`, para nos ajudar a lembrar que são predicados.
+
+<a name="footnote-4"></a> [[4]](#footnote-link-4) Leitores que estão preocupados com as questões de eficiência envolvidas no uso de chamadas de função para implementar iteração devem observar as observações sobre "recursão de cauda" na seção 1.2.1.
+
+<a name="footnote-5"></a> [[5]](#footnote-link-5) Como uma hacker de Lisp do original *Structure and Interpretation of Computer Programs*, Alyssa prefere uma sintaxe mais simples e uniforme.
