@@ -1,0 +1,96 @@
+name: 🗑️ Gerenciar Issues e PRs Inativos
+
+on:
+  schedule:
+    # Executa diariamente às 2:00 UTC (23:00 BRT)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Permite execução manual
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Marcar e Fechar Itens Inativos
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🗑️ Processar issues e PRs inativos
+        uses: actions/stale@v9
+        with:
+          # Configurações gerais
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Configuração para Issues
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          stale-issue-label: 'stale'
+          exempt-issue-labels: 'pinned,keep-open,in-progress,blocked,waiting-for-response'
+
+          stale-issue-message: |
+            👋 Olá! Esta issue está inativa há 60 dias.
+
+            Esta issue será automaticamente fechada em 14 dias se não houver atividade adicional.
+
+            Se você ainda está trabalhando nisto ou acredita que a issue ainda é relevante,
+            por favor adicione um comentário para mantê-la aberta.
+
+            Para evitar que esta issue seja marcada como inativa no futuro, você pode:
+            - Adicionar a label `keep-open` se for importante de longo prazo
+            - Adicionar a label `in-progress` se estiver trabalhando ativamente
+            - Adicionar comentários regulares sobre o progresso
+
+            Obrigado por contribuir! 🙏
+
+          close-issue-message: |
+            🔒 Esta issue foi fechada automaticamente por inatividade.
+
+            Se você acredita que esta issue ainda é relevante, sinta-se livre para:
+            - Reabrir esta issue com contexto atualizado
+            - Criar uma nova issue referenciando esta
+            - Entrar em contato com os mantenedores
+
+            Obrigado! ✨
+
+          # Configuração para Pull Requests
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
+          stale-pr-label: 'stale'
+          exempt-pr-labels: 'pinned,keep-open,in-review,blocked,work-in-progress'
+
+          stale-pr-message: |
+            👋 Olá! Este Pull Request está inativo há 30 dias.
+
+            Este PR será automaticamente fechado em 7 dias se não houver atividade adicional.
+
+            Se você ainda está trabalhando neste PR:
+            - Por favor atualize o branch com `main`
+            - Resolva conflitos de merge se houver
+            - Responda a comentários de revisão pendentes
+            - Adicione a label `work-in-progress` se ainda estiver desenvolvendo
+
+            Se precisar de ajuda ou tiver dúvidas, não hesite em perguntar! 💬
+
+            Obrigado por contribuir! 🙏
+
+          close-pr-message: |
+            🔒 Este Pull Request foi fechado automaticamente por inatividade.
+
+            Se você ainda deseja que estas mudanças sejam merged:
+            - Reabra este PR com o branch atualizado
+            - Crie um novo PR com as mudanças
+            - Entre em contato com os mantenedores para assistência
+
+            Seu trabalho é valorizado! Não hesite em retornar quando estiver pronto. ✨
+
+          # Configurações adicionais
+          operations-per-run: 100
+          remove-stale-when-updated: true
+          ascending: true
+
+          # Labels de exemção automática por milestone
+          exempt-all-milestones: false
+
+          # Configuração de debug (ativar se necessário)
+          debug-only: false
