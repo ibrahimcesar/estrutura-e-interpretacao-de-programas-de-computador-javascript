@@ -1,6 +1,5 @@
 import React from 'react';
 import { Sandpack } from "@codesandbox/sandpack-react";
-import { nightOwl, aquaBlue } from "@codesandbox/sandpack-react";
 import { useColorMode } from '@docusaurus/theme-common';
 
 /**
@@ -30,7 +29,7 @@ export default function CodePlayground({
   height = 300,
 }) {
   const { colorMode } = useColorMode();
-  const theme = colorMode === 'dark' ? nightOwl : aquaBlue;
+  const theme = colorMode === 'dark' ? 'dark' : 'light';
 
   // Construir estrutura de arquivos baseado nas props
   let sandpackFiles;
