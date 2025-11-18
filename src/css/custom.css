@@ -285,3 +285,28 @@ div[class*='announcementBar'] {
   font-weight: 600;
   margin-bottom: 1rem;
 }
+
+/* Sandpack CodePlayground - Aumentar tamanho da fonte do output */
+.sp-console-item,
+.sp-console-output,
+.sp-console-message {
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+/* Mensagens de erro no console */
+.sp-console-error {
+  font-size: 16px !important;
+}
+
+/* Editor de código do Sandpack */
+.sp-code-editor,
+.sp-cm {
+  font-size: 14px !important;
+}
+
+/* Preview/Output do Sandpack */
+.sp-preview-container,
+.sp-preview-iframe {
+  font-size: 16px !important;
+}
