@@ -1,0 +1,162 @@
+name: 📸 Percy Visual Regression Testing
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  percy:
+    name: 📸 Run Percy Screenshots
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: npm ci
+
+      - name: 🏗️ Build do site
+        run: npm run build
+
+      - name: 🚀 Servir site em background
+        run: |
+          npm run serve &
+          echo $! > serve.pid
+          # Aguardar site estar disponível
+          npx wait-on http://localhost:3000/pt_BR/ --timeout 60000
+
+      - name: 📸 Percy snapshot
+        run: npx @percy/cli snapshot ./build
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+
+      - name: 🛑 Parar servidor
+        if: always()
+        run: |
+          if [ -f serve.pid ]; then
+            kill $(cat serve.pid) || true
+            rm serve.pid
+          fi
+
+  percy-script:
+    name: 📸 Percy with Custom Script
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: |
+          npm ci
+          npm install --save-dev @percy/cli @percy/puppeteer puppeteer
+
+      - name: 🏗️ Build do site
+        run: npm run build
+
+      - name: 🚀 Servir site em background
+        run: |
+          npm run serve &
+          echo $! > serve.pid
+          npx wait-on http://localhost:3000/pt_BR/ --timeout 60000
+
+      - name: 📸 Run Percy script
+        run: npx percy exec -- node .github/percy/percy-script.js
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+
+      - name: 🛑 Parar servidor
+        if: always()
+        run: |
+          if [ -f serve.pid ]; then
+            kill $(cat serve.pid) || true
+            rm serve.pid
+          fi
+
+      - name: 💬 Comentar no PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = `## 📸 Percy Visual Regression Testing
+
+            Screenshots foram capturados e enviados para Percy para análise de regressão visual.
+
+            ### 🔍 Como Revisar
+
+            1. Acesse o [Percy Dashboard](https://percy.io/ibrahimcesar/sicp-js-pt-br)
+            2. Encontre o build correspondente a este PR
+            3. Revise as diferenças visuais detectadas
+            4. Aprove ou rejeite as mudanças
+
+            ### 📊 O que Percy Verifica
+
+            - ✅ Layout consistency
+            - ✅ CSS rendering
+            - ✅ Responsive design
+            - ✅ Dark/light themes
+            - ✅ Typography
+            - ✅ Component rendering
+
+            ### 🎯 Páginas Testadas
+
+            - Home page
+            - Prefácios
+            - Capítulos (intro e seções)
+            - Componentes individuais
+
+            ---
+            *Visual regression testing powered by Percy*`;
+
+            // Verificar se já existe comentário
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Percy Visual Regression Testing')
+            );
+
+            if (botComment) {
+              // Atualizar comentário existente
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              // Criar novo comentário
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
