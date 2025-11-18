@@ -1,0 +1,288 @@
+name: 🔍 PR Quality Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  pr-metadata:
+    name: 📊 Análise de PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📏 Calcular tamanho do PR
+        id: pr-size
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            let additions = 0;
+            let deletions = 0;
+            let changedFiles = files.length;
+
+            files.forEach(file => {
+              additions += file.additions;
+              deletions += file.deletions;
+            });
+
+            const totalChanges = additions + deletions;
+            let sizeLabel = '';
+
+            // Determinar tamanho do PR
+            if (totalChanges < 10) {
+              sizeLabel = 'size/XS';
+            } else if (totalChanges < 50) {
+              sizeLabel = 'size/S';
+            } else if (totalChanges < 250) {
+              sizeLabel = 'size/M';
+            } else if (totalChanges < 1000) {
+              sizeLabel = 'size/L';
+            } else {
+              sizeLabel = 'size/XL';
+            }
+
+            core.setOutput('size-label', sizeLabel);
+            core.setOutput('additions', additions);
+            core.setOutput('deletions', deletions);
+            core.setOutput('changed-files', changedFiles);
+            core.setOutput('total-changes', totalChanges);
+
+      - name: 🏷️ Adicionar label de tamanho
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const sizeLabel = '${{ steps.pr-size.outputs.size-label }}';
+            const allSizeLabels = ['size/XS', 'size/S', 'size/M', 'size/L', 'size/XL'];
+
+            // Remover labels de tamanho anteriores
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            for (const label of currentLabels) {
+              if (allSizeLabels.includes(label.name) && label.name !== sizeLabel) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: label.name,
+                });
+              }
+            }
+
+            // Adicionar nova label de tamanho
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [sizeLabel],
+            });
+
+      - name: 🏷️ Auto-labeling por tipo de arquivo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const labels = new Set();
+
+            // Análise dos arquivos modificados
+            for (const file of files) {
+              const filename = file.filename;
+
+              // Documentação
+              if (filename.endsWith('.md')) {
+                labels.add('documentation');
+              }
+
+              // Tradução
+              if (filename.includes('/docs/') && filename.endsWith('.md')) {
+                labels.add('tradução');
+              }
+
+              // GitHub Actions / Workflows
+              if (filename.includes('.github/workflows/')) {
+                labels.add('github-actions');
+              }
+
+              // Dependências
+              if (filename === 'package.json' || filename === 'package-lock.json') {
+                labels.add('dependencies');
+              }
+
+              // Configuração
+              if (filename.includes('config') || filename === 'Makefile' ||
+                  filename === '.editorconfig' || filename === '.nvmrc') {
+                labels.add('configuration');
+              }
+
+              // CSS/Styling
+              if (filename.endsWith('.css') || filename.endsWith('.scss')) {
+                labels.add('styling');
+              }
+
+              // JavaScript/TypeScript
+              if (filename.endsWith('.js') || filename.endsWith('.jsx') ||
+                  filename.endsWith('.ts') || filename.endsWith('.tsx')) {
+                labels.add('javascript');
+              }
+
+              // Imagens/Assets
+              if (filename.match(/\.(png|jpg|jpeg|gif|svg|ico|webp)$/i)) {
+                labels.add('assets');
+              }
+            }
+
+            // Adicionar labels identificadas
+            if (labels.size > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: Array.from(labels),
+              });
+            }
+
+      - name: 💬 Comentar resumo do PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const additions = '${{ steps.pr-size.outputs.additions }}';
+            const deletions = '${{ steps.pr-size.outputs.deletions }}';
+            const changedFiles = '${{ steps.pr-size.outputs.changed-files }}';
+            const totalChanges = '${{ steps.pr-size.outputs.total-changes }}';
+            const sizeLabel = '${{ steps.pr-size.outputs.size-label }}';
+
+            // Emoji baseado no tamanho
+            let sizeEmoji = '📦';
+            if (sizeLabel === 'size/XS') sizeEmoji = '🧩';
+            if (sizeLabel === 'size/S') sizeEmoji = '📦';
+            if (sizeLabel === 'size/M') sizeEmoji = '📚';
+            if (sizeLabel === 'size/L') sizeEmoji = '🎯';
+            if (sizeLabel === 'size/XL') sizeEmoji = '🎪';
+
+            // Dica baseada no tamanho
+            let tip = '';
+            if (sizeLabel === 'size/XL') {
+              tip = '\n\n> 💡 **Dica**: Este PR é muito grande. Considere dividi-lo em PRs menores para facilitar a revisão.';
+            } else if (sizeLabel === 'size/L') {
+              tip = '\n\n> ℹ️ Este é um PR grande. A revisão pode levar mais tempo.';
+            }
+
+            const comment = `## ${sizeEmoji} Análise Automática do PR
+
+**Tamanho**: \`${sizeLabel}\`
+
+| Métrica | Valor |
+|---------|-------|
+| ➕ Adições | ${additions} |
+| ➖ Remoções | ${deletions} |
+| 📝 Arquivos modificados | ${changedFiles} |
+| 🔢 Total de mudanças | ${totalChanges} |
+${tip}
+
+---
+*Análise automática gerada pelo workflow de qualidade*`;
+
+            // Verificar se já existe comentário
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Análise Automática do PR')
+            );
+
+            if (botComment) {
+              // Atualizar comentário existente
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              // Criar novo comentário
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+  check-status:
+    name: 📋 Status de Verificações
+    runs-on: ubuntu-latest
+    needs: pr-metadata
+    if: always()
+
+    steps:
+      - name: 💬 Comentar status das verificações
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Esperar um pouco para que os outros workflows iniciem
+            await new Promise(resolve => setTimeout(resolve, 10000));
+
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha,
+            });
+
+            let lintStatus = '⏳ Aguardando';
+            let spellStatus = '⏳ Aguardando';
+            let linkStatus = '⏳ Aguardando';
+
+            for (const run of checkRuns.check_runs) {
+              const name = run.name.toLowerCase();
+              const status = run.status;
+              const conclusion = run.conclusion;
+
+              let emoji = '⏳';
+              if (status === 'completed') {
+                emoji = conclusion === 'success' ? '✅' : '❌';
+              }
+
+              if (name.includes('markdown') || name.includes('lint')) {
+                lintStatus = `${emoji} ${run.name}`;
+              } else if (name.includes('spell')) {
+                spellStatus = `${emoji} ${run.name}`;
+              } else if (name.includes('link')) {
+                linkStatus = `${emoji} ${run.name}`;
+              }
+            }
+
+            console.log(`Lint: ${lintStatus}`);
+            console.log(`Spell: ${spellStatus}`);
+            console.log(`Link: ${linkStatus}`);

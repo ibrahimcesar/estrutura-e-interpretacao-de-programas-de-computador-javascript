@@ -6,6 +6,41 @@
   <h1>Estrutura e Interpretação de Programas de Computador</h1>
   <h2>Adaptação em JavaScript</h2>
 
+  <p>
+    <a href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/actions/workflows/ci.yml">
+      <img src="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/workflows/CI/badge.svg" alt="CI Status">
+    </a>
+    <a href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/actions/workflows/deploy.yml">
+      <img src="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/workflows/Deploy%20to%20GitHub%20Pages/badge.svg" alt="Deploy Status">
+    </a>
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+      <img src="https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg" alt="License: CC BY-SA 4.0">
+    </a>
+    <a href="package.json">
+      <img src="https://img.shields.io/badge/node-%3E%3D18.0-brightgreen" alt="Node Version">
+    </a>
+    <a href="CONTRIBUTING.md">
+      <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
+    </a>
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/tradução-em%20andamento-yellow" alt="Translation Progress">
+    <img src="https://img.shields.io/badge/idioma-português-green.svg" alt="Portuguese">
+    <a href="https://docusaurus.io/">
+      <img src="https://img.shields.io/badge/Made%20with-Docusaurus-blue" alt="Made with Docusaurus">
+    </a>
+    <a href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/graphs/contributors">
+      <img src="https://img.shields.io/github/contributors/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript" alt="Contributors">
+    </a>
+    <a href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/issues">
+      <img src="https://img.shields.io/github/issues/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript" alt="Issues">
+    </a>
+    <a href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/commits/main">
+      <img src="https://img.shields.io/github/last-commit/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript" alt="Last Commit">
+    </a>
+  </p>
+
 </div>
 
 Tradução em pt-br de [Structure and Interpretation of Computer Programs — JavaScript Adaptation](https://sourceacademy.org/sicpjs/index)
@@ -97,6 +132,8 @@ Agradecemos a todos os [contribuidores](https://github.com/ibrahimcesar/estrutur
 - [SICP Original (Scheme)](https://mitpress.mit.edu/sites/default/files/sicp/index.html)
 - [Guia de Tradução](TRANSLATION.md)
 - [Como Contribuir](CONTRIBUTING.md)
+- [Perguntas Frequentes (FAQ)](FAQ.md)
+- [Histórico de Mudanças (CHANGELOG)](CHANGELOG.md)
 
 <!-- spellcheck: disable -->
 

@@ -1,0 +1,40 @@
+# CODEOWNERS file for SICP.js PT-BR
+# This file defines who will be automatically requested for review
+# when someone opens a pull request.
+#
+# More info: https://help.github.com/articles/about-codeowners/
+
+# Default owner for everything in the repo
+* @ibrahimcesar
+
+# Documentation and translation guidelines
+/TRANSLATION.md @ibrahimcesar
+/CONTRIBUTING.md @ibrahimcesar
+/README.md @ibrahimcesar
+/FAQ.md @ibrahimcesar
+
+# Docusaurus configuration
+/docusaurus.config.js @ibrahimcesar
+/sidebars.js @ibrahimcesar
+/src/ @ibrahimcesar
+
+# GitHub Actions workflows
+/.github/workflows/ @ibrahimcesar
+
+# Quality checks configuration
+/.github/markdownlint.yml @ibrahimcesar
+/.github/pyspelling.yml @ibrahimcesar
+/.github/markdown-link-check.json @ibrahimcesar
+/.github/wordlist.txt @ibrahimcesar
+
+# Build and dependency configuration
+/package.json @ibrahimcesar
+/package-lock.json @ibrahimcesar
+/Makefile @ibrahimcesar
+
+# Translation content (can add specific reviewers per chapter)
+# Example: /docs/chapter-1/ @ibrahimcesar @translator1
+/docs/ @ibrahimcesar
+
+# Static assets
+/static/ @ibrahimcesar
