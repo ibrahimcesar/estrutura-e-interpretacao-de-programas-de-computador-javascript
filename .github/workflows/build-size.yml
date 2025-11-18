@@ -1,0 +1,278 @@
+name: 📦 Build Size Monitor
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  build-size:
+    name: 📊 Analisar Tamanho do Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: npm ci
+
+      - name: 🏗️ Build do site
+        run: npm run build
+
+      - name: 📊 Analisar tamanho do build
+        id: analyze
+        run: |
+          echo "Analisando tamanho do build..."
+
+          # Tamanho total do build
+          build_size=$(du -sh build | cut -f1)
+          build_size_bytes=$(du -sb build | cut -f1)
+
+          # Tamanhos por tipo de arquivo
+          js_size=$(find build -name "*.js" -type f -exec du -cb {} + | grep total | cut -f1)
+          css_size=$(find build -name "*.css" -type f -exec du -cb {} + | grep total | cut -f1)
+          html_size=$(find build -name "*.html" -type f -exec du -cb {} + | grep total | cut -f1)
+          assets_size=$(find build -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" -o -name "*.svg" -o -name "*.webp" | xargs du -cb 2>/dev/null | grep total | cut -f1 || echo 0)
+
+          # Contagem de arquivos
+          total_files=$(find build -type f | wc -l)
+          js_files=$(find build -name "*.js" -type f | wc -l)
+          css_files=$(find build -name "*.css" -type f | wc -l)
+          html_files=$(find build -name "*.html" -type f | wc -l)
+
+          # Função para converter bytes em formato legível
+          humanize() {
+            local bytes=$1
+            if [ $bytes -lt 1024 ]; then
+              echo "${bytes}B"
+            elif [ $bytes -lt 1048576 ]; then
+              echo "$((bytes / 1024))KB"
+            else
+              echo "$((bytes / 1048576))MB"
+            fi
+          }
+
+          # Salvar outputs
+          echo "build_size=$build_size" >> $GITHUB_OUTPUT
+          echo "build_size_bytes=$build_size_bytes" >> $GITHUB_OUTPUT
+          echo "js_size=$(humanize $js_size)" >> $GITHUB_OUTPUT
+          echo "css_size=$(humanize $css_size)" >> $GITHUB_OUTPUT
+          echo "html_size=$(humanize $html_size)" >> $GITHUB_OUTPUT
+          echo "assets_size=$(humanize $assets_size)" >> $GITHUB_OUTPUT
+          echo "total_files=$total_files" >> $GITHUB_OUTPUT
+          echo "js_files=$js_files" >> $GITHUB_OUTPUT
+          echo "css_files=$css_files" >> $GITHUB_OUTPUT
+          echo "html_files=$html_files" >> $GITHUB_OUTPUT
+
+          # Criar relatório
+          cat > build-size-report.md << EOF
+          # 📦 Relatório de Tamanho do Build
+
+          **Build Total**: $build_size
+
+          ## 📊 Breakdown por Tipo
+
+          | Tipo | Tamanho | Arquivos |
+          |------|---------|----------|
+          | JavaScript | $(humanize $js_size) | $js_files |
+          | CSS | $(humanize $css_size) | $css_files |
+          | HTML | $(humanize $html_size) | $html_files |
+          | Assets (imagens) | $(humanize $assets_size) | - |
+
+          **Total de arquivos**: $total_files
+
+          ## 📈 Maiores Arquivos JavaScript
+
+          \`\`\`
+          $(find build -name "*.js" -type f -exec du -h {} + | sort -rh | head -10)
+          \`\`\`
+
+          ## 📈 Maiores Arquivos CSS
+
+          \`\`\`
+          $(find build -name "*.css" -type f -exec du -h {} + | sort -rh | head -10)
+          \`\`\`
+
+          ---
+          *Gerado em $(date '+%Y-%m-%d %H:%M:%S UTC')*
+          EOF
+
+          echo "📊 Análise concluída!"
+
+      - name: 💾 Upload do relatório
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-size-report-${{ github.run_number }}
+          path: build-size-report.md
+          retention-days: 90
+
+      - name: 📥 Download baseline (se existir)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-size.yml
+          branch: main
+          name: build-size-baseline
+          path: baseline/
+
+      - name: 📊 Comparar com baseline
+        if: github.event_name == 'pull_request'
+        id: compare
+        run: |
+          if [ -f baseline/build-size.txt ]; then
+            baseline_size=$(cat baseline/build-size.txt)
+            current_size=${{ steps.analyze.outputs.build_size_bytes }}
+
+            # Calcular diferença
+            diff=$((current_size - baseline_size))
+            diff_percent=$((diff * 100 / baseline_size))
+
+            # Humanizar tamanhos
+            humanize() {
+              local bytes=$1
+              if [ $bytes -lt 0 ]; then
+                bytes=$((bytes * -1))
+                sign="-"
+              else
+                sign="+"
+              fi
+
+              if [ $bytes -lt 1024 ]; then
+                echo "${sign}${bytes}B"
+              elif [ $bytes -lt 1048576 ]; then
+                echo "${sign}$((bytes / 1024))KB"
+              else
+                echo "${sign}$((bytes / 1048576))MB"
+              fi
+            }
+
+            diff_human=$(humanize $diff)
+
+            echo "has_baseline=true" >> $GITHUB_OUTPUT
+            echo "baseline_size=$baseline_size" >> $GITHUB_OUTPUT
+            echo "diff=$diff" >> $GITHUB_OUTPUT
+            echo "diff_human=$diff_human" >> $GITHUB_OUTPUT
+            echo "diff_percent=$diff_percent" >> $GITHUB_OUTPUT
+
+            # Determinar status
+            if [ $diff_percent -gt 10 ]; then
+              echo "status=⚠️ Aumento significativo" >> $GITHUB_OUTPUT
+              echo "status_emoji=⚠️" >> $GITHUB_OUTPUT
+            elif [ $diff_percent -lt -10 ]; then
+              echo "status=✅ Redução significativa" >> $GITHUB_OUTPUT
+              echo "status_emoji=✅" >> $GITHUB_OUTPUT
+            else
+              echo "status=✅ Mudança aceitável" >> $GITHUB_OUTPUT
+              echo "status_emoji=✅" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_baseline=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Baseline não encontrado"
+          fi
+
+      - name: 💬 Comentar no PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('build-size-report.md', 'utf8');
+
+            let comment = `## 📦 Build Size Analysis\n\n`;
+
+            if ('${{ steps.compare.outputs.has_baseline }}' === 'true') {
+              const diffPercent = '${{ steps.compare.outputs.diff_percent }}';
+              const diffHuman = '${{ steps.compare.outputs.diff_human }}';
+              const statusEmoji = '${{ steps.compare.outputs.status_emoji }}';
+              const status = '${{ steps.compare.outputs.status }}';
+
+              comment += `**Status**: ${statusEmoji} ${status}\n\n`;
+              comment += `**Mudança**: ${diffHuman} (${diffPercent > 0 ? '+' : ''}${diffPercent}%)\n\n`;
+
+              if (Math.abs(parseInt(diffPercent)) > 10) {
+                comment += `> ⚠️ **Atenção**: O tamanho do build mudou mais de 10%!\n\n`;
+              }
+            } else {
+              comment += `> ℹ️ Primeira análise - baseline será criado após merge.\n\n`;
+            }
+
+            comment += `### 📊 Detalhes\n\n`;
+            comment += `**Build Total**: ${{ steps.analyze.outputs.build_size }}\n\n`;
+            comment += `| Tipo | Tamanho | Arquivos |\n`;
+            comment += `|------|---------|----------|\n`;
+            comment += `| JavaScript | ${{ steps.analyze.outputs.js_size }} | ${{ steps.analyze.outputs.js_files }} |\n`;
+            comment += `| CSS | ${{ steps.analyze.outputs.css_size }} | ${{ steps.analyze.outputs.css_files }} |\n`;
+            comment += `| HTML | ${{ steps.analyze.outputs.html_size }} | ${{ steps.analyze.outputs.html_files }} |\n`;
+            comment += `| Assets | ${{ steps.analyze.outputs.assets_size }} | - |\n\n`;
+
+            comment += `**Total de arquivos**: ${{ steps.analyze.outputs.total_files }}\n\n`;
+            comment += `---\n`;
+            comment += `*Relatório completo disponível nos artifacts*`;
+
+            // Verificar se já existe comentário
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Build Size Analysis')
+            );
+
+            if (botComment) {
+              // Atualizar comentário existente
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              // Criar novo comentário
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+      - name: 💾 Salvar baseline (apenas main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p baseline
+          echo "${{ steps.analyze.outputs.build_size_bytes }}" > baseline/build-size.txt
+
+      - name: 📤 Upload baseline
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-size-baseline
+          path: baseline/
+          retention-days: 90
+
+      - name: ⚠️ Falhar se aumento muito grande
+        if: github.event_name == 'pull_request' && steps.compare.outputs.diff_percent != '' && steps.compare.outputs.diff_percent > 25
+        run: |
+          echo "❌ Build size aumentou mais de 25%!"
+          echo "Por favor, investigue o aumento antes de fazer merge."
+          exit 1

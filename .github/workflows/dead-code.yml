@@ -1,0 +1,289 @@
+name: 🧹 Dead Code Detection
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**/*.js'
+      - 'src/**/*.jsx'
+      - 'src/**/*.ts'
+      - 'src/**/*.tsx'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**/*.js'
+      - 'src/**/*.jsx'
+      - 'src/**/*.ts'
+      - 'src/**/*.tsx'
+  schedule:
+    # Roda semanalmente às segundas-feiras às 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  detect-dead-code:
+    name: 🔍 Detectar Código Não Utilizado
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: |
+          npm ci
+          npm install --save-dev ts-prune knip
+
+      - name: 🔍 Analisar com ts-prune
+        id: ts-prune
+        continue-on-error: true
+        run: |
+          echo "Executando ts-prune..."
+
+          # Executar ts-prune e capturar output
+          if npx ts-prune --error 2>&1 | tee ts-prune-output.txt; then
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Contar issues
+          unused_count=$(grep -c "used in module" ts-prune-output.txt || echo 0)
+          echo "unused_count=$unused_count" >> $GITHUB_OUTPUT
+
+      - name: 🔍 Analisar com knip
+        id: knip
+        continue-on-error: true
+        run: |
+          echo "Executando knip..."
+
+          # Criar configuração básica do knip
+          cat > knip.json << 'EOF'
+          {
+            "entry": ["src/pages/**/*.{js,jsx,ts,tsx}", "docusaurus.config.js"],
+            "project": ["src/**/*.{js,jsx,ts,tsx}"],
+            "ignore": ["**/*.test.{js,jsx,ts,tsx}", "**/*.spec.{js,jsx,ts,tsx}"],
+            "ignoreDependencies": []
+          }
+          EOF
+
+          # Executar knip
+          if npx knip --reporter json 2>&1 | tee knip-output.json; then
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Gerar relatório
+        id: report
+        run: |
+          cat > dead-code-report.md << 'EOF'
+          # 🧹 Relatório de Código Não Utilizado
+
+          **Data**: $(date '+%Y-%m-%d %H:%M:%S UTC')
+
+          ## 📋 Resumo
+
+          Este relatório identifica código potencialmente não utilizado no projeto.
+
+          ## 🔍 ts-prune Results
+
+          **Exports não utilizados encontrados**: ${{ steps.ts-prune.outputs.unused_count }}
+
+          EOF
+
+          if [ "${{ steps.ts-prune.outputs.has_issues }}" == "true" ] && [ -f ts-prune-output.txt ]; then
+            echo "\`\`\`" >> dead-code-report.md
+            head -50 ts-prune-output.txt >> dead-code-report.md
+            echo "\`\`\`" >> dead-code-report.md
+          else
+            echo "✅ Nenhum export não utilizado encontrado!" >> dead-code-report.md
+          fi
+
+          cat >> dead-code-report.md << 'EOF'
+
+          ## 🔍 knip Results
+
+          EOF
+
+          if [ "${{ steps.knip.outputs.has_issues }}" == "true" ] && [ -f knip-output.json ]; then
+            # Parse knip output (simplificado)
+            echo "⚠️ Possíveis problemas encontrados. Veja o relatório completo nos artifacts." >> dead-code-report.md
+          else
+            echo "✅ Análise do knip concluída sem problemas!" >> dead-code-report.md
+          fi
+
+          cat >> dead-code-report.md << 'EOF'
+
+          ## 📌 Notas
+
+          - **Falsos positivos** são comuns - revise manualmente
+          - Código pode ser usado dinamicamente e não ser detectado
+          - Componentes de tema Docusaurus podem parecer não utilizados
+          - Verifique antes de remover qualquer código
+
+          ## 🔗 Recursos
+
+          - [ts-prune docs](https://github.com/nadeesha/ts-prune)
+          - [knip docs](https://github.com/webpro/knip)
+
+          ---
+          *Análise automática - Sempre confirme manualmente antes de remover código*
+          EOF
+
+          # Verificar se há problemas reais
+          if [ "${{ steps.ts-prune.outputs.has_issues }}" == "true" ] || [ "${{ steps.knip.outputs.has_issues }}" == "true" ]; then
+            echo "has_dead_code=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_dead_code=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 💾 Upload do relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dead-code-report-${{ github.run_number }}
+          path: |
+            dead-code-report.md
+            ts-prune-output.txt
+            knip-output.json
+          retention-days: 30
+
+      - name: 💬 Comentar no PR
+        if: github.event_name == 'pull_request' && steps.report.outputs.has_dead_code == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let report = '';
+
+            try {
+              report = fs.readFileSync('dead-code-report.md', 'utf8');
+            } catch (e) {
+              report = 'Erro ao ler relatório';
+            }
+
+            const comment = `## 🧹 Dead Code Detection
+
+            A análise detectou possível código não utilizado neste PR.
+
+            ### ⚠️ Importante
+
+            - **Falsos positivos são comuns** - sempre revise manualmente
+            - Código pode ser usado dinamicamente
+            - Componentes Docusaurus podem parecer não utilizados
+
+            ### 📊 Resultados
+
+            **Exports não utilizados**: ${{ steps.ts-prune.outputs.unused_count }}
+
+            ### 📎 Relatório Completo
+
+            Veja o relatório completo nos artifacts desta execução.
+
+            ### 🔍 Como Revisar
+
+            1. Baixe o artifact "dead-code-report"
+            2. Revise cada item reportado
+            3. Verifique se realmente não é usado
+            4. Remova apenas se tiver certeza
+
+            ---
+            *Análise automática - confirmação manual necessária*`;
+
+            // Verificar se já existe comentário
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Dead Code Detection')
+            );
+
+            if (botComment) {
+              // Atualizar comentário existente
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              // Criar novo comentário
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+      - name: 📊 Criar issue semanal (se agendado)
+        if: github.event_name == 'schedule' && steps.report.outputs.has_dead_code == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('dead-code-report.md', 'utf8');
+
+            // Buscar issue existente
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'dead-code,automated,maintenance'
+            });
+
+            const existingIssue = issues.find(issue =>
+              issue.title.includes('Código Não Utilizado Detectado')
+            );
+
+            const today = new Date().toISOString().split('T')[0];
+
+            if (existingIssue) {
+              // Comentar na issue existente
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `## 🔄 Atualização - ${today}\n\n${report}\n\n---\n*Análise semanal automática*`
+              });
+            } else {
+              // Criar nova issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🧹 Código Não Utilizado Detectado - Limpeza Recomendada',
+                body: `${report}\n\n---\n\n## 📝 Ação Recomendada\n\n- [ ] Revisar exports não utilizados\n- [ ] Verificar falsos positivos\n- [ ] Remover código confirmado como não utilizado\n- [ ] Atualizar imports\n\n---\n*Issue criada automaticamente pela análise semanal*`,
+                labels: ['dead-code', 'automated', 'maintenance', 'good-first-issue']
+              });
+            }
+
+      - name: ✅ Resumo
+        if: always()
+        run: |
+          echo "🧹 Análise de código não utilizado concluída!"
+          echo ""
+          echo "📊 Resultados:"
+          echo "  - ts-prune: ${{ steps.ts-prune.outputs.unused_count }} exports não utilizados"
+          echo "  - Código morto encontrado: ${{ steps.report.outputs.has_dead_code }}"
+          echo ""
+          echo "📎 Relatório completo disponível nos artifacts"
