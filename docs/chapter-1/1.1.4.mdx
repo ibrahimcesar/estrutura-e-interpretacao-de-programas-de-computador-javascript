@@ -93,7 +93,12 @@ Aqui, a expressão do argumento é ela própria uma expressão composta, a combi
 Também podemos usar a `square` como um bloco de construção na definição de outras funções. Por exemplo, `x² + y²` pode ser expressada como
 
 <CodePlayground
-  code={`square(x) + square(y)`}
+  code={`const x = 3;
+const y = 4;
+square(x) + square(y);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}`}
   height={150}
   showLineNumbers={false}
 />
