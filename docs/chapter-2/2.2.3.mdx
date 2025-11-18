@@ -1,0 +1,158 @@
+---
+title: 2.2.3 Sequências como Interfaces Convencionais
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.2.3  Sequências como Interfaces Convencionais
+
+Na programação com estruturas de dados abstratas, o foco está em "fluxo de sinais" através do programa. Podemos encorajar designs modulares fornecendo uma biblioteca de componentes padrão junto com uma interface convencional para conectá-los de maneiras flexíveis.
+
+## Operações de Sequência
+
+Sequências, implementadas como listas, servem como uma interface convencional que nos permite combinar módulos de processamento. Começamos com quatro operações fundamentais:
+
+### Filter (Filtrar)
+
+Seleciona elementos que satisfazem um predicado:
+
+<CodePlayground
+  code={`function filter(predicate, sequence) {
+    return is_null(sequence)
+           ? null
+           : predicate(head(sequence))
+           ? pair(head(sequence),
+                  filter(predicate, tail(sequence)))
+           : filter(predicate, tail(sequence));
+}
+
+filter(x => x > 0, list(-1, 2, -3, 4, -5));`}
+  height={300}
+/>
+
+### Accumulate (Acumular)
+
+Combina elementos usando uma operação:
+
+<CodePlayground
+  code={`function accumulate(op, initial, sequence) {
+    return is_null(sequence)
+           ? initial
+           : op(head(sequence),
+                accumulate(op, initial, tail(sequence)));
+}
+
+accumulate((x, y) => x + y, 0, list(1, 2, 3, 4, 5));
+
+accumulate((x, y) => x * y, 1, list(1, 2, 3, 4, 5));`}
+  height={300}
+/>
+
+### Enumerate (Enumerar)
+
+Gera sequências de valores:
+
+<CodePlayground
+  code={`function enumerate_interval(low, high) {
+    return low > high
+           ? null
+           : pair(low,
+                  enumerate_interval(low + 1, high));
+}
+
+enumerate_interval(2, 7);`}
+  height={250}
+/>
+
+### Map (Mapear)
+
+Transforma cada elemento:
+
+<CodePlayground
+  code={`function map(fun, sequence) {
+    return accumulate((x, y) => pair(fun(x), y),
+                      null,
+                      sequence);
+}
+
+map(x => x * x, list(1, 2, 3, 4, 5));`}
+  height={200}
+/>
+
+## Composição de Operações
+
+O verdadeiro poder vem de combinar essas operações. Por exemplo, encontrar a soma dos quadrados dos números ímpares em uma árvore:
+
+<CodePlayground
+  code={`function filter(predicate, sequence) {
+    return is_null(sequence)
+           ? null
+           : predicate(head(sequence))
+           ? pair(head(sequence),
+                  filter(predicate, tail(sequence)))
+           : filter(predicate, tail(sequence));
+}
+
+function accumulate(op, initial, sequence) {
+    return is_null(sequence)
+           ? initial
+           : op(head(sequence),
+                accumulate(op, initial, tail(sequence)));
+}
+
+function enumerate_tree(tree) {
+    return is_null(tree)
+           ? null
+           : !is_pair(tree)
+           ? list(tree)
+           : append(enumerate_tree(head(tree)),
+                    enumerate_tree(tail(tree)));
+}
+
+function sum_odd_squares(tree) {
+    return accumulate((x, y) => x + y,
+                      0,
+                      map(x => x * x,
+                          filter(x => x % 2 === 1,
+                                 enumerate_tree(tree))));
+}
+
+sum_odd_squares(list(1, list(2, list(3, 4)), 5));`}
+  height={500}
+/>
+
+## Sequências Aninhadas
+
+Podemos estender o paradigma de sequência para incluir muitas computações que são comumente expressas usando loops aninhados. Considere o problema de gerar todos os pares ordenados de inteiros positivos distintos i e j, onde 1 ≤ j < i ≤ n:
+
+<CodePlayground
+  code={`function flatmap(fun, seq) {
+    return accumulate(append, null, map(fun, seq));
+}
+
+function unique_pairs(n) {
+    return flatmap(i =>
+                       map(j => list(i, j),
+                           enumerate_interval(1, i - 1)),
+                   enumerate_interval(1, n));
+}
+
+unique_pairs(5);`}
+  height={350}
+/>
+
+## Exercícios
+
+**Exercício 2.33**: Preencha as definições faltantes de `map`, `append` e `length` em termos de `accumulate`.
+
+**Exercício 2.34**: Complete a função que avalia um polinômio usando a regra de Horner.
+
+**Exercício 2.35**: Redefina `count_leaves` como um acúmulo.
+
+**Exercício 2.36**: Defina `accumulate_n` que recebe uma sequência de sequências e aplica acumulação elemento por elemento.
+
+**Exercício 2.37-2.38**: Implemente operações de matriz (multiplicação, transposição) usando operações de sequência.
+
+**Exercício 2.39**: Complete duas definições de `reverse` usando `fold_right` e `fold_left`.
+
+**Exercício 2.40-2.43**: Simplifique o problema de encontrar pares primos e resolva o problema das oito rainhas usando operações de sequência aninhadas.

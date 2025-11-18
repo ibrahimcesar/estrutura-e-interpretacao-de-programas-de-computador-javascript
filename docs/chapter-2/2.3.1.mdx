@@ -1,0 +1,84 @@
+---
+title: 2.3.1 Strings como Objetos de Dados
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.3.1  Strings como Objetos de Dados
+
+Em JavaScript, strings (delimitadas por aspas duplas `"` ou aspas simples `'`) permitem que programadores tratem texto como dados literais ao invés de código a ser avaliado. Por exemplo, `"z"` denota uma string de caractere, enquanto `z` sem aspas refere-se ao valor de uma variável.
+
+<CodePlayground
+  code={`const a = 1;
+const b = 2;
+
+list(a, b);          // usa os valores das variáveis
+
+list("a", "b");      // usa as strings literais
+
+list("a", b);        // mistura string e valor`}
+  height={250}
+/>
+
+Podemos formar listas compostas de strings e números:
+
+<CodePlayground
+  code={`const one_two_three = list(1, 2, 3);
+
+const one_two = list(1, 2);
+
+const list_of_lists = list(list("george"),
+                           list("x", "y"),
+                           one_two);
+
+head(tail(head(tail(tail(list_of_lists)))));`}
+  height={250}
+/>
+
+## A Função member
+
+Para implementar a manipulação de dados simbólicos, precisamos de uma função `member` que verifica se um item está presente em uma lista:
+
+<CodePlayground
+  code={`function member(item, x) {
+    return is_null(x)
+           ? null
+           : item === head(x)
+           ? x
+           : member(item, tail(x));
+}
+
+member("apple", list("pear", "banana", "prune"));
+
+member("apple", list("x", "y", "apple", "pear"));`}
+  height={300}
+/>
+
+A função `member` retorna a sublista começando com a primeira ocorrência do item, ou `null` se o item não está na lista.
+
+## Exercício 2.53
+
+O que seria impresso pelo interpretador em resposta à avaliação de cada uma das seguintes expressões?
+
+<CodePlayground
+  code={`list("a", "b", "c");
+
+list(list("george"));
+
+tail(list(list("x1", "x2"), list("y1", "y2")));
+
+tail(head(list(list("x1", "x2"), list("y1", "y2"))));
+
+member("red", list(list("red", "shoes"), list("blue", "socks")));
+
+member("red", list("red", "shoes", "blue", "socks"));`}
+  height={350}
+/>
+
+## Exercício 2.54
+
+Duas listas são consideradas `equal` se contêm elementos iguais organizados na mesma ordem. Implemente `equal` como uma função.
+
+## Exercício 2.55
+
+Explique o que acontece quando você avalia uma string com a função `display` e por que isso difere da avaliação normal.

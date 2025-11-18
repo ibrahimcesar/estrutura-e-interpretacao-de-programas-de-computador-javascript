@@ -1,0 +1,109 @@
+---
+title: 2.1.2 Barreiras de Abstração
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.1.2  Barreiras de Abstração
+
+Antes de continuar com mais exemplos de dados compostos e abstração de dados, vamos considerar algumas das questões levantadas pelo exemplo de números racionais. Definimos as operações de números racionais em termos de um construtor `make_rat` e seletores `numer` e `denom`. Em geral, a ideia subjacente da abstração de dados é identificar para cada tipo de objeto de dados um conjunto básico de operações em termos das quais todas as manipulações de objetos de dados desse tipo serão expressas, e então usar apenas essas operações na manipulação dos dados.
+
+![Barreiras de abstração de dados no pacote de números racionais](/img/javascript/ch2-Z-G-6.svg)
+
+Podemos visualizar a estrutura do sistema de números racionais como mostrado na figura acima. As linhas horizontais representam *barreiras de abstração* que isolam diferentes "níveis" do sistema. Em cada nível, a barreira separa os programas (acima) que usam a abstração de dados dos programas (abaixo) que implementam a abstração de dados. Programas que usam números racionais os manipulam exclusivamente em termos das funções fornecidas "para uso público" pelo pacote de números racionais: `add_rat`, `sub_rat`, `mul_rat`, `div_rat` e `equal_rat`. Estas, por sua vez, são implementadas exclusivamente em termos do construtor e seletores `make_rat`, `numer` e `denom`, que eles mesmos são implementados em termos de pares. Os detalhes de como os pares são implementados são irrelevantes para o resto do pacote de números racionais, desde que os pares possam ser manipulados pelo uso de `pair`, `head` e `tail`. Na prática, as funções em cada nível são as interfaces que definem as barreiras de abstração e conectam os diferentes níveis.
+
+Esta ideia simples tem muitas vantagens. Uma vantagem é que torna os programas muito mais fáceis de manter e modificar. Qualquer estrutura de dados complexa pode ser representada de várias maneiras com as estruturas de dados primitivas fornecidas por uma linguagem de programação. Claro, a escolha da representação influencia os programas que operam sobre ela; assim, se a representação fosse alterada em algum momento posterior, todos esses programas poderiam ter que ser modificados de acordo. Esta tarefa poderia ser demorada e cara no caso de programas grandes, a menos que a dependência da representação fosse confinada por design a muito poucos módulos do programa.
+
+Por exemplo, uma maneira alternativa de abordar o problema de reduzir números racionais aos menores termos é realizar a redução sempre que acessamos as partes de um número racional, em vez de quando o construímos. Isso leva a diferentes funções construtoras e seletoras:
+
+<CodePlayground
+  code={`function gcd(a, b) {
+    return b === 0 ? a : gcd(b, a % b);
+}
+
+function make_rat(n, d) {
+    return pair(n, d);
+}
+function numer(x) {
+    const g = gcd(head(x), tail(x));
+    return head(x) / g;
+}
+function denom(x) {
+    const g = gcd(head(x), tail(x));
+    return tail(x) / g;
+}`}
+  height={350}
+/>
+
+A diferença entre esta implementação e a anterior reside em quando computamos o `gcd`. Se em nosso uso típico de números racionais acessamos os numeradores e denominadores dos mesmos números racionais muitas vezes, seria preferível computar o `gcd` quando os números racionais são construídos. Caso contrário, podemos ser melhor servidos esperando até o momento do acesso para computar o `gcd`. Em qualquer caso, quando mudamos de uma representação para a outra, as funções `add_rat`, `sub_rat` e assim por diante não precisam ser modificadas de forma alguma.
+
+Restringir a dependência da representação a algumas poucas funções de interface nos ajuda a projetar programas, bem como modificá-los, porque nos permite manter a flexibilidade para considerar implementações alternativas. Para continuar com nosso exemplo simples, suponha que estamos projetando um pacote de números racionais e não podemos decidir inicialmente se devemos realizar o `gcd` no momento da construção ou no momento da seleção. A metodologia de abstração de dados nos dá uma maneira de adiar essa decisão sem perder a capacidade de progredir no resto do sistema.
+
+## Exercício 2.2
+
+Considere o problema de representar segmentos de linha em um plano. Cada segmento é representado como um par de pontos: um ponto inicial e um ponto final. Declare um construtor `make_segment` e seletores `start_segment` e `end_segment` que definem a representação de segmentos em termos de pontos. Além disso, um ponto pode ser representado como um par de números: a coordenada x e a coordenada y. Consequentemente, especifique um construtor `make_point` e seletores `x_point` e `y_point` que definem essa representação. Finalmente, usando seus seletores e construtores, declare uma função `midpoint_segment` que recebe um segmento de linha como argumento e retorna seu ponto médio (o ponto cujas coordenadas são a média das coordenadas dos pontos extremos). Para testar suas funções, você precisará de uma maneira de imprimir pontos:
+
+<CodePlayground
+  code={`function print_point(p) {
+    return display("(" + stringify(x_point(p)) + ", "
+                       + stringify(y_point(p)) + ")");
+}
+
+// Defina suas funções aqui:
+function make_point(x, y) {
+    // sua implementação
+}
+
+function x_point(p) {
+    // sua implementação
+}
+
+function y_point(p) {
+    // sua implementação
+}
+
+function make_segment(start_point, end_point) {
+    // sua implementação
+}
+
+function start_segment(s) {
+    // sua implementação
+}
+
+function end_segment(s) {
+    // sua implementação
+}
+
+function midpoint_segment(s) {
+    // sua implementação
+}`}
+  height={500}
+/>
+
+## Exercício 2.3
+
+Implemente uma representação para retângulos em um plano. (Dica: Você pode querer fazer uso do exercício 2.2.) Em termos de seus construtores e seletores, crie funções que computem o perímetro e a área de um dado retângulo. Agora implemente uma representação diferente para retângulos. Você pode projetar seu sistema com barreiras de abstração adequadas, de modo que as mesmas funções de perímetro e área funcionem usando qualquer uma das representações?
+
+<CodePlayground
+  code={`// Primeira implementação de retângulo
+function make_rectangle(bottom_left, top_right) {
+    // sua implementação
+}
+
+function width_rect(rect) {
+    // sua implementação
+}
+
+function height_rect(rect) {
+    // sua implementação
+}
+
+function area_rect(rect) {
+    return width_rect(rect) * height_rect(rect);
+}
+
+function perimeter_rect(rect) {
+    return 2 * (width_rect(rect) + height_rect(rect));
+}`}
+  height={350}
+/>

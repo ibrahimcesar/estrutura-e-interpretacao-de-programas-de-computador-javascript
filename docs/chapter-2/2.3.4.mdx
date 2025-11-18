@@ -1,0 +1,149 @@
+---
+title: 2.3.4 Exemplo - Árvores de Codificação de Huffman
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.3.4  Exemplo: Árvores de Codificação de Huffman
+
+Esta seção fornece a prática de usar listas para representar árvores, trabalhando com um exemplo de codificação Huffman—uma técnica de compressão de dados.
+
+## Codificação de Comprimento Variável
+
+Códigos de comprimento fixo usam o mesmo número de bits para cada símbolo. Por exemplo, um alfabeto de 8 símbolos requer 3 bits por símbolo. Códigos de comprimento variável podem economizar espaço atribuindo códigos mais curtos para símbolos frequentes.
+
+Por exemplo, código Morse usa códigos mais curtos para letras comuns (E = ".", T = "-") e códigos mais longos para letras raras.
+
+## Árvores de Huffman
+
+Um código de Huffman é representado como uma árvore binária cujas folhas são os símbolos codificados. Cada folha tem um símbolo e um peso (frequência relativa). Nós internos contêm um conjunto de símbolos e a soma dos pesos de suas subárvores.
+
+<CodePlayground
+  code={`// Representando árvores de Huffman
+function make_leaf(symbol, weight) {
+    return list("leaf", symbol, weight);
+}
+
+function is_leaf(object) {
+    return head(object) === "leaf";
+}
+
+function symbol_leaf(x) { return head(tail(x)); }
+
+function weight_leaf(x) { return head(tail(tail(x))); }
+
+function make_code_tree(left, right) {
+    return list(left,
+                right,
+                append(symbols(left), symbols(right)),
+                weight(left) + weight(right));
+}
+
+function left_branch(tree) { return head(tree); }
+
+function right_branch(tree) { return head(tail(tree)); }
+
+function symbols(tree) {
+    return is_leaf(tree)
+           ? list(symbol_leaf(tree))
+           : head(tail(tail(tree)));
+}
+
+function weight(tree) {
+    return is_leaf(tree)
+           ? weight_leaf(tree)
+           : head(tail(tail(tail(tree))));
+}`}
+  height={600}
+/>
+
+## O Algoritmo de Decodificação
+
+Para decodificar uma mensagem, começamos na raiz e seguimos os ramos de acordo com os bits: 0 significa esquerda, 1 significa direita. Ao atingir uma folha, registramos o símbolo e recomeçamos da raiz.
+
+<CodePlayground
+  code={`function decode(bits, tree) {
+    function decode_1(bits, current_branch) {
+        if (is_null(bits)) {
+            return null;
+        } else {
+            const next_branch = choose_branch(head(bits),
+                                             current_branch);
+            return is_leaf(next_branch)
+                   ? pair(symbol_leaf(next_branch),
+                          decode_1(tail(bits), tree))
+                   : decode_1(tail(bits), next_branch);
+        }
+    }
+    return decode_1(bits, tree);
+}
+
+function choose_branch(bit, branch) {
+    return bit === 0
+           ? left_branch(branch)
+           : bit === 1
+           ? right_branch(branch)
+           : error(bit, "bad bit -- choose_branch");
+}`}
+  height={450}
+/>
+
+## Conjuntos de Pares Ponderados
+
+Para gerar uma árvore de Huffman, precisamos ordenar folhas e árvores por peso. Representamos isso como um conjunto de pares ponderados (árvore, peso):
+
+<CodePlayground
+  code={`function adjoin_set(x, set) {
+    return is_null(set)
+           ? list(x)
+           : weight(x) < weight(head(set))
+           ? pair(x, set)
+           : pair(head(set), adjoin_set(x, tail(set)));
+}
+
+function make_leaf_set(pairs) {
+    if (is_null(pairs)) {
+        return null;
+    } else {
+        const first_pair = head(pairs);
+        return adjoin_set(make_leaf(head(first_pair),
+                                    head(tail(first_pair))),
+                         make_leaf_set(tail(pairs)));
+    }
+}`}
+  height={350}
+/>
+
+## Gerando Árvores de Huffman
+
+O algoritmo de Huffman começa com o conjunto de folhas, e repetidamente combina as duas árvores de menor peso em uma nova árvore, até restar apenas uma:
+
+<CodePlayground
+  code={`function successive_merge(set) {
+    return length(set) === 1
+           ? head(set)
+           : successive_merge(
+                 adjoin_set(
+                     make_code_tree(head(set), head(tail(set))),
+                     tail(tail(set))));
+}
+
+function generate_huffman_tree(pairs) {
+    return successive_merge(make_leaf_set(pairs));
+}`}
+  height={300}
+/>
+
+## Exercícios
+
+**Exercício 2.67**: Defina uma árvore de codificação e uma mensagem de exemplo. Use a função `decode` para decodificar a mensagem e forneça o resultado.
+
+**Exercício 2.68**: Escreva a função `encode` que recebe uma mensagem e uma árvore e produz a lista de bits codificados.
+
+**Exercício 2.69**: Complete a função `generate_huffman_tree` implementando `successive_merge`.
+
+**Exercício 2.70**: Gere uma árvore de Huffman para as letras da canção "Get a Job" e use-a para codificar a canção. Quantos bits são necessários? Compare com codificação de comprimento fixo.
+
+**Exercício 2.71**: Suponha que temos uma árvore de Huffman para um alfabeto de n símbolos, e que as frequências relativas dos símbolos são 1, 2, 4, ..., 2^(n-1). Esboce a árvore para n=5 e n=10.
+
+**Exercício 2.72**: Considere a codificação de um símbolo em relação à árvore do exercício 2.71. Qual é a ordem de crescimento do número de passos necessários para codificar um símbolo?

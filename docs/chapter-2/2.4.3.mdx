@@ -1,0 +1,145 @@
+---
+title: 2.4.3 Programação Orientada a Dados e Aditividade
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.4.3  Programação Orientada a Dados e Aditividade
+
+A estratégia geral de verificar o tipo de um dado e chamar uma função apropriada é chamada *dispatch sobre tipo*. Esta é uma técnica poderosa para obter modularidade no design do sistema. Por outro lado, implementá-la conforme fizemos na seção 2.4.2 tem duas fraquezas significativas.
+
+## Problemas com Dispatch Explícito
+
+1. As funções genéricas devem conhecer todas as representações diferentes
+2. Mesmo que as representações individuais possam ser projetadas separadamente, devemos garantir que não haja dois procedimentos com o mesmo nome em todo o sistema
+
+## Programação Orientada a Dados
+
+Uma abordagem melhor é usar uma técnica conhecida como *programação orientada a dados*. Esta é uma forma de projetar programas para trabalhar com uma *tabela de operações e tipos* que permite adicionar novas representações sem modificar o código existente.
+
+### A Tabela de Operações
+
+Imagine uma tabela bidimensional onde:
+- As linhas correspondem a operações (`real_part`, `imag_part`, `magnitude`, `angle`)
+- As colunas correspondem a tipos (`polar`, `rectangular`)
+- Cada célula contém a função apropriada para aquela operação naquele tipo
+
+<CodePlayground
+  code={`// Sistema de tabela (interface simplificada)
+// put e get operam em uma tabela global
+
+// Instalando o pacote retangular
+function install_rectangular_package() {
+    // funções internas
+    function real_part(z) { return head(z); }
+    function imag_part(z) { return tail(z); }
+    function make_from_real_imag(x, y) { return pair(x, y); }
+
+    // interface para o resto do sistema
+    function tag(x) {
+        return attach_tag("rectangular", x);
+    }
+
+    put("real_part", "rectangular", real_part);
+    put("imag_part", "rectangular", imag_part);
+    put("make_from_real_imag", "rectangular",
+        (x, y) => tag(make_from_real_imag(x, y)));
+
+    return "done";
+}
+
+// Instalando o pacote polar
+function install_polar_package() {
+    // funções internas
+    function magnitude(z) { return head(z); }
+    function angle(z) { return tail(z); }
+    function make_from_mag_ang(r, a) { return pair(r, a); }
+
+    // interface para o resto do sistema
+    function tag(x) {
+        return attach_tag("polar", x);
+    }
+
+    put("magnitude", "polar", magnitude);
+    put("angle", "polar", angle);
+    put("make_from_mag_ang", "polar",
+        (r, a) => tag(make_from_mag_ang(r, a)));
+
+    return "done";
+}`}
+  height={650}
+/>
+
+## Operações Genéricas via Dispatch
+
+Agora os seletores genéricos são muito mais simples:
+
+<CodePlayground
+  code={`function apply_generic(op, arg) {
+    const type_tag = type_tag(arg);
+    const fun = get(op, type_tag);
+    return fun !== undefined
+           ? fun(contents(arg))
+           : error(list(op, type_tag),
+                   "no method for these types -- apply_generic");
+}
+
+function real_part(z) {
+    return apply_generic("real_part", z);
+}
+
+function imag_part(z) {
+    return apply_generic("imag_part", z);
+}
+
+function magnitude(z) {
+    return apply_generic("magnitude", z);
+}
+
+function angle(z) {
+    return apply_generic("angle", z);
+}`}
+  height={400}
+/>
+
+## Message Passing (Passagem de Mensagens)
+
+Uma alternativa à programação orientada a dados é decompor a tabela de forma diferente. Em vez de ter "operações inteligentes" que fazem dispatch com base no tipo de dados, podemos ter "dados inteligentes" que fazem dispatch com base no nome da operação:
+
+<CodePlayground
+  code={`function make_from_real_imag(x, y) {
+    function dispatch(op) {
+        return op === "real_part"
+               ? x
+               : op === "imag_part"
+               ? y
+               : op === "magnitude"
+               ? math_sqrt(square(x) + square(y))
+               : op === "angle"
+               ? math_atan(y, x)
+               : error(op, "unknown op -- make_from_real_imag");
+    }
+    return dispatch;
+}
+
+function apply_generic(op, arg) {
+    return arg(op);
+}`}
+  height={350}
+/>
+
+Esta é a essência da programação com *message passing*. O objeto de dados é uma função que, quando chamada com um nome de operação, retorna o resultado apropriado.
+
+## Aditividade
+
+Ambas as abordagens (programação orientada a dados e message passing) permitem *design aditivo de sistemas*—novos tipos de dados e operações podem ser adicionados sem modificar o código existente. Isso é crucial para construir sistemas grandes e modulares.
+
+## Exercícios
+
+**Exercício 2.73**: Reescreva o programa de diferenciação simbólica (seção 2.3.2) para que o dispatch seja feito de forma orientada a dados.
+
+**Exercício 2.74**: Implemente um sistema genérico para acessar registros de pessoal de uma empresa com divisões independentes.
+
+**Exercício 2.75**: Implemente o construtor `make_from_mag_ang` em estilo message-passing.
+
+**Exercício 2.76**: Compare as três estratégias de organização (dispatch explícito, data-directed, message-passing) para adicionar novos tipos e novas operações.
