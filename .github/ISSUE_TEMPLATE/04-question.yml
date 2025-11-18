@@ -1,0 +1,77 @@
+name: ❓ Pergunta
+description: Fazer uma pergunta sobre o projeto
+title: "[Pergunta] "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ❓ Fazer uma Pergunta
+
+        Tem alguma dúvida sobre o projeto? Estamos aqui para ajudar!
+
+        **Dica**: Antes de perguntar, veja se sua dúvida já está respondida no [FAQ](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/FAQ.md)!
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Categoria da Pergunta
+      description: Sobre o que é sua pergunta?
+      options:
+        - Como contribuir (processo, workflow)
+        - Tradução (termos, estilo, glossário)
+        - Técnica (Git, Node.js, ferramentas)
+        - Conteúdo do SICP (conceitos, exemplos)
+        - Sobre o projeto (objetivos, roadmap)
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Sua Pergunta
+      description: Descreva sua dúvida com o máximo de detalhes possível
+      placeholder: |
+        Seja específico e claro. Quanto mais contexto você fornecer, melhor poderemos ajudar!
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto Adicional
+      description: Informações adicionais que podem ajudar a responder sua pergunta
+      placeholder: |
+        - O que você já tentou?
+        - Onde você encontrou essa informação?
+        - Links relevantes, screenshots, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Verifiquei o [FAQ](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/FAQ.md)
+          required: true
+        - label: Procurei em issues e discussions existentes
+          required: true
+        - label: Li a documentação relevante ([CONTRIBUTING.md](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/CONTRIBUTING.md), [TRANSLATION.md](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/TRANSLATION.md))
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        ### 💬 Outras Formas de Obter Ajuda
+
+        - **GitHub Discussions**: Para perguntas mais abertas e discussões
+        - **Issues existentes**: Procure por perguntas similares
+        - **FAQ**: Muitas dúvidas comuns já estão respondidas
+
+        Responderemos sua pergunta assim que possível! 🙏

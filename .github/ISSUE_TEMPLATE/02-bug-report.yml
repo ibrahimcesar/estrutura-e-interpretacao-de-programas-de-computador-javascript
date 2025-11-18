@@ -1,0 +1,123 @@
+name: 🐛 Relatar Bug
+description: Reportar um problema com a tradução ou site
+title: "[Bug] "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Relatar um Bug
+
+        Obrigado por nos ajudar a melhorar o SICP.js PT-BR!
+        Preencha as informações abaixo para nos ajudar a entender e corrigir o problema.
+
+  - type: dropdown
+    id: bug-type
+    attributes:
+      label: Tipo de Bug
+      description: Que tipo de problema você encontrou?
+      options:
+        - Erro de tradução (palavra errada, termo técnico incorreto)
+        - Erro de formatação (Markdown, layout)
+        - Link quebrado
+        - Erro de ortografia
+        - Código de exemplo não funciona
+        - Problema no site (navegação, visualização)
+        - Outro
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Localização
+      description: Onde está o problema? (capítulo, seção, arquivo)
+      placeholder: "Capítulo 1, Seção 1.2.3 ou docs/chapter-1/section-1.2.3.md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Bug
+      description: Descreva claramente o problema encontrado
+      placeholder: |
+        O que está errado? O que você esperava ver?
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Comportamento Atual
+      description: O que acontece atualmente?
+      placeholder: |
+        Texto atual ou comportamento observado
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Comportamento Esperado
+      description: O que deveria acontecer?
+      placeholder: |
+        Como deveria ser o texto correto ou comportamento esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots (opcional)
+      description: Se aplicável, adicione screenshots para ilustrar o problema
+      placeholder: Cole as imagens aqui
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Navegador (se aplicável)
+      description: Em qual navegador você viu o problema?
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Mobile Safari
+        - Mobile Chrome
+        - Outro
+        - Não se aplica
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Contexto Adicional
+      description: Qualquer outra informação relevante sobre o problema
+      placeholder: Informações adicionais que podem ajudar a resolver o bug
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Procurei por issues similares antes de criar esta
+          required: true
+        - label: Verifiquei que este problema ainda existe na versão mais recente
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **Obrigado por reportar este bug!** 🙏
+
+        Faremos o possível para corrigir o problema o mais rápido possível.
