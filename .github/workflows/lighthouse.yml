@@ -1,0 +1,157 @@
+name: 🔦 Lighthouse CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    name: 🔦 Run Lighthouse
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: npm ci
+
+      - name: 🏗️ Build do site
+        run: npm run build
+
+      - name: 🔦 Run Lighthouse CI
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:3000/pt_BR/
+            http://localhost:3000/pt_BR/prefaces/foreword84
+            http://localhost:3000/pt_BR/chapter-1/intro
+          budgetPath: .github/lighthouse/budget.json
+          temporaryPublicStorage: true
+          uploadArtifacts: true
+          runs: 3
+
+      - name: 📊 Processar resultados
+        id: results
+        run: |
+          echo "Processando resultados do Lighthouse..."
+
+          # Placeholder para scores (serão preenchidos pelo action)
+          echo "lighthouse_ran=true" >> $GITHUB_OUTPUT
+
+      - name: 💬 Comentar resultados no PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            // Tentar ler manifesto do Lighthouse
+            let manifestPath = '.lighthouseci/manifest.json';
+            if (!fs.existsSync(manifestPath)) {
+              console.log('Manifest não encontrado, pulando comentário');
+              return;
+            }
+
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+            if (!manifest || manifest.length === 0) {
+              console.log('Sem resultados no manifest');
+              return;
+            }
+
+            // Pegar primeiro resultado
+            const result = manifest[0];
+            const summary = result.summary;
+
+            const formatScore = (score) => {
+              const percentage = Math.round(score * 100);
+              let emoji = '🔴';
+              if (percentage >= 90) emoji = '🟢';
+              else if (percentage >= 50) emoji = '🟡';
+              return `${emoji} ${percentage}`;
+            };
+
+            const comment = `## 🔦 Lighthouse CI Report
+
+            Resultados da análise de qualidade do site:
+
+            | Categoria | Score |
+            |-----------|-------|
+            | ⚡ Performance | ${formatScore(summary.performance || 0)} |
+            | ♿ Accessibility | ${formatScore(summary.accessibility || 0)} |
+            | 🎯 Best Practices | ${formatScore(summary['best-practices'] || 0)} |
+            | 🔍 SEO | ${formatScore(summary.seo || 0)} |
+            | 📱 PWA | ${formatScore(summary.pwa || 0)} |
+
+            ### 📊 Legenda
+            - 🟢 90-100: Excelente
+            - 🟡 50-89: Precisa melhorar
+            - 🔴 0-49: Ruim
+
+            ${result.url ? `\n📎 [Ver relatório completo](${result.url})` : ''}
+
+            ---
+            *Análise gerada automaticamente pelo Lighthouse CI*`;
+
+            // Verificar se já existe comentário
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Lighthouse CI Report')
+            );
+
+            if (botComment) {
+              // Atualizar comentário existente
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              // Criar novo comentário
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+      - name: 📊 Upload dos reports como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports-${{ github.run_number }}
+          path: .lighthouseci/
+          retention-days: 30
+
+      - name: ⚠️ Verificar thresholds
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Verificando se scores atendem aos requisitos mínimos..."
+
+          # Os thresholds são definidos em budget.json
+          # O Lighthouse CI action automaticamente falhará se não atender
+
+          echo "✅ Verificação de thresholds concluída"

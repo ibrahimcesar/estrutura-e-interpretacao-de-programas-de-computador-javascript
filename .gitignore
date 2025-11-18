@@ -119,5 +119,10 @@ yarn-error.log*
 # Pyspelling generated files
 .github/wordlist.dict
 
+# Percy visual testing
+.percy/
+.lighthouseci/
+
+# IDE
 .claude/
-.vscode/branch-timer.json
+.vscode/

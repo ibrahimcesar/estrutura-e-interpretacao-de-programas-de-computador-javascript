@@ -1,0 +1,294 @@
+name: 🚀 Release Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Tipo de versão (major, minor, patch)'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      prerelease:
+        description: 'É um pre-release?'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: 🎉 Criar Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: |
+          npm ci
+          npm install --save-dev conventional-changelog-cli
+
+      - name: 📊 Obter versão atual
+        id: current_version
+        run: |
+          current=$(node -p "require('./package.json').version")
+          echo "version=$current" >> $GITHUB_OUTPUT
+          echo "📌 Versão atual: $current"
+
+      - name: 🔢 Calcular nova versão
+        id: new_version
+        run: |
+          current="${{ steps.current_version.outputs.version }}"
+          IFS='.' read -ra parts <<< "$current"
+
+          major=${parts[0]}
+          minor=${parts[1]}
+          patch=${parts[2]}
+
+          case "${{ github.event.inputs.version }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          new_version="$major.$minor.$patch"
+
+          if [ "${{ github.event.inputs.prerelease }}" == "true" ]; then
+            new_version="$new_version-beta.$(date +%Y%m%d%H%M%S)"
+          fi
+
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "🆕 Nova versão: $new_version"
+
+      - name: 📝 Atualizar package.json
+        run: |
+          npm version ${{ steps.new_version.outputs.version }} --no-git-tag-version
+          echo "✅ package.json atualizado para v${{ steps.new_version.outputs.version }}"
+
+      - name: 📋 Gerar CHANGELOG
+        run: |
+          # Gerar changelog desde última tag
+          npx conventional-changelog -p angular -i CHANGELOG.md -s
+
+          echo "✅ CHANGELOG atualizado"
+
+      - name: 📊 Gerar Release Notes
+        id: release_notes
+        run: |
+          # Obter última tag
+          last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$last_tag" ]; then
+            # Primeira release
+            commits=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Commits desde última tag
+            commits=$(git log ${last_tag}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Categorizar commits
+          features=$(echo "$commits" | grep "feat:" || echo "")
+          fixes=$(echo "$commits" | grep "fix:" || echo "")
+          docs=$(echo "$commits" | grep "docs:" || echo "")
+          chores=$(echo "$commits" | grep "chore:" || echo "")
+          other=$(echo "$commits" | grep -v "feat:\|fix:\|docs:\|chore:" || echo "")
+
+          # Criar release notes
+          cat > release-notes.md << EOF
+          # 🎉 SICP.js PT-BR v${{ steps.new_version.outputs.version }}
+
+          ## 📋 Resumo
+
+          Release da tradução em português do SICP.js.
+
+          EOF
+
+          if [ -n "$features" ]; then
+            cat >> release-notes.md << EOF
+
+          ## ✨ Novas Funcionalidades
+
+          $features
+
+          EOF
+          fi
+
+          if [ -n "$fixes" ]; then
+            cat >> release-notes.md << EOF
+
+          ## 🐛 Correções
+
+          $fixes
+
+          EOF
+          fi
+
+          if [ -n "$docs" ]; then
+            cat >> release-notes.md << EOF
+
+          ## 📚 Documentação
+
+          $docs
+
+          EOF
+          fi
+
+          if [ -n "$chores" ]; then
+            cat >> release-notes.md << EOF
+
+          ## 🔧 Manutenção
+
+          $chores
+
+          EOF
+          fi
+
+          if [ -n "$other" ]; then
+            cat >> release-notes.md << EOF
+
+          ## 📦 Outras Mudanças
+
+          $other
+
+          EOF
+          fi
+
+          cat >> release-notes.md << 'EOF'
+
+          ## 📖 Como Usar
+
+          Acesse o site: [sicpjs.com/pt_BR](https://sicpjs.com/pt_BR)
+
+          ## 🤝 Contribuidores
+
+          Agradecemos a todos os contribuidores que tornaram esta release possível!
+
+          ---
+
+          **Instalação Local**:
+          \`\`\`bash
+          git clone https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript.git
+          cd estrutura-e-interpretacao-de-programas-de-computador-javascript
+          npm install
+          npm start
+          \`\`\`
+
+          **Changelog Completo**: Ver [CHANGELOG.md](CHANGELOG.md)
+
+          EOF
+
+          echo "✅ Release notes geradas"
+
+      - name: 💾 Commit mudanças
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "🔖 chore(release): v${{ steps.new_version.outputs.version }}
+
+          Automated release commit.
+
+          - Update package.json version
+          - Update CHANGELOG.md
+          - Generate release notes
+
+          🤖 Generated by Release Automation"
+
+      - name: 🏷️ Criar tag
+        run: |
+          git tag -a "v${{ steps.new_version.outputs.version }}" -m "Release v${{ steps.new_version.outputs.version }}"
+          echo "✅ Tag v${{ steps.new_version.outputs.version }} criada"
+
+      - name: 🚀 Push mudanças e tag
+        run: |
+          git push origin main
+          git push origin "v${{ steps.new_version.outputs.version }}"
+          echo "✅ Mudanças e tag enviadas"
+
+      - name: 🎉 Criar GitHub Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const releaseNotes = fs.readFileSync('release-notes.md', 'utf8');
+
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v${{ steps.new_version.outputs.version }}',
+              name: 'v${{ steps.new_version.outputs.version }}',
+              body: releaseNotes,
+              draft: false,
+              prerelease: ${{ github.event.inputs.prerelease }}
+            });
+
+            console.log(`✅ Release criada: ${release.data.html_url}`);
+
+            // Criar discussão de anúncio
+            try {
+              const discussion = await github.graphql(`
+                mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                  createDiscussion(input: {
+                    repositoryId: $repositoryId,
+                    categoryId: $categoryId,
+                    title: $title,
+                    body: $body
+                  }) {
+                    discussion {
+                      url
+                    }
+                  }
+                }
+              `, {
+                repositoryId: context.payload.repository.node_id,
+                categoryId: 'ANNOUNCEMENTS_CATEGORY_ID', // Substituir pelo ID real
+                title: `🎉 v${{ steps.new_version.outputs.version }} Released!`,
+                body: `${releaseNotes}\n\n[Ver Release no GitHub](${release.data.html_url})`
+              });
+
+              console.log('✅ Discussão de anúncio criada');
+            } catch (e) {
+              console.log('⚠️ Não foi possível criar discussão (pode não estar configurado)');
+            }
+
+      - name: ✅ Resumo
+        run: |
+          echo "🎉 Release v${{ steps.new_version.outputs.version }} criada com sucesso!"
+          echo ""
+          echo "📋 Resumo:"
+          echo "  - Versão anterior: ${{ steps.current_version.outputs.version }}"
+          echo "  - Nova versão: ${{ steps.new_version.outputs.version }}"
+          echo "  - Tipo: ${{ github.event.inputs.version }}"
+          echo "  - Pre-release: ${{ github.event.inputs.prerelease }}"
+          echo ""
+          echo "🔗 Próximos passos:"
+          echo "  - Verificar release no GitHub"
+          echo "  - Anunciar nas redes sociais"
+          echo "  - Atualizar documentação externa (se necessário)"
