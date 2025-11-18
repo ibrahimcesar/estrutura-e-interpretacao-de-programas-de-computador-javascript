@@ -1,0 +1,263 @@
+# 1.1.6 Expressões Condicionais e Predicados
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+O poder expressivo da classe de funções que podemos definir neste ponto é muito limitado, porque não temos como fazer testes e realizar diferentes operações dependendo do resultado de um teste. Por exemplo, não podemos declarar uma função que calcula o valor absoluto de um número testando se o número é não-negativo e tomando diferentes ações em cada caso de acordo com a regra:
+
+$$
+|x| = \begin{cases}
+x & \text{se } x \geq 0 \\
+-x & \text{caso contrário}
+\end{cases}
+$$
+
+<a name="footnote-link-1"></a>
+
+Esse construto é uma _análise de caso_ e pode ser escrito em JavaScript usando uma _expressão condicional_ como:[<sup>1</sup>](#footnote-1)
+
+<CodePlayground
+  code={`function abs(x) {
+    return x >= 0 ? x : - x;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+que poderia ser expresso em português como "Se *x* é maior ou igual a zero, retorne *x*; caso contrário, retorne *-x*."
+
+A forma geral de uma expressão condicional é:
+
+```javascript
+predicado ? expressão-consequente : expressão-alternativa
+```
+
+Expressões condicionais começam com um _predicado_ - ou seja, uma expressão cujo valor é _true_ ou _false_, dois valores _booleanos_ distintos em JavaScript. Os expressões booleanas primitivas `true` e `false` avaliam trivialmente para os valores booleanos verdadeiro e falso, respectivamente. O _predicado_ é seguido por um ponto de interrogação, a _expressão-consequente_, dois-pontos e, finalmente, a _expressão-alternativa_.
+
+Para avaliar uma expressão condicional, o interpretador começa avaliando o _predicado_ da expressão. Se o _predicado_ é avaliado como verdadeiro, o interpretador avalia a _expressão-consequente_ e retorna seu valor como o valor da condicional. Se o _predicado_ é avaliado como falso, ele avalia a _expressão-alternativa_ e retorna seu valor como o valor da condicional.
+
+<a name="footnote-link-2"></a>
+
+A palavra _predicado_ é usada para operadores e funções que retornam verdadeiro ou falso, bem como para expressões que avaliam para verdadeiro ou falso. A função de valor absoluto `abs` faz uso do predicado primitivo `>=`, um operador que recebe dois números como argumentos e testa se o primeiro número é maior ou igual ao segundo número, retornando verdadeiro ou falso de acordo.
+
+Se preferirmos lidar com o caso zero separadamente, podemos especificar a função que calcula o valor absoluto de um número escrevendo:
+
+$$
+|x| = \begin{cases}
+x & \text{se } x > 0 \\
+0 & \text{se } x = 0 \\
+-x & \text{caso contrário}
+\end{cases}
+$$
+
+Em JavaScript, expressamos uma análise de caso com múltiplos casos aninhando expressões condicionais como expressões alternativas dentro de outras expressões condicionais:
+
+<CodePlayground
+  code={`function abs(x) {
+    return x > 0
+           ? x
+           : x === 0
+           ? 0
+           : - x;
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Parênteses não são necessários ao redor da expressão alternativa `x === 0 ? 0 : - x`, porque a forma sintática da expressão condicional é associativa à direita. O interpretador ignora espaços e quebras de linha, aqui inseridos para legibilidade para alinhar os `?` e `:` sob o primeiro predicado da análise de caso.
+
+A forma geral de uma análise de caso é:
+
+```javascript
+p₁
+? e₁
+: p₂
+? e₂
+...
+: pₙ
+? eₙ
+: expressão-alternativa-final
+```
+
+Chamamos um predicado *pᵢ* junto com sua expressão consequente *eᵢ* de uma _cláusula_. Uma análise de caso pode ser vista como uma sequência de cláusulas, seguida por uma expressão alternativa final.
+
+De acordo com a avaliação de expressões condicionais, uma análise de caso é avaliada primeiro avaliando o predicado *p₁*. Se seu valor for falso, então *p₂* é avaliado. Se o valor de *p₂* também for falso, então *p₃* é avaliado. Este processo continua até que um predicado seja encontrado cujo valor seja verdadeiro, caso em que o interpretador retorna o valor da expressão consequente correspondente da cláusula como o valor da análise de caso. Se nenhum dos *p* for encontrado como verdadeiro, o valor da análise de caso é o valor da expressão alternativa final.
+
+## Operadores Lógicos
+
+Além de predicados primitivos como `>=`, `>`, `<`, `<=`, `===` e `!==` que são aplicados a números, existem operações de composição lógica, que nos permitem construir predicados compostos. Os três mais frequentemente usados são:
+
+- **Conjunção Lógica**: *expressão₁* `&&` *expressão₂*
+
+  Esta operação expressa _conjunção lógica_, significando aproximadamente o mesmo que a palavra em português "e". Assumimos que esta forma sintática é açúcar sintático para:
+
+  *expressão₁* `?` *expressão₂* `:` `false`
+
+- **Disjunção Lógica**: *expressão₁* `||` *expressão₂*
+
+  Esta operação expressa _disjunção lógica_, significando aproximadamente o mesmo que a palavra em português "ou". Assumimos que esta forma sintática é açúcar sintático para:
+
+  *expressão₁* `?` `true` `:` *expressão₂*
+
+- **Negação Lógica**: `!` *expressão*
+
+  Esta operação expressa _negação lógica_, significando aproximadamente o mesmo que a palavra em português "não". O valor da expressão é verdadeiro quando a *expressão* é avaliada como falso, e falso quando a *expressão* é avaliada como verdadeiro.
+
+Observe que `&&` e `||` são formas sintáticas, não operadores; sua expressão do lado direito nem sempre é avaliada. O operador `!`, por outro lado, segue a regra de avaliação da seção 1.1.3. É um operador _unário_, o que significa que recebe apenas um argumento, enquanto os operadores aritméticos e predicados primitivos discutidos até agora são _binários_, recebendo dois argumentos. O operador `!` precede seu argumento; nós o chamamos de _operador prefixo_. Outro operador prefixo é o operador de negação numérica, um exemplo do qual é a expressão `- x` nas funções `abs` acima.
+
+Como exemplo de como esses predicados são usados, a condição de que um número *x* esteja no intervalo 5 < *x* < 10 pode ser expressa como:
+
+```javascript
+x > 5 && x < 10
+```
+
+A forma sintática `&&` tem precedência mais baixa que os operadores de comparação `>` e `<`, e a forma sintática de expressão condicional tem precedência mais baixa que qualquer outro operador que encontramos até agora, uma propriedade que usamos nas funções `abs` acima.
+
+Como outro exemplo, podemos declarar um predicado para testar se um número é maior ou igual a outro como:
+
+<CodePlayground
+  code={`function maior_ou_igual(x, y) {
+    return x > y || x === y;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+ou alternativamente como:
+
+<CodePlayground
+  code={`function maior_ou_igual(x, y) {
+    return ! (x < y);
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+A função `maior_ou_igual`, quando aplicada a dois números, se comporta da mesma forma que o operador `>=`. Operadores unários têm precedência mais alta que operadores binários, o que torna os parênteses neste exemplo necessários.
+
+---
+
+## Exercícios
+
+### Exercício 1.1
+
+Abaixo está uma sequência de instruções. Qual é o resultado impresso pelo interpretador em resposta a cada instrução? Suponha que a sequência deve ser avaliada na ordem em que é apresentada.
+
+```javascript
+10;
+```
+
+```javascript
+5 + 3 + 4;
+```
+
+```javascript
+9 - 1;
+```
+
+```javascript
+6 / 2;
+```
+
+```javascript
+2 * 4 + (4 - 6);
+```
+
+```javascript
+const a = 3;
+```
+
+```javascript
+const b = a + 1;
+```
+
+```javascript
+a + b + a * b;
+```
+
+```javascript
+a === b;
+```
+
+```javascript
+b > a && b < a * b ? b : a;
+```
+
+```javascript
+a === 4
+? 6
+: b === 4
+? 6 + 7 + a
+: 25;
+```
+
+```javascript
+2 + (b > a ? b : a);
+```
+
+```javascript
+(a > b
+ ? a
+ : a < b
+ ? b
+ : -1)
+*
+(a + 1);
+```
+
+Os parênteses ao redor das expressões condicionais nas últimas duas instruções são necessários porque a forma sintática de expressão condicional tem precedência mais baixa que os operadores aritméticos `+` e `*`.
+
+### Exercício 1.2
+
+Traduza a seguinte expressão para JavaScript:
+
+$$
+\frac{5 + 4 + (2 - (3 - (6 + \frac{4}{5})))}{3(6 - 2)(2 - 7)}
+$$
+
+### Exercício 1.3
+
+Declare uma função que recebe três números como argumentos e retorna a soma dos quadrados dos dois números maiores.
+
+### Exercício 1.4
+
+Observe que nosso modelo de avaliação permite aplicações cujas expressões de função são expressões compostas. Use esta observação para descrever o comportamento de `a_plus_abs_b`:
+
+<CodePlayground
+  code={`function plus(a, b) { return a + b; }
+
+function minus(a, b) { return a - b; }
+
+function a_plus_abs_b(a, b) {
+    return (b >= 0 ? plus : minus)(a, b);
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+### Exercício 1.5
+
+Ben Bitdiddle inventou um teste para determinar se o interpretador com o qual ele está lidando está usando avaliação de ordem aplicativa ou avaliação de ordem normal. Ele declara as seguintes duas funções:
+
+<CodePlayground
+  code={`function p() { return p(); }
+
+function test(x, y) {
+    return x === 0 ? 0 : y;
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Então ele avalia a instrução:
+
+```javascript
+test(0, p());
+```
+
+Que comportamento Ben observará com um interpretador que usa avaliação de ordem aplicativa? Que comportamento ele observará com um interpretador que usa avaliação de ordem normal? Explique sua resposta. (Suponha que a regra de avaliação para expressões condicionais é a mesma se o interpretador está usando ordem normal ou aplicativa: A expressão do predicado é avaliada primeiro, e o resultado determina se deve avaliar a expressão consequente ou a expressão alternativa.)
+
+---
+
+<a name="footnote-1"></a> [[1]](#footnote-link-1) Condicionais em JavaScript completo aceitam qualquer valor, não apenas um booleano, como resultado da avaliação da expressão do _predicado_. Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
+
+<a name="footnote-2"></a> [[2]](#footnote-link-2) "Interpretado como verdadeiro ou falso" significa isto: Em JavaScript completo, condicionais podem aceitar qualquer valor como resultado da avaliação da expressão predicado (veja a nota de rodapé na seção 4.1.2 para detalhes). Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
