@@ -1,0 +1,352 @@
+# 1.3.1 Funções como Argumentos
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Considere as três funções a seguir. A primeira calcula a soma dos inteiros de `a` até `b`:
+
+<CodePlayground
+  code={`function sum_integers(a, b) {
+    return a > b
+           ? 0
+           : a + sum_integers(a + 1, b);
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+A segunda calcula a soma dos cubos dos inteiros no intervalo dado:
+
+<CodePlayground
+  code={`function sum_cubes(a, b) {
+    return a > b
+           ? 0
+           : cube(a) + sum_cubes(a + 1, b);
+}`}
+  hiddenCode={`function cube(x) {
+    return x * x * x;
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+A terceira calcula a soma de uma sequência de termos na série
+
+$$
+\frac{1}{1\cdot3}+\frac{1}{5\cdot7}+\frac{1}{9\cdot11}+\cdots
+$$
+
+que converge para $\pi/8$ (muito lentamente):[<sup>1</sup>](#footnote-1)
+
+<CodePlayground
+  code={`function pi_sum(a, b) {
+    return a > b
+           ? 0
+           : 1 / (a * (a + 2)) + pi_sum(a + 4, b);
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Estas três funções claramente compartilham um padrão subjacente comum. Elas são, em sua maior parte, idênticas, diferindo apenas no nome da função, na função de `a` usada para calcular o termo a ser adicionado, e na função que fornece o próximo valor de `a`. Poderíamos gerar cada uma das funções preenchendo os espaços no mesmo template:
+
+```javascript
+function nome(a, b) {
+    return a > b
+           ? 0
+           : termo(a) + nome(proximo(a), b);
+}
+```
+
+A presença de tal padrão comum é forte evidência de que existe uma abstração útil esperando para ser trazida à superfície. De fato, matemáticos há muito tempo identificaram a abstração de *somatório de uma série* e inventaram a "notação sigma", por exemplo
+
+$$
+\sum_{n=a}^{b} f(n) = f(a)+\cdots+f(b)
+$$
+
+para expressar este conceito. O poder da notação sigma é que ela permite aos matemáticos lidar com o conceito de somatório em si, em vez de apenas com somas particulares — por exemplo, para formular resultados gerais sobre somas que são independentes da série particular sendo somada.
+
+Da mesma forma, como designers de programas, gostaríamos que nossa linguagem fosse poderosa o suficiente para que pudéssemos escrever uma função que expressa o conceito de somatório em si, em vez de apenas funções que calculam somas particulares. Podemos fazer isso prontamente em nossa linguagem funcional pegando o template comum mostrado acima e transformando os "espaços" em parâmetros:
+
+<CodePlayground
+  code={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Observe que `sum` recebe como seus argumentos os limites inferior e superior `a` e `b` juntamente com as funções `term` e `next`. Podemos usar `sum` assim como usaríamos qualquer função. Por exemplo, podemos usá-la (junto com uma função `inc` que incrementa seu argumento em 1) para definir `sum_cubes`:
+
+<CodePlayground
+  code={`function inc(n) {
+    return n + 1;
+}
+function sum_cubes(a, b) {
+    return sum(cube, a, inc, b);
+}`}
+  hiddenCode={`function cube(x) {
+    return x * x * x;
+}
+function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+Usando isso, podemos calcular a soma dos cubos dos inteiros de 1 a 10:
+
+<CodePlayground
+  code={`sum_cubes(1, 10);`}
+  hiddenCode={`function cube(x) {
+    return x * x * x;
+}
+function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}
+function inc(n) {
+    return n + 1;
+}
+function sum_cubes(a, b) {
+    return sum(cube, a, inc, b);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Com a ajuda de uma função identidade para calcular o termo, podemos definir `sum_integers` em termos de `sum`:
+
+<CodePlayground
+  code={`function identity(x) {
+    return x;
+}
+function sum_integers(a, b) {
+    return sum(identity, a, inc, b);
+}`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}
+function inc(n) {
+    return n + 1;
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+Então podemos somar os inteiros de 1 a 10:
+
+<CodePlayground
+  code={`sum_integers(1, 10);`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}
+function inc(n) {
+    return n + 1;
+}
+function identity(x) {
+    return x;
+}
+function sum_integers(a, b) {
+    return sum(identity, a, inc, b);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+<a name="footnote-link-2"></a>
+Também podemos definir `pi_sum` da mesma forma:[<sup>2</sup>](#footnote-2)
+
+<CodePlayground
+  code={`function pi_sum(a, b) {
+    function pi_term(x) {
+        return 1 / (x * (x + 2));
+    }
+    function pi_next(x) {
+        return x + 4;
+    }
+    return sum(pi_term, a, pi_next, b);
+}`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}`}
+  height={350}
+  showLineNumbers={false}
+/>
+
+Usando essas funções, podemos calcular uma aproximação de $\pi$:
+
+<CodePlayground
+  code={`8 * pi_sum(1, 1000);`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}
+function pi_sum(a, b) {
+    function pi_term(x) {
+        return 1 / (x * (x + 2));
+    }
+    function pi_next(x) {
+        return x + 4;
+    }
+    return sum(pi_term, a, pi_next, b);
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+Uma vez que temos `sum`, podemos usá-la como um bloco de construção na formulação de conceitos adicionais. Por exemplo, a integral definida de uma função $f$ entre os limites $a$ e $b$ pode ser aproximada numericamente usando a fórmula
+
+$$
+\int_a^b f = \left[ f\left(a+\frac{dx}{2}\right) + f\left(a+dx+\frac{dx}{2}\right) + f\left(a+2dx+\frac{dx}{2}\right) + \cdots \right] dx
+$$
+
+para valores pequenos de $dx$. Podemos expressar isso diretamente como uma função:
+
+<CodePlayground
+  code={`function integral(f, a, b, dx) {
+    function add_dx(x) {
+        return x + dx;
+    }
+    return sum(f, a + dx / 2, add_dx, b) * dx;
+}`}
+  hiddenCode={`function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`integral(cube, 0, 1, 0.01);`}
+  hiddenCode={`function cube(x) {
+    return x * x * x;
+}
+function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}
+function integral(f, a, b, dx) {
+    function add_dx(x) {
+        return x + dx;
+    }
+    return sum(f, a + dx / 2, add_dx, b) * dx;
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`integral(cube, 0, 1, 0.001);`}
+  hiddenCode={`function cube(x) {
+    return x * x * x;
+}
+function sum(term, a, next, b) {
+    return a > b
+           ? 0
+           : term(a) + sum(term, next(a), next, b);
+}
+function integral(f, a, b, dx) {
+    function add_dx(x) {
+        return x + dx;
+    }
+    return sum(f, a + dx / 2, add_dx, b) * dx;
+}`}
+  height={100}
+  showLineNumbers={false}
+/>
+
+(O valor exato da integral do cubo entre 0 e 1 é 1/4.)
+
+## Exercício 1.29
+
+<a name="ex-1-29"></a>
+A Regra de Simpson é um método mais preciso de integração numérica do que o método ilustrado acima. Usando a Regra de Simpson, a integral de uma função $f$ entre $a$ e $b$ é aproximada como
+
+$$
+\frac{h}{3}(y_0 + 4y_1 + 2y_2 + 4y_3 + 2y_4 + \cdots + 2y_{n-2} + 4y_{n-1} + y_n)
+$$
+
+onde $h = (b-a)/n$, para algum inteiro par $n$, e $y_k = f(a + kh)$. (Aumentar $n$ aumenta a precisão da aproximação.) Declare uma função que recebe como argumentos $f$, $a$, $b$ e $n$ e retorna o valor da integral, calculado usando a Regra de Simpson. Use sua função para integrar `cube` entre 0 e 1 (com $n = 100$ e $n = 1000$), e compare os resultados com os da função `integral` mostrada acima.
+
+## Exercício 1.30
+
+<a name="ex-1-30"></a>
+A função `sum` acima gera uma recursão linear. A função pode ser reescrita de forma que a soma seja realizada iterativamente. Mostre como fazer isso preenchendo as expressões faltantes no corpo da função a seguir:
+
+```javascript
+function sum(term, a, next, b) {
+    function iter(a, result) {
+        return ⟨??⟩
+               ? ⟨??⟩
+               : iter(⟨??⟩, ⟨??⟩);
+    }
+    return iter(⟨??⟩, ⟨??⟩);
+}
+```
+
+## Exercício 1.31
+
+<a name="ex-1-31"></a>
+
+**a.** A função `sum` é apenas a mais simples de um vasto número de abstrações similares que podem ser capturadas como funções de ordem superior.[<sup>3</sup>](#footnote-3) Escreva uma função análoga chamada `product` que retorna o produto dos valores de uma função nos pontos em um dado intervalo. Mostre como definir `factorial` em termos de `product`. Além disso, use `product` para calcular aproximações de $\pi$ usando a fórmula[<sup>4</sup>](#footnote-4)
+
+$$
+\frac{\pi}{4} = \frac{2\cdot 4\cdot 4\cdot 6\cdot 6\cdot 8\cdots}{3\cdot 3\cdot 5\cdot 5\cdot 7\cdot 7\cdots}
+$$
+
+**b.** Se sua função `product` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
+
+## Exercício 1.32
+
+<a name="ex-1-32"></a>
+
+**a.** Mostre que `sum` e `product` (exercício 1.31) são ambos casos especiais de uma noção ainda mais geral chamada `accumulate` que combina uma coleção de termos, usando alguma função geral de acumulação:
+
+```javascript
+accumulate(combiner, null_value, term, a, next, b)
+```
+
+A função `accumulate` recebe como argumentos as mesmas especificações de termo e intervalo de `sum` e `product`, juntamente com uma função `combiner` (de dois argumentos) que especifica como o termo atual deve ser combinado com a acumulação dos termos anteriores e um `null_value` que especifica qual valor base usar quando os termos se esgotam. Escreva `accumulate` e mostre como `sum` e `product` podem ser definidos como simples chamadas a `accumulate`.
+
+**b.** Se sua função `accumulate` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
+
+## Exercício 1.33
+
+<a name="ex-1-33"></a>
+Você pode obter uma versão ainda mais geral de `accumulate` (exercício 1.32) introduzindo a noção de um *filtro* nos termos a serem combinados. Ou seja, combine apenas aqueles termos derivados de valores no intervalo que satisfaçam uma condição especificada. A abstração resultante `filtered_accumulate` recebe os mesmos argumentos que `accumulate`, juntamente com um predicado adicional de um argumento que especifica o filtro. Escreva `filtered_accumulate` como uma função. Mostre como expressar o seguinte usando `filtered_accumulate`:
+
+**a.** a soma dos quadrados dos números primos no intervalo de $a$ a $b$ (assumindo que você tenha uma função `is_prime` já escrita)
+
+**b.** o produto de todos os inteiros positivos menores que $n$ que são relativamente primos a $n$ (isto é, todos os inteiros positivos $i < n$ tais que $\text{GCD}(i, n) = 1$).
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Esta série, geralmente escrita na forma equivalente $\frac{\pi}{4} = 1 - \frac{1}{3} + \frac{1}{5} - \frac{1}{7} + \cdots$, é devida a Leibniz. Veremos como usar isso como base para alguns truques numéricos sofisticados na seção 3.5.3.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Observe que usamos estrutura de blocos (seção 1.1.8) para incorporar as declarações de `pi_next` e `pi_term` dentro de `pi_sum`, uma vez que essas funções são improváveis de serem úteis para qualquer outro propósito.
+
+<a name="footnote-3"></a>
+**[3](#ex-1-31)** A intenção dos exercícios 1.31-1.33 é demonstrar o poder expressivo que é alcançado pela abstração apropriada. Os exercícios foram projetados para que você experimente diferentes maneiras de expressar esses conceitos e se convença de que as abstrações discutidas são as ferramentas certas para alcançar essa expressividade.
+
+<a name="footnote-4"></a>
+**[4](#ex-1-31)** Esta fórmula foi descoberta pelo matemático e capelão inglês do século XVII John Wallis.
