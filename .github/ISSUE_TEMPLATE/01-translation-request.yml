@@ -1,0 +1,109 @@
+name: 📝 Solicitação de Tradução
+description: Reivindicar uma seção do SICP.js para traduzir
+title: "[Tradução] "
+labels: ["tradução", "help wanted"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📝 Solicitar Tradução de Seção
+
+        Obrigado por querer contribuir com a tradução do SICP.js!
+        Preencha as informações abaixo para reivindicar uma seção.
+
+  - type: dropdown
+    id: chapter
+    attributes:
+      label: Capítulo
+      description: Qual capítulo você deseja traduzir?
+      options:
+        - Prefácios
+        - Capítulo 1 - Construindo Abstrações com Funções
+        - Capítulo 2 - Construindo Abstrações com Dados
+        - Capítulo 3 - Modularidade, Objetos e Estado
+        - Capítulo 4 - Metalinguistic Abstraction
+        - Capítulo 5 - Computing with Register Machines
+    validations:
+      required: true
+
+  - type: input
+    id: section
+    attributes:
+      label: Seção Específica
+      description: Qual seção ou subseção você quer traduzir? (ex. "1.1.3", "2.2", etc.)
+      placeholder: "1.2.1"
+    validations:
+      required: true
+
+  - type: input
+    id: file-path
+    attributes:
+      label: Caminho do Arquivo (opcional)
+      description: Se souber o caminho do arquivo, informe aqui
+      placeholder: "docs/chapter-1/section-1.2.1.md"
+    validations:
+      required: false
+
+  - type: textarea
+    id: experience
+    attributes:
+      label: Experiência com Tradução
+      description: Você já contribuiu com traduções antes? Conhece os termos técnicos em português?
+      placeholder: |
+        - Já traduzi documentação técnica antes
+        - Familiar com terminologia de programação em PT-BR
+        - Primeira contribuição em projeto open source
+    validations:
+      required: false
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Prazo Estimado
+      description: Quando você espera concluir esta tradução?
+      placeholder: "Espero concluir em aproximadamente 2 semanas"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Confirme que você leu e entende os seguintes pontos
+      options:
+        - label: Li o [Guia de Tradução](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/TRANSLATION.md)
+          required: true
+        - label: Li o [Guia de Contribuição](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/CONTRIBUTING.md)
+          required: true
+        - label: Verifiquei que esta seção ainda não foi reivindicada por outra pessoa
+          required: true
+        - label: Estou ciente que preciso seguir as convenções de commits do projeto
+          required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Informações Adicionais
+      description: Alguma informação adicional que você gostaria de compartilhar?
+      placeholder: Comentários, dúvidas, ou contexto adicional
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        ### 🎯 Próximos Passos
+
+        Após criar esta issue:
+
+        1. Aguarde confirmação de um mantenedor
+        2. Faça fork do repositório
+        3. Crie uma branch para sua tradução
+        4. Siga o [Guia de Tradução](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/TRANSLATION.md)
+        5. Envie seu Pull Request quando concluir
+
+        **Dúvidas?** Veja nosso [FAQ](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/FAQ.md) ou pergunte aqui!

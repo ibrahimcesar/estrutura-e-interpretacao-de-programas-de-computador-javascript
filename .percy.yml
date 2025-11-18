@@ -1,0 +1,117 @@
+# Percy Configuration
+# https://docs.percy.io/docs/cli-configuration
+
+version: 2
+
+# Static site configuration
+static:
+  # Build output directory
+  build-dir: build/pt_BR
+
+  # Base URL for the site
+  base-url: /pt_BR/
+
+  # Ignore files/directories
+  ignore-files:
+    - "*.map"
+    - "*.txt"
+    - "sitemap.xml"
+    - "robots.txt"
+
+# Snapshot configuration
+snapshot:
+  # Widths to capture
+  widths:
+    - 375   # Mobile
+    - 768   # Tablet
+    - 1280  # Desktop
+    - 1920  # Large desktop
+
+  # Minimum height
+  min-height: 1024
+
+  # Enable JavaScript
+  enable-javascript: true
+
+  # Percy CSS for hiding dynamic content
+  percy-css: |
+    /* Hide elements that change frequently */
+    .navbar__item--github-stars { display: none !important; }
+    .announcement-bar { display: none !important; }
+
+    /* Stabilize animations */
+    * {
+      animation-duration: 0s !important;
+      transition-duration: 0s !important;
+    }
+
+# Discovery configuration
+discovery:
+  # Network idle timeout
+  network-idle-timeout: 750
+
+  # Allowed hostnames for asset discovery
+  allowed-hostnames:
+    - localhost
+    - cdn.jsdelivr.net
+
+  # Disable asset discovery for external resources
+  disable-asset-discovery: false
+
+# Specific snapshots
+snapshots:
+  # Home page
+  - name: Home Page
+    url: /
+    widths: [375, 768, 1280]
+
+  # Prefácios
+  - name: Foreword 1984
+    url: /prefaces/foreword84
+    widths: [768, 1280]
+
+  - name: Foreword 1996
+    url: /prefaces/foreword96
+    widths: [768, 1280]
+
+  # Capítulo 1
+  - name: Chapter 1 - Intro
+    url: /chapter-1/intro
+    widths: [768, 1280]
+
+  # Test dark mode (if applicable)
+  - name: Home Page - Dark Mode
+    url: /
+    widths: [1280]
+    execute: |
+      // Switch to dark mode
+      const toggleButton = document.querySelector('[aria-label*="dark mode"]');
+      if (toggleButton) toggleButton.click();
+
+# Comparison settings
+comparison:
+  # Threshold for considering a pixel changed
+  threshold: 0.1
+
+  # Include Percy CSS in snapshots
+  include-percy-css: true
+
+# Upload settings
+upload:
+  # Concurrency for uploads
+  concurrency: 5
+
+# Agent settings
+agent:
+  # Asset discovery configuration
+  asset-discovery:
+    # Request headers
+    request-headers:
+      User-Agent: Percy/Agent
+
+    # Allowed hostnames
+    allowed-hostnames:
+      - localhost
+      - cdn.jsdelivr.net
+      - fonts.googleapis.com
+      - fonts.gstatic.com

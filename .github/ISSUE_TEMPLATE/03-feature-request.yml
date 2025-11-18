@@ -1,0 +1,112 @@
+name: ✨ Sugestão de Melhoria
+description: Sugerir uma nova funcionalidade ou melhoria
+title: "[Feature] "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Sugerir uma Melhoria
+
+        Obrigado por ajudar a melhorar o projeto SICP.js PT-BR!
+        Use este template para sugerir novas funcionalidades ou melhorias.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Categoria
+      description: Qual área esta sugestão afeta?
+      options:
+        - Tradução (processo, ferramentas, glossário)
+        - Site/Interface (navegação, design, UX)
+        - Documentação (guias, README, FAQ)
+        - Automação/CI (workflows, testes, verificações)
+        - Conteúdo (exemplos, exercícios, explicações)
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema ou Necessidade
+      description: Qual problema esta funcionalidade resolveria? Por que ela é necessária?
+      placeholder: |
+        Descreva o problema ou necessidade que motivou esta sugestão.
+        Ex: "É difícil encontrar a seção que estou procurando porque..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução Proposta
+      description: Como você imagina que esta funcionalidade funcionaria?
+      placeholder: |
+        Descreva sua ideia de solução.
+        Ex: "Adicionar uma barra de busca que permite..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas Consideradas
+      description: Você pensou em outras formas de resolver este problema?
+      placeholder: |
+        Outras abordagens que você considerou
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Exemplos ou Referências
+      description: Conhece outros projetos que implementam algo similar?
+      placeholder: |
+        Links para projetos, screenshots, mockups, etc.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridade (na sua opinião)
+      description: Quão importante você acha que esta melhoria é?
+      options:
+        - Baixa (seria legal ter)
+        - Média (melhoraria bastante)
+        - Alta (muito importante)
+        - Crítica (essencial)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Disposição para Contribuir
+      description: Você estaria disposto a implementar esta funcionalidade?
+      options:
+        - label: Posso trabalhar nesta funcionalidade
+        - label: Preciso de orientação mas gostaria de ajudar
+        - label: Apenas sugerindo, não posso implementar
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Contexto Adicional
+      description: Qualquer outra informação relevante sobre esta sugestão
+      placeholder: Informações adicionais, considerações técnicas, etc.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **Obrigado pela sua sugestão!** 💡
+
+        Avaliaremos cuidadosamente e responderemos assim que possível.
