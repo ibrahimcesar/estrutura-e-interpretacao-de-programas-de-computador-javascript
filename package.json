@@ -33,8 +33,13 @@
     "@docusaurus/module-type-aliases": "^3.5.2",
     "@docusaurus/tsconfig": "^3.5.2",
     "@docusaurus/types": "^3.5.2",
+    "glob": "^11.1.0",
     "markdownlint-cli": "^0.45.0",
     "markdown-link-check": "^3.14.1"
+  },
+  "overrides": {
+    "glob": "^11.1.0",
+    "js-yaml": "^4.1.0"
   },
   "engines": {
     "node": ">=22.0"
