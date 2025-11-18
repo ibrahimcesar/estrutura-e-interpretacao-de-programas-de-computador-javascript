@@ -1,0 +1,384 @@
+---
+title: 3.1.1 Variáveis de Estado Local
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.1.1 Variáveis de Estado Local
+
+Para ilustrar o que queremos dizer com ter um objeto computacional com estado que varia com o tempo, vamos modelar a situação de sacar dinheiro de uma conta bancária. Faremos isso usando uma função `withdraw`, que recebe como argumento um `amount` (valor) a ser sacado. Se houver dinheiro suficiente na conta para acomodar o saque, então `withdraw` deve retornar o saldo restante após o saque. Caso contrário, `withdraw` deve retornar a mensagem "Insufficient funds" (Fundos insuficientes). Por exemplo, se começarmos com $100 na conta, devemos obter a seguinte sequência de respostas usando `withdraw`:
+
+<CodePlayground
+  code={`withdraw(25);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+75
+```
+
+<CodePlayground
+  code={`withdraw(25);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+50
+```
+
+<CodePlayground
+  code={`withdraw(60);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+"Insufficient funds"
+```
+
+<CodePlayground
+  code={`withdraw(15);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+35
+```
+
+Observe que a expressão `withdraw(25)`, avaliada duas vezes, produz valores diferentes. Este é um novo tipo de comportamento para uma função. Até agora, todas as nossas funções JavaScript podiam ser vistas como especificações para computar funções matemáticas. Uma chamada a uma função computava o valor da função aplicada aos argumentos dados, e duas chamadas à mesma função com os mesmos argumentos sempre produziam o mesmo resultado.<sup>[1](#footnote-1)</sup>
+
+Até agora, todos os nossos nomes eram *imutáveis*. Quando uma função era aplicada, os valores aos quais seus parâmetros se referiam nunca mudavam, e uma vez que uma declaração era avaliada, o nome declarado nunca mudava seu valor. Para implementar funções como `withdraw`, introduzimos *declarações de variáveis*, que usam a palavra-chave `let`, além das declarações de constantes, que usam a palavra-chave `const`. Podemos declarar uma variável `balance` para indicar o saldo de dinheiro na conta e definir `withdraw` como uma função que acessa `balance`.
+
+A função `withdraw` verifica se `balance` é pelo menos tão grande quanto o `amount` solicitado. Se for, `withdraw` decrementa `balance` por `amount` e retorna o novo valor de `balance`. Caso contrário, `withdraw` retorna a mensagem "Insufficient funds". Aqui estão as declarações de `balance` e `withdraw`:
+
+<CodePlayground
+  code={`let balance = 100;
+
+function withdraw(amount) {
+    if (balance >= amount) {
+        balance = balance - amount;
+        return balance;
+    } else {
+        return "Insufficient funds";
+    }
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+Decrementar `balance` é realizado pela instrução de expressão
+
+```javascript
+balance = balance - amount;
+```
+
+A sintaxe de expressões de *atribuição* é
+
+```javascript
+name = new-value
+```
+
+Aqui `name` foi declarado com `let` ou como um parâmetro de função, e `new-value` é qualquer expressão. A atribuição muda `name` de modo que seu valor seja o resultado obtido pela avaliação de `new-value`. No caso em questão, estamos mudando `balance` para que seu novo valor seja o resultado de subtrair `amount` do valor anterior de `balance`.<sup>[2](#footnote-2)</sup>
+
+A função `withdraw` também usa uma *sequência de instruções* para fazer duas instruções serem avaliadas no caso em que o teste `if` é verdadeiro: primeiro decrementando `balance` e depois retornando o valor de `balance`. Em geral, executar uma sequência
+
+```
+stmt₁ stmt₂ ... stmtₙ
+```
+
+faz com que as instruções `stmt₁` até `stmtₙ` sejam avaliadas em sequência.<sup>[3](#footnote-3)</sup>
+
+Embora `withdraw` funcione conforme desejado, a variável `balance` apresenta um problema. Conforme especificado acima, `balance` é um nome definido no ambiente do programa e é livremente acessível para ser examinado ou modificado por qualquer função. Seria muito melhor se pudéssemos de alguma forma tornar `balance` interno a `withdraw`, de modo que `withdraw` fosse a única função que pudesse acessar `balance` diretamente e qualquer outra função pudesse acessar `balance` apenas indiretamente (através de chamadas a `withdraw`). Isso modelaria com mais precisão a noção de que `balance` é uma variável de estado local usada por `withdraw` para acompanhar o estado da conta.
+
+Podemos tornar `balance` interno a `withdraw` reescrevendo a definição da seguinte forma:
+
+<CodePlayground
+  code={`function make_withdraw_balance_100() {
+    let balance = 100;
+    return amount => {
+               if (balance >= amount) {
+                   balance = balance - amount;
+                   return balance;
+               } else {
+                   return "Insufficient funds";
+               }
+           };
+}
+const new_withdraw = make_withdraw_balance_100();`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+O que fizemos aqui foi usar `let` para estabelecer um ambiente com uma variável local `balance`, vinculada ao valor inicial 100. Dentro deste ambiente local, usamos uma expressão lambda<sup>[4](#footnote-4)</sup> para criar uma função que recebe `amount` como argumento e se comporta como nossa função `withdraw` anterior. Esta função—retornada como resultado da avaliação do corpo da função `make_withdraw_balance_100`—se comporta exatamente da mesma maneira que `withdraw`, mas sua variável `balance` não é acessível por nenhuma outra função.<sup>[5](#footnote-5)</sup>
+
+Combinar atribuições com declarações de variáveis é a técnica geral de programação que usaremos para construir objetos computacionais com estado local. Infelizmente, usar essa técnica levanta um problema sério: Quando introduzimos funções pela primeira vez, também introduzimos o modelo de substituição de avaliação (seção 1.1.5) para fornecer uma interpretação do que significa aplicação de função. Dissemos que aplicar uma função cujo corpo é uma instrução return deve ser interpretado como avaliar a expressão de retorno da função com os parâmetros substituídos por seus valores. Para funções com corpos mais complexos, precisamos avaliar o corpo inteiro com os parâmetros substituídos por seus valores. O problema é que, assim que introduzimos atribuição em nossa linguagem, substituição não é mais um modelo adequado de aplicação de função. (Veremos por que isso é assim na seção 3.1.3.) Como consequência, tecnicamente não temos neste ponto nenhuma maneira de entender por que a função `new_withdraw` se comporta como afirmado acima. Para realmente entender uma função como `new_withdraw`, precisaremos desenvolver um novo modelo de aplicação de função. Na seção 3.2 introduziremos tal modelo, junto com uma explicação de atribuições e declarações de variáveis. Primeiro, porém, examinamos algumas variações sobre o tema estabelecido por `new_withdraw`.
+
+Parâmetros de funções, assim como nomes declarados com `let`, são variáveis. A seguinte função, `make_withdraw`, cria "processadores de saque". O parâmetro `balance` em `make_withdraw` especifica o valor inicial de dinheiro na conta.<sup>[6](#footnote-6)</sup>
+
+<CodePlayground
+  code={`function make_withdraw(balance) {
+    return amount => {
+               if (balance >= amount) {
+                   balance = balance - amount;
+                   return balance;
+               } else {
+                   return "Insufficient funds";
+               }
+           };
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+A função `make_withdraw` pode ser usada da seguinte forma para criar dois objetos `W1` e `W2`:
+
+<CodePlayground
+  code={`const W1 = make_withdraw(100);
+const W2 = make_withdraw(100);`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+<CodePlayground
+  code={`W1(50);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+50
+```
+
+<CodePlayground
+  code={`W2(70);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+30
+```
+
+<CodePlayground
+  code={`W2(40);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+"Insufficient funds"
+```
+
+<CodePlayground
+  code={`W1(40);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+10
+```
+
+Observe que `W1` e `W2` são objetos completamente independentes, cada um com sua própria variável de estado local `balance`. Saques de um não afetam o outro.
+
+Também podemos criar objetos que lidam com depósitos assim como saques, e assim podemos representar contas bancárias simples. Aqui está uma função que retorna um "objeto de conta bancária" com um saldo inicial especificado:
+
+<CodePlayground
+  code={`function make_account(balance) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(m) {
+        return m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}`}
+  height={450}
+  showLineNumbers={true}
+/>
+
+Cada chamada a `make_account` estabelece um ambiente com uma variável de estado local `balance`. Dentro deste ambiente, `make_account` define funções `deposit` e `withdraw` que acessam `balance` e uma função adicional `dispatch` que recebe uma "mensagem" como entrada e retorna uma das duas funções locais. A função `dispatch` em si é retornada como o valor que representa o objeto de conta bancária. Este é precisamente o estilo de programação de *passagem de mensagens* que vimos na seção 2.4.3, embora aqui o estejamos usando em conjunto com a capacidade de modificar variáveis locais.
+
+A função `make_account` pode ser usada da seguinte forma:
+
+<CodePlayground
+  code={`const acc = make_account(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`acc("withdraw")(50);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+50
+```
+
+<CodePlayground
+  code={`acc("withdraw")(60);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+"Insufficient funds"
+```
+
+<CodePlayground
+  code={`acc("deposit")(40);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+90
+```
+
+<CodePlayground
+  code={`acc("withdraw")(60);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+30
+```
+
+Cada chamada a `acc` retorna a função `deposit` ou `withdraw` definida localmente, que é então aplicada ao `amount` especificado. Assim como aconteceu com `make_withdraw`, outra chamada a `make_account`
+
+<CodePlayground
+  code={`const acc2 = make_account(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+produzirá um objeto de conta completamente separado, que mantém seu próprio `balance` local.
+
+## Exercício 3.1
+
+Um *acumulador* é uma função que é chamada repetidamente com um único argumento numérico e acumula seus argumentos em uma soma. Cada vez que é chamada, ela retorna a soma atualmente acumulada. Escreva uma função `make_accumulator` que gera acumuladores, cada um mantendo uma soma independente. A entrada para `make_accumulator` deve especificar o valor inicial da soma; por exemplo
+
+<CodePlayground
+  code={`const a = make_accumulator(5);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`a(10);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+15
+```
+
+<CodePlayground
+  code={`a(10);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+25
+```
+
+## Exercício 3.2
+
+Em aplicações de teste de software, é útil poder contar o número de vezes que uma determinada função é chamada durante o curso de uma computação. Escreva uma função `make_monitored` que recebe como entrada uma função, `f`, que ela mesma recebe uma entrada. O resultado retornado por `make_monitored` é uma terceira função, digamos `mf`, que mantém o controle do número de vezes que foi chamada mantendo um contador interno. Se a entrada para `mf` é a string `"how many calls"`, então `mf` retorna o valor do contador. Se a entrada é a string `"reset count"`, então `mf` redefine o contador para zero. Para qualquer outra entrada, `mf` retorna o resultado de chamar `f` nessa entrada e incrementa o contador. Por exemplo, poderíamos fazer uma versão monitorada da função `sqrt`:
+
+<CodePlayground
+  code={`const s = make_monitored(math_sqrt);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`s(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+10
+```
+
+<CodePlayground
+  code={`s("how many calls");`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+1
+```
+
+## Exercício 3.3
+
+Modifique a função `make_account` para que ela crie contas protegidas por senha. Ou seja, `make_account` deve receber uma string como argumento adicional, como em
+
+<CodePlayground
+  code={`const acc = make_account(100, "secret password");`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+O objeto de conta resultante deve processar uma solicitação apenas se ela for acompanhada pela senha com a qual a conta foi criada, e deve retornar uma reclamação caso contrário:
+
+<CodePlayground
+  code={`acc("secret password", "withdraw")(40);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+60
+```
+
+<CodePlayground
+  code={`acc("some other password", "deposit")(40);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+"Incorrect password"
+```
+
+## Exercício 3.4
+
+Modifique a função `make_account` do exercício 3.3 adicionando outra variável de estado local de modo que, se uma conta for acessada mais de sete vezes consecutivas com uma senha incorreta, ela invoque a função `call_the_cops`.
+
+-----
+
+<a name="footnote-1"></a>[1] Na verdade, isso não é completamente verdade. Uma exceção foi o gerador de números aleatórios na seção 1.2.6. Outra exceção envolveu as tabelas de operação/tipo que introduzimos na seção 2.4.3, onde os valores de duas chamadas a `get` com os mesmos argumentos dependiam de chamadas intermediárias a `put`. Por outro lado, até introduzirmos atribuição, não temos como criar tais funções nós mesmos.
+
+<a name="footnote-2"></a>[2] O valor de uma atribuição é o valor sendo atribuído ao nome. Instruções de expressão de atribuição parecem similares e não devem ser confundidas com declarações de constante e variável da forma `const name = value;` e `let name = value;` nas quais um `name` recém-declarado é associado a um `value`. Expressões de atribuição parecem similares e não devem ser confundidas com expressões da forma `expression₁ === expression₂` que avaliam para `true` se `expression₁` avalia para o mesmo valor que `expression₂` e para `false` caso contrário.
+
+<a name="footnote-3"></a>[3] Já usamos sequências implicitamente em nossos programas, porque em JavaScript o bloco de corpo de uma função pode conter uma sequência de declarações de função seguida por uma instrução return, não apenas uma única instrução return, como discutido na seção 1.1.8.
+
+<a name="footnote-4"></a>[4] Blocos como corpos de expressões lambda foram introduzidos na seção 2.2.4.
+
+<a name="footnote-5"></a>[5] No jargão de linguagens de programação, diz-se que a variável `balance` está *encapsulada* dentro da função `new_withdraw`. Encapsulamento reflete o princípio geral de design de sistemas conhecido como *princípio de ocultação*: Pode-se tornar um sistema mais modular e robusto protegendo partes do sistema umas das outras; isto é, fornecendo acesso a informações apenas para aquelas partes do sistema que têm "necessidade de saber".
+
+<a name="footnote-6"></a>[6] Ao contrário de `make_withdraw_balance_100` acima, não precisamos usar `let` para tornar `balance` uma variável local, já que parâmetros já são locais. Isso ficará mais claro após a discussão do modelo de ambiente de avaliação na seção 3.2. (Veja também o exercício 3.10.)

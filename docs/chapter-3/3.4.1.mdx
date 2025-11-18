@@ -1,0 +1,82 @@
+---
+title: 3.4.1 A Natureza do Tempo em Sistemas Concorrentes
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.4.1 A Natureza do Tempo em Sistemas Concorrentes
+
+Na superfície, o tempo parece direto. É uma ordenação imposta sobre eventos.[^1] Para quaisquer eventos $A$ e $B$, ou $A$ ocorre antes de $B$, $A$ e $B$ são simultâneos, ou $A$ ocorre depois de $B$. Por exemplo, voltando ao exemplo da conta bancária, suponha que Peter saque $10 e Paul saque $25 de uma conta conjunta que inicialmente contém $100, deixando $65 na conta. Dependendo da ordem dos dois saques, a sequência de saldos na conta é ou $\$100 \rightarrow \$90 \rightarrow\$65$ ou $\$100 \rightarrow \$75 \rightarrow\$65$. Em uma implementação computacional do sistema bancário, essa sequência mutável de saldos poderia ser modelada por atribuições sucessivas a uma variável `balance`.
+
+Em situações complexas, no entanto, tal visão pode ser problemática. Suponha que Peter e Paul, e outras pessoas além deles, estejam acessando a mesma conta bancária através de uma rede de caixas eletrônicos distribuídos por todo o mundo. A sequência real de saldos na conta dependerá criticamente da temporização detalhada dos acessos e dos detalhes da comunicação entre as máquinas.
+
+Essa indeterminação na ordem dos eventos pode criar sérios problemas no projeto de sistemas concorrentes. Por exemplo, suponha que os saques feitos por Peter e Paul sejam implementados como duas threads separadas compartilhando uma variável comum `balance`, cada thread especificada pela função dada na seção 3.1.1:
+
+```javascript
+function withdraw(amount) {
+    if (balance >= amount) {
+        balance = balance - amount;
+        return balance;
+    } else {
+        return "Insufficient funds";
+    }
+}
+```
+
+Se as duas threads operam independentemente, então Peter pode testar o saldo e tentar sacar uma quantia legítima. No entanto, Paul pode sacar alguns fundos entre o momento em que Peter verifica o saldo e o momento em que Peter completa o saque, invalidando assim o teste de Peter.
+
+As coisas podem ser ainda piores. Considere a instrução
+
+```javascript
+balance = balance - amount;
+```
+
+executada como parte de cada processo de saque. Isso consiste em três etapas: (1) acessar o valor da variável `balance`; (2) calcular o novo saldo; (3) definir `balance` para esse novo valor. Se os saques de Peter e Paul executam essa instrução concorrentemente, então os dois saques podem intercalar a ordem em que acessam `balance` e definem-no para o novo valor.
+
+![Diagrama de temporização mostrando como intercalar a ordem dos eventos em dois saques bancários pode levar a um saldo final incorreto](/img/chapter-3/ch3-Z-G-31.svg)
+
+*Figura 3.29: Diagrama de temporização mostrando como intercalar a ordem dos eventos em dois saques bancários pode levar a um saldo final incorreto.*
+
+O diagrama de temporização na Figura 3.29 retrata uma ordem de eventos onde `balance` começa em 100, Peter saca 10, Paul saca 25, e ainda assim o valor final de `balance` é 75. Como mostrado no diagrama, a razão para essa anomalia é que a atribuição de 75 por Paul a `balance` é feita sob a suposição de que o valor de `balance` a ser decrementado é 100. Essa suposição, no entanto, tornou-se inválida quando Peter mudou `balance` para 90. Esta é uma falha catastrófica para o sistema bancário, porque a quantidade total de dinheiro no sistema não é conservada. Antes das transações, a quantidade total de dinheiro era $100. Depois, Peter tem $10, Paul tem $25, e o banco tem $75.[^2]
+
+O fenômeno geral ilustrado aqui é que várias threads podem compartilhar uma variável de estado comum. O que torna isso complicado é que mais de uma thread pode estar tentando manipular o estado compartilhado ao mesmo tempo. Para o exemplo da conta bancária, durante cada transação, cada cliente deve poder agir como se os outros clientes não existissem. Quando clientes mudam o saldo de uma forma que depende do saldo, eles devem ser capazes de assumir que, imediatamente antes do momento da mudança, o saldo ainda é o que eles pensavam que era.
+
+## Comportamento correto de programas concorrentes
+
+O exemplo acima tipifica os bugs sutis que podem se infiltrar em programas concorrentes. A raiz dessa complexidade está nas atribuições a variáveis que são compartilhadas entre as diferentes threads. Já sabemos que devemos ser cuidadosos ao escrever programas que usam atribuição, porque os resultados de um cálculo dependem da ordem em que as atribuições ocorrem.[^3] Com threads concorrentes, devemos ser especialmente cuidadosos com atribuições, porque podemos não ser capazes de controlar a ordem das atribuições feitas pelas diferentes threads. Se várias dessas mudanças podem ser feitas concorrentemente (como com dois depositantes acessando uma conta conjunta), precisamos de alguma forma de garantir que nosso sistema se comporte corretamente. Por exemplo, no caso de saques de uma conta bancária conjunta, devemos garantir que o dinheiro seja conservado. Para fazer programas concorrentes se comportarem corretamente, podemos ter que colocar algumas restrições na execução concorrente.
+
+Uma possível restrição à concorrência estipularia que nenhuma operação que mude quaisquer variáveis de estado compartilhadas pode ocorrer ao mesmo tempo. Este é um requisito extremamente rigoroso. Para bancos distribuídos, exigiria que o projetista do sistema garantisse que apenas uma transação pudesse prosseguir por vez. Isso seria tanto ineficiente quanto excessivamente conservador. A Figura 3.30 mostra Peter e Paul compartilhando uma conta bancária, onde Paul tem uma conta privada também. O diagrama ilustra dois saques da conta compartilhada (um por Peter e um por Paul) e um depósito na conta privada de Paul.[^4] Os dois saques da conta compartilhada não devem ser concorrentes (já que ambos acessam e atualizam a mesma conta), e o depósito e o saque de Paul não devem ser concorrentes (já que ambos acessam e atualizam a quantia na carteira de Paul). Mas não deve haver problema em permitir que o depósito de Paul em sua conta privada prossiga concorrentemente com o saque de Peter da conta compartilhada.
+
+![Depósitos e saques concorrentes de uma conta conjunta no Bank1 e uma conta privada no Bank2](/img/chapter-3/Fig3.30.svg)
+
+*Figura 3.30: Depósitos e saques concorrentes de uma conta conjunta no Bank1 e uma conta privada no Bank2.*
+
+Uma restrição menos rigorosa à concorrência garantiria que um sistema concorrente produza o mesmo resultado como se as threads tivessem executado sequencialmente em alguma ordem. Há dois aspectos importantes para esse requisito. Primeiro, ele não exige que as threads realmente executem sequencialmente, mas apenas que produzam resultados que são os mesmos *como se* tivessem executado sequencialmente. Para o exemplo na Figura 3.30, o projetista do sistema de conta bancária pode permitir com segurança que o depósito de Paul e o saque de Peter aconteçam concorrentemente, porque o resultado líquido será o mesmo como se as duas operações tivessem acontecido sequencialmente. Segundo, pode haver mais de um resultado "correto" possível produzido por um programa concorrente, porque exigimos apenas que o resultado seja o mesmo como para *alguma* ordem sequencial. Por exemplo, suponha que a conta conjunta de Peter e Paul comece com $100, e Peter deposite $40 enquanto Paul concorrentemente saque metade do dinheiro na conta. Então a execução sequencial poderia resultar no saldo da conta sendo ou $70 ou $90 (veja o exercício 3.38).[^5]
+
+Há requisitos ainda mais fracos para a execução correta de programas concorrentes. Um programa para simular difusão (digamos, o fluxo de calor em um objeto) pode consistir em um grande número de threads, cada uma representando um pequeno volume de espaço, que atualizam seus valores concorrentemente. Cada thread muda repetidamente seu valor para a média de seu próprio valor e dos valores de seus vizinhos. Este algoritmo converge para a resposta certa independentemente da ordem em que as operações são feitas; não há necessidade de quaisquer restrições no uso concorrente dos valores compartilhados.
+
+## Exercício 3.38
+
+Suponha que Peter, Paul e Mary compartilhem uma conta bancária conjunta que inicialmente contém $100. Concorrentemente, Peter deposita $10, Paul saca $20, e Mary saca metade do dinheiro na conta, executando os seguintes comandos:
+
+| | |
+|---|---|
+| Peter: | `balance = balance + 10` |
+| Paul: | `balance = balance - 20` |
+| Mary: | `balance = balance - (balance / 2)` |
+
+a. Liste todos os diferentes valores possíveis para `balance` após essas três transações terem sido completadas, assumindo que o sistema bancário força as três threads a executarem sequencialmente em alguma ordem.
+
+b. Quais são alguns outros valores que poderiam ser produzidos se o sistema permitir que as threads sejam intercaladas? Desenhe diagramas de temporização como o da Figura 3.29 para explicar como esses valores podem ocorrer.
+
+-----
+
+[^1]: Para citar um grafite visto em um muro de edifício em Cambridge, Massachusetts: "Tempo é um dispositivo que foi inventado para impedir que tudo aconteça ao mesmo tempo."
+
+[^2]: Uma falha ainda pior para este sistema poderia ocorrer se as duas atribuições tentassem mudar o saldo simultaneamente, caso em que os dados reais que aparecem na memória podem acabar sendo uma combinação aleatória das informações sendo escritas pelas duas threads. A maioria dos computadores tem travas nas operações primitivas de escrita na memória, que protegem contra tal acesso simultâneo. Mesmo este tipo aparentemente simples de proteção, no entanto, levanta desafios de implementação no projeto de computadores multiprocessamento, onde protocolos elaborados de *coerência de cache* são necessários para garantir que os vários processadores manterão uma visão consistente do conteúdo da memória, apesar do fato de que os dados podem ser replicados ("em cache") entre os diferentes processadores para aumentar a velocidade de acesso à memória.
+
+[^3]: O programa fatorial na seção 3.1.3 ilustra isso para uma única thread sequencial.
+
+[^4]: As colunas mostram o conteúdo da carteira de Peter, a conta conjunta (no Bank1), a carteira de Paul e a conta privada de Paul (no Bank2), antes e depois de cada saque (W) e depósito (D). Peter saca $10 do Bank1; Paul deposita $5 no Bank2, então saca $25 do Bank1.
+
+[^5]: Uma maneira mais formal de expressar essa ideia é dizer que programas concorrentes são inerentemente *não-determinísticos*. Isto é, eles não são descritos por funções de valor único, mas por funções cujos resultados são conjuntos de valores possíveis. Na seção 4.3 estudaremos uma linguagem para expressar computações não-determinísticas.

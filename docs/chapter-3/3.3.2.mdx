@@ -1,0 +1,137 @@
+---
+title: 3.3.2 Representando Filas
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.3.2 Representando Filas
+
+Os mutadores `set_head` e `set_tail` nos permitem usar pares para construir estruturas de dados que não podem ser construídas apenas com `pair`, `head` e `tail`. Esta seção mostra como usar pares para representar uma estrutura de dados chamada fila. A seção 3.3.3 mostrará como representar estruturas de dados chamadas tabelas.
+
+Uma *fila* é uma sequência na qual itens são inseridos em uma extremidade (chamada *traseira* da fila) e removidos da outra extremidade (a *frente*). A figura abaixo mostra uma fila inicialmente vazia na qual os itens `a` e `b` são inseridos. Então `a` é removido, `c` e `d` são inseridos, e `b` é removido. Como os itens são sempre removidos na ordem em que são inseridos, uma fila às vezes é chamada de buffer *FIFO* (first in, first out - primeiro a entrar, primeiro a sair).
+
+| Operação | Fila Resultante |
+|----------|----------------|
+| `const q = make_queue();` | |
+| `insert_queue(q, "a");` | `a` |
+| `insert_queue(q, "b");` | `a  b` |
+| `delete_queue(q);` | `b` |
+| `insert_queue(q, "c");` | `b c` |
+| `insert_queue(q, "d");` | `b c d` |
+| `delete_queue(q);` | `c d` |
+
+Em termos de abstração de dados, podemos considerar uma fila como definida pelo seguinte conjunto de operações:
+
+- um construtor:
+  - `make_queue()` retorna uma fila vazia (uma fila não contendo itens).
+
+- um predicado:
+  - `is_empty_queue(queue)` testa se a fila está vazia.
+
+- um seletor:
+  - `front_queue(queue)` retorna o objeto na frente da fila, sinalizando um erro se a fila estiver vazia; não modifica a fila.
+
+- dois mutadores:
+  - `insert_queue(queue, item)` insere o item na traseira da fila e retorna a fila modificada como seu valor.
+  - `delete_queue(queue)` remove o item na frente da fila e retorna a fila modificada como seu valor, sinalizando um erro se a fila estiver vazia antes da remoção.
+
+Como uma fila é uma sequência de itens, poderíamos certamente representá-la como uma lista comum; a frente da fila seria o `head` da lista, inserir um item na fila equivaleria a anexar um novo elemento no final da lista, e remover um item da fila seria simplesmente tomar o `tail` da lista. No entanto, essa representação é ineficiente, porque para inserir um item devemos percorrer a lista até chegarmos ao final. Como o único método que temos para percorrer uma lista é por operações `tail` sucessivas, esse percorrimento requer Θ(n) passos para uma lista de n itens. Uma modificação simples na representação em lista supera essa desvantagem, permitindo que as operações de fila sejam implementadas de modo que exijam Θ(1) passos; ou seja, de modo que o número de passos necessários seja independente do comprimento da fila.
+
+A dificuldade com a representação em lista surge da necessidade de percorrer para encontrar o final da lista. A razão pela qual precisamos percorrer é que, embora a maneira padrão de representar uma lista como uma cadeia de pares nos forneça prontamente um ponteiro para o início da lista, ela não nos dá um ponteiro facilmente acessível para o final. A modificação que evita a desvantagem é representar a fila como uma lista, juntamente com um ponteiro adicional que indica o par final na lista. Dessa forma, quando vamos inserir um item, podemos consultar o ponteiro traseiro e assim evitar percorrer a lista.
+
+Uma fila é representada, então, como um par de ponteiros, `front_ptr` e `rear_ptr`, que indicam, respectivamente, o primeiro e o último pares em uma lista comum. Como gostaríamos que a fila fosse um objeto identificável, podemos usar `pair` para combinar os dois ponteiros. Assim, a própria fila será o `pair` dos dois ponteiros. A Figura 3.18 ilustra essa representação.
+
+Para definir as operações de fila, usamos as seguintes funções, que nos permitem selecionar e modificar os ponteiros frontal e traseiro de uma fila:
+
+```javascript
+function front_ptr(queue) { return head(queue); }
+
+function rear_ptr(queue) { return tail(queue); }
+
+function set_front_ptr(queue, item) { set_head(queue, item); }
+
+function set_rear_ptr(queue, item) { set_tail(queue, item); }
+```
+
+Agora podemos implementar as operações de fila reais. Consideraremos uma fila vazia se seu ponteiro frontal for a lista vazia:
+
+```javascript
+function is_empty_queue(queue) { return is_null(front_ptr(queue)); }
+```
+
+O construtor `make_queue` retorna, como uma fila inicialmente vazia, um par cujo `head` e `tail` são ambos a lista vazia:
+
+```javascript
+function make_queue() { return pair(null, null); }
+```
+
+Para selecionar o item na frente da fila, retornamos o `head` do par indicado pelo ponteiro frontal:
+
+```javascript
+function front_queue(queue) {
+    return is_empty_queue(queue)
+           ? error(queue, "front_queue called with an empty queue")
+           : head(front_ptr(queue));
+}
+```
+
+Para inserir um item em uma fila, seguimos o método cujo resultado é indicado na Figura 3.19. Primeiro criamos um novo par cujo `head` é o item a ser inserido e cujo `tail` é a lista vazia. Se a fila estava inicialmente vazia, definimos os ponteiros frontal e traseiro da fila para esse novo par. Caso contrário, modificamos o par final na fila para apontar para o novo par e também definimos o ponteiro traseiro para o novo par.
+
+```javascript
+function insert_queue(queue, item) {
+    const new_pair = pair(item, null);
+    if (is_empty_queue(queue)) {
+        set_front_ptr(queue, new_pair);
+        set_rear_ptr(queue, new_pair);
+    } else {
+        set_tail(rear_ptr(queue), new_pair);
+        set_rear_ptr(queue, new_pair);
+    }
+    return queue;
+}
+```
+
+Para remover o item na frente da fila, simplesmente modificamos o ponteiro frontal para que agora aponte para o segundo item na fila, que pode ser encontrado seguindo o ponteiro `tail` do primeiro item (veja a Figura 3.20):
+
+```javascript
+function delete_queue(queue) {
+    if (is_empty_queue(queue)) {
+        error(queue, "delete_queue called with an empty queue");
+    } else {
+        set_front_ptr(queue, tail(front_ptr(queue)));
+        return queue;
+    }
+}
+```
+
+**Exercício 3.21:** Ben Bitdiddle decide testar a implementação de fila mostrada acima. Ele digita o seguinte:
+
+```javascript
+const q1 = make_queue();
+insert_queue(q1, "a");
+// [[a, null], [a, null]]
+insert_queue(q1, "b");
+// [[a, [b, null]], [b, null]]
+delete_queue(q1);
+// [[b, null], [b, null]]
+delete_queue(q1);
+// [null, [b, null]]
+```
+
+"Está tudo errado!" ele reclama. "O interpretador está me dizendo que após remover ambos os itens, ainda há algo na fila. E há uma coisa ainda mais estranha acontecendo. Depois de inserir dois itens na fila, removendo um deles, e então inserindo novamente o mesmo elemento, a fila parece conter três itens, e quando removo mais um item, o interpretador diz que há dois elementos na fila." Explique o que está acontecendo aqui. Em particular, o que os impressões de Ben realmente indicam sobre o conteúdo da fila? Qual seria uma maneira de fazer com que a fila seja impressa de uma forma mais aceitável?
+
+**Exercício 3.22:** Em vez de representar uma fila como um par de ponteiros, podemos construir uma fila como um procedimento com estado local. A representação de estado local consistirá em ponteiros para o começo e o fim de uma lista comum. Assim, a função `make_queue` terá a forma
+
+```javascript
+function make_queue() {
+    let front_ptr = ... ;
+    let rear_ptr = ... ;
+    definições de métodos internos
+    function dispatch(m) { ... }
+    return dispatch;
+}
+```
+
+Complete a definição de `make_queue` e forneça implementações das operações de fila usando este estilo de representação.
+
+**Exercício 3.23:** Uma *deque* ("double-ended queue") é uma sequência na qual itens podem ser inseridos e removidos em ambas as extremidades. As operações em deques são o construtor `make_deque`, o predicado `is_empty_deque`, os seletores `front_deque` e `rear_deque`, e os mutadores `front_insert_deque`, `front_delete_deque`, `rear_insert_deque` e `rear_delete_deque`. Mostre como representar deques usando pares, e forneça implementações das operações. Todas as operações devem ser realizadas em Θ(1) passos.

@@ -111,8 +111,8 @@ Para informações detalhadas sobre o processo de tradução, convenções de es
 
 ```
 Tradução: 🟢 Em Andamento
-Capítulos Concluídos: 2/5
-Progresso Estimado: ~40%
+Capítulos Concluídos: 3/5
+Progresso Estimado: ~60%
 ```
 
 ### Detalhamento por Capítulo
@@ -206,27 +206,45 @@ Progresso Estimado: ~40%
 
 #### 📖 Capítulo 3: Modularidade, Objetos e Estado
 
+##### 3.0 Introdução
+- ✅ 3.0.md
+
 ##### 3.1 Atribuição e Estado Local
-- ⬜ 3.1.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 3.1.md (Introdução da seção)
+- ✅ 3.1.1 Variáveis de Estado Local
+- ✅ 3.1.2 Os Benefícios de Introduzir Atribuição
+- ✅ 3.1.3 Os Custos de Introduzir Atribuição
 
 ##### 3.2 O Modelo de Ambiente de Avaliação
-- ⬜ 3.2.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 3.2.md (Introdução da seção)
+- ✅ 3.2.1 As Regras para Avaliação
+- ✅ 3.2.2 Aplicando Funções Simples
+- ✅ 3.2.3 Quadros como Repositório de Estado Local
+- ✅ 3.2.4 Declarações Internas
+- ✅ 3.2.5 Máquina CSE
 
 ##### 3.3 Modelando com Dados Mutáveis
-- ⬜ 3.3.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 3.3.md (Introdução da seção)
+- ✅ 3.3.1 Estrutura de Lista Mutável
+- ✅ 3.3.2 Representando Filas
+- ✅ 3.3.3 Representando Tabelas
+- ✅ 3.3.4 Um Simulador para Circuitos Digitais
+- ✅ 3.3.5 Propagação de Restrições
 
 ##### 3.4 Concorrência: Tempo é da Essência
-- ⬜ 3.4.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 3.4.md (Introdução da seção)
+- ✅ 3.4.1 A Natureza do Tempo em Sistemas Concorrentes
+- ✅ 3.4.2 Mecanismos para Controlar Concorrência
 
 ##### 3.5 Streams
-- ⬜ 3.5.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 3.5.md (Introdução da seção)
+- ✅ 3.5.1 Streams São Listas Atrasadas
+- ✅ 3.5.2 Streams Infinitos
+- ✅ 3.5.3 Explorando o Paradigma de Streams
+- ✅ 3.5.4 Streams e Avaliação Atrasada
+- ✅ 3.5.5 Modularidade de Programas Funcionais e Modularidade de Objetos
 
-**Status: ⬜ Não Iniciado (0/~25)**
+**Status: ✅ Completo (26/26 - 100%)**
 
 ---
 
@@ -280,9 +298,12 @@ Progresso Estimado: ~40%
 
 ### 🎯 Próximas Prioridades de Tradução
 
-1. **Capítulo 3 - Modularidade, Objetos e Estado**
+1. **Capítulo 4 - Abstração Metalinguística**
    - Iniciar tradução completa de todas as seções
-   - Aproximadamente 25 seções a serem traduzidas
+   - Aproximadamente 20 seções a serem traduzidas
+
+2. **Capítulo 5 - Computação com Máquinas de Registradores**
+   - Próximo após conclusão do Capítulo 4
 
 ### 📊 Como Acompanhar o Progresso
 

@@ -160,6 +160,86 @@ const sidebars = {
       ],
     },
     {
+      type: 'category',
+      label: 'Capítulo 3: Modularidade, Objetos e Estado',
+      link: {
+        type: 'doc',
+        id: 'chapter-3/3.0',
+      },
+      items: [
+        {
+          type: 'category',
+          label: '3.1 Atribuição e Estado Local',
+          link: {
+            type: 'doc',
+            id: 'chapter-3/3.1',
+          },
+          items: [
+            'chapter-3/3.1.1',
+            'chapter-3/3.1.2',
+            'chapter-3/3.1.3',
+          ],
+        },
+        {
+          type: 'category',
+          label: '3.2 O Modelo de Ambiente de Avaliação',
+          link: {
+            type: 'doc',
+            id: 'chapter-3/3.2',
+          },
+          items: [
+            'chapter-3/3.2.1',
+            'chapter-3/3.2.2',
+            'chapter-3/3.2.3',
+            'chapter-3/3.2.4',
+            'chapter-3/3.2.5',
+          ],
+        },
+        {
+          type: 'category',
+          label: '3.3 Modelando com Dados Mutáveis',
+          link: {
+            type: 'doc',
+            id: 'chapter-3/3.3',
+          },
+          items: [
+            'chapter-3/3.3.1',
+            'chapter-3/3.3.2',
+            'chapter-3/3.3.3',
+            'chapter-3/3.3.4',
+            'chapter-3/3.3.5',
+          ],
+        },
+        {
+          type: 'category',
+          label: '3.4 Concorrência: Tempo é da Essência',
+          link: {
+            type: 'doc',
+            id: 'chapter-3/3.4',
+          },
+          items: [
+            'chapter-3/3.4.1',
+            'chapter-3/3.4.2',
+          ],
+        },
+        {
+          type: 'category',
+          label: '3.5 Streams',
+          link: {
+            type: 'doc',
+            id: 'chapter-3/3.5',
+          },
+          items: [
+            'chapter-3/3.5.1',
+            'chapter-3/3.5.2',
+            'chapter-3/3.5.3',
+            'chapter-3/3.5.4',
+            'chapter-3/3.5.5',
+          ],
+        },
+      ],
+    },
+    {
       type: 'doc',
       id: 'guia-traducao',
       label: 'Guia de Tradução',

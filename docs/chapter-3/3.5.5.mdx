@@ -1,0 +1,124 @@
+---
+title: 3.5.5 Modularidade de Programas Funcionais e Modularidade de Objetos
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.5.5 Modularidade de Programas Funcionais e Modularidade de Objetos
+
+Como vimos na seção 3.1.2, um dos principais benefícios de introduzir atribuição é que podemos aumentar a modularidade de nossos sistemas encapsulando, ou "escondendo", partes do estado de um sistema grande dentro de variáveis locais. Modelos de stream podem fornecer uma modularidade equivalente sem o uso de atribuição. Como ilustração, podemos reimplementar a estimativa de Monte Carlo de $\pi$, que examinamos na seção 3.1.2, de um ponto de vista de processamento de stream.
+
+A questão chave de modularidade era que desejávamos esconder o estado interno de um gerador de números aleatórios de programas que usam números aleatórios. Começamos com uma função `rand_update`, cujos valores sucessivos forneciam nossa oferta de números aleatórios, e usamos isso para produzir um gerador de números aleatórios:
+
+```javascript
+function make_rand() {
+    let x = random_init;
+    return () => {
+               x = rand_update(x);
+               return x;
+           };
+}
+const rand = make_rand();
+```
+
+Na formulação de stream não há gerador de números aleatórios *per se*, apenas um stream de números aleatórios produzidos por chamadas sucessivas a `rand_update`:
+
+```javascript
+const random_numbers =
+    pair(random_init,
+         () => stream_map(rand_update, random_numbers));
+```
+
+Usamos isso para construir o stream de resultados do experimento de Cesàro realizado em pares consecutivos no stream `random_numbers`:
+
+```javascript
+function map_successive_pairs(f, s) {
+    return pair(f(head(s), head(stream_tail(s))),
+                () => map_successive_pairs(
+                          f,
+                          stream_tail(stream_tail(s))));
+}
+const dirichlet_stream =
+    map_successive_pairs((r1, r2) => gcd(r1, r2) === 1,
+                         random_numbers);
+```
+
+O `dirichlet_stream` é agora alimentado para uma função `monte_carlo`, que produz um stream de estimativas de probabilidades. Os resultados são então convertidos em um stream de estimativas de $\pi$. Esta versão do programa não precisa de um parâmetro dizendo quantas tentativas realizar. Melhores estimativas de $\pi$ (de realizar mais experimentos) são obtidas olhando mais adiante no stream `pi`:
+
+```javascript
+function monte_carlo(experiment_stream, passed, failed) {
+    function next(passed, failed) {
+        return pair(passed / (passed + failed),
+                    () => monte_carlo(stream_tail(experiment_stream),
+                                      passed, failed));
+    }
+    return head(experiment_stream)
+           ? next(passed + 1, failed)
+           : next(passed, failed + 1);
+}
+const pi = stream_map(p => math_sqrt(6 / p),
+                      monte_carlo(dirichlet_stream, 0, 0));
+```
+
+Há considerável modularidade nesta abordagem, porque ainda podemos formular uma função `monte_carlo` geral que pode lidar com experimentos arbitrários. No entanto, não há atribuição ou estado local.
+
+## Exercício 3.81
+
+O exercício 3.6 discutiu generalizar o gerador de números aleatórios para permitir redefinir a sequência de números aleatórios de modo a produzir sequências repetíveis de números "aleatórios". Produza uma formulação de stream deste mesmo gerador que opera em um stream de entrada de solicitações para `"generate"` um novo número aleatório ou para `"reset"` a sequência para um valor especificado e que produz o stream desejado de números aleatórios. Não use atribuição em sua solução.
+
+## Exercício 3.82
+
+Refaça o exercício 3.5 sobre integração de Monte Carlo em termos de streams. A versão de stream de `estimate_integral` não terá um argumento dizendo quantas tentativas realizar. Em vez disso, ela produzirá um stream de estimativas baseadas em sucessivamente mais tentativas.
+
+## Uma visão de programação funcional do tempo
+
+Vamos agora retornar às questões de objetos e estado que foram levantadas no início deste capítulo e examiná-las sob uma nova luz. Introduzimos atribuição e objetos mutáveis para fornecer um mecanismo para construção modular de programas que modelam sistemas com estado. Construímos objetos computacionais com variáveis de estado local e usamos atribuição para modificar essas variáveis. Modelamos o comportamento temporal dos objetos no mundo pelo comportamento temporal dos objetos computacionais correspondentes.
+
+Agora vimos que streams fornecem uma maneira alternativa de modelar objetos com estado local. Podemos modelar uma quantidade em mudança, como o estado local de algum objeto, usando um stream que representa a história temporal de estados sucessivos. Em essência, representamos o tempo explicitamente, usando streams, de modo que desacoplamos o tempo em nosso mundo simulado da sequência de eventos que ocorrem durante a avaliação. De fato, por causa da presença da avaliação atrasada pode haver pouca relação entre o tempo simulado no modelo e a ordem de eventos durante a avaliação.
+
+Para contrastar essas duas abordagens de modelagem, vamos reconsiderar a implementação de um "processador de saque" que monitora o saldo em uma conta bancária. Na seção 3.1.3 implementamos uma versão simplificada de tal processador:
+
+```javascript
+function make_simplified_withdraw(balance) {
+    return amount => {
+               balance = balance - amount;
+               return balance;
+           };
+}
+```
+
+Chamadas para `make_simplified_withdraw` produzem objetos computacionais, cada um com uma variável de estado local `balance` que é decrementada por chamadas sucessivas ao objeto. O objeto recebe um `amount` como argumento e retorna o novo saldo. Podemos imaginar o usuário de uma conta bancária digitando uma sequência de entradas para tal objeto e observando a sequência de valores retornados mostrada em uma tela de exibição.
+
+Alternativamente, podemos modelar um processador de saque como uma função que recebe como entrada um saldo e um stream de valores a sacar e produz o stream de saldos sucessivos na conta:
+
+```javascript
+function stream_withdraw(balance, amount_stream) {
+    return pair(balance,
+                () => stream_withdraw(balance - head(amount_stream),
+                                      stream_tail(amount_stream)));
+}
+```
+
+A função `stream_withdraw` implementa uma função matemática bem definida cuja saída é totalmente determinada por sua entrada. Suponha, no entanto, que o stream de entrada `amount_stream` seja o stream de valores sucessivos digitados pelo usuário e que o stream resultante de saldos seja exibido. Então, da perspectiva do usuário que está digitando valores e assistindo resultados, o processo de stream tem o mesmo comportamento que o objeto criado por `make_simplified_withdraw`. No entanto, com a versão de stream, não há atribuição, nenhuma variável de estado local e, consequentemente, nenhuma das dificuldades teóricas que encontramos na seção 3.1.3. No entanto, o sistema tem estado!
+
+Isto é realmente notável. Mesmo que `stream_withdraw` implemente uma função matemática bem definida cujo comportamento não muda, a percepção do usuário aqui é de interagir com um sistema que tem um estado em mudança. Uma maneira de resolver este paradoxo é perceber que é a existência temporal do usuário que impõe estado ao sistema. Se o usuário pudesse se afastar da interação e pensar em termos de streams de saldos em vez de transações individuais, o sistema pareceria sem estado.[^1]
+
+Do ponto de vista de uma parte de um processo complexo, as outras partes parecem mudar com o tempo. Elas têm estado local variante no tempo oculto. Se desejamos escrever programas que modelam este tipo de decomposição natural em nosso mundo (como o vemos de nosso ponto de vista como parte daquele mundo) com estruturas em nosso computador, fazemos objetos computacionais que não são funcionais—eles devem mudar com o tempo. Modelamos estado com variáveis de estado local, e modelamos as mudanças de estado com atribuições a essas variáveis. Ao fazer isso, fazemos o tempo de execução de uma computação modelar o tempo no mundo do qual fazemos parte, e assim obtemos "objetos" em nosso computador.
+
+Modelar com objetos é poderoso e intuitivo, em grande parte porque isso corresponde à percepção de interagir com um mundo do qual fazemos parte. No entanto, como vimos repetidamente ao longo deste capítulo, esses modelos levantam problemas espinhosos de restringir a ordem de eventos e de sincronizar múltiplos processos. A possibilidade de evitar esses problemas estimulou o desenvolvimento de *linguagens de programação funcional*, que não incluem nenhuma provisão para atribuição ou dados mutáveis. Em tal linguagem, todas as funções implementam funções matemáticas bem definidas de seus argumentos, cujo comportamento não muda. A abordagem funcional é extremamente atraente para lidar com sistemas concorrentes.[^2]
+
+Por outro lado, se olharmos de perto, podemos ver problemas relacionados ao tempo se infiltrando em modelos funcionais também. Uma área particularmente problemática surge quando desejamos projetar sistemas interativos, especialmente aqueles que modelam interações entre entidades independentes. Por exemplo, considere mais uma vez a implementação de um sistema bancário que permite contas bancárias conjuntas. No sistema convencional usando atribuição e objetos, modelaríamos o fato de que Peter e Paul compartilham uma conta fazendo com que Peter e Paul enviem suas solicitações de transação para o mesmo objeto de conta bancária, como vimos na seção 3.1.3. Do ponto de vista de stream, onde não há "objetos" *per se*, já indicamos que uma conta bancária pode ser modelada como um processo que opera em um stream de solicitações de transação para produzir um stream de respostas. Consequentemente, poderíamos modelar o fato de que Peter e Paul têm uma conta bancária conjunta mesclando o stream de solicitações de transação de Peter com o stream de solicitações de Paul e alimentando o resultado para o processo de stream de conta bancária, como mostrado na figura 3.38.
+
+O problema com esta formulação está na noção de *mesclar*. Não adianta mesclar os dois streams simplesmente tomando alternadamente uma solicitação de Peter e uma solicitação de Paul. Suponha que Paul acesse a conta apenas muito raramente. Dificilmente poderíamos forçar Peter a esperar que Paul acesse a conta antes que ele pudesse emitir uma segunda transação. No entanto, tal mesclagem é implementada, ela deve entrelaçar os dois streams de transação de alguma forma que seja restrita por "tempo real" como percebido por Peter e Paul, no sentido de que, se Peter e Paul se encontrarem, eles podem concordar que certas transações foram processadas antes do encontro, e outras transações foram processadas após o encontro.[^3]
+
+Este é precisamente a mesma restrição que tivemos que lidar na seção 3.4, onde encontramos a necessidade de introduzir sincronização explícita para garantir uma ordem "correta" de eventos em processamento concorrente de objetos com estado. Assim, em uma tentativa de suportar o estilo funcional, a necessidade de mesclar entradas de diferentes agentes reintroduz os mesmos problemas que o estilo funcional deveria eliminar.
+
+Começamos este capítulo com o objetivo de construir modelos computacionais cuja estrutura corresponda à nossa percepção do mundo real que estamos tentando modelar. Podemos modelar o mundo como uma coleção de objetos separados, limitados no tempo, interagindo com estado, ou podemos modelar o mundo como uma unidade única, atemporal, sem estado. Cada visão tem vantagens poderosas, mas nenhuma visão sozinha é completamente satisfatória. Uma grande unificação ainda está por emergir.[^4]
+
+[^1]: De forma similar em física, quando observamos uma partícula em movimento, dizemos que a posição (estado) da partícula está mudando. No entanto, da perspectiva da linha de mundo da partícula no espaço-tempo não há mudança envolvida.
+
+[^2]: John Backus, o inventor do Fortran, deu alta visibilidade à programação funcional quando foi agraciado com o prêmio Turing da ACM em 1978. Seu discurso de aceitação (Backus 1978) defendeu fortemente a abordagem funcional. Uma boa visão geral de programação funcional é dada em Henderson 1980 e em Darlington, Henderson e Turner 1982.
+
+[^3]: Observe que, para quaisquer dois streams, há em geral mais de uma ordem aceitável de entrelaçamento. Assim, tecnicamente, "mesclar" é uma relação em vez de uma função—a resposta não é uma função determinística das entradas. Já mencionamos (nota de rodapé na seção 3.4.1) que o não-determinismo é essencial ao lidar com concorrência. A relação de mesclagem ilustra o mesmo não-determinismo essencial, da perspectiva funcional. Na seção 4.3, olharemos para o não-determinismo de ainda outro ponto de vista.
+
+[^4]: O modelo de objetos aproxima o mundo dividindo-o em partes separadas. O modelo funcional não modulariza ao longo de limites de objetos. O modelo de objetos é útil quando o estado não compartilhado dos "objetos" é muito maior que o estado que eles compartilham. Um exemplo de um lugar onde o ponto de vista de objetos falha é a mecânica quântica, onde pensar em coisas como partículas individuais leva a paradoxos e confusões. Unificar a visão de objetos com a visão funcional pode ter pouco a ver com programação, mas sim com questões epistemológicas fundamentais.

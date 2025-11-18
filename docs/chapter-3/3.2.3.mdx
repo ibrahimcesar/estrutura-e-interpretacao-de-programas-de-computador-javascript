@@ -1,0 +1,141 @@
+---
+title: 3.2.3 Quadros como Repositório de Estado Local
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.2.3 Quadros como Repositório de Estado Local
+
+Podemos recorrer ao modelo de ambiente para ver como funções e atribuição podem ser usados para representar objetos com estado local. Como exemplo, considere o "processador de saque" da seção 3.1.1 criado chamando a função
+
+<CodePlayground
+  code={`function make_withdraw(balance) {
+    return amount => {
+               if (balance >= amount) {
+                   balance = balance - amount;
+                   return balance;
+               } else {
+                   return "insufficient funds";
+               }
+           };
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+Vamos descrever a avaliação de
+
+<CodePlayground
+  code={`const W1 = make_withdraw(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+seguido de
+
+<CodePlayground
+  code={`W1(50);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+A Figura 3.6 mostra o resultado de declarar a função `make_withdraw` no ambiente do programa. Isso produz um objeto de função que contém um ponteiro para o ambiente do programa. Até aqui, isso não é diferente dos exemplos que já vimos, exceto que a expressão de retorno no corpo da função é ela mesma uma expressão lambda.
+
+![Result of defining make_withdraw](/img/chapter-3/ch3-Z-G-7.svg)
+
+*Figura 3.6: Resultado de definir `make_withdraw` no ambiente do programa.*
+
+A parte interessante da computação acontece quando aplicamos a função `make_withdraw` a um argumento:
+
+```javascript
+const W1 = make_withdraw(100);
+```
+
+Começamos, como de costume, configurando um ambiente E1 no qual o parâmetro `balance` está vinculado ao argumento 100. Dentro deste ambiente, avaliamos o corpo de `make_withdraw`, a saber, a instrução return cuja expressão de retorno é uma expressão lambda. A avaliação desta expressão lambda constrói um novo objeto de função, cujo código é especificado pela expressão lambda e cujo ambiente é E1, o ambiente no qual a expressão lambda foi avaliada para produzir a função. O objeto de função resultante é o valor retornado pela chamada a `make_withdraw`. Isso é vinculado a `W1` no ambiente do programa, já que a declaração de constante em si está sendo avaliada no ambiente do programa. A Figura 3.7 mostra a estrutura de ambiente resultante.
+
+![Result of evaluating const W1 = make_withdraw(100)](/img/chapter-3/ch3-Z-G-8.svg)
+
+*Figura 3.7: Resultado da avaliação de `const W1 = make_withdraw(100);`*
+
+Agora podemos analisar o que acontece quando `W1` é aplicado a um argumento:
+
+```javascript
+W1(50);
+```
+
+Começamos construindo um quadro no qual `amount`, o parâmetro de `W1`, está vinculado ao argumento 50. O ponto crucial a observar é que este quadro tem como seu ambiente envolvente não o ambiente do programa, mas sim o ambiente E1, porque este é o ambiente especificado pelo objeto de função `W1`. Dentro deste novo ambiente, avaliamos o corpo da função:
+
+```javascript
+if (balance >= amount) {
+    balance = balance - amount;
+    return balance;
+} else {
+    return "insufficient funds";
+}
+```
+
+A estrutura de ambiente resultante é mostrada na figura 3.8. A expressão sendo avaliada referencia tanto `amount` quanto `balance`. A variável `amount` será encontrada no primeiro quadro no ambiente, e `balance` será encontrado seguindo o ponteiro do ambiente envolvente para E1.
+
+![Environments created by applying W1](/img/chapter-3/ch3-Z-G-9.svg)
+
+*Figura 3.8: Ambientes criados pela aplicação do objeto de função `W1`.*
+
+Quando a atribuição é executada, a vinculação de `balance` em E1 é alterada. Ao término da chamada a `W1`, `balance` é 50, e o quadro que contém `balance` ainda está apontado pelo objeto de função `W1`. O quadro que vincula `amount` (no qual executamos o código que alterou `balance`) não é mais relevante, já que a chamada de função que o construiu terminou, e não há ponteiros para esse quadro de outras partes do ambiente. Na próxima vez que `W1` for chamado, isso construirá um novo quadro que vincula `amount` e cujo ambiente envolvente é E1. Vemos que E1 serve como o "lugar" que mantém a variável de estado local para o objeto de função `W1`. A Figura 3.9 mostra a situação após a chamada a `W1`.
+
+![Environments after the call to W1](/img/chapter-3/ch3-Z-G-10.svg)
+
+*Figura 3.9: Ambientes após a chamada a `W1`.*
+
+Observe o que acontece quando criamos um segundo objeto "withdraw" fazendo outra chamada a `make_withdraw`:
+
+<CodePlayground
+  code={`const W2 = make_withdraw(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Isso produz a estrutura de ambiente da figura 3.10, que mostra que `W2` é um objeto de função, isto é, um par com algum código e um ambiente. O ambiente E2 para `W2` foi criado pela chamada a `make_withdraw`. Ele contém um quadro com sua própria vinculação local para `balance`. Por outro lado, `W1` e `W2` têm o mesmo código: o código especificado pela expressão lambda no corpo de `make_withdraw`.[^1] Vemos aqui por que `W1` e `W2` se comportam como objetos independentes. Chamadas a `W1` referenciam a variável de estado `balance` armazenada em E1, enquanto chamadas a `W2` referenciam o `balance` armazenado em E2. Assim, mudanças no estado local de um objeto não afetam o outro objeto.
+
+![Using const W2 = make_withdraw(100) to create a second object](/img/chapter-3/ch3-Z-G-11.svg)
+
+*Figura 3.10: Usando `const W2 = make_withdraw(100);` para criar um segundo objeto.*
+
+## Exercício 3.10
+
+Na função `make_withdraw`, a variável local `balance` é criada como um parâmetro de `make_withdraw`. Também poderíamos criar a variável de estado local separadamente, usando o que podemos chamar de *expressão lambda invocada imediatamente*, da seguinte forma:
+
+<CodePlayground
+  code={`function make_withdraw(initial_amount) {
+    return (balance =>
+              amount => {
+                  if (balance >= amount) {
+                      balance = balance - amount;
+                      return balance;
+                   } else {
+                      return "insufficient funds";
+                   }
+              })(initial_amount);
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+A expressão lambda externa é invocada imediatamente após ser avaliada. Seu único propósito é criar uma variável local `balance` e inicializá-la para `initial_amount`.
+
+Use o modelo de ambiente para analisar esta versão alternativa de `make_withdraw`, desenhando figuras como as acima para ilustrar as interações
+
+<CodePlayground
+  code={`const W1 = make_withdraw(100);
+
+W1(50);
+
+const W2 = make_withdraw(100);`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+Mostre que as duas versões de `make_withdraw` criam objetos com o mesmo comportamento. Como as estruturas de ambiente diferem para as duas versões?
+
+-----
+
+[^1]: Se `W1` e `W2` compartilham o mesmo código físico armazenado no computador, ou se cada um mantém uma cópia do código, é um detalhe da implementação. Para o interpretador que implementamos no capítulo 4, o código é de fato compartilhado.

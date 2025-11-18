@@ -1,0 +1,71 @@
+---
+title: 3.2.1 As Regras para Avaliação
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.2.1 As Regras para Avaliação
+
+A especificação geral de como o interpretador avalia uma aplicação de função permanece a mesma de quando a introduzimos pela primeira vez na seção 1.1.3:
+
+- Para avaliar uma aplicação:
+  1. Avalie as subexpressões da aplicação.[^1]
+  2. Aplique o valor da subexpressão da função aos valores das subexpressões dos argumentos.
+
+O modelo de ambiente de avaliação substitui o modelo de substituição ao especificar o que significa aplicar uma função composta a argumentos.
+
+No modelo de ambiente de avaliação, uma função é sempre um par consistindo de algum código e um ponteiro para um ambiente. Funções são criadas de uma única maneira: avaliando uma expressão lambda. Isso produz uma função cujo código é obtido do texto da expressão lambda e cujo ambiente é o ambiente no qual a expressão lambda foi avaliada para produzir a função. Por exemplo, considere a declaração de função
+
+<CodePlayground
+  code={`function square(x) {
+    return x * x;
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+avaliada no ambiente do programa. A sintaxe de declaração de função é equivalente a uma expressão lambda implícita subjacente. Teria sido equivalente ter usado[^2]
+
+<CodePlayground
+  code={`const square = x => x * x;`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+que avalia `x => x * x` e vincula `square` ao valor resultante, tudo no ambiente do programa.
+
+![Environment structure produced by evaluating function square](/img/chapter-3/ch3-Z-G-3.svg)
+
+*Figura 3.2: Estrutura de ambiente produzida pela avaliação de `function square(x) { return x * x; }` no ambiente do programa.*
+
+A Figura 3.2 mostra o resultado da avaliação desta instrução de declaração. O ambiente global envolve o ambiente do programa. Para reduzir a desordem, após esta figura não exibiremos o ambiente global (já que é sempre o mesmo), mas somos lembrados de sua existência pelo ponteiro do ambiente do programa para cima. O objeto de função é um par cujo código especifica que a função tem um parâmetro, a saber `x`, e um corpo de função `return x * x;`. A parte do ambiente da função é um ponteiro para o ambiente do programa, já que esse é o ambiente no qual a expressão lambda foi avaliada para produzir a função. Uma nova vinculação, que associa o objeto de função ao nome `square`, foi adicionada ao quadro do programa.
+
+Em geral, `const`, `function` e `let` adicionam vinculações aos quadros. Atribuição é proibida em constantes, então nosso modelo de ambiente precisa distinguir nomes que se referem a constantes de nomes que se referem a variáveis. Indicamos que um nome é uma constante escrevendo um sinal de igual após os dois pontos que seguem o nome. Consideramos declarações de função como equivalentes a declarações de constante;[^3] observe os sinais de igual após os dois pontos na figura 3.2.
+
+Agora que vimos como as funções são criadas, podemos descrever como as funções são aplicadas. O modelo de ambiente especifica: Para aplicar uma função a argumentos, crie um novo ambiente contendo um quadro que vincula os parâmetros aos valores dos argumentos. O ambiente envolvente deste quadro é o ambiente especificado pela função. Agora, dentro deste novo ambiente, avalie o corpo da função.
+
+Para mostrar como esta regra é seguida, a figura 3.3 ilustra a estrutura de ambiente criada pela avaliação da expressão `square(5)` no ambiente do programa, onde `square` é a função gerada na figura 3.2. Aplicar a função resulta na criação de um novo ambiente, rotulado E1 na figura, que começa com um quadro no qual `x`, o parâmetro para a função, está vinculado ao argumento 5. Note que o nome `x` no ambiente E1 é seguido por dois pontos sem sinal de igual, o que indica que o parâmetro `x` é tratado como uma variável.[^4] O ponteiro que aponta para cima deste quadro mostra que o ambiente envolvente do quadro é o ambiente do programa. O ambiente do programa é escolhido aqui, porque este é o ambiente que é indicado como parte do objeto de função `square`. Dentro de E1, avaliamos o corpo da função, `return x * x;`. Como o valor de `x` em E1 é 5, o resultado é `5 * 5`, ou 25.
+
+![Environment created by evaluating square(5)](/img/chapter-3/ch3-Z-G-4.svg)
+
+*Figura 3.3: Ambiente criado pela avaliação de `square(5)` no ambiente do programa.*
+
+O modelo de ambiente de aplicação de função pode ser resumido por duas regras:
+
+- Um objeto de função é aplicado a um conjunto de argumentos construindo um quadro, vinculando os parâmetros da função aos argumentos da chamada, e então avaliando o corpo da função no contexto do novo ambiente construído. O novo quadro tem como seu ambiente envolvente a parte do ambiente do objeto de função sendo aplicado. O resultado da aplicação é o resultado de avaliar a expressão de retorno da primeira instrução return encontrada enquanto avalia o corpo da função.
+
+- Uma função é criada avaliando uma expressão lambda relativa a um dado ambiente. O objeto de função resultante é um par consistindo do texto da expressão lambda e um ponteiro para o ambiente no qual a função foi criada.
+
+Finalmente, especificamos o comportamento da atribuição, a operação que nos forçou a introduzir o modelo de ambiente em primeiro lugar. Avaliar a expressão *nome* `=` *valor* em algum ambiente localiza a vinculação do nome no ambiente. Isto é, encontra-se o primeiro quadro no ambiente que contém uma vinculação para o nome. Se a vinculação é uma vinculação de variável—indicada no quadro apenas por `:` após o nome—essa vinculação é alterada para refletir o novo valor da variável. Caso contrário, se a vinculação no quadro é uma vinculação de constante—indicada no quadro por `:=` após o nome—a atribuição sinaliza um erro `"assignment to constant"`. Se o nome não está vinculado no ambiente, então a atribuição sinaliza um erro `"variable undeclared"`.
+
+Essas regras de avaliação, embora consideravelmente mais complexas que o modelo de substituição, ainda são razoavelmente diretas. Além disso, o modelo de avaliação, embora abstrato, fornece uma descrição correta de como o interpretador avalia expressões. No capítulo 4 veremos como este modelo pode servir como um projeto para implementar um interpretador funcional. As seções seguintes elaboram os detalhes do modelo analisando alguns programas ilustrativos.
+
+-----
+
+[^1]: A atribuição introduz uma sutileza no passo 1 da regra de avaliação. Como mostrado no exercício 3.8, a presença de atribuição nos permite escrever expressões que produzirão valores diferentes dependendo da ordem em que as subexpressões em uma combinação são avaliadas. Para eliminar tais ambiguidades, JavaScript especifica avaliação da esquerda para a direita das subexpressões de combinações e das expressões de argumento de aplicações.
+
+[^2]: A nota de rodapé 10 no capítulo 1 menciona diferenças sutis entre as duas em JavaScript completo, que ignoraremos neste livro.
+
+[^3]: Mencionamos na nota de rodapé 10 no capítulo 1 que a linguagem JavaScript completa permite atribuição a nomes que são declarados com declarações de função.
+
+[^4]: Este exemplo não faz uso do fato de que o parâmetro `x` é uma variável, mas lembre-se da função `make_withdraw` na seção 3.1.1, que dependia de seu parâmetro ser uma variável.

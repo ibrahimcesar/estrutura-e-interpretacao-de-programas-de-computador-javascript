@@ -1,0 +1,231 @@
+---
+title: 3.5.3 Explorando o Paradigma de Streams
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.5.3 Explorando o Paradigma de Streams
+
+Streams com avaliação atrasada podem ser uma ferramenta de programação poderosa, ajudando a evitar a necessidade de escrever programas que mantêm explicitamente o estado histórico de um sistema. Como ilustração, vamos revisitar os cálculos iterativos de raiz quadrada introduzidos na seção 1.1.7.
+
+Lembre-se de que uma maneira de computar raízes quadradas é através da busca de um ponto fixo da função $y \mapsto \frac{x}{y}$. Podemos expressar esta computação como um processo de geração de uma sequência infinita de aproximações, começando com uma estimativa inicial de 1:
+
+```javascript
+function sqrt_improve(guess, x) {
+    return average(guess, x / guess);
+}
+
+function sqrt_stream(x) {
+    return pair(1,
+                () => stream_map(guess => sqrt_improve(guess, x),
+                                 sqrt_stream(x)));
+}
+```
+
+Exibindo este stream podemos ver as sucessivas aproximações da raiz quadrada de 2:
+
+```javascript
+display_stream(sqrt_stream(2));
+```
+
+```
+1
+1.5
+1.4166666666666665
+1.4142156862745097
+1.4142135623746899
+...
+```
+
+O stream `sqrt_stream` exibe somas parciais da raiz quadrada que se aproximam cada vez mais do valor correto. Podemos gerar ainda melhores aproximações acelerando a convergência da sequência usando uma técnica de aceleração de sequência.
+
+Uma técnica de aceleração, devida a Leonhard Euler, se baseia na observação de que se uma sequência de aproximações está convergindo para um valor de acordo com uma forma linear (o que é bem lento), então podemos encontrar uma "transformação" da sequência que converge para o mesmo valor mais rapidamente. A transformação de Euler mapeia uma sequência $S_n$ para uma sequência cujos termos são
+
+$$S'_n = S_{n+1} - \frac{(S_{n+1} - S_n)^2}{S_{n-1} - 2S_n + S_{n+1}}$$
+
+Podemos expressar isso como uma função que transforma um stream:
+
+```javascript
+function euler_transform(s) {
+    const s0 = stream_ref(s, 0);
+    const s1 = stream_ref(s, 1);
+    const s2 = stream_ref(s, 2);
+    return pair(s2 - square(s2 - s1) / (s0 - 2 * s1 + s2),
+                () => euler_transform(stream_tail(s)));
+}
+```
+
+Para ver quão dramática é a melhoria, podemos aplicar a transformação de Euler ao nosso stream de aproximações de raiz quadrada:
+
+```javascript
+display_stream(euler_transform(sqrt_stream(2)));
+```
+
+```
+1.4142135623730951
+1.4142135623730949
+1.414213562373095
+1.4142135623730951
+...
+```
+
+Mesmo melhor, podemos acelerar os resultados aplicando a transformação de forma repetitiva—isto é, criando um stream de streams, onde cada stream é o resultado de aplicar a transformação de Euler ao stream anterior. Isso é feito pela seguinte função `accelerated_sequence`:
+
+```javascript
+function accelerated_sequence(transform, s) {
+    return pair(s,
+                () => accelerated_sequence(
+                          transform,
+                          transform(s)));
+}
+```
+
+Podemos aplicar isso ao nosso stream de raiz quadrada:
+
+```javascript
+display_stream(stream_map(
+    s => stream_ref(s, 0),
+    accelerated_sequence(euler_transform, sqrt_stream(2))));
+```
+
+O resultado é verdadeiramente impressionante:
+
+```
+1
+1.5
+1.4142135623730951
+1.4142135623730949
+...
+```
+
+Dentro de quatro aproximações, chegamos a 15 casas decimais corretas!
+
+## Streams de pares
+
+No capítulo 2, consideramos o problema de gerar todas as sequências de pares distintos de inteiros não negativos menores ou iguais a algum inteiro $n$. Na seção 2.2.3, vimos como usar `map` em combinação com `accumulate` para gerar a sequência de pares para um dado $n$. Também vimos como usar `filter` para gerar apenas pares $(i,j)$ que satisfazem $i + j$ é primo. Nossa abordagem era gerar a sequência de *todos* os pares e então filtrar para selecionar os pares primos.
+
+Com streams, podemos fazer coisas ainda mais sofisticadas. Suponha que queremos generalizar isso para considerar todos os pares de inteiros positivos $(i,j)$ com $i \leq j$ ao invés de restringir a um $n$ fixo. Não podemos simplesmente gerar o fluxo infinito de pares usando algo como:
+
+```javascript
+stream_map(
+    i => stream_map(j => list(i, j), integers),
+    integers);
+```
+
+Isso geraria um stream de streams, o que não é exatamente o que queremos. Para resolver isso, precisamos de uma maneira de entrelaçar os streams. Aqui está uma função que faz isso:
+
+```javascript
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1),
+                  () => interleave(s2, stream_tail(s1)));
+}
+```
+
+Agora podemos definir uma função `pairs` que gera o stream de pares de inteiros $(i,j)$ com $i \leq j$:
+
+```javascript
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                () => interleave(
+                          stream_map(x => list(head(s), x),
+                                     stream_tail(t)),
+                          pairs(stream_tail(s),
+                                stream_tail(t))));
+}
+```
+
+## Streams como sinais
+
+Streams podem ser usados para modelar processamento de sinais. Por exemplo, podemos implementar um "integrador" ou "somador" que, dado um stream $a_1, a_2, a_3, \ldots$ e um valor inicial $C$, produz o stream
+
+$$C, C + a_1, C + a_1 + a_2, C + a_1 + a_2 + a_3, \ldots$$
+
+```javascript
+function integral(integrand, initial_value, dt) {
+    const integ = pair(initial_value,
+                       () => add_streams(scale_stream(integrand, dt),
+                                        integ));
+    return integ;
+}
+```
+
+A figura mostra um diagrama de processamento de sinal para o integrador. O diagrama mostra claramente como as operações de stream são combinadas para processar sinais. Este ponto de vista nos permite trabalhar com sistemas altamente complexos de uma maneira modular.
+
+## Exercício 3.63
+
+Louis Reasoner pergunta por que a função `sqrt_stream` é definida com uma função auxiliar explícita. Não seria igualmente válido escrever:
+
+```javascript
+function sqrt_stream(x) {
+    return pair(1,
+                () => stream_map(
+                          guess => sqrt_improve(guess, x),
+                          sqrt_stream(x)));
+}
+```
+
+Alyssa P. Hacker responde que esta versão da função é consideravelmente menos eficiente porque ela realiza computações redundantes. Explique a resposta de Alyssa. A resposta dela seria diferente se nossa implementação de avaliação atrasada não usasse a otimização de memoização fornecida pela função `memo`?
+
+## Exercício 3.64
+
+Escreva uma função `stream_limit` que recebe como argumentos um stream e um número (a tolerância). Ela deve examinar o stream até encontrar dois elementos sucessivos que diferem em valor absoluto por menos que a tolerância, e retornar o segundo dos dois elementos. Usando isso, podemos computar raízes quadradas até uma dada tolerância por
+
+```javascript
+function sqrt(x, tolerance) {
+    return stream_limit(sqrt_stream(x), tolerance);
+}
+```
+
+## Exercício 3.65
+
+Use a série
+
+$$\ln 2 = 1 - \frac{1}{2} + \frac{1}{3} - \frac{1}{4} + \cdots$$
+
+para computar três streams de aproximações para o logaritmo natural de 2, de maneiras análogas às que usamos acima para computar $\pi$. Quão rapidamente esses streams convergem?
+
+## Exercício 3.66
+
+Examine o stream `pairs(integers, integers)`. Você pode fazer uma estimativa geral de quantos pares precedem o par (1,100)? o par (99,100)? o par (100,100)? (Se você puder fazer uma estimativa precisa da matemática, ainda melhor. Mas a parte importante é você ter uma boa intuição.)
+
+## Exercício 3.67
+
+Modifique a função `pairs` para que `pairs(integers, integers)` produza o stream de *todos* os pares de inteiros positivos $(i,j)$ (sem a condição $i \leq j$). Dica: Você precisará misturar um stream adicional.
+
+## Exercício 3.68
+
+Louis Reasoner pensa que construir um `pairs` do jeito que fizemos é excessivamente complicado. Em vez de separar o par $(S_0,T_0)$ do resto dos pares no primeiro linha, ele propõe trabalhar com todo o primeiro linha como segue:
+
+```javascript
+function pairs(s, t) {
+    return interleave(
+               stream_map(x => list(head(s), x), t),
+               pairs(stream_tail(s), stream_tail(t)));
+}
+```
+
+Isso funciona? Considere o que acontece se avaliarmos `pairs(integers, integers)` usando a definição de Louis.
+
+## Exercício 3.69
+
+Escreva uma função `triples` que recebe três streams infinitos, $S$, $T$ e $U$, e produz o stream de triplas $(S_i,T_j,U_k)$ tais que $i \leq j \leq k$. Use `triples` para gerar o stream de todos os triplos pitagóricos de inteiros positivos, isto é, as triplas $(i,j,k)$ tais que $i \leq j$ e $i^2 + j^2 = k^2$.
+
+## Exercício 3.70
+
+Seria bom ser capaz de gerar streams nos quais os pares aparecem em alguma ordem útil, ao invés de em uma ordem que depende de entrelaçamento ad hoc. Podemos usar uma técnica similar à função `merge` do exercício 3.56, se definirmos uma maneira de dizer que um par de pares é "menor que" outro. Uma maneira de fazer isso é definir uma "função de peso" $W(i,j)$ e decretar que $(i_1,j_1)$ é menor que $(i_2,j_2)$ se $W(i_1,j_1) < W(i_2,j_2)$. Escreva uma função `merge_weighted` que é como `merge`, exceto que `merge_weighted` recebe uma função de peso adicional (isto é, uma função de dois argumentos) como argumento. Usando isso, generalize `pairs` para uma função `weighted_pairs` que recebe dois streams, juntamente com uma função que computa um peso, e gera o stream de pares em ordem crescente de peso. Use sua função para gerar
+
+a. o stream de todos os pares de inteiros positivos $(i,j)$ com $i \leq j$ ordenados de acordo com a soma $i + j$
+
+b. o stream de todos os pares de inteiros positivos $(i,j)$ com $i \leq j$, onde nem $i$ nem $j$ são divisíveis por 2, 3 ou 5, e os pares são ordenados de acordo com a soma $2i + 3j + 5ij$.
+
+## Exercício 3.71
+
+Números que podem ser expressos como a soma de dois cubos de mais de uma maneira são às vezes chamados de *números de Ramanujan*, em homenagem ao matemático Srinivasa Ramanujan.[^1] Os streams ordenados de pares fornecem uma maneira elegante de computar esses números. Para encontrar um número que pode ser escrito como a soma de dois cubos de duas maneiras diferentes, precisamos apenas gerar o stream de pares de inteiros $(i,j)$ ponderados de acordo com a soma $i^3 + j^3$, então procurar por dois pares consecutivos com o mesmo peso. Escreva uma função para gerar os números de Ramanujan. O primeiro desses números é 1.729. Quais são os próximos cinco?
+
+## Exercício 3.72
+
+De maneira similar ao exercício 3.71, gere um stream de todos os números que podem ser escritos como a soma de dois quadrados de três maneiras diferentes (mostrando como eles podem ser escritos assim).
+
+[^1]: Ramanujan era um matemático autodidata indiano que trabalhou no início do século 20. Ele é famoso por suas contribuições profundas à teoria dos números, apesar de não ter educação formal. A história de 1729 é famosa: Quando Hardy veio visitá-lo no hospital, ele comentou que havia chegado em um táxi numerado 1729 e que isso parecia um número bastante sem interesse. Ao que Ramanujan replicou: "Não, é um número muito interessante. É o menor número expresso como a soma de dois cubos de duas maneiras diferentes."

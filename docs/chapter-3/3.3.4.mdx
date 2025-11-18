@@ -1,0 +1,365 @@
+---
+title: 3.3.4 Um Simulador para Circuitos Digitais
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.3.4 Um Simulador para Circuitos Digitais
+
+Projetar sistemas digitais complexos, como computadores, é uma importante atividade de engenharia. Os circuitos digitais são compostos por fios simples, que transportam sinais digitais. Sinais digitais em qualquer momento dado podem ser apenas 0 ou 1. A saída de cada porta de circuito é determinada pelos valores atuais das entradas. Porém, a saída muda apenas após um atraso, determinado pelo tipo de porta. Por exemplo, a saída de uma porta inversora muda apenas após um atraso de inversão. Circuitos digitais sofisticados, como CPUs, são compostos de milhões de portas, e os projetistas dependem muito de simulações para verificar o comportamento de seus projetos.
+
+Nesta seção projetamos um sistema para executar simulações digitais. O sistema será construído como uma coleção de objetos cujos comportamentos imitam o comportamento dos componentes correspondentes no mundo real. A implementação será estruturada com técnicas semelhantes às que usamos para construir a tabela e a fila nas seções anteriores. Nosso circuito digital será composto de fios e blocos de função. Um fio transportará um sinal digital e será capaz de transmitir mudanças em seu sinal para blocos de função anexados a ele. Os blocos de função irão computar sinais de saída e propagar esses sinais para fios de saída, após um atraso característico.
+
+## Circuitos primitivos
+
+Para construir blocos de função de circuito, usamos as seguintes operações em fios:
+
+- `get_signal(wire)` retorna o valor atual do sinal no fio.
+- `set_signal(wire, new_value)` muda o valor do sinal no fio para o novo valor.
+- `add_action(wire, function_of_no_args)` afirma que a função designada de nenhum argumento deve ser executada sempre que o sinal no fio mudar de valor. Tais funções são os procedimentos de ação que são executados quando há uma mudança de sinal.
+
+Além disso, forneceremos uma função `after_delay` que recebe um atraso de tempo e uma função de ação como argumentos e executa a função dada após o atraso dado.
+
+Usando essas funções, podemos definir os blocos de função primitivos que formam a base do simulador. A função que descreve um inversor conecta uma função de entrada e uma função de saída usando a função `add_action`. A função de ação é uma função que não recebe argumentos que inverte o valor de entrada e define o fio de saída para o novo valor após o atraso do inversor:
+
+```javascript
+function inverter(input, output) {
+    function invert_input() {
+        const new_value = logical_not(get_signal(input));
+        after_delay(inverter_delay,
+                    () => set_signal(output, new_value));
+    }
+    add_action(input, invert_input);
+    return "ok";
+}
+
+function logical_not(s) {
+    return s === 0
+           ? 1
+           : s === 1
+           ? 0
+           : error(s, "invalid signal");
+}
+```
+
+Uma porta AND é um pouco mais complicada. A função de ação deve ser invocada se qualquer um dos fios de entrada ao and-gate mudar. Calcula o `logical_and` (produto lógico) dos valores dos sinais em ambos os fios de entrada e configura o fio de saída com esse novo valor após o `and_gate_delay`:
+
+```javascript
+function and_gate(a1, a2, output) {
+    function and_action_function() {
+        const new_value =
+            logical_and(get_signal(a1), get_signal(a2));
+        after_delay(and_gate_delay,
+                    () => set_signal(output, new_value));
+    }
+    add_action(a1, and_action_function);
+    add_action(a2, and_action_function);
+    return "ok";
+}
+
+function logical_and(s1, s2) {
+    return (s1 === 1 && s2 === 1)
+           ? 1
+           : (s1 === 0 || s2 === 0)
+           ? 0
+           : error(list(s1, s2), "invalid signals");
+}
+```
+
+**Exercício 3.28:** Defina uma porta OR como um bloco de função primitivo. Seu construtor `or_gate` deve ser similar a `and_gate`.
+
+**Exercício 3.29:** Outro jeito de construir uma porta OR é como um circuito composto, construído a partir de portas AND, OR e inversores. Defina uma função `or_gate` que realize essa síntese.
+
+**Exercício 3.30:** A Figura 3.27 mostra um *ripple-carry adder* formado encadeando *full-adders*. Este é o circuito mais simples para adicionar dois números binários. As entradas A1, A2, A3, ... An e B1, B2, B3, ... Bn são os dois números binários a serem adicionados (cada Ak e Bk é um bit 0 ou 1). A saída do circuito é a soma S1, S2, S3, ... Sn mais um carry Cn. Escreva uma função `ripple_carry_adder` que gera esse circuito. A função deve receber como argumentos três listas de n fios cada—as entradas An, Bn, e as somas Sn—bem como outro fio C. O maior atraso de propagação (em termos de atrasos de portas) do somador deve ser proporcional a n. Qual é o atraso?
+
+## Representando fios
+
+Um fio em nosso sistema de simulação será um objeto computacional com dois valores locais: um valor `signal` (inicialmente tomado como 0) e uma coleção de `action_functions` a serem executadas quando o sinal mudar de valor. Implementamos o fio usando passagem de mensagem de estilo local:
+
+```javascript
+function make_wire() {
+    let signal_value = 0;
+    let action_functions = null;
+
+    function set_my_signal(new_value) {
+        if (signal_value !== new_value) {
+            signal_value = new_value;
+            call_each(action_functions);
+        } else {}
+    }
+    function accept_action_function(fun) {
+        action_functions = pair(fun, action_functions);
+        fun();
+    }
+    function dispatch(m) {
+        return m === "get_signal"
+               ? signal_value
+               : m === "set_signal"
+               ? set_my_signal
+               : m === "add_action"
+               ? accept_action_function
+               : error(m, "unknown operation -- wire");
+    }
+    return dispatch;
+}
+```
+
+As variáveis locais `signal_value` e `action_functions` são as variáveis de estado interna do fio. A função local `set_my_signal` testa se o novo valor de sinal muda o sinal no fio. Se sim, executa cada um dos procedimentos de ação, usando a seguinte função `call_each`, que chama cada uma das funções em uma lista de nenhum argumento:
+
+```javascript
+function call_each(functions) {
+    if (is_null(functions)) {
+        return "done";
+    } else {
+        head(functions)();
+        return call_each(tail(functions));
+    }
+}
+```
+
+A função local `accept_action_function` adiciona a função dada à lista de funções a serem executadas, e então executa a nova função uma vez. (Veja exercício 3.31.)
+
+Com a função de estado local `dispatch` para um fio, podemos acessar o sinal local do fio e mudar ele:
+
+```javascript
+function get_signal(wire) {
+    return wire("get_signal");
+}
+function set_signal(wire, new_value) {
+    return wire("set_signal")(new_value);
+}
+function add_action(wire, action_function) {
+    return wire("add_action")(action_function);
+}
+```
+
+Os fios, que têm tempo variável, são compartilhados entre os blocos de função do circuito. Assim, uma mudança feita por uma interação com um bloco de função pode influenciar outros blocos de função. Esta configuração é semelhante à que vimos na conta bancária, onde várias funções poderiam compartilhar variáveis de estado.
+
+Para avaliar as consequências de mudar o sinal em um fio, precisamos especificar a ordem na qual as funções de ação são chamadas. Vamos esperar até a próxima subseção para especificar isso em detalhes. Por agora, podemos simplesmente afirmar que, após a ação de cada função, o sistema simula um pequeno passo no tempo, medido de forma que os sinais possam mudar apenas em intervalos de tempo inteiro.
+
+**Exercício 3.31:** A função interna `accept_action_function` definida em `make_wire` especifica que, quando uma nova função de ação é adicionada a um fio, a função é imediatamente executada. Explique por que essa inicialização é necessária. Em particular, trace através do circuito meio-somador na figura 3.25 e diga como os valores de saída do sistema seriam computados se não executássemos as funções de ação de cada fio recém-adicionado.
+
+## A agenda
+
+A única coisa que falta em nosso simulador é `after_delay`. A ideia aqui é que mantemos uma estrutura de dados, chamada *agenda*, que contém um cronograma de coisas para fazer. A agenda seguinte, a qual podemos criar, implementa a agenda como um par consistindo do tempo atual e uma fila de segmentos de tempo. Cada segmento de tempo é um par consistindo de um número (o tempo) e uma fila que contém os procedimentos que estão programados para serem executados durante esse segmento de tempo.
+
+```javascript
+function after_delay(delay, action) {
+    add_to_agenda(delay + current_time(the_agenda),
+                  action,
+                  the_agenda);
+}
+```
+
+O simulador de circuito digital é conduzido pela função `propagate`, que opera na agenda. `propagate` executa cada função na agenda em sequência. Em geral, como os procedimentos são executados, novos itens serão adicionados à agenda, e `propagate` irá continuar a simular até não haver mais itens na agenda:
+
+```javascript
+function propagate() {
+    if (is_empty_agenda(the_agenda)) {
+        return "done";
+    } else {
+        const first_item = first_agenda_item(the_agenda);
+        first_item();
+        remove_first_agenda_item(the_agenda);
+        return propagate();
+    }
+}
+```
+
+## Um exemplo de simulação
+
+O seguinte procedimento constrói o meio-somador mostrado na Figura 3.25:
+
+```javascript
+function half_adder(a, b, s, c) {
+    const d = make_wire();
+    const e = make_wire();
+    or_gate(a, b, d);
+    and_gate(a, b, c);
+    inverter(c, e);
+    and_gate(d, e, s);
+    return "ok";
+}
+```
+
+O somador completo é mostrado na Figura 3.26. A implementação é direta:
+
+```javascript
+function full_adder(a, b, c_in, sum, c_out) {
+    const s = make_wire();
+    const c1 = make_wire();
+    const c2 = make_wire();
+    half_adder(b, c_in, s, c1);
+    half_adder(a, s, sum, c2);
+    or_gate(c1, c2, c_out);
+    return "ok";
+}
+```
+
+Agora podemos testar nosso simulador. Primeiro criamos alguns fios:
+
+```javascript
+const input_1 = make_wire();
+const input_2 = make_wire();
+const sum = make_wire();
+const carry = make_wire();
+```
+
+A seguir conectamos eles em um meio-somador:
+
+```javascript
+half_adder(input_1, input_2, sum, carry);
+// "ok"
+```
+
+Uma última coisa que precisamos fazer é inicializar a agenda. Falaremos sobre a implementação da agenda mais tarde, mas por agora simplesmente assumimos que temos as seguintes operações:
+
+- `the_agenda` - A agenda
+- `make_agenda()` - Constrói e retorna uma nova agenda vazia
+- `empty_agenda(agenda)` - Retorna true se a agenda estiver vazia
+- `first_agenda_item(agenda)` - Retorna o primeiro item na agenda
+- `remove_first_agenda_item(agenda)` - Remove o primeiro item da agenda
+- `add_to_agenda(time, action, agenda)` - Adiciona uma ação à agenda a ser executada no tempo especificado
+- `current_time(agenda)` - Retorna o tempo de simulação atual
+
+Inicializamos a agenda e especificamos atrasos para as portas primitivas:
+
+```javascript
+const the_agenda = make_agenda();
+const inverter_delay = 2;
+const and_gate_delay = 3;
+const or_gate_delay = 5;
+```
+
+Agora estamos prontos para testar. Colocamos sondas nos fios sum e carry, que imprimirão uma mensagem no terminal do sistema sempre que o sinal em um fio mudar. Então começamos a simulação:
+
+```javascript
+probe("sum", sum);
+// sum 0  new-value = 0
+
+probe("carry", carry);
+// carry 0  new-value = 0
+```
+
+Em seguida, definimos `input_1` como 1, propagamos as mudanças através do circuito e vemos os resultados:
+
+```javascript
+set_signal(input_1, 1);
+propagate();
+// sum 8  new-value = 1
+// done
+
+set_signal(input_2, 1);
+propagate();
+// carry 11  new-value = 1
+// sum 16  new-value = 0
+// done
+```
+
+A soma passa a ser 1 no tempo 8. Isso porque, quando definimos `input_1` como 1 no tempo 0, o inversor leva 2 unidades de tempo, a porta AND leva 3, e a porta OR leva 5. Configurando `input_2` para 1 no tempo 8 não afeta o comportamento até o tempo 16, quando os dois sinais de entrada mudaram (um passou de 0 para 1, o outro de 1 para 0).
+
+**Exercício 3.32:** As funções a serem executadas durante cada segmento de tempo são mantidas em uma fila. Assim, os procedimentos para cada segmento são chamados na ordem em que foram adicionados à agenda (primeiro a entrar, primeiro a sair). Explique por que essa ordem deve ser usada. Em particular, trace o comportamento de uma porta AND cujas entradas mudam de 0,1 para 1,0 na mesma grade de tempo e diga como o comportamento diferiria se armazenássemos as funções de um segmento como uma lista comum (último a entrar, primeiro a sair).
+
+## Implementando a agenda
+
+Finalmente, fornecemos detalhes da agenda. A agenda é composta de segmentos de tempo. Cada segmento de tempo é um par consistindo de um número (o tempo) e uma fila que contém os procedimentos que estão programados para serem executados durante esse segmento de tempo.
+
+```javascript
+function make_time_segment(time, queue) {
+    return pair(time, queue);
+}
+function segment_time(s) { return head(s); }
+function segment_queue(s) { return tail(s); }
+```
+
+Usaremos a implementação de fila da seção 3.3.2 para representar as filas de segmentos de tempo.
+
+A agenda em si é uma lista encabeçada de segmentos de tempo. Ela também mantém o `current_time`—isto é, o tempo da última ação que foi processada. Uma agenda recém-construída não tem segmentos de tempo e tem um tempo atual de 0:
+
+```javascript
+function make_agenda() {
+    return list(0);
+}
+function current_time(agenda) {
+    return head(agenda);
+}
+function set_current_time(agenda, time) {
+    set_head(agenda, time);
+}
+function segments(agenda) {
+    return tail(agenda);
+}
+function set_segments(agenda, segs) {
+    set_tail(agenda, segs);
+}
+function first_segment(agenda) {
+    return head(segments(agenda));
+}
+function rest_segments(agenda) {
+    return tail(segments(agenda));
+}
+function is_empty_agenda(agenda) {
+    return is_null(segments(agenda));
+}
+```
+
+Para adicionar uma ação a uma agenda, procuramos por aquele segmento de tempo. Se encontrarmos um segmento para o tempo apropriado, adicionamos a ação à fila associada. Se não, criamos um novo segmento de tempo, armazenamos a ação em sua fila, e inserimos o segmento na lista de segmentos mantidos pela agenda.
+
+```javascript
+function add_to_agenda(time, action, agenda) {
+    function belongs_before(segs) {
+        return is_null(segs) ||
+               time < segment_time(head(segs));
+    }
+    function make_new_time_segment(time, action) {
+        const q = make_queue();
+        insert_queue(q, action);
+        return make_time_segment(time, q);
+    }
+    function add_to_segments(segs) {
+        if (segment_time(head(segs)) === time) {
+            insert_queue(segment_queue(head(segs)), action);
+        } else if (belongs_before(tail(segs))) {
+            set_tail(segs,
+                     pair(make_new_time_segment(time, action),
+                          tail(segs)));
+        } else {
+            add_to_segments(tail(segs));
+        }
+    }
+    const segs = segments(agenda);
+    if (belongs_before(segs)) {
+        set_segments(agenda,
+                     pair(make_new_time_segment(time, action),
+                          segs));
+    } else {
+        add_to_segments(segs);
+    }
+}
+```
+
+A função que remove o primeiro item da agenda remove o primeiro item da fila no primeiro segmento de tempo. Se isso deixar o segmento de tempo sem agendamentos, ela remove o segmento da lista de segmentos:
+
+```javascript
+function remove_first_agenda_item(agenda) {
+    const q = segment_queue(first_segment(agenda));
+    delete_queue(q);
+    if (is_empty_queue(q)) {
+        set_segments(agenda, rest_segments(agenda));
+    } else {}
+}
+```
+
+O primeiro item da agenda é encontrado no cabeçalho da fila no primeiro segmento de tempo. Sempre que obtemos um item da frente da agenda, também atualizamos o tempo atual:
+
+```javascript
+function first_agenda_item(agenda) {
+    if (is_empty_agenda(agenda)) {
+        error("agenda is empty -- first_agenda_item");
+    } else {
+        const first_seg = first_segment(agenda);
+        set_current_time(agenda, segment_time(first_seg));
+        return front_queue(segment_queue(first_seg));
+    }
+}
+```

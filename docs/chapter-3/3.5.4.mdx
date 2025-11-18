@@ -1,0 +1,135 @@
+---
+title: 3.5.4 Streams e Avaliação Atrasada
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.5.4 Streams e Avaliação Atrasada
+
+A função `integral` no final da seção anterior mostra como podemos usar streams para modelar sistemas de processamento de sinais que contêm loops de realimentação. O loop de realimentação para o somador mostrado na figura é modelado pelo fato de que o stream interno `integ` é definido em termos de si mesmo:
+
+```javascript
+const integ = pair(initial_value,
+                   () => add_streams(scale_stream(integrand, dt),
+                                     integ));
+```
+
+A capacidade do interpretador de lidar com tal definição implícita depende do atraso resultante de embrulhar a chamada para `add_streams` em uma expressão lambda. Sem esse atraso, o interpretador não poderia construir `integ` antes de avaliar a chamada para `add_streams`, o que exigiria que `integ` já estivesse definido. Em geral, tal atraso é crucial para usar streams para modelar sistemas de processamento de sinais que contêm loops. Sem um atraso, nossos modelos teriam que ser formulados de modo que as entradas para qualquer componente de processamento de sinal fossem totalmente avaliadas antes que a saída pudesse ser produzida. Isso proibiria loops.
+
+Infelizmente, modelos de stream de sistemas com loops podem exigir usos de atraso além do padrão de programação de stream visto até agora. Por exemplo, a figura mostra um sistema de processamento de sinais para resolver a equação diferencial $dy/dt = f(y)$ onde $f$ é uma função dada. A figura mostra um componente de mapeamento, que aplica $f$ ao seu sinal de entrada, ligado em um loop de realimentação a um integrador de maneira muito similar à dos circuitos de computador analógico que são realmente usados para resolver tais equações.
+
+Assumindo que nos é dado um valor inicial $y_0$ para $y$, poderíamos tentar modelar este sistema usando a função
+
+```javascript
+function solve(f, y0, dt) {
+    const y = integral(dy, y0, dt);
+    const dy = stream_map(f, y);
+    return y;
+}
+```
+
+Esta função não funciona, porque na primeira linha de `solve` a chamada para `integral` requer que o argumento de entrada `dy` seja definido, o que não acontece até a segunda linha de `solve`.
+
+Por outro lado, a intenção de nossa definição faz sentido, porque podemos, em princípio, começar a gerar o stream `y` sem conhecer `dy`. De fato, `integral` e muitas outras operações de stream podem gerar parte da resposta dada apenas informação parcial sobre os argumentos. Para `integral`, o primeiro elemento do stream de saída é o `initial_value` especificado. Assim, podemos gerar o primeiro elemento do stream de saída sem avaliar o integrando `dy`. Uma vez que conhecemos o primeiro elemento de `y`, o `stream_map` na segunda linha de `solve` pode começar a trabalhar para gerar o primeiro elemento de `dy`, que produzirá o próximo elemento de `y`, e assim por diante.
+
+Para tirar vantagem dessa ideia, redefiniremos `integral` para esperar que o stream do integrando seja um *argumento atrasado*. A função `integral` forçará o integrando a ser avaliado apenas quando for necessário para gerar mais do que o primeiro elemento do stream de saída:
+
+```javascript
+function integral(delayed_integrand, initial_value, dt) {
+    const integ =
+        pair(initial_value,
+             () => {
+                 const integrand = delayed_integrand();
+                 return add_streams(scale_stream(integrand, dt),
+                                    integ);
+             });
+    return integ;
+}
+```
+
+Agora podemos implementar nossa função `solve` atrasando a avaliação de `dy` na declaração de `y`:
+
+```javascript
+function solve(f, y0, dt) {
+    const y = integral(() => dy, y0, dt);
+    const dy = stream_map(f, y);
+    return y;
+}
+```
+
+Em geral, cada chamador de `integral` deve agora atrasar o argumento do integrando. Podemos demonstrar que a função `solve` funciona aproximando $e \approx 2.718$ computando o valor em $y = 1$ da solução para a equação diferencial $dy/dt = y$ com condição inicial $y(0) = 1$:[^1]
+
+```javascript
+stream_ref(solve(y => y, 1, 0.001), 1000);
+```
+
+```
+2.716923932235896
+```
+
+## Exercício 3.77
+
+A função `integral` usada acima foi análoga à definição "implícita" do stream infinito de inteiros na seção 3.5.2. Alternativamente, podemos dar uma definição de `integral` que é mais como `integers_starting_from` (também na seção 3.5.2):
+
+```javascript
+function integral(integrand, initial_value, dt) {
+    return pair(initial_value,
+                is_null(integrand)
+                ? null
+                : integral(stream_tail(integrand),
+                           dt * head(integrand) + initial_value,
+                           dt));
+}
+```
+
+Quando usada em sistemas com loops, esta função tem o mesmo problema que nossa versão original de `integral`. Modifique a função para que ela espere o `integrand` como um argumento atrasado e, portanto, possa ser usada na função `solve` mostrada acima.
+
+## Exercício 3.78
+
+Considere o problema de projetar um sistema de processamento de sinais para estudar a equação diferencial linear homogênea de segunda ordem
+
+$$\frac{d^2y}{dt^2} - a\frac{dy}{dt} - by = 0$$
+
+O stream de saída, modelando $y$, é gerado por uma rede que contém um loop. Isso ocorre porque o valor de $d^2y/dt^2$ depende dos valores de $y$ e $dy/dt$ e ambos são determinados integrando $d^2y/dt^2$. O diagrama que gostaríamos de codificar é mostrado na figura. Escreva uma função `solve_2nd` que recebe como argumentos as constantes $a$, $b$ e $dt$ e os valores iniciais $y_0$ e $dy_0$ para $y$ e $dy/dt$ e gera o stream de valores sucessivos de $y$.
+
+## Exercício 3.79
+
+Generalize a função `solve_2nd` do exercício 3.78 para que ela possa ser usada para resolver equações diferenciais de segunda ordem gerais $d^2y/dt^2 = f(dy/dt, y)$.
+
+## Exercício 3.80
+
+Um *circuito RLC em série* consiste de um resistor, um capacitor e um indutor conectados em série, como mostrado na figura. Se $R$, $L$ e $C$ são a resistência, indutância e capacitância, então as relações entre voltagem ($v$) e corrente ($i$) para os três componentes são descritas pelas equações
+
+$$\begin{align*}
+v_R &= i_R R \\
+v_L &= L\frac{di_L}{dt} \\
+i_C &= C\frac{dv_C}{dt}
+\end{align*}$$
+
+e as conexões do circuito ditam as relações
+
+$$\begin{align*}
+i_R &= i_L = -i_C \\
+v_C &= v_L + v_R
+\end{align*}$$
+
+Combinando essas equações mostra que o estado do circuito (resumido por $v_C$, a voltagem através do capacitor, e $i_L$, a corrente no indutor) é descrito pelo par de equações diferenciais
+
+$$\begin{align*}
+\frac{dv_C}{dt} &= -\frac{i_L}{C} \\
+\frac{di_L}{dt} &= \frac{1}{L}v_C - \frac{R}{L}i_L
+\end{align*}$$
+
+O diagrama de fluxo de sinal representando este sistema de equações diferenciais é mostrado na figura.
+
+Escreva uma função `RLC` que recebe como argumentos os parâmetros $R$, $L$ e $C$ do circuito e o incremento de tempo $dt$. De maneira similar à função `RC` do exercício 3.73, `RLC` deve produzir uma função que recebe os valores iniciais das variáveis de estado, $v_{C_0}$ e $i_{L_0}$, e produz um par (usando `pair`) dos streams de estados $v_C$ e $i_L$. Usando `RLC`, gere o par de streams que modela o comportamento de um circuito RLC em série com $R = 1$ ohm, $C = 0.2$ farad, $L = 1$ henry, $dt = 0.1$ segundo, e valores iniciais $i_{L_0} = 0$ amperes e $v_{C_0} = 10$ volts.
+
+## Avaliação em ordem normal
+
+Os exemplos nesta seção ilustram como a avaliação atrasada fornece grande flexibilidade de programação, mas os mesmos exemplos também mostram como isso pode tornar nossos programas mais complexos. Nossa nova função `integral`, por exemplo, nos dá o poder de modelar sistemas com loops, mas devemos agora lembrar que `integral` deve ser chamada com um integrando atrasado, e cada função que usa `integral` deve estar ciente disso. Em efeito, criamos duas classes de funções: funções ordinárias e funções que recebem argumentos atrasados. Em geral, criar classes separadas de funções nos força a criar classes separadas de funções de ordem superior também.[^2]
+
+Uma maneira de evitar a necessidade de duas classes diferentes de funções é fazer todas as funções receberem argumentos atrasados. Poderíamos adotar um modelo de avaliação no qual todos os argumentos para funções são automaticamente atrasados e os argumentos são forçados apenas quando são realmente necessários (por exemplo, quando são exigidos por uma operação primitiva). Isso transformaria nossa linguagem para usar avaliação em ordem normal, que descrevemos pela primeira vez quando introduzimos o modelo de substituição para avaliação na seção 1.1.5. Converter para avaliação em ordem normal fornece uma maneira uniforme e elegante de simplificar o uso de avaliação atrasada, e esta seria uma estratégia natural a adotar se estivéssemos preocupados apenas com o processamento de streams. Na seção 4.2, após estudarmos o avaliador, veremos como transformar nossa linguagem exatamente dessa maneira. Infelizmente, incluir atrasos em chamadas de função causa estragos com nossa capacidade de projetar programas que dependem da ordem de eventos, como programas que usam atribuição, mutam dados ou executam entrada ou saída. Mesmo um único atraso no tail de um par pode causar grande confusão, como ilustrado pelos exercícios 3.51 e 3.52. Até onde se sabe, mutabilidade e avaliação atrasada não se misturam bem em linguagens de programação.
+
+[^1]: Para completar em tempo razoável, este cálculo requer o uso da otimização de memoização da seção 3.5.1 em `integral` e na função `add_streams` usada em `integral` (usando a função `stream_map_2_optimized` como sugerido no exercício 3.50).
+
+[^2]: Este é um pequeno reflexo, em JavaScript, das dificuldades que linguagens estaticamente tipadas convencionais como Pascal tiveram ao lidar com funções de ordem superior. Nestas linguagens, o programador tinha que especificar os tipos de dados dos argumentos e o resultado de cada função: número, valor lógico, sequência, e assim por diante. Consequentemente, não poderíamos expressar uma abstração como "mapear uma dada função sobre todos os elementos em uma sequência" por uma única função de ordem superior como `stream_map`. Em vez disso, precisaríamos de uma função de mapeamento diferente para cada combinação diferente de tipos de dados de argumento e resultado que possam ser especificados para uma função. Manter uma noção prática de "tipo de dados" na presença de funções de ordem superior levanta muitas questões difíceis. Uma maneira de lidar com este problema é ilustrada pela linguagem ML (Gordon, Milner e Wadsworth 1979), cujos "tipos de dados parametricamente polimórficos" incluem modelos para transformações de ordem superior entre tipos de dados. Além disso, os tipos de dados para a maioria das funções em ML nunca são explicitamente declarados pelo programador. Em vez disso, ML inclui um mecanismo de inferência de tipos que usa informação no ambiente para deduzir os tipos de dados para funções recém-definidas. Hoje, linguagens de programação estaticamente tipadas evoluíram para tipicamente suportar alguma forma de inferência de tipos assim como polimorfismo paramétrico, com graus variados de poder. Haskell acopla um sistema de tipos expressivo com poderosa inferência de tipos.
