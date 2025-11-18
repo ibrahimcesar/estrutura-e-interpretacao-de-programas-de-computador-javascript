@@ -20,6 +20,7 @@ And
 Another
 Architecture
 Autorun
+BY
 BY-SA
 Baixa-Média
 Barkley
@@ -31,6 +32,7 @@ Brendan
 Brython
 Build
 CHANGELOG
+Changelog
 CNAME
 CODEOWNERS
 CONTRIBUTING
@@ -78,6 +80,7 @@ EditorConfig
 Eich
 Elements
 Email
+Explícito-Control
 Every
 ExerciseBox
 Exercism
@@ -133,6 +136,9 @@ Keep
 Kleene
 Landin
 Language
+Last
+License
+License-CC
 Leave
 Lewis
 Linguee
@@ -151,6 +157,7 @@ Marvin
 Math
 Matrix
 McCarthy
+Metacircular
 Microsoft
 Minsky
 MkDocs
@@ -159,6 +166,7 @@ Mozilla
 National
 Navigator
 Need
+Não-Determinística
 Netlify
 Netscape
 New
@@ -214,12 +222,14 @@ Show
 Sidebar
 Simple
 Singapore
+Spell
 Snippets
 Source
 StackBlitz
 Steele
 Stephen
 Strachey
+Streams
 Structure
 Subdomain
 Support
@@ -236,8 +246,9 @@ Tobias
 Toolkit
 Traffic
 Translate
+Translation
 TranslationProgress
-Trollingadd
+Trolling
 Troubleshooting
 Type
 URLs
@@ -269,6 +280,8 @@ YouTube
 Your
 abs
 abstraction
+actions
+add
 address
 addresses
 align
@@ -278,6 +291,7 @@ alt
 alto-nível
 an
 analytics
+andamento-yellow
 and
 another
 anti-profissional
@@ -307,6 +321,7 @@ bug
 bugs
 build
 button
+by-sa
 callback
 camel
 can
@@ -354,6 +369,7 @@ construindo-abstracoes
 content
 contributor-covenant
 contributors
+conventional
 could
 count
 create
@@ -516,6 +532,7 @@ localhost
 log
 macOS
 maior-ordem
+main
 make
 make-test
 mapsto
@@ -542,6 +559,7 @@ need
 newtons
 nextText
 noData
+nodejs
 none
 not
 npm
