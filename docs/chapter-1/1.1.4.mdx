@@ -29,7 +29,7 @@ function  square(      x   ) { return  x    *    x; }
 //        perfeito
 ```
 
-<a name="#footnote-link-1"></a>
+<a name="footnote-link-1"></a>
 Temos aqui uma *função composta*, que recebeu o nome `square`. A função representa a operação de multiplicação de algo por si mesmo. A coisa a ser multiplicada recebe um nome local, `x`, que desempenha o mesmo papel que um pronome na linguagem natural. A avaliação da declaração cria esta função composta e a associa ao nome `square`.[<sup>1</sup>](#footnote-1)
 
 A forma mais simples de declaração de uma função é
@@ -38,7 +38,7 @@ A forma mais simples de declaração de uma função é
 function nome(parâmetros) { return expressão; }
 ```
 
-<a name="#footnote-link-2"></a> <a name="#footnote-link-3"></a>
+<a name="footnote-link-2"></a> <a name="footnote-link-3"></a>
 O *nome* é um símbolo a ser associado à definição da função no ambiente.[<sup>2</sup>](#footnote-2) Os *parâmetros* são os nomes usados no corpo da função para se referir aos argumentos correspondentes da função. Os *parâmetros* são agrupados entre parênteses e separados por vírgulas, pois estarão em uma aplicação da função que está sendo declarada. Na forma mais simples, o *corpo* de uma declaração de função é uma única *instrução de retorno*[<sup>3</sup>](#footnote-3), que consiste na palavra-chave return seguida pela *expressão de retorno* que produzirá o valor da aplicação da função, quando os parâmetros são substituídos pelos argumentos reais para os quais a função é aplicada. Como as declarações constantes e as declarações de expressão, as declarações de retorno terminam com um caractere de ponto e vírgula.
 
 Tendo declarado `square`, agora podemos usá-lo em uma expressão de *aplicação de função*, que transformamos em uma instrução usando um caractere de ponto e vírgula:
@@ -98,7 +98,7 @@ Também podemos usar a `square` como um bloco de construção na definição de 
   showLineNumbers={false}
 />
 
-<a name="#footnote-link-4"></a>
+<a name="footnote-link-4"></a>
 Podemos facilmente declarar uma função `sum_of_squares`[<sup>4</sup>](#footnote-4) que, dados quaisquer dois números como argumentos, produz a soma de seus quadrados:
 
 <CodePlayground
@@ -153,17 +153,17 @@ function f(a) {
 
 136
 
-<a name="#footnote-link-5"></a>
+<a name="footnote-link-5"></a>
 Além de funções compostas, qualquer ambiente JavaScript fornece funções primitivas que estão embutidas no interpretador ou carregadas de bibliotecas. Além das funções primitivas fornecidas pelos operadores, o ambiente JavaScript usado neste livro inclui funções primitivas adicionais, como a função `math_log`, que calcula o logaritmo natural de seu argumento.[<sup>5</sup>](#footnote-5) Essas funções primitivas adicionais são usadas exatamente da mesma maneira que as funções compostas; avaliar a aplicação `math_log(1)` resulta no número 0. De fato, não se poderia dizer olhando para a definição de `sum_of_squares` dada acima se ``square` foi embutida no interpretador, carregado de uma biblioteca ou definido como uma função composta.
 
 ----
 
-<a name="#footnote-1"></a> [[1]](#footnote-link-1) Observe que há duas operações diferentes sendo combinadas aqui: estamos criando a função e estamos dando a ela o nome `square`. É possível, de fato importante, ser capaz de separar essas duas noções – criar funções sem nomeá-las e dar nomes a funções que já foram criadas. Veremos como fazer isso na seção [1.3.2](1.3.2.md).
+<a name="footnote-1"></a> [[1]](#footnote-link-1) Observe que há duas operações diferentes sendo combinadas aqui: estamos criando a função e estamos dando a ela o nome `square`. É possível, de fato importante, ser capaz de separar essas duas noções – criar funções sem nomeá-las e dar nomes a funções que já foram criadas. Veremos como fazer isso na seção [1.3.2](1.3.2.md).
 
-<a name="#footnote-2"></a> [[2]](#footnote-link-2) Ao longo deste livro, descreveremos a sintaxe geral das expressões usando símbolos em itálico – por exemplo, nome – para denotar os "slots" na expressão a ser preenchida quando tal expressão for realmente usada.
+<a name="footnote-2"></a> [[2]](#footnote-link-2) Ao longo deste livro, descreveremos a sintaxe geral das expressões usando símbolos em itálico – por exemplo, nome – para denotar os "slots" na expressão a ser preenchida quando tal expressão for realmente usada.
 
-<a name="#footnote-3"></a> [[3]](#footnote-link-3) De maneira mais geral, o corpo da função pode ser uma sequência de instruções. Nesse caso, o interpretador avalia cada instrução na sequência sucessivamente até que uma instrução de retorno determine o valor da aplicação da função.
+<a name="footnote-3"></a> [[3]](#footnote-link-3) De maneira mais geral, o corpo da função pode ser uma sequência de instruções. Nesse caso, o interpretador avalia cada instrução na sequência sucessivamente até que uma instrução de retorno determine o valor da aplicação da função.
 
-<a name="#footnote-4"></a> [[4]](#footnote-link-4) A maneira como os nomes de várias partes, como `sum_of_squares`, são escritos, afeta a legibilidade dos programas, e as comunidades de programação diferem nisso. De acordo com a convenção do JavaScript comum, chamada *camel case*, o nome seria `sumOfSquares`. A convenção usada neste livro é chamada de *snake case* e foi escolhida por sua maior semelhança com a convenção usada na versão Scheme deste livro, onde hífens desempenham o papel de nossos sublinhados.
+<a name="footnote-4"></a> [[4]](#footnote-link-4) A maneira como os nomes de várias partes, como `sum_of_squares`, são escritos, afeta a legibilidade dos programas, e as comunidades de programação diferem nisso. De acordo com a convenção do JavaScript comum, chamada *camel case*, o nome seria `sumOfSquares`. A convenção usada neste livro é chamada de *snake case* e foi escolhida por sua maior semelhança com a convenção usada na versão Scheme deste livro, onde hífens desempenham o papel de nossos sublinhados.
 
-<a name="#footnote-5"></a> [[5]](#footnote-link-5) Nosso ambiente JavaScript inclui todas as funções e constantes do [objeto Math](https://www.ecma-international.org/ecma-262/9.0/index.html#sec-math-object) do ECMAScript, sob os nomes `math_…`. Por exemplo, o `Math.log` do ECMAScript está disponível como `math_log`. A página da web do MIT Press para este livro inclui o pacote JavaScript `sicp` que fornece essas e todas as outras funções JavaScript consideradas primitivas no livro.
+<a name="footnote-5"></a> [[5]](#footnote-link-5) Nosso ambiente JavaScript inclui todas as funções e constantes do [objeto Math](https://www.ecma-international.org/ecma-262/9.0/index.html#sec-math-object) do ECMAScript, sob os nomes `math_…`. Por exemplo, o `Math.log` do ECMAScript está disponível como `math_log`. A página da web do MIT Press para este livro inclui o pacote JavaScript `sicp` que fornece essas e todas as outras funções JavaScript consideradas primitivas no livro.
