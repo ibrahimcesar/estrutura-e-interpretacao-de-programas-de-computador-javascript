@@ -1,0 +1,23 @@
+---
+title: 3.2.5 Máquina CSE
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.2.5 Máquina CSE
+
+O modelo de ambiente conforme apresentado até agora concentra-se em como funções podem se referir a seus parâmetros, nomes declarados localmente e nomes que são declarados fora da função. Conseguimos isso avaliando instruções e expressões com respeito a um *ambiente atual*. Ele não especifica como mantemos o controle dos ambientes conforme a computação prossegue. Por exemplo, quando avaliamos uma expressão `f(x) + y`, precisamos avaliar `x` no ambiente atual, estabelecer como o novo ambiente atual o ambiente de `f` estendido por uma vinculação de seu parâmetro ao valor de `x`, e avaliar o corpo de `f` neste ambiente estendido. Mas qual ambiente devemos usar para avaliar `y` depois que `f` retorna? Nesta seção, estendemos o
+
+## Avaliando Expressões Aritméticas
+
+O exercício 3.8 mostra que a presença de atribuições faz com que o resultado de um programa dependa da ordem na qual os operandos de uma combinação de operador são avaliados. Para remover ambiguidades que surgem disso, o padrão JavaScript especifica avaliação da esquerda para a direita de operandos.
+
+Como exemplo, considere a avaliação da instrução de expressão aritmética
+
+<CodePlayground
+  code={`1 + (2 * 3);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+A expressão é decompostanos seus operandos `1` e `2 * 3`, seguida pela *instrução* para adicionar seus resultados.

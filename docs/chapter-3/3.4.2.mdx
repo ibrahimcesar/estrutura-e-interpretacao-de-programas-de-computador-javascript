@@ -1,0 +1,491 @@
+---
+title: 3.4.2 Mecanismos para Controlar Concorrência
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.4.2 Mecanismos para Controlar Concorrência
+
+Vimos que a dificuldade em lidar com threads concorrentes está enraizada na necessidade de considerar o intercalamento da ordem dos eventos nas diferentes threads. Por exemplo, suponha que temos duas threads, uma com três eventos ordenados $(a,b,c)$ e uma com três eventos ordenados $(x,y,z)$. Se as duas threads executam concorrentemente, sem restrições sobre como sua execução é intercalada, então há 20 ordenações diferentes possíveis para os eventos que são consistentes com as ordenações individuais para as duas threads:
+
+$$\begin{array}{cccc}
+(a,b,c,x,y,z) & (a,x,b,y,c,z) & (x,a,b,c,y,z) & (x,a,y,z,b,c)\\
+(a,b,x,c,y,z) & (a,x,b,y,z,c) & (x,a,b,y,c,z) & (x,y,a,b,c,z)\\
+(a,b,x,y,c,z) & (a,x,y,b,c,z) & (x,a,b,y,z,c) & (x,y,a,b,z,c)\\
+(a,b,x,y,z,c) & (a,x,y,b,z,c) & (x,a,y,b,c,z) & (x,y,a,z,b,c)\\
+(a,x,b,c,y,z) & (a,x,y,z,b,c) & (x,a,y,b,z,c) & (x,y,z,a,b,c)
+\end{array}$$
+
+Como programadores projetando este sistema, teríamos que considerar os efeitos de cada uma dessas 20 ordenações e verificar que cada comportamento é aceitável. Tal abordagem rapidamente se torna inviável à medida que os números de threads e eventos aumentam.
+
+Uma abordagem mais prática para o projeto de sistemas concorrentes é desenvolver mecanismos gerais que nos permitem restringir o intercalamento de threads concorrentes de modo que possamos ter certeza de que o comportamento do programa está correto. Muitos mecanismos foram desenvolvidos para esse propósito. Nesta seção, descrevemos um deles, o *serializador*.
+
+## Serializando acesso ao estado compartilhado
+
+A serialização implementa a seguinte ideia: Threads executarão concorrentemente, mas haverá certas coleções de funções que não podem ser executadas concorrentemente. Mais precisamente, a serialização cria conjuntos distinguidos de funções de tal forma que apenas uma execução de uma função em cada conjunto serializado é permitida acontecer por vez. Se alguma função no conjunto está sendo executada, então uma thread que tenta executar qualquer função no conjunto será forçada a esperar até que a primeira execução tenha terminado.
+
+Podemos usar a serialização para controlar o acesso a variáveis compartilhadas. Por exemplo, se queremos atualizar uma variável compartilhada com base no valor anterior dessa variável, colocamos o acesso ao valor anterior da variável e a atribuição do novo valor à variável na mesma função. Então garantimos que nenhuma outra função que atribui à variável pode executar concorrentemente com esta função, serializando todas essas funções com o mesmo serializador. Isso garante que o valor da variável não pode ser mudado entre um acesso e a atribuição correspondente.
+
+## Serializadores
+
+Para tornar o mecanismo acima mais concreto, suponha que tenhamos estendido JavaScript para incluir uma função chamada `concurrent_execute`:
+
+```javascript
+concurrent_execute(f₁, f₂, …, fₖ)
+```
+
+Cada $f$ deve ser uma função sem argumentos. A função `concurrent_execute` cria uma thread separada para cada $f$, que aplica $f$ (sem argumentos). Essas threads todas executam concorrentemente.[^1]
+
+Como um exemplo de como isso é usado, considere
+
+```javascript
+let x = 10;
+
+concurrent_execute(() => { x = x * x; },
+                   () => { x = x + 1; });
+```
+
+Isso cria duas threads concorrentes—$T_1$, que define `x` para `x` vezes `x`, e $T_2$, que incrementa `x`. Após a execução estar completa, `x` será deixado com um dos cinco valores possíveis, dependendo do intercalamento dos eventos de $T_1$ e $T_2$:
+
+| | |
+|---|---|
+| 101: | $T_1$ define `x` para 100 e então $T_2$ incrementa `x` para 101. |
+| 121: | $T_2$ incrementa `x` para 11 e então $T_1$ define `x` para `x` vezes `x`. |
+| 110: | $T_2$ muda `x` de 10 para 11 entre as duas vezes que $T_1$ acessa o valor de `x` durante a avaliação de `x * x`. |
+| 11: | $T_2$ acessa `x`, então $T_1$ define `x` para 100, então $T_2$ define `x`. |
+| 100: | $T_1$ acessa `x` (duas vezes), então $T_2$ define `x` para 11, então $T_1$ define `x`. |
+
+Podemos restringir a concorrência usando funções serializadas, que são criadas por *serializadores*. Serializadores são construídos por `make_serializer`, cuja implementação é dada abaixo. Um serializador recebe uma função como argumento e retorna uma função serializada que se comporta como a função original. Todas as chamadas a um dado serializador retornam funções serializadas no mesmo conjunto.
+
+Assim, em contraste com o exemplo acima, executar
+
+```javascript
+let x = 10;
+
+const s = make_serializer();
+
+concurrent_execute(s(() => { x = x * x; }),
+                   s(() => { x = x + 1; }));
+```
+
+pode produzir apenas dois valores possíveis para `x`, 101 ou 121. As outras possibilidades são eliminadas, porque a execução de $T_1$ e $T_2$ não pode ser intercalada.
+
+Aqui está uma versão da função `make_account` da seção 3.1.1, onde os depósitos e saques foram serializados:
+
+```javascript
+function make_account(balance) {
+    function withdraw(amount) {
+        if (balance > amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    const protect = make_serializer();
+    function dispatch(m) {
+        return m === "withdraw"
+               ? protect(withdraw)
+               : m === "deposit"
+               ? protect(deposit)
+               : m === "balance"
+               ? balance
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}
+```
+
+Com esta implementação, duas threads não podem estar sacando ou depositando em uma única conta concorrentemente. Isso elimina a fonte do erro ilustrado na Figura 3.29, onde Peter muda o saldo da conta entre os momentos em que Paul acessa o saldo para calcular o novo valor e quando Paul realmente executa a atribuição. Por outro lado, cada conta tem seu próprio serializador, então que depósitos e saques para diferentes contas podem prosseguir concorrentemente.
+
+## Exercício 3.39
+
+Quais das cinco possibilidades na execução concorrente mostrada acima permanecem se em vez disso serializamos a execução da seguinte forma:
+
+```javascript
+let x = 10;
+
+const s = make_serializer();
+
+concurrent_execute(  () => { x = s(() => x * x)(); },
+                   s(() => { x = x + 1;             }));
+```
+
+## Exercício 3.40
+
+Dê todos os valores possíveis de `x` que podem resultar da execução de
+
+```javascript
+let x = 10;
+
+concurrent_execute(() => { x = x * x; },
+                   () => { x = x * x * x; });
+```
+
+Quais dessas possibilidades permanecem se em vez disso usamos funções serializadas:
+
+```javascript
+let x = 10;
+
+const s = make_serializer();
+
+concurrent_execute(s(() => { x = x * x;     }),
+                   s(() => { x = x * x * x; }));
+```
+
+## Exercício 3.41
+
+Ben Bitdiddle se preocupa que seria melhor implementar a conta bancária da seguinte forma (onde a linha comentada foi mudada):
+
+```javascript
+function make_account(balance) {
+    function withdraw(amount) {
+        if (balance > amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    const protect = make_serializer();
+    function dispatch(m) {
+        return m === "withdraw"
+               ? protect(withdraw)
+               : m === "deposit"
+               ? protect(deposit)
+               : m === "balance"
+               ? protect(() => balance)(undefined) // serialized
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}
+```
+
+porque permitir acesso não serializado ao saldo bancário pode resultar em comportamento anômalo. Você concorda? Há algum cenário que demonstra a preocupação de Ben?
+
+## Exercício 3.42
+
+Ben Bitdiddle sugere que é um desperdício de tempo criar uma nova função serializada em resposta a cada mensagem `withdraw` e `deposit`. Ele diz que `make_account` poderia ser mudada para que as chamadas a `protect` sejam feitas fora da função `dispatch`. Isto é, uma conta retornaria a mesma função serializada (que foi criada ao mesmo tempo que a conta) cada vez que for solicitada uma função de saque.
+
+```javascript
+function make_account(balance) {
+    function withdraw(amount) {
+        if (balance > amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    const protect = make_serializer();
+    const protect_withdraw = protect(withdraw);
+    const protect_deposit = protect(deposit);
+    function dispatch(m) {
+        return m === "withdraw"
+               ? protect_withdraw
+               : m === "deposit"
+               ? protect_deposit
+               : m === "balance"
+               ? balance
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}
+```
+
+Esta é uma mudança segura para fazer? Em particular, há alguma diferença na concorrência que é permitida por essas duas versões de `make_account`?
+
+## Complexidade de usar múltiplos recursos compartilhados
+
+Serializadores fornecem uma abstração poderosa que ajuda a isolar as complexidades de programas concorrentes para que possam ser tratadas cuidadosamente e (esperançosamente) corretamente. No entanto, embora usar serializadores seja relativamente direto quando há apenas um único recurso compartilhado (como uma única conta bancária), a programação concorrente pode ser traiçoeiramente difícil quando há múltiplos recursos compartilhados.
+
+Para ilustrar uma das dificuldades que podem surgir, suponha que desejamos trocar os saldos em duas contas bancárias. Acessamos cada conta para encontrar o saldo, calculamos a diferença entre os saldos, sacamos essa diferença de uma conta e a depositamos na outra conta. Poderíamos implementar isso da seguinte forma:[^2]
+
+```javascript
+function exchange(account1, account2) {
+    const difference = account1("balance") - account2("balance");
+    account1("withdraw")(difference);
+    account2("deposit")(difference);
+}
+```
+
+Esta função funciona bem quando apenas uma única thread está tentando fazer a troca. Suponha, no entanto, que Peter e Paul ambos tenham acesso às contas $a_1$, $a_2$ e $a_3$, e que Peter troque $a_1$ e $a_2$ enquanto Paul concorrentemente troca $a_1$ e $a_3$. Mesmo com depósitos e saques em contas individuais serializados para correção (como no exemplo de `make_account` dado acima), `exchange` pode produzir ainda resultados incorretos. Por exemplo, Peter pode calcular a diferença nos saldos para $a_1$ e $a_2$, mas então Paul pode mudar o saldo em $a_1$ antes que Peter seja capaz de completar a troca.[^3] Para uma versão correta de `exchange`, devemos arranjar que as threads de Peter e Paul executem a função `exchange` mutuamente exclusivamente—por exemplo, usando um serializador:
+
+```javascript
+function serialized_exchange(account1, account2) {
+    const serializer1 = account1("serializer");
+    const serializer2 = account2("serializer");
+    serializer1(serializer2(exchange))(account1, account2);
+}
+```
+
+Aqui adicionamos a seguinte cláusula à função `dispatch` de `make_account`:[^4]
+
+```javascript
+m === "serializer"
+? protect
+:
+```
+
+## Exercício 3.43
+
+Suponha que os saldos em três contas comecem em $10, $20 e $30, e que múltiplas trocas de saldos de conta sejam executadas concorrentemente. Argumente que se os processos são executados sequencialmente, após qualquer número de trocas concorrentes, os saldos de conta devem ser $10, $20 e $30 em alguma ordem. Desenhe um diagrama de temporização como o da Figura 3.29 para mostrar como este requisito pode ser violado se a função `exchange` for usada sem serializar as transações em contas individuais. Por outro lado, argumente que mesmo com essa troca incorreta, a soma dos saldos nas contas será preservada. Desenhe um diagrama de temporização para mostrar como mesmo esta condição seria violada se não serializarmos as transações em contas individuais.
+
+## Exercício 3.44
+
+Considere o problema de transferir uma quantia de uma conta para outra. Ben Bitdiddle afirma que isso pode ser realizado com a seguinte função, mesmo que múltiplas pessoas estejam concorrentemente transferindo dinheiro entre múltiplas contas, usando qualquer mecanismo de conta que serialize depósito e saque transações, por exemplo, a versão de `make_account` na parte do texto acima dos exercícios.
+
+```javascript
+function transfer(from_account, to_account, amount) {
+    from_account("withdraw")(amount);
+    to_account("deposit")(amount);
+}
+```
+
+Louis Reasoner afirma que há um problema aqui, e que precisamos usar uma versão serializada mais elaborada, como a função `serialized_exchange`. Ben está certo ou Louis está certo? Explique sua resposta.
+
+## Exercício 3.45
+
+Louis Reasoner pensa que nossa abordagem de reescrever a função `exchange` de modo que ela chame `serialized_exchange` é excessivamente complicada. Em vez de proteger transações individuais contra execução simultânea usando serializadores individuais, ele sugere que simplesmente fazemos a serialização da `exchange` em si, usando um serializador que serializa todos os depósitos e saques em contas individuais. Ele propõe redefinir `make_account` da seguinte forma, onde o corpo da função `dispatch` é idêntico àquele mostrado acima (incluindo a resposta ao exercício 3.42):
+
+```javascript
+function make_account_and_serializer(balance) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    const balance_serializer = make_serializer();
+    return m => m === "withdraw"
+                ? balance_serializer(withdraw)
+                : m === "deposit"
+                ? balance_serializer(deposit)
+                : m === "balance"
+                ? balance
+                : m === "serializer"
+                ? balance_serializer
+                : error(m, "unknown request -- make_account");
+}
+```
+
+Então os depósitos são manipulados como na versão original de `make_account`:
+
+```javascript
+function deposit(account, amount) {
+    const d = account("withdraw");
+    return d(amount);
+}
+```
+
+e, de acordo com Louis, `exchange` é escrita da seguinte forma:
+
+```javascript
+function exchange(account1, account2) {
+    const difference = account1("balance") - account2("balance");
+    account1("withdraw")(difference);
+    account2("deposit")(difference);
+}
+```
+
+e a própria `exchange` é serializada assim:
+
+```javascript
+function serialized_exchange(account1, account2) {
+    const serializer1 = account1("serializer");
+    const serializer2 = account2("serializer");
+    serializer1(serializer2(exchange))(account1, account2);
+}
+```
+
+Qual é o problema com essa abordagem? (Dica: você pode querer considerar o que acontece quando `serialized_exchange` é chamada.)
+
+## Implementando serializadores
+
+Implementamos serializadores em termos de uma primitiva mais primitiva de sincronização chamada *mutex*. Um mutex é um objeto que suporta duas operações—o mutex pode ser *adquirido*, e o mutex pode ser *liberado*. Uma vez que um mutex foi adquirido, nenhuma operação de aquisição nesse mutex pode prosseguir até que o mutex seja liberado.[^5] Em nossa implementação, cada serializador tem um mutex associado. Dado uma função `f`, o serializador retorna uma função que adquire o mutex, executa `f`, e então libera o mutex. Isso garante que apenas uma das funções produzidas por um serializador pode estar executando por vez, que é exatamente a propriedade de serialização que precisamos garantir.
+
+```javascript
+function make_serializer() {
+    const mutex = make_mutex();
+    return f => {
+               function serialized_f(...args) {
+                   mutex("acquire");
+                   const val = f(...args);
+                   mutex("release");
+                   return val;
+               }
+               return serialized_f;
+           };
+}
+```
+
+O mutex é um objeto mutável (aqui usaremos uma função de um argumento) que suporta duas operações: a mensagem `"acquire"` e a mensagem `"release"`. Adquirir o mutex verifica para ver se o mutex está atualmente em uso. Se não estiver, o mutex é adquirido marcando-o como em uso; caso contrário, `"acquire"` espera até que o mutex seja liberado, e então tenta adquiri-lo novamente (recursivamente). Liberar o mutex marca-o como não em uso.
+
+```javascript
+function make_mutex() {
+    let in_use = false;
+    return m => {
+               if (m === "acquire") {
+                   if (in_use) {
+                       make_mutex()("acquire"); // retry
+                   } else {
+                       in_use = true;
+                   }
+               } else if (m === "release") {
+                   in_use = false;
+               }
+           };
+}
+```
+
+`make_mutex` usa a instrução `if` de JavaScript para verificar e definir a variável `in_use`. Infelizmente, isso não é uma solução adequada, porque há uma sutil corrida envolvida.
+
+A condição de teste no `if` de `"acquire"` consiste em verificar o valor da variável `in_use` e então definindo `in_use` para `true` se ela for `false`. Se houver duas threads tentando adquirir o mesmo mutex simultaneamente, pode acontecer que ambas as threads leiam `in_use` como `false`, e ambas então definam `in_use` para `true`, permitindo que ambas prossigam. Uma maneira de evitar este problema é usar um mecanismo de hardware chamado *test-and-set*. A operação test-and-set testa o conteúdo de uma célula de memória, retorna o conteúdo dessa célula de memória, e então, se o teste foi bem-sucedido, modifica o conteúdo da célula de memória. Suporemos que o JavaScript fornece tal operação, na forma de uma função `test_and_set` que verifica uma célula de memória representada como uma caixa contendo um booleano. `test_and_set` retorna o valor da caixa. Além disso, se o valor era `false`, `test_and_set` define o conteúdo da caixa para `true` antes de retornar `false`; caso contrário, deixa a caixa inalterada. A operação `test_and_set` é realizada *atomicamente*, o que significa que nenhuma outra operação pode intercalar com ela durante sua execução. Para implementar mutexes com `test_and_set`, precisamos de caixas, que podemos construir como pares:
+
+```javascript
+function make_box(value) {
+    return pair(value, null);
+}
+function get_content(box) {
+    return head(box);
+}
+function set_content(box, value) {
+    set_head(box, value);
+}
+```
+
+Com estes novos ingredientes, podemos então implementar mutexes como segue:
+
+```javascript
+function make_mutex() {
+    const cell = make_box(false);
+    function the_mutex(m) {
+        return m === "acquire"
+               ? (test_and_set(cell)
+                  ? the_mutex("acquire") // retry
+                  : true)
+               : m === "release"
+               ? (set_content(cell, false), false)
+               : error(m, "unknown request -- mutex");
+    }
+    return the_mutex;
+}
+```
+
+onde `test_and_set` é implementado como
+
+```javascript
+function test_and_set(cell) {
+    if (get_content(cell)) {
+        return true;
+    } else {
+        set_content(cell, true);
+        return false;
+    }
+}
+```
+
+## Exercício 3.46
+
+Suponha que implementamos `test_and_set` usando uma verificação ordinária de uma variável, seguida de definir a variável, da seguinte forma:
+
+```javascript
+function test_and_set(cell) {
+    if (get_content(cell)) {
+        return true;
+    } else {
+        set_content(cell, true);
+        return false;
+    }
+}
+```
+
+Desenhe um diagrama de temporização como o da Figura 3.29 para demonstrar como a implementação de mutex pode falhar permitindo que duas threads adquiram o mutex ao mesmo tempo.
+
+## Exercício 3.47
+
+Um semáforo (de tamanho $n$) é uma generalização de um mutex. Como um mutex, um semáforo suporta operações de aquisição e liberação, mas é mais geral na medida em que até $n$ threads podem adquirir em qualquer tempo. Tentativas adicionais de adquirir o semáforo devem esperar pela liberação até que uma operação de aquisição seja bem-sucedida.
+
+a. Em termos de mutexes, forneça uma implementação de semáforos.
+
+b. Forneça uma implementação de semáforos em termos de operações atômicas `test_and_set`.
+
+## Deadlock
+
+Agora que vimos como implementar serializadores, podemos ver que a serialização de contas em `serialized_exchange` ainda tem um problema, mesmo com a versão de `make_account` que serializa depósitos e saques. Imagine que Peter tenta trocar $a_1$ com $a_2$ enquanto Paul concorrentemente tenta trocar $a_2$ com $a_1$. Suponha que a thread de Peter chegue ao ponto onde ela adquiriu o serializador para $a_1$ e está esperando para adquirir o serializador para $a_2$; suponha que a thread de Paul está simetricamente esperando para adquirir o serializador para $a_1$. Cada thread ficará esperando para sempre para que a outra libere o serializador que ela precisa. Essa situação é chamada de *deadlock*. Deadlock é sempre um perigo em sistemas que fornecem acesso concorrente a múltiplos recursos compartilhados.
+
+Uma forma de evitar o risco de deadlock é dar a cada conta um número de identificação único e reescrever `serialized_exchange` de modo que uma thread sempre tente entrar primeiro na conta de número mais baixo. Embora este método funcione bem para o problema de troca, há outras situações que requerem mecanismos de coordenação mais sofisticados. (Ver exercícios 3.48 e 3.49.)[^6]
+
+## Exercício 3.48
+
+Explique em detalhes por que a estratégia de deadlock-avoidance descrita acima, (ou seja, os serializadores de conta são adquiridos primeiro pela conta de número menor) evita deadlock no problema de troca. Reescreva `serialized_exchange` para incorporar esta ideia. (Você também precisará modificar `make_account` de modo que cada conta seja criada com um número, e fornecer uma forma para acessar esse número.)
+
+## Exercício 3.49
+
+Dê um cenário onde a estratégia de deadlock-avoidance descrita acima não funciona. (Dica: No problema de troca, cada thread conhece antecipadamente quais contas ela precisará acessar. Considere uma situação onde uma thread deve adquirir alguns recursos compartilhados antes que possa saber quais recursos adicionais compartilhados ela exigirá.)
+
+## Concorrência, tempo e comunicação
+
+Vimos como a programação concorrente é complicada pela necessidade de considerar a intercalação de eventos concorrentes. Além disso, vimos que os objetos compartilhados entre threads (como células de memória) podem requerer proteção de acesso simultâneo. Vimos como implementar a serialização com serializadores, e como serializers são implementados usando mutexes e operações primitivas atômicas `test-and-set`.
+
+O problema central que encontramos ao lidar com concorrência é a necessidade de reconciliar diferentes eventos no mundo. Reconciliar eventos concorrentes em um sistema computacional requer algum tipo de coordenação entre threads. Como vimos na seção anterior, a serialização é um meio de coordenação, mas é apenas um mecanismo possível.
+
+O problema de sincronização de eventos concorrentes surge não apenas na programação de computadores, mas em outras áreas também. Por exemplo, o sistema de controle de um carro pode ter componentes concorrentes controlando o motor, os freios, e a direção. Esses componentes devem ser coordenados de modo que, por exemplo, o carro não tente acelerar e frear ao mesmo tempo. Além disso, o sistema de controle pode ter que interagir com sensores que detectam obstáculos à frente, de modo que o carro possa parar ou reduzir a velocidade quando necessário.
+
+Como outro exemplo, considere os desafios que sistemas distribuídos de grande escala apresentam para coordenar atividades concorrentes. A Internet, por exemplo, é um sistema distribuído que compreende milhões de computadores interconectados. Coordenar atividades através deste sistema é um desafio formidável. Um aspecto deste desafio é a questão de como diferentes computadores podem ter visões consistentes do tempo, de modo que possam coordenar atividades que dependem da temporização.
+
+Um problema relacionado envolve a questão de *o que é tempo*. Do ponto de vista físico, pode parecer que tempo é absoluto—que eventos podem sempre ser ordenados temporalmente. No entanto, na prática, coordenar eventos concorrentes requer comunicação entre as entidades envolvidas. Como a velocidade de comunicação é limitada (no máximo pela velocidade da luz), pode haver situações onde não é possível determinar a ordem temporal de dois eventos.
+
+Na verdade, vimos que o problema fundamental de sincronizar threads concorrentes está relacionado ao problema de comunicação entre threads. Se não houvesse comunicação entre threads, não haveria problema de sincronização. Por outro lado, se as threads se comunicam instantaneamente, a sincronização seria trivial. O problema real surge quando a comunicação não é instantânea.
+
+O fenômeno da comunicação não instantânea está intimamente relacionado à questão de tempo em física. A teoria da relatividade de Einstein nos diz que dois eventos separados no espaço podem ocorrer simultaneamente de acordo com um observador, mas não simultaneamente de acordo com outro observador (movendo-se em relação ao primeiro). Não há "tempo absoluto" que todos os observadores concordem. A melhor que podemos fazer é sincronizar os relógios dos observadores trocando sinais entre eles. Mas, novamente, como os sinais levam tempo para viajar, essa sincronização nunca pode ser perfeita.
+
+Assim, a complexidade de lidar com tempo e estado em nossos modelos computacionais reflete diretamente a complexidade de tempo e estado no mundo físico. Essa complexidade surge sempre que temos sistemas computacionais que modelam sistemas físicos que estão compostos de partes separadamente evoluindo que devem se comunicar para coordenar suas ações. O fato central aqui é que, por razões fundamentais físicas, não pode haver "agora" instantaneamente compartilhado. A noção de tempo em sistemas concorrentes deve ser intimamente ligada à comunicação.[^7]
+
+Felizmente, nossa compreensão dos problemas envolvidos na programação concorrente está evoluindo. Há desenvolvimentos em andamento de novos modelos de programação concorrente, e desenvolvimentos correspondentes em linguagens de programação e sistemas de execução, que podem oferecer abordagens mais claras e mais eficientes para programação concorrente.
+
+## Exercício 3.50
+
+Implemente uma versão concorrente de `map` chamada `parallel_map`. A função `parallel_map` deve ter a mesma assinatura que `map`, mas deve dividir o trabalho de mapear sobre a lista de entrada entre múltiplas threads. Você pode assumir que há uma função `make_thread` que cria uma nova thread e retorna um identificador para essa thread, e uma função `join` que espera por uma thread completar.
+
+## Exercício 3.51
+
+Considere o seguinte modelo simplificado de um pool de threads. Um pool de threads mantém um conjunto de worker threads que estão disponíveis para executar tarefas. Quando uma tarefa é submetida ao pool, ela é adicionada a uma fila. Um worker thread que está livre pega uma tarefa da fila e a executa.
+
+a. Implemente um pool de threads usando as primitivas de concorrência que discutimos.
+
+b. Discuta possíveis problemas de desempenho com sua implementação. Como você poderia melhorá-la?
+
+-----
+
+[^1]: A função `concurrent_execute` não é parte do padrão JavaScript, mas os exemplos nesta seção podem ser implementados em ECMAScript 2020.
+
+[^2]: Simplificamos `exchange` explorando o fato de que nossa mensagem `deposit` aceita quantias negativas. (Este é um bug sério em nosso sistema bancário!)
+
+[^3]: Se o saldo de $a_1$ é menor que o saldo de $a_2$, `exchange` tentará sacar uma quantia negativa de $a_1$. Esta é uma correção fortuita, porque nossa implementação de `make_account` permite que depósitos e saques continuem (via `deposit` de quantias negativas) mesmo se a conta não tem saldo suficiente. Um bug pior pode ocorrer se tentamos `exchange` em três contas simultaneamente.
+
+[^4]: Usar mutexes dessa forma é análogo ao uso de travas no gerenciamento de banco de dados. Por exemplo, considere um banco de dados que consiste de uma coleção de registros, cada um dos quais pode ser modificado por múltiplas transações concorrentes. Para garantir que as transações não interfiram umas com as outras, podemos usar travas para controlar acesso aos registros. Antes de ler ou escrever um registro, uma transação deve adquirir a trava associada com esse registro. Após a transação ter terminado de acessar o registro, ela deve liberar a trava. Essa estratégia é chamada de *two-phase locking*.
+
+[^5]: A instrução de aquisição de um mutex é semelhante à operação `test_and_set` que descrevemos, exceto que em vez de retornar um valor booleano, ela espera até que o mutex esteja disponível e então o adquire.
+
+[^6]: O problema geral de como coordenar threads é extremamente difícil e é um tema de pesquisa contínua. Ver Lamport 1978, Schneider 1997, e Herlihy e Shavit 2008 para discussões mais aprofundadas de deadlock. Chandy e Misra 1988 e Dijkstra 1968 descrevem o problema de deadlock no contexto do problema clássico dos "filósofos jantando", onde há cinco filósofos sentados em uma mesa redonda com um garfo entre cada par de filósofos. Cada filósofo precisa de dois garfos para comer. Se cada filósofo pega o garfo à sua direita simultaneamente, todos ficarão esperando para pegar o garfo à sua esquerda, resultando em deadlock.
+
+[^7]: Para discussões mais aprofundadas dos conceitos de tempo e identidade em sistemas concorrentes, ver Lamport 1978 e Schneider 1997. Chandy e Misra 1988 discutem tempo e comunicação no contexto de sistemas distribuídos. Lamport, Shostak e Pease 1982 examinam o problema de sincronização de relógios em sistemas distribuídos. Há também uma literatura substancial sobre modelos alternativos de concorrência. Ver, por exemplo, Hoare 1978, Milner 1980, e Hewitt e Baker 1977. A linguagem Erlang (Armstrong 2007) é baseada em um modelo de passagem de mensagens de concorrência. A biblioteca de concorrência de Java oferece suporte para monitores (Hoare 1974). Trabalho recente em memória transacional de software (Shavit e Touitou 1997, Harris e Fraser 2003) oferece uma alternativa para travas e mutexes para controlar acesso a recursos compartilhados.

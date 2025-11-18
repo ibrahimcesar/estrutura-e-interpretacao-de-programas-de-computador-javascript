@@ -1,0 +1,115 @@
+---
+title: 3.1.2 Os Benefícios de Introduzir Atribuição
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.1.2 Os Benefícios de Introduzir Atribuição
+
+Como veremos, introduzir atribuição em nossa linguagem de programação nos leva a um emaranhado de questões conceituais difíceis. No entanto, ver sistemas como coleções de objetos com estado local é uma técnica poderosa para manter um design modular. Como exemplo simples, considere o design de uma função `rand` que, sempre que for chamada, retorna um inteiro escolhido aleatoriamente.
+
+Não está nada claro o que se entende por "escolhido aleatoriamente". O que presumivelmente queremos é que chamadas sucessivas a `rand` produzam uma sequência de números que tenha propriedades estatísticas de distribuição uniforme. Não discutiremos métodos para gerar tais sequências aqui. Em vez disso, vamos supor que temos uma função `rand_update` que tem a propriedade de que se começarmos com um dado número x₁ e formarmos
+
+```javascript
+x₂ = rand_update(x₁);
+x₃ = rand_update(x₂);
+```
+
+então a sequência de valores x₁, x₂, x₃, ... terá as propriedades estatísticas desejadas.<sup>[1](#footnote-1)</sup>
+
+Podemos implementar `rand` como uma função com uma variável de estado local `x` que é inicializada para algum valor fixo `random_init`. Cada chamada a `rand` calcula `rand_update` do valor atual de `x`, retorna isso como o número aleatório, e também armazena isso como o novo valor de `x`.
+
+<CodePlayground
+  code={`function make_rand() {
+   let x = random_init;
+   return () => {
+              x = rand_update(x);
+              return x;
+          };
+}
+const rand = make_rand();`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+Claro, poderíamos gerar a mesma sequência de números aleatórios sem usar atribuição simplesmente chamando `rand_update` diretamente. No entanto, isso significaria que qualquer parte de nosso programa que usasse números aleatórios teria que lembrar explicitamente o valor atual de `x` para ser passado como argumento para `rand_update`. Para perceber que incômodo isso seria, considere usar números aleatórios para implementar uma técnica chamada *simulação de Monte Carlo*.
+
+O método de Monte Carlo consiste em escolher experimentos de amostra aleatoriamente de um grande conjunto e então fazer deduções com base nas probabilidades estimadas a partir da tabulação dos resultados desses experimentos. Por exemplo, podemos aproximar π usando o fato de que 6/π² é a probabilidade de que dois inteiros escolhidos aleatoriamente não tenham fatores em comum; isto é, que seu maior divisor comum será 1.<sup>[2](#footnote-2)</sup> Para obter a aproximação de π, realizamos um grande número de experimentos. Em cada experimento escolhemos dois inteiros aleatoriamente e realizamos um teste para ver se seu MDC é 1. A fração de vezes que o teste é aprovado nos dá nossa estimativa de 6/π², e a partir disso obtemos nossa aproximação de π.
+
+O coração de nosso programa é uma função `monte_carlo`, que recebe como argumentos o número de vezes para tentar um experimento, juntamente com o experimento, representado como uma função sem argumentos que retornará verdadeiro ou falso cada vez que for executada. A função `monte_carlo` executa o experimento pelo número designado de tentativas e retorna um número indicando a fração das tentativas nas quais o experimento foi considerado verdadeiro.
+
+<CodePlayground
+  code={`function estimate_pi(trials) {
+    return math_sqrt(6 / monte_carlo(trials, dirichlet_test));
+}
+function dirichlet_test() {
+    return gcd(rand(), rand()) === 1;
+}
+function monte_carlo(trials, experiment) {
+    function iter(trials_remaining, trials_passed) {
+        return trials_remaining === 0
+               ? trials_passed / trials
+               : experiment()
+               ? iter(trials_remaining - 1, trials_passed + 1)
+               : iter(trials_remaining - 1, trials_passed);
+    }
+    return iter(trials, 0);
+}`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Agora vamos tentar o mesmo cálculo usando `rand_update` diretamente em vez de `rand`, da maneira que seríamos forçados a proceder se não usássemos atribuição para modelar estado local:
+
+<CodePlayground
+  code={`function estimate_pi(trials) {
+    return math_sqrt(6 / random_gcd_test(trials, random_init));
+}
+function random_gcd_test(trials, initial_x) {
+    function iter(trials_remaining, trials_passed, x) {
+        const x1 = rand_update(x);
+        const x2 = rand_update(x1);
+        return trials_remaining === 0
+               ? trials_passed / trials
+               : gcd(x1, x2) === 1
+               ? iter(trials_remaining - 1, trials_passed + 1, x2)
+               : iter(trials_remaining - 1, trials_passed, x2);
+    }
+    return iter(trials, 0, initial_x);
+}`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Embora o programa ainda seja simples, ele trai algumas violações dolorosas de modularidade. Em nossa primeira versão do programa, usando `rand`, podemos expressar o método de Monte Carlo diretamente como uma função geral `monte_carlo` que recebe como argumento uma função `experiment` arbitrária. Em nossa segunda versão do programa, sem estado local para o gerador de números aleatórios, `random_gcd_test` deve manipular explicitamente os números aleatórios `x1` e `x2` e reciclar `x2` através do loop iterativo como a nova entrada para `rand_update`. Este manuseio explícito dos números aleatórios entrelaça a estrutura de acumular resultados de teste com o fato de que nosso experimento particular usa dois números aleatórios, enquanto outros experimentos de Monte Carlo podem usar um número aleatório ou três. Até mesmo a função de nível superior `estimate_pi` tem que se preocupar em fornecer um número aleatório inicial. O fato de que as entranhas do gerador de números aleatórios estão vazando para outras partes do programa torna difícil para nós isolar a ideia de Monte Carlo para que possa ser aplicada a outras tarefas. Na primeira versão do programa, a atribuição encapsula o estado do gerador de números aleatórios dentro da função `rand`, de modo que os detalhes da geração de números aleatórios permanecem independentes do resto do programa.
+
+O fenômeno geral ilustrado pelo exemplo de Monte Carlo é este: Do ponto de vista de uma parte de um processo complexo, as outras partes parecem mudar com o tempo. Elas têm estado local oculto que varia com o tempo. Se desejamos escrever programas de computador cuja estrutura reflete essa decomposição, fazemos objetos computacionais (como contas bancárias e geradores de números aleatórios) cujo comportamento muda com o tempo. Modelamos estado com variáveis de estado local, e modelamos as mudanças de estado com atribuições a essas variáveis.
+
+É tentador concluir esta discussão dizendo que, ao introduzir atribuição e a técnica de ocultar estado em variáveis locais, somos capazes de estruturar sistemas de maneira mais modular do que se todo estado tivesse que ser manipulado explicitamente, passando parâmetros adicionais. Infelizmente, como veremos, a história não é tão simples.
+
+## Exercício 3.5
+
+*Integração de Monte Carlo* é um método de estimar integrais definidas por meio de simulação de Monte Carlo. Considere calcular a área de uma região do espaço descrita por um predicado P(x, y) que é verdadeiro para pontos (x, y) na região e falso para pontos fora da região. Por exemplo, a região contida dentro de um círculo de raio 3 centrado em (5, 7) é descrita pelo predicado que testa se (x-5)² + (y-7)² ≤ 3². Para estimar a área da região descrita por tal predicado, comece escolhendo um retângulo que contenha a região. Por exemplo, um retângulo com cantos diagonalmente opostos em (2, 4) e (8, 10) contém o círculo acima. A integral desejada é a área daquela porção do retângulo que está na região. Podemos estimar a integral escolhendo, aleatoriamente, pontos (x, y) que estão no retângulo, e testando P(x, y) para cada ponto para determinar se o ponto está na região. Se tentarmos isso com muitos pontos, então a fração de pontos que caem na região deve dar uma estimativa da proporção do retângulo que está na região. Portanto, multiplicar essa fração pela área de todo o retângulo deve produzir uma estimativa da integral.
+
+Implemente a integração de Monte Carlo como uma função `estimate_integral` que recebe como argumentos um predicado `P`, limites superior e inferior `x1`, `x2`, `y1` e `y2` para o retângulo, e o número de tentativas a realizar para produzir a estimativa. Sua função deve usar a mesma função `monte_carlo` que foi usada acima para estimar π. Use sua `estimate_integral` para produzir uma estimativa de π medindo a área de um círculo unitário.
+
+Você achará útil ter uma função que retorna um número escolhido aleatoriamente de um intervalo dado. A seguinte função `random_in_range` implementa isso em termos da função `math_random` usada na seção 1.2.6, que retorna um número não-negativo menor que 1.
+
+<CodePlayground
+  code={`function random_in_range(low, high) {
+    const range = high - low;
+    return low + math_random() * range;
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+## Exercício 3.6
+
+É útil poder resetar um gerador de números aleatórios para produzir uma sequência começando de um dado valor. Projete uma nova função `rand` que é chamada com um argumento que é ou a string `"generate"` ou a string `"reset"` e se comporta da seguinte forma: `rand("generate")` produz um novo número aleatório; `rand("reset")(new-value)` reseta a variável de estado interno para o `new-value` designado. Assim, ao resetar o estado, pode-se gerar sequências repetíveis. Estas são muito úteis de ter ao testar e depurar programas que usam números aleatórios.
+
+-----
+
+<a name="footnote-1"></a>[1] Uma maneira comum de implementar `rand_update` é usar a regra de que x é atualizado para ax+b módulo m, onde a, b, e m são inteiros apropriadamente escolhidos. O Capítulo 3 de Knuth (1997b) inclui uma extensa discussão de técnicas para gerar sequências de números aleatórios e estabelecer suas propriedades estatísticas. Note que a função `rand_update` computa uma função matemática: Dada a mesma entrada duas vezes, ela produz a mesma saída. Portanto, a sequência de números produzida por `rand_update` certamente não é "aleatória", se por "aleatória" insistimos que cada número na sequência não está relacionado ao número anterior. A relação entre "aleatoriedade real" e as chamadas sequências *pseudo-aleatórias*, que são produzidas por computações bem determinadas e ainda assim têm propriedades estatísticas adequadas, é uma questão complexa envolvendo questões difíceis em matemática e filosofia. Kolmogorov, Solomonoff e Chaitin fizeram grande progresso em esclarecer essas questões; uma discussão pode ser encontrada em Chaitin (1975).
+
+<a name="footnote-2"></a>[2] Este teorema é devido a G. Lejeune Dirichlet. Veja a seção 4.5.2 de Knuth (1997b) para uma discussão e uma prova.

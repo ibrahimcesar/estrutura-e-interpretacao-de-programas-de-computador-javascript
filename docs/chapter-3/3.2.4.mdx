@@ -1,0 +1,155 @@
+---
+title: 3.2.4 Declarações Internas
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.2.4 Declarações Internas
+
+Nesta seção tratamos da avaliação de corpos de função ou outros blocos (como os ramos de instruções condicionais) que contêm declarações. Cada bloco abre um novo escopo para nomes declarados no bloco. Para avaliar um bloco em um dado ambiente, estendemos esse ambiente por um novo quadro que contém todos os nomes declarados diretamente (isto é, fora de blocos aninhados) no corpo do bloco e então avaliamos o corpo no ambiente recém-construído.
+
+A seção 1.1.8 introduziu a ideia de que funções podem ter declarações internas, levando assim a uma estrutura de bloco como na seguinte função para computar raízes quadradas:
+
+<CodePlayground
+  code={`function sqrt(x) {
+    function is_good_enough(guess) {
+        return abs(square(guess) - x) < 0.001;
+    }
+    function improve(guess) {
+        return average(guess, x / guess);
+    }
+    function sqrt_iter(guess){
+        return is_good_enough(guess)
+               ? guess
+               : sqrt_iter(improve(guess));
+    }
+    return sqrt_iter(1);
+}`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Agora podemos usar o modelo de ambiente para ver por que essas declarações internas se comportam como desejado. A Figura 3.11 mostra o ponto na avaliação da expressão `sqrt(2)` onde a função interna `is_good_enough` foi chamada pela primeira vez com `guess` igual a 1.
+
+![The sqrt function with internal declarations](/img/chapter-3/ch3-Z-G-12.svg)
+
+*Figura 3.11: A função `sqrt` com declarações internas.*
+
+Observe a estrutura do ambiente. O nome `sqrt` está vinculado no ambiente do programa a um objeto de função cujo ambiente associado é o ambiente do programa. Quando `sqrt` foi chamado, um novo ambiente, E1, foi formado, subordinado ao ambiente do programa, no qual o parâmetro `x` está vinculado a 2. O corpo de `sqrt` foi então avaliado em E1. Esse corpo é um bloco com declarações de função locais e portanto E1 foi estendido com um novo quadro para essas declarações, resultando no novo ambiente E2. O corpo do bloco foi então avaliado em E2. Como a primeira instrução no corpo é
+
+```javascript
+function is_good_enough(guess) {
+    return abs(square(guess) - x) < 0.001;
+}
+```
+
+avaliar esta declaração criou a função `is_good_enough` no ambiente E2. Para ser mais preciso, o nome `is_good_enough` no primeiro quadro de E2 foi vinculado a um objeto de função cujo ambiente associado é E2. Similarmente, `improve` e `sqrt_iter` foram definidas como funções em E2. Por concisão, a figura 3.11 mostra apenas o objeto de função para `is_good_enough`.
+
+Depois que as funções locais foram definidas, a expressão `sqrt_iter(1)` foi avaliada, ainda no ambiente E2. Então o objeto de função vinculado a `sqrt_iter` em E2 foi chamado com 1 como argumento. Isso criou um ambiente E3 no qual `guess`, o parâmetro de `sqrt_iter`, está vinculado a 1. A função `sqrt_iter` por sua vez chamou `is_good_enough` com o valor de `guess` (de E3) como argumento para `is_good_enough`. Isso configurou outro ambiente, E4, no qual `guess` (o parâmetro de `is_good_enough`) está vinculado a 1. Embora `sqrt_iter` e `is_good_enough` ambas tenham um parâmetro chamado `guess`, estas são duas variáveis locais distintas localizadas em quadros diferentes. Além disso, E3 e E4 ambas têm E2 como seu ambiente envolvente, porque as funções `sqrt_iter` e `is_good_enough` ambas têm E2 como sua parte de ambiente. Uma consequência disso é que o nome `x` que aparece no corpo de `is_good_enough` referenciará a vinculação de `x` que aparece em E1, a saber, o valor de `x` com o qual a função original `sqrt` foi chamada.
+
+O modelo de ambiente assim explica as duas propriedades-chave que tornam as declarações de função locais uma técnica útil para modularizar programas:
+
+- Os nomes das funções locais não interferem com nomes externos à função envolvente, porque os nomes de função locais serão vinculados no quadro que o bloco cria quando é avaliado, em vez de serem vinculados no ambiente do programa.
+
+- As funções locais podem acessar os argumentos da função envolvente, simplesmente usando nomes de parâmetros como nomes livres. Isso ocorre porque o corpo da função local é avaliado em um ambiente que é subordinado ao ambiente de avaliação para a função envolvente.
+
+## Exercício 3.11
+
+Na seção 3.2.3 vimos como o modelo de ambiente descreveu o comportamento de funções com estado local. Agora vimos como as declarações internas funcionam. Uma função típica de passagem de mensagens contém ambos esses aspectos. Considere a função de conta bancária da seção 3.1.1:
+
+<CodePlayground
+  code={`function make_account(balance) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(m) {
+        return m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "Unknown request: make_account");
+    }
+    return dispatch;
+}`}
+  height={500}
+  showLineNumbers={true}
+/>
+
+Mostre a estrutura de ambiente gerada pela sequência de interações
+
+<CodePlayground
+  code={`const acc = make_account(50);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`acc("deposit")(40);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+90
+```
+
+<CodePlayground
+  code={`acc("withdraw")(60);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+30
+```
+
+Onde o estado local para `acc` é mantido? Suponha que definamos outra conta
+
+<CodePlayground
+  code={`const acc2 = make_account(100);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Como os estados locais para as duas contas são mantidos distintos? Quais partes da estrutura de ambiente são compartilhadas entre `acc` e `acc2`?
+
+## Mais sobre Blocos
+
+Como vimos, o escopo dos nomes declarados em `sqrt` é todo o corpo de `sqrt`. Isso explica por que *recursão mútua* funciona, como nesta maneira (bastante desperdiçadora) de verificar se um inteiro não negativo é par:
+
+<CodePlayground
+  code={`function f(x) {
+    function is_even(n) {
+        return n === 0
+               ? true
+               : is_odd(n - 1);
+    }
+    function is_odd(n) {
+        return n === 0
+               ? false
+               : is_even(n - 1);
+    }
+    return is_even(x);
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+No momento em que `is_even` é chamada durante uma chamada a `f`, o diagrama de ambiente se parece com o da figura 3.11 quando `sqrt_iter` é chamada. As funções `is_even` e `is_odd` estão vinculadas em E2 a objetos de função que apontam para E2 como o ambiente no qual avaliar chamadas a essas funções. Assim, `is_odd` no corpo de `is_even` se refere à função correta. Embora `is_odd` seja definida depois de `is_even`, isso não é diferente de como no corpo de `sqrt_iter` o nome `improve` e o próprio nome `sqrt_iter` se referem às funções corretas.
+
+Equipados com uma maneira de lidar com declarações dentro de blocos, podemos revisitar declarações de nomes no nível superior. Na seção 3.2.1, vimos que os nomes declarados no nível superior são adicionados ao quadro do programa. Uma explicação melhor é que todo o programa é colocado em um bloco implícito, que é avaliado no ambiente global. O tratamento de blocos descrito acima então lida com o nível superior: O ambiente global é estendido por um quadro que contém as vinculações de todos os nomes declarados no bloco implícito. Esse quadro é o quadro do programa e o ambiente resultante é o ambiente do programa.
+
+Dissemos que o corpo de um bloco é avaliado em um ambiente que contém todos os nomes declarados diretamente no corpo do bloco. Um nome declarado localmente é colocado no ambiente quando o bloco é entrado, mas sem um valor associado. A avaliação de sua declaração durante a avaliação do corpo do bloco então atribui ao nome o resultado de avaliar a expressão à direita do `=`, como se a declaração fosse uma atribuição. Como a adição do nome ao ambiente é separada da avaliação da declaração, e todo o bloco está no escopo do nome, um programa errôneo poderia tentar acessar o valor de um nome antes que sua declaração seja avaliada; a avaliação de um nome não atribuído sinaliza um erro.[^1]
+
+-----
+
+[^1]: Isso explica por que o programa na nota de rodapé 33 do capítulo 1 dá errado. O tempo entre criar a vinculação para um nome e avaliar a declaração do nome é chamado de *zona morta temporal* (TDZ, do inglês temporal dead zone).

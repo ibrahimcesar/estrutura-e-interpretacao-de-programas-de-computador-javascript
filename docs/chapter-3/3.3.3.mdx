@@ -1,0 +1,220 @@
+---
+title: 3.3.3 Representando Tabelas
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.3.3 Representando Tabelas
+
+Quando estudamos várias maneiras de representar conjuntos no Capítulo 2, mencionamos na seção 2.3.3 a tarefa de manter uma tabela de registros indexados por chaves de identificação. Na implementação de programação dirigida por dados na seção 2.4.3, fizemos uso extensivo de tabelas bidimensionais, nas quais as informações são armazenadas e recuperadas usando duas chaves. Aqui vemos como construir tabelas como estruturas de lista mutáveis.
+
+Primeiro consideramos uma tabela unidimensional, na qual cada valor é armazenado sob uma única chave. Implementamos a tabela como uma lista de registros, cada um dos quais é implementado como um par consistindo de uma chave e o valor associado. Os registros são colados juntos para formar uma lista por pares cujos `head`s apontam para registros sucessivos. Esses pares de colagem são chamados de *espinha dorsal* da tabela. Para ter um lugar que possamos mudar quando adicionamos um novo registro à tabela, construímos a tabela como uma *lista encabeçada*. Uma lista encabeçada tem um par de espinha dorsal especial no início, que contém um "registro" fictício—neste caso a string `"*table*"`. A Figura 3.21 mostra o diagrama de caixa e ponteiro para a tabela
+
+```
+a: 1
+b: 2
+c: 3
+```
+
+Para extrair informações de uma tabela, usamos a função `lookup`, que recebe uma chave como argumento e retorna o valor associado (ou `undefined` se não houver valor armazenado sob aquela chave). A função `lookup` é definida em termos da operação `assoc`, que espera uma chave e uma lista de registros como argumentos. Note que `assoc` nunca vê o registro fictício. A função `assoc` retorna o registro que tem a chave dada como seu `head`. A função `lookup` então verifica se o registro resultante retornado por `assoc` não é `undefined`, e retorna o valor (o `tail`) do registro.
+
+```javascript
+function lookup(key, table) {
+    const record = assoc(key, tail(table));
+    return is_undefined(record)
+           ? undefined
+           : tail(record);
+}
+
+function assoc(key, records) {
+    return is_null(records)
+           ? undefined
+           : equal(key, head(head(records)))
+           ? head(records)
+           : assoc(key, tail(records));
+}
+```
+
+Como `assoc` usa `equal`, ela pode reconhecer chaves que são strings, números ou estruturas de lista.
+
+Para inserir um valor em uma tabela sob uma chave especificada, primeiro usamos `assoc` para ver se já existe um registro na tabela com essa chave. Se não, formamos um novo registro fazendo `pair` da chave com o valor, e inserimos isso no início da lista de registros da tabela, após o registro fictício. Se já existe um registro com essa chave, definimos o `tail` desse registro para o novo valor designado. O cabeçalho da tabela nos fornece uma localização fixa para modificar a fim de inserir o novo registro. Assim, o primeiro par da espinha dorsal é o objeto que representa a própria tabela; ou seja, um ponteiro para a tabela é um ponteiro para esse par. Esse mesmo par de espinha dorsal sempre inicia a tabela. Se não arranjássemos as coisas dessa maneira, `insert` teria que retornar um novo valor para o início da tabela quando adicionasse um novo registro.
+
+```javascript
+function insert(key, value, table) {
+    const record = assoc(key, tail(table));
+    if (is_undefined(record)) {
+        set_tail(table,
+                 pair(pair(key, value), tail(table)));
+    } else {
+        set_tail(record, value);
+    }
+    return "ok";
+}
+```
+
+Para construir uma nova tabela, simplesmente criamos uma lista contendo apenas a string `"*table*"`:
+
+```javascript
+function make_table() {
+    return list("*table*");
+}
+```
+
+## Tabelas bidimensionais
+
+Em uma tabela bidimensional, cada valor é indexado por duas chaves. Podemos construir tal tabela como uma tabela unidimensional na qual cada chave identifica uma subtabela. A Figura 3.22 mostra o diagrama de caixa e ponteiro para a tabela
+
+```
+"math":
+    "+":  43
+    "-":  45
+    "*":  42
+"letters":
+    "a":  97
+    "b":  98
+```
+
+que tem duas subtabelas. (As subtabelas não precisam de uma string de cabeçalho especial, já que a chave que identifica a subtabela serve a esse propósito.)
+
+Quando procuramos um item, usamos a primeira chave para identificar a subtabela correta. Então usamos a segunda chave para identificar o registro dentro da subtabela.
+
+```javascript
+function lookup(key_1, key_2, table) {
+    const subtable = assoc(key_1, tail(table));
+    if (is_undefined(subtable)) {
+        return undefined;
+    } else {
+        const record = assoc(key_2, tail(subtable));
+        return is_undefined(record)
+               ? undefined
+               : tail(record);
+    }
+}
+```
+
+Para inserir um novo item sob um par de chaves, usamos `assoc` para ver se existe uma subtabela armazenada sob a primeira chave. Se não, construímos uma nova subtabela contendo o único registro `(key_2, value)` e a inserimos na tabela sob a primeira chave. Se uma subtabela já existe para a primeira chave, inserimos o novo registro nessa subtabela, usando o método de inserção para tabelas unidimensionais descrito acima:
+
+```javascript
+function insert(key_1, key_2, value, table) {
+    const subtable = assoc(key_1, tail(table));
+    if (is_undefined(subtable)) {
+        set_tail(table,
+                 pair(list(key_1, pair(key_2, value)), tail(table)));
+    } else {
+        const record = assoc(key_2, tail(subtable));
+        if (is_undefined(record)) {
+            set_tail(subtable,
+                     pair(pair(key_2, value), tail(subtable)));
+        } else {
+            set_tail(record, value);
+        }
+    }
+    return "ok";
+}
+```
+
+## Criando tabelas locais
+
+As operações `lookup` e `insert` definidas acima tomam a tabela como argumento. Isso nos permite usar programas que acessam mais de uma tabela. Outra maneira de lidar com múltiplas tabelas é ter funções `lookup` e `insert` separadas para cada tabela. Podemos fazer isso representando uma tabela proceduralmente, como um objeto que mantém uma tabela interna como parte de seu estado local. Quando enviada uma mensagem apropriada, esse "objeto tabela" fornece a função com a qual operar na tabela interna. Aqui está um gerador para tabelas bidimensionais representadas dessa maneira:
+
+```javascript
+function make_table() {
+    const local_table = list("*table*");
+    function lookup(key_1, key_2) {
+        const subtable = assoc(key_1, tail(local_table));
+        if (is_undefined(subtable)) {
+            return undefined;
+        } else {
+            const record = assoc(key_2, tail(subtable));
+            return is_undefined(record)
+                   ? undefined
+                   : tail(record);
+        }
+    }
+    function insert(key_1, key_2, value) {
+        const subtable = assoc(key_1, tail(local_table));
+        if (is_undefined(subtable)) {
+            set_tail(local_table,
+                     pair(list(key_1, pair(key_2, value)),
+                          tail(local_table)));
+        } else {
+            const record = assoc(key_2, tail(subtable));
+            if (is_undefined(record)) {
+                set_tail(subtable,
+                         pair(pair(key_2, value), tail(subtable)));
+            } else {
+                set_tail(record, value);
+            }
+        }
+    }
+    function dispatch(m) {
+        return m === "lookup"
+               ? lookup
+               : m === "insert"
+               ? insert
+               : error(m, "unknown operation -- table");
+    }
+    return dispatch;
+}
+```
+
+Usando `make_table`, poderíamos implementar as operações `get` e `put` usadas na seção 2.4.3 para programação dirigida por dados, da seguinte forma:
+
+```javascript
+const operation_table = make_table();
+const get = operation_table("lookup");
+const put = operation_table("insert");
+```
+
+A função `get` recebe como argumentos duas chaves, e `put` recebe como argumentos duas chaves e um valor. Ambas as operações acessam a mesma tabela local, que está encapsulada dentro do objeto criado pela chamada a `make_table`.
+
+**Exercício 3.24:** Nas implementações de tabela acima, as chaves são testadas quanto à igualdade usando `equal` (chamado por `assoc`). Nem sempre este é o teste apropriado. Por exemplo, poderíamos ter uma tabela com chaves numéricas nas quais não precisamos de uma correspondência exata ao número que estamos procurando, mas apenas um número dentro de alguma tolerância dele. Projete um construtor de tabela `make_table` que recebe como argumento uma função `same_key` que será usada para testar a "igualdade" de chaves. A função `make_table` deve retornar uma função `dispatch` que pode ser usada para acessar as funções `lookup` e `insert` apropriadas para uma tabela local.
+
+**Exercício 3.25:** Generalizando tabelas uni e bidimensionais, mostre como implementar uma tabela na qual valores são armazenados sob um número arbitrário de chaves e diferentes valores podem ser armazenados sob diferentes números de chaves. As funções `lookup` e `insert` devem receber como entrada uma lista de chaves usadas para acessar a tabela.
+
+**Exercício 3.26:** Para pesquisar uma tabela como implementada acima, é necessário percorrer a lista de registros. Esta é basicamente a representação de lista não ordenada da seção 2.3.3. Para tabelas grandes, pode ser mais eficiente estruturar a tabela de maneira diferente. Descreva uma implementação de tabela onde os registros (chave, valor) são organizados usando uma árvore binária, assumindo que as chaves podem ser ordenadas de alguma forma (por exemplo, numericamente ou alfabeticamente). (Compare com o exercício 2.66 do Capítulo 2.)
+
+**Exercício 3.27:** *Memoização* (também chamada de *tabulação*) é uma técnica que permite a uma função registrar, em uma tabela local, valores que foram computados anteriormente. Essa técnica pode fazer uma grande diferença no desempenho de um programa. Uma função memoizada mantém uma tabela na qual valores de chamadas anteriores são armazenados usando como chaves os argumentos que produziram os valores. Quando a função memoizada é solicitada a computar um valor, ela primeiro verifica a tabela para ver se o valor já está lá e, se estiver, simplesmente retorna esse valor. Caso contrário, computa o novo valor da maneira comum e armazena isso na tabela. Como exemplo de memoização, lembre-se do processo exponencial da seção 1.2.2 para computar números de Fibonacci:
+
+```javascript
+function fib(n) {
+    return n === 0
+           ? 0
+           : n === 1
+           ? 1
+           : fib(n - 1) + fib(n - 2);
+}
+```
+
+A versão memoizada da mesma função é
+
+```javascript
+const memo_fib = memoize(n => n === 0
+                              ? 0
+                              : n === 1
+                              ? 1
+                              : memo_fib(n - 1) +
+                                memo_fib(n - 2)
+                        );
+```
+
+onde o memoizador é definido como
+
+```javascript
+function memoize(f) {
+    const table = make_table();
+    return x => {
+               const previously_computed_result =
+                   lookup(x, table);
+               if (is_undefined(previously_computed_result)) {
+                   const result = f(x);
+                   insert(x, result, table);
+                   return result;
+               } else {
+                   return previously_computed_result;
+               }
+           };
+}
+```
+
+Desenhe um diagrama de ambiente para analisar a computação de `memo_fib(3)`. Explique por que `memo_fib` computa o n-ésimo número de Fibonacci em um número de passos proporcional a n. O esquema ainda funcionaria se simplesmente tivéssemos definido `memo_fib` como `memoize(fib)`?

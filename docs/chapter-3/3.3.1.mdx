@@ -1,0 +1,304 @@
+---
+title: 3.3.1 Estrutura de Lista Mutável
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.3.1 Estrutura de Lista Mutável
+
+As operações básicas em pares—`pair`, `head` e `tail`—podem ser usadas para construir estruturas de lista e para selecionar partes de estruturas de lista, mas são incapazes de modificar estruturas de lista. O mesmo vale para as operações de lista que usamos até agora, como `append` e `list`, já que estas podem ser definidas em termos de `pair`, `head` e `tail`. Para modificar estruturas de lista, precisamos de novas operações.
+
+Os mutadores primitivos para pares são `set_head` e `set_tail`. A função `set_head` recebe dois argumentos, o primeiro dos quais deve ser um par. Ela modifica esse par, substituindo o ponteiro `head` por um ponteiro para o segundo argumento de `set_head`. As funções `set_head` e `set_tail` retornam o valor `undefined`. Elas devem ser usadas apenas por seu efeito.
+
+Como exemplo, suponha que `x` esteja vinculado a `list(list("a", "b"), "c", "d")` e `y` a `list("e", "f")` conforme ilustrado na Figura 3.12. Avaliar a expressão `set_head(x, y)` modifica o par ao qual `x` está vinculado, substituindo seu `head` pelo valor de `y`. O resultado da operação é mostrado na Figura 3.13. A estrutura `x` foi modificada e agora é equivalente a `list(list("e", "f"), "c", "d")`. Os pares que representam a lista `list("a", "b")`, identificados pelo ponteiro que foi substituído, agora estão destacados da estrutura original. Vemos a partir disso que operações de mutação em listas podem criar "lixo" que não faz parte de nenhuma estrutura acessível. Veremos na seção 5.3.2 que os sistemas de gerenciamento de memória JavaScript incluem um *coletor de lixo*, que identifica e recicla o espaço de memória usado por pares desnecessários.
+
+Compare a Figura 3.13 com a Figura 3.14, que ilustra o resultado da execução de
+
+```javascript
+const z = pair(y, tail(x));
+```
+
+com `x` e `y` vinculados às listas originais da Figura 3.12. O nome `z` agora está vinculado a um novo par criado pela operação `pair`; a lista à qual `x` está vinculado permanece inalterada.
+
+A operação `set_tail` é semelhante a `set_head`. A única diferença é que o ponteiro `tail` do par, ao invés do ponteiro `head`, é substituído. O efeito de executar `set_tail(x, y)` nas listas da Figura 3.12 é mostrado na Figura 3.15. Aqui o ponteiro `tail` de `x` foi substituído pelo ponteiro para `list("e", "f")`. Além disso, a lista `list("c", "d")`, que costumava ser o `tail` de `x`, agora está destacada da estrutura.
+
+A função `pair` constrói novas estruturas de lista criando novos pares, enquanto `set_head` e `set_tail` modificam pares existentes. Na verdade, poderíamos implementar `pair` em termos dos dois mutadores, juntamente com uma função `get_new_pair`, que retorna um novo par que não faz parte de nenhuma estrutura de lista existente. Obtemos o novo par, definimos seus ponteiros `head` e `tail` para os objetos designados e retornamos o novo par como o resultado da função `pair`. A seção 5.3.1 mostrará como um sistema de gerenciamento de memória pode implementar `get_new_pair`.
+
+```javascript
+// O livro propõe uma função primitiva get_new_pair.
+// Como JavaScript não fornece tal função, vamos
+// defini-la da seguinte forma, para fins do exemplo.
+
+function get_new_pair() {
+    return pair(undefined, undefined);
+}
+
+function pair(x, y) {
+    const fresh = get_new_pair();
+    set_head(fresh, x);
+    set_tail(fresh, y);
+    return fresh;
+}
+```
+
+**Exercício 3.12:** A seguinte função para anexar listas foi introduzida na seção 2.2.1:
+
+```javascript
+function append(x, y) {
+    return is_null(x)
+           ? y
+           : pair(head(x), append(tail(x), y));
+}
+```
+
+A função `append` forma uma nova lista anexando sucessivamente os elementos de `x` à frente de `y`. A função `append_mutator` é semelhante a `append`, mas é um mutador em vez de um construtor. Ela anexa as listas emendando-as, modificando o par final de `x` para que seu `tail` seja agora `y`. (É um erro chamar `append_mutator` com um `x` vazio.)
+
+```javascript
+function append_mutator(x, y) {
+    set_tail(last_pair(x), y);
+    return x;
+}
+```
+
+Aqui `last_pair` é uma função que retorna o último par em seu argumento:
+
+```javascript
+function last_pair(x) {
+    return is_null(tail(x))
+           ? x
+           : last_pair(tail(x));
+}
+```
+
+Considere a interação
+
+```javascript
+const x = list("a", "b");
+const y = list("c", "d");
+const z = append(x, y);
+```
+
+```
+z;
+// ["a", ["b", ["c", ["d", null]]]]
+```
+
+```javascript
+tail(x);
+// <resposta>
+```
+
+```javascript
+const w = append_mutator(x, y);
+```
+
+```
+w;
+// ["a", ["b", ["c", ["d", null]]]]
+```
+
+```javascript
+tail(x);
+// <resposta>
+```
+
+Quais são as `<resposta>`s ausentes? Desenhe diagramas de caixa e ponteiro para explicar sua resposta.
+
+**Exercício 3.13:** Considere a seguinte função `make_cycle`, que usa a função `last_pair` definida no exercício 3.12:
+
+```javascript
+function make_cycle(x) {
+    set_tail(last_pair(x), x);
+    return x;
+}
+```
+
+Desenhe um diagrama de caixa e ponteiro que mostre a estrutura `z` criada por
+
+```javascript
+const z = make_cycle(list("a", "b", "c"));
+```
+
+O que acontece se tentarmos calcular `last_pair(z)`?
+
+**Exercício 3.14:** A seguinte função é muito útil, embora obscura:
+
+```javascript
+function mystery(x) {
+    function loop(x, y) {
+        if (is_null(x)) {
+            return y;
+        } else {
+            const temp = tail(x);
+            set_tail(x, y);
+            return loop(temp, x);
+        }
+    }
+    return loop(x, null);
+}
+```
+
+A função `loop` usa o nome "temporário" `temp` para manter o valor antigo do `tail` de `x`, já que o `set_tail` na linha seguinte destrói o `tail`. Explique o que `mystery` faz em geral. Suponha que `v` seja definido por
+
+```javascript
+const v = list("a", "b", "c", "d");
+```
+
+Desenhe o diagrama de caixa e ponteiro que representa a lista à qual `v` está vinculado. Suponha que agora avaliemos
+
+```javascript
+const w = mystery(v);
+```
+
+Desenhe diagramas de caixa e ponteiro que mostram as estruturas `v` e `w` após avaliar este programa. Quais seriam os valores impressos de `v` e `w`?
+
+## Compartilhamento e identidade
+
+Mencionamos na seção 3.1.3 as questões teóricas de "igualdade" e "mudança" levantadas pela introdução da atribuição. Essas questões surgem na prática quando pares individuais são *compartilhados* entre diferentes objetos de dados. Por exemplo, considere a estrutura formada por
+
+```javascript
+const x = list("a", "b");
+const z1 = pair(x, x);
+```
+
+Como mostrado na Figura 3.16, `z1` é um par cujo `head` e `tail` apontam para o mesmo par `x`. Esse compartilhamento de `x` pelo `head` e `tail` de `z1` é uma consequência da maneira direta como `pair` é implementado. Em geral, usar `pair` para construir listas resultará em uma estrutura entrelaçada de pares na qual muitos pares individuais são compartilhados por muitas estruturas diferentes.
+
+Em contraste com a Figura 3.16, a Figura 3.17 mostra a estrutura criada por
+
+```javascript
+const z2 = pair(list("a", "b"), list("a", "b"));
+```
+
+Nesta estrutura, os pares nas duas listas `list("a", "b")` são distintos, embora contenham as mesmas strings. Os dois pares são distintos porque cada chamada a `pair` retorna um novo par. As strings são "as mesmas" no sentido de que são dados primitivos (assim como números) compostos pelos mesmos caracteres na mesma ordem. Como JavaScript não fornece uma maneira de mutar uma string, qualquer compartilhamento que os projetistas de um interpretador JavaScript possam decidir implementar para strings é indetectável. Consideramos dados primitivos como números, booleanos e strings como *idênticos* se e somente se forem *indistinguíveis*.
+
+Quando pensada como uma lista, `z1` e `z2` representam "a mesma" lista:
+
+```javascript
+list(list("a", "b"), "a", "b")
+```
+
+Em geral, o compartilhamento é completamente indetectável se operarmos em listas usando apenas `pair`, `head` e `tail`. No entanto, se permitirmos mutadores na estrutura de lista, o compartilhamento se torna significativo. Como exemplo da diferença que o compartilhamento pode fazer, considere a seguinte função, que modifica o `head` da estrutura à qual é aplicada:
+
+```javascript
+function set_to_wow(x) {
+    set_head(head(x), "wow");
+    return x;
+}
+```
+
+Embora `z1` e `z2` sejam "a mesma" estrutura, aplicar `set_to_wow` a elas produz resultados diferentes. Com `z1`, alterar o `head` também muda o `tail`, porque em `z1` o `head` e o `tail` são o mesmo par. Com `z2`, o `head` e o `tail` são distintos, então `set_to_wow` modifica apenas o `head`:
+
+```javascript
+z1;
+// [["a", ["b", null]], ["a", ["b", null]]]
+```
+
+```javascript
+set_to_wow(z1);
+// [["wow", ["b", null]], ["wow", ["b", null]]]
+```
+
+```javascript
+z2;
+// [["a", ["b", null]], ["a", ["b", null]]]
+```
+
+```javascript
+set_to_wow(z2);
+// [["wow", ["b", null]], ["a", ["b", null]]]
+```
+
+Uma maneira de detectar compartilhamento em estruturas de lista é usar o predicado primitivo `===`, que introduzimos na seção 1.3.3 para testar se dois números são iguais e estendemos na seção 2.3.1 para testar se duas strings são iguais. Quando aplicado a dois valores não primitivos, `x === y` testa se `x` e `y` são o mesmo objeto (ou seja, se `x` e `y` são iguais como ponteiros). Assim, com `z1` e `z2` conforme definidos nas Figuras 3.16 e 3.17, `head(z1) === tail(z1)` é verdadeiro e `head(z2) === tail(z2)` é falso.
+
+Como será visto nas seções seguintes, podemos explorar o compartilhamento para estender muito o repertório de estruturas de dados que podem ser representadas por pares. Por outro lado, o compartilhamento também pode ser perigoso, uma vez que modificações feitas em estruturas também afetarão outras estruturas que por acaso compartilham as partes modificadas. As operações de mutação `set_head` e `set_tail` devem ser usadas com cuidado; a menos que tenhamos uma boa compreensão de como nossos objetos de dados são compartilhados, a mutação pode ter resultados não antecipados. As sutilezas de lidar com o compartilhamento de objetos de dados mutáveis refletem as questões subjacentes de "igualdade" e "mudança" que foram levantadas na seção 3.1.3. Mencionamos lá que admitir mudança em nossa linguagem requer que um objeto composto deve ter uma "identidade" que seja algo diferente das peças das quais é composto. Em JavaScript, consideramos essa "identidade" como sendo a qualidade testada por `===`, ou seja, pela igualdade de ponteiros. Como na maioria das implementações JavaScript um ponteiro é essencialmente um endereço de memória, estamos "resolvendo o problema" de definir a identidade de objetos estipulando que um objeto de dados "em si" é a informação armazenada em algum conjunto particular de localizações de memória no computador. Isso é suficiente para programas JavaScript simples, mas dificilmente é uma maneira geral de resolver a questão da "igualdade" em modelos computacionais.
+
+**Exercício 3.15:** Desenhe diagramas de caixa e ponteiro para explicar o efeito de `set_to_wow` nas estruturas `z1` e `z2` acima.
+
+**Exercício 3.16:** Ben Bitdiddle decide escrever uma função para contar o número de pares em qualquer estrutura de lista. "É fácil", ele raciocina. "O número de pares em qualquer estrutura é o número no `head` mais o número no `tail` mais mais um para contar o par atual." Então Ben escreve a seguinte função:
+
+```javascript
+function count_pairs(x) {
+    return ! is_pair(x)
+           ? 0
+           : count_pairs(head(x)) +
+             count_pairs(tail(x)) +
+             1;
+}
+```
+
+Mostre que esta função não está correta. Em particular, desenhe diagramas de caixa e ponteiro representando estruturas de lista compostas por exatamente três pares para as quais a função de Ben retornaria 3; retornaria 4; retornaria 7; nunca retornaria.
+
+**Exercício 3.17:** Desenvolva uma versão correta da função `count_pairs` do exercício 3.16 que retorna o número de pares distintos em qualquer estrutura. (Dica: Percorra a estrutura, mantendo uma estrutura de dados auxiliar que é usada para acompanhar quais pares já foram contados.)
+
+**Exercício 3.18:** Escreva uma função que examina uma lista e determina se ela contém um ciclo, ou seja, se um programa que tentasse encontrar o final da lista tomando `tail`s sucessivos entraria em um loop infinito. O exercício 3.13 construiu tais listas.
+
+**Exercício 3.19:** Refaça o exercício 3.18 usando um algoritmo que leva apenas uma quantidade constante de espaço. (Isso requer uma ideia muito inteligente.)
+
+## Mutação é apenas atribuição
+
+Quando introduzimos dados compostos, observamos na seção 2.1.3 que pares podem ser representados puramente em termos de funções:
+
+```javascript
+function pair(x, y) {
+    function dispatch(m) {
+        return m === "head"
+               ? x
+               : m === "tail"
+               ? y
+               : error(m, "undefined operation -- pair");
+    }
+    return dispatch;
+}
+
+function head(z) { return z("head"); }
+
+function tail(z) { return z("tail"); }
+```
+
+A mesma observação é verdadeira para dados mutáveis. Podemos implementar objetos de dados mutáveis como funções usando atribuição e estado local. Por exemplo, podemos estender a implementação de par acima para lidar com `set_head` e `set_tail` de maneira análoga à forma como implementamos contas bancárias usando `make_account` na seção 3.1.1:
+
+```javascript
+function pair(x, y) {
+    function set_x(v) { x = v; }
+    function set_y(v) { y = v; }
+    return m => m === "head"
+                ? x
+                : m === "tail"
+                ? y
+                : m === "set_head"
+                ? set_x
+                : m === "set_tail"
+                ? set_y
+                : error(m, "undefined operation -- pair");
+}
+
+function head(z) { return z("head"); }
+
+function tail(z) { return z("tail"); }
+
+function set_head(z, new_value) {
+    z("set_head")(new_value);
+    return z;
+}
+function set_tail(z, new_value) {
+    z("set_tail")(new_value);
+    return z;
+}
+```
+
+Atribuição é tudo o que é necessário, teoricamente, para explicar o comportamento de dados mutáveis. Assim que admitimos atribuição em nossa linguagem, levantamos todas as questões, não apenas de atribuição, mas de dados mutáveis em geral. Por outro lado, do ponto de vista da implementação, a atribuição requer que modifiquemos o ambiente, que é em si uma estrutura de dados mutável. Assim, atribuição e mutação são equipotentes: cada um pode ser implementado em termos do outro.
+
+**Exercício 3.20:** Desenhe diagramas de ambiente para ilustrar a avaliação da sequência de instruções
+
+```javascript
+const x = pair(1, 2);
+const z = pair(x, x);
+set_head(tail(z), 17);
+```
+
+```javascript
+head(x);
+// 17
+```
+
+usando a implementação funcional de pares dada acima. (Compare com o exercício 3.11.)

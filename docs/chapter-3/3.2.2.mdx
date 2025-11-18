@@ -1,0 +1,90 @@
+---
+title: 3.2.2 Aplicando Funções Simples
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.2.2 Aplicando Funções Simples
+
+Quando introduzimos o modelo de substituição na seção 1.1.5, mostramos como a aplicação `f(5)` avalia para 136, dadas as seguintes declarações de função:
+
+<CodePlayground
+  code={`function square(x) {
+    return x * x;
+}
+function sum_of_squares(x, y) {
+    return square(x) + square(y);
+}
+function f(a) {
+    return sum_of_squares(a + 1, a * 2);
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+Podemos analisar o mesmo exemplo usando o modelo de ambiente. A Figura 3.4 mostra os três objetos de função criados pela avaliação das definições de `f`, `square` e `sum_of_squares` no ambiente do programa. Cada objeto de função consiste de algum código, junto com um ponteiro para o ambiente do programa.
+
+![Function objects in the program frame](/img/chapter-3/ch3-Z-G-5.svg)
+
+*Figura 3.4: Objetos de função no quadro do programa.*
+
+![Environments created by evaluating f(5)](/img/chapter-3/ch3-Z-G-6.svg)
+
+*Figura 3.5: Ambientes criados pela avaliação de `f(5)` usando as funções na figura 3.4.*
+
+Na figura 3.5 vemos a estrutura de ambiente criada pela avaliação da expressão `f(5)`. A chamada a `f` cria um novo ambiente, E1, começando com um quadro no qual `a`, o parâmetro de `f`, está vinculado ao argumento 5. Em E1, avaliamos o corpo de `f`:
+
+```javascript
+return sum_of_squares(a + 1, a * 2);
+```
+
+Para avaliar a instrução return, primeiro avaliamos as subexpressões da expressão de retorno. A primeira subexpressão, `sum_of_squares`, tem um valor que é um objeto de função. (Observe como este valor é encontrado: Primeiro olhamos no primeiro quadro de E1, que não contém vinculação para `sum_of_squares`. Então procedemos para o ambiente envolvente, isto é, o ambiente do programa, e encontramos a vinculação mostrada na figura 3.4.) As outras duas subexpressões são avaliadas aplicando as operações primitivas `+` e `*` para avaliar as duas combinações `a + 1` e `a * 2` para obter 6 e 10, respectivamente.
+
+Agora aplicamos o objeto de função `sum_of_squares` aos argumentos 6 e 10. Isso resulta em um novo ambiente, E2, no qual os parâmetros `x` e `y` estão vinculados aos argumentos. Dentro de E2 avaliamos a instrução
+
+```javascript
+return square(x) + square(y);
+```
+
+Isso nos leva a avaliar `square(x)`, onde `square` é encontrado no quadro do programa e `x` é 6. Mais uma vez, configuramos um novo ambiente, E3, no qual `x` está vinculado a 6, e dentro dele avaliamos o corpo de `square`, que é `return x * x;`. Também como parte da aplicação de `sum_of_squares`, devemos avaliar a subexpressão `square(y)`, onde `y` é 10. Esta segunda chamada a `square` cria outro ambiente, E4, no qual `x`, o parâmetro de `square`, está vinculado a 10. E dentro de E4 devemos avaliar `return x * x;`.
+
+O ponto importante a observar é que cada chamada a `square` cria um novo ambiente contendo uma vinculação para `x`. Podemos ver aqui como os diferentes quadros servem para manter separadas as diferentes variáveis locais todas chamadas `x`. Note que cada quadro criado por `square` aponta para o ambiente do programa, já que este é o ambiente indicado pelo objeto de função `square`.
+
+Depois que as subexpressões são avaliadas, os resultados são retornados. Os valores gerados pelas duas chamadas a `square` são somados por `sum_of_squares`, e este resultado é retornado por `f`. Como nosso foco aqui está nas estruturas de ambiente, não vamos nos deter em como esses valores retornados são passados de chamada para chamada; no entanto, este também é um aspecto importante do processo de avaliação, e retornaremos a ele em detalhe no capítulo 5.
+
+## Exercício 3.9
+
+Na seção 1.2.1 usamos o modelo de substituição para analisar duas funções para computar fatoriais, uma versão recursiva
+
+<CodePlayground
+  code={`function factorial(n) {
+    return n === 1
+           ? 1
+           : n * factorial(n - 1);
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+e uma versão iterativa
+
+<CodePlayground
+  code={`function factorial(n) {
+    return fact_iter(1, 1, n);
+}
+function fact_iter(product, counter, max_count) {
+    return counter > max_count
+           ? product
+           : fact_iter(counter * product,
+                       counter + 1,
+                       max_count);
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+Mostre as estruturas de ambiente criadas pela avaliação de `factorial(6)` usando cada versão da função `factorial`.[^1]
+
+-----
+
+[^1]: O modelo de ambiente não esclarecerá nossa afirmação na seção 1.2.1 de que o interpretador pode executar uma função como `fact_iter` em uma quantidade constante de espaço usando recursão de cauda. Discutiremos recursão de cauda quando lidarmos com a estrutura de controle do interpretador na seção 5.4.

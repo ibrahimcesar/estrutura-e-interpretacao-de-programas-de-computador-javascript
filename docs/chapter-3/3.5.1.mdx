@@ -1,0 +1,289 @@
+---
+title: 3.5.1 Streams São Listas Atrasadas
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.5.1 Streams São Listas Atrasadas
+
+Como vimos na seção 2.2.3, sequências podem servir como interfaces padrão para combinar módulos de programa. Formulamos abstrações poderosas para manipular sequências, como `map`, `filter` e `accumulate`, que capturam uma grande variedade de operações de maneira sucinta e elegante.
+
+Infelizmente, se representarmos sequências como listas, essa elegância é comprada ao preço de severa ineficiência tanto em relação ao tempo quanto ao espaço requerido por nossos cálculos. Quando representamos manipulações em sequências como transformações de listas, nossos programas devem construir e copiar estruturas de dados (que podem ser enormes) a cada passo de um processo.
+
+Para ver por que isso é verdade, vamos comparar dois programas para computar a soma de todos os números primos em um intervalo. O primeiro programa é escrito em estilo iterativo padrão:[^1]
+
+```javascript
+function sum_primes(a, b) {
+    function iter(count, accum) {
+        return count > b
+               ? accum
+               : is_prime(count)
+               ? iter(count + 1, count + accum)
+               : iter(count + 1, accum);
+    }
+    return iter(a, 0);
+}
+```
+
+O segundo programa realiza a mesma computação usando as operações de sequência da seção 2.2.3:
+
+```javascript
+function sum_primes(a, b) {
+    return accumulate((x, y) => x + y,
+                      0,
+                      filter(is_prime,
+                             enumerate_interval(a, b)));
+}
+```
+
+Ao realizar a computação, o primeiro programa precisa armazenar apenas a soma sendo acumulada. Em contraste, o filtro no segundo programa não pode fazer nenhum teste até que `enumerate_interval` tenha construído uma lista completa dos números no intervalo. O filtro gera outra lista, que por sua vez é passada para `accumulate` antes de ser colapsada para formar uma soma. Tal armazenamento intermediário grande não é necessário pelo primeiro programa, que podemos pensar como enumerando o intervalo incrementalmente, adicionando cada primo à soma conforme é gerado.
+
+A ineficiência em usar listas se torna dolorosamente aparente se usarmos o paradigma de sequências para computar o segundo primo no intervalo de 10.000 a 1.000.000 avaliando a expressão
+
+```javascript
+head(tail(filter(is_prime,
+                 enumerate_interval(10000, 1000000))));
+```
+
+Esta expressão de fato encontra o segundo primo, mas o custo computacional é ultrajante. Construímos uma lista de quase um milhão de inteiros, filtramos esta lista testando cada elemento para primalidade, e depois ignoramos quase todo o resultado. Em um estilo de programação mais tradicional, entrelaçaríamos a enumeração e a filtragem, e pararíamos quando alcançássemos o segundo primo.
+
+Streams são uma ideia inteligente que permite usar manipulações de sequências sem incorrer nos custos de manipular sequências como listas. Com streams podemos alcançar o melhor de ambos os mundos: Podemos formular programas elegantemente como manipulações de sequências, enquanto atingimos a eficiência de computação incremental. A ideia básica é arranjar para construir um stream apenas parcialmente, e passar a construção parcial para o programa que consome o stream. Se o consumidor tenta acessar uma parte do stream que ainda não foi construída, o stream automaticamente construirá apenas o suficiente de si mesmo para produzir a parte requerida, preservando assim a ilusão de que o stream inteiro existe. Em outras palavras, embora escreveremos programas como se estivéssemos processando sequências completas, projetamos nossa implementação de streams para automaticamente e transparentemente entrelaçar a construção do stream com seu uso.
+
+Para realizar isso, construiremos streams usando pares, com o primeiro item do stream no head do par. No entanto, em vez de colocar o valor do resto do stream no tail do par, colocaremos lá uma "promessa" de computar o resto se for solicitado. Se tivermos um item de dados `h` e um stream `t`, construímos um stream cujo head é `h` e cujo tail é `t` avaliando `pair(h, () => t)`—o tail `t` de um stream é "embrulhado" em uma função sem argumentos, de modo que sua avaliação será *atrasada*. O stream vazio é `null`, o mesmo que a lista vazia.
+
+Para acessar o primeiro item de dados de um stream não vazio, simplesmente selecionamos o `head` do par, como com uma lista. Mas para acessar o tail de um stream, precisamos avaliar a expressão atrasada. Por conveniência, definimos
+
+```javascript
+function stream_tail(stream) {
+    return tail(stream)();
+}
+```
+
+Isso seleciona o tail do par e aplica a função encontrada lá para obter o próximo par do stream (ou `null` se o tail do stream estiver vazio)—em efeito, *forçando* a função no tail do par a cumprir sua promessa.
+
+Podemos fazer e usar streams, da mesma forma que podemos fazer e usar listas, para representar dados agregados organizados em uma sequência. Em particular, podemos construir análogos de stream das operações de lista do capítulo 2, como `list_ref`, `map` e `for_each`:[^2]
+
+```javascript
+function stream_ref(s, n) {
+    return n === 0
+           ? head(s)
+           : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)),
+                  () => stream_map(f, stream_tail(s)));
+}
+function stream_for_each(fun, s) {
+    if (is_null(s)) {
+        return true;
+    } else {
+        fun(head(s));
+        return stream_for_each(fun, stream_tail(s));
+    }
+}
+```
+
+A função `stream_for_each` é útil para visualizar streams:
+
+```javascript
+function display_stream(s) {
+    return stream_for_each(display, s);
+}
+```
+
+Para fazer a implementação de streams automaticamente e transparentemente entrelaçar a construção de um stream com seu uso, arranjamos para que o tail de um stream seja avaliado quando é acessado pela função `stream_tail` em vez de quando o stream é construído por `pair`. Esta escolha de implementação é reminiscente de nossa discussão de números racionais na seção 2.1.2, onde vimos que podemos escolher implementar números racionais de modo que a redução de numerador e denominador aos termos mínimos seja realizada ou no tempo de construção ou no tempo de seleção. As duas implementações de números racionais produzem a mesma abstração de dados, mas a escolha tem um efeito na eficiência. Há uma relação similar entre streams e listas ordinárias. Como uma abstração de dados, streams são os mesmos que listas. A diferença é o tempo em que os elementos são avaliados. Com listas ordinárias, tanto o `head` quanto o `tail` são avaliados no tempo de construção. Com streams, o `tail` é avaliado no tempo de seleção.
+
+## Streams em ação
+
+Para ver como esta estrutura de dados se comporta, vamos analisar o cálculo de primos "ultrajante" que vimos acima, reformulado em termos de streams:
+
+```javascript
+head(stream_tail(stream_filter(
+                     is_prime,
+                     stream_enumerate_interval(10000, 1000000))));
+```
+
+Veremos que de fato funciona eficientemente.
+
+Começamos chamando `stream_enumerate_interval` com os argumentos 10.000 e 1.000.000. A função `stream_enumerate_interval` é o análogo de stream de `enumerate_interval` (seção 2.2.3):
+
+```javascript
+function stream_enumerate_interval(low, high) {
+    return low > high
+           ? null
+           : pair(low,
+                  () => stream_enumerate_interval(low + 1, high));
+}
+```
+
+e assim o resultado retornado por `stream_enumerate_interval`, formado pelo `pair`, é[^3]
+
+```javascript
+pair(10000, () => stream_enumerate_interval(10001, 1000000));
+```
+
+Ou seja, `stream_enumerate_interval` retorna um stream representado como um par cujo `head` é 10.000 e cujo `tail` é uma promessa de enumerar mais do intervalo se for solicitado. Este stream é agora filtrado para primos, usando o análogo de stream da função `filter` (seção 2.2.3):
+
+```javascript
+function stream_filter(pred, stream) {
+    return is_null(stream)
+           ? null
+           : pred(head(stream))
+           ? pair(head(stream),
+                  () => stream_filter(pred, stream_tail(stream)))
+           : stream_filter(pred, stream_tail(stream));
+}
+```
+
+A função `stream_filter` testa o `head` do stream (que é 10.000). Como isso não é primo, `stream_filter` examina o tail de seu stream de entrada. A chamada para `stream_tail` força a avaliação do `stream_enumerate_interval` atrasado, que agora retorna
+
+```javascript
+pair(10001, () => stream_enumerate_interval(10002, 1000000));
+```
+
+A função `stream_filter` agora olha para o `head` deste stream, 10.001, vê que isso também não é primo, força outro `stream_tail`, e assim por diante, até que `stream_enumerate_interval` produza o primo 10.007, quando então `stream_filter`, de acordo com sua definição, retorna
+
+```javascript
+pair(head(stream),
+     () => stream_filter(pred, stream_tail(stream)));
+```
+
+que neste caso é
+
+```javascript
+pair(10007,
+     () => stream_filter(
+              is_prime,
+              pair(10008,
+                   () => stream_enumerate_interval(10009, 1000000))));
+```
+
+Este resultado é agora passado para `stream_tail` em nossa expressão original. Isso força o `stream_filter` atrasado, que por sua vez continua forçando o `stream_enumerate_interval` atrasado até encontrar o próximo primo, que é 10.009. Finalmente, o resultado passado para `head` em nossa expressão original é
+
+```javascript
+pair(10009,
+     () => stream_filter(
+              is_prime,
+              pair(10010,
+                   () => stream_enumerate_interval(10011, 1000000))));
+```
+
+A função `head` retorna 10.009, e a computação está completa. Apenas tantos inteiros foram testados para primalidade quanto foi necessário para encontrar o segundo primo, e o intervalo foi enumerado apenas o suficiente para alimentar o filtro de primos.
+
+Em geral, podemos pensar na avaliação atrasada como programação "orientada por demanda", pela qual cada estágio no processo de stream é ativado apenas o suficiente para satisfazer o próximo estágio. O que fizemos foi desacoplar a ordem real de eventos na computação da estrutura aparente de nossas funções. Escrevemos funções como se os streams existissem "todos de uma vez" quando, na realidade, a computação é realizada incrementalmente, como em estilos de programação tradicionais.
+
+## Uma otimização
+
+Quando construímos pares de stream, atrasamos a avaliação de suas expressões de tail embrulhando estas expressões em uma função. Forçamos sua avaliação quando necessário, aplicando a função.
+
+Esta implementação é suficiente para streams funcionarem como anunciado, mas há uma otimização importante que consideraremos quando necessário. Em muitas aplicações, acabamos forçando o mesmo objeto atrasado muitas vezes. Isso pode levar a séria ineficiência em programas recursivos envolvendo streams. (Veja o exercício 3.57.) A solução é construir objetos atrasados de modo que a primeira vez que são forçados, eles armazenam o valor que é computado. Forçamentos subsequentes simplesmente retornarão o valor armazenado sem repetir a computação. Em outras palavras, implementamos a construção de pares de stream como uma função memoizada similar à descrita no exercício 3.27. Uma maneira de realizar isso é usar a seguinte função, que recebe como argumento uma função (sem argumentos) e retorna uma versão memoizada da função. A primeira vez que a função memoizada é executada, ela salva o resultado computado. Em avaliações subsequentes, ela simplesmente retorna o resultado.[^4]
+
+```javascript
+function memo(fun) {
+    let already_run = false;
+    let result = undefined;
+    return () => {
+               if (!already_run) {
+                   result = fun();
+                   already_run = true;
+                   return result;
+               } else {
+                   return result;
+               }
+           };
+}
+```
+
+Podemos fazer uso de `memo` sempre que construímos um par de stream. Por exemplo, em vez de
+
+```javascript
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)),
+                  () => stream_map(f, stream_tail(s)));
+}
+```
+
+podemos definir uma função otimizada `stream_map` da seguinte forma:
+
+```javascript
+function stream_map_optimized(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)),
+                  memo(() =>
+                         stream_map_optimized(f, stream_tail(s))));
+}
+```
+
+## Exercício 3.50
+
+Declare uma função `stream_map_2` que recebe uma função binária e dois streams como argumentos e retorna um stream cujos elementos são os resultados de aplicar a função em pares aos elementos correspondentes dos streams de argumento.
+
+```javascript
+function stream_map_2(f, s1, s2) {
+    ...
+}
+```
+
+Similar a `stream_map_optimized`, declare uma função `stream_map_2_optimized` modificando sua `stream_map_2` de modo que o stream resultante empregue memoização.
+
+## Exercício 3.51
+
+Note que nossa função primitiva `display` retorna seu argumento após exibi-lo. O que o interpretador imprime em resposta à avaliação de cada instrução na seguinte sequência?[^5]
+
+```javascript
+let x = stream_map(display, stream_enumerate_interval(0, 10));
+
+stream_ref(x, 5);
+
+stream_ref(x, 7);
+```
+
+O que o interpretador imprime se `stream_map_optimized` for usado em vez de `stream_map`?
+
+```javascript
+let x = stream_map_optimized(display, stream_enumerate_interval(0, 10));
+
+stream_ref(x, 5);
+
+stream_ref(x, 7);
+```
+
+## Exercício 3.52
+
+Considere a sequência de instruções
+
+```javascript
+let sum = 0;
+
+function accum(x) {
+    sum = x + sum;
+    return sum;
+}
+
+const seq = stream_map(accum, stream_enumerate_interval(1, 20));
+
+const y = stream_filter(is_even, seq);
+
+const z = stream_filter(x => x % 5 === 0, seq);
+
+stream_ref(y, 7);
+
+display_stream(z);
+```
+
+Qual é o valor de `sum` após cada uma das instruções acima ser avaliada? Qual é a resposta impressa ao avaliar as expressões `stream_ref` e `display_stream`? Essas respostas difeririam se tivéssemos aplicado a função `memo` em cada tail de cada par de stream construído, como sugerido na otimização acima? Explique.
+
+[^1]: Assuma que temos um predicado `is_prime` (por exemplo, como na seção 1.2.6) que testa para primalidade.
+
+[^2]: Isso deveria incomodá-lo. O fato de estarmos definindo funções tão similares para streams e listas indica que estamos perdendo alguma abstração subjacente. Infelizmente, para explorar essa abstração, precisaremos exercer um controle mais fino sobre o processo de avaliação do que podemos no momento. Discutiremos este ponto mais adiante no final da seção 3.5.4. Na seção 4.2, desenvolveremos um framework que unifica listas e streams.
+
+[^3]: Os números mostrados aqui não aparecem realmente na expressão atrasada. O que realmente aparece é a expressão original, em um ambiente no qual as variáveis estão vinculadas aos números apropriados. Por exemplo, `low + 1` com `low` vinculado a 10.000 aparece realmente onde `10001` é mostrado.
+
+[^4]: Há muitas implementações possíveis de streams além da descrita nesta seção. Avaliação atrasada, que é a chave para tornar streams práticos, era inerente ao método de passagem de parâmetros *call-by-name* do Algol 60. O uso desse mecanismo para implementar streams foi descrito pela primeira vez por Landin (1965). Avaliação atrasada para streams foi introduzida no Lisp por Friedman e Wise (1976). Em sua implementação, `cons` (o equivalente em Lisp de nossa função `pair`) sempre atrasa a avaliação de seus argumentos, de modo que listas automaticamente se comportam como streams. A otimização de memoização também é conhecida como *call-by-need*. A comunidade Algol se referiria aos nossos objetos atrasados originais como *call-by-name thunks* e às versões otimizadas como *call-by-need thunks*.
+
+[^5]: Exercícios como 3.51 e 3.52 são valiosos para testar nossa compreensão de como a avaliação atrasada funciona. Por outro lado, misturar avaliação atrasada com impressão—e, pior ainda, com atribuição—é extremamente confuso, e instrutores de cursos sobre linguagens de computador tradicionalmente atormentam seus alunos com questões de exame como as desta seção. Desnecessário dizer, escrever programas que dependem de tais sutilezas é um estilo de programação odioso. Parte do poder do processamento de streams é que nos permite ignorar a ordem em que eventos realmente acontecem em nossos programas. Infelizmente, isso é precisamente o que não podemos nos dar ao luxo de fazer na presença de atribuição, que nos força a nos preocupar com tempo e mudança.

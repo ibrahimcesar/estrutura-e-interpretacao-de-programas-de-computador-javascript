@@ -1,0 +1,269 @@
+---
+title: 3.5.2 Streams Infinitos
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.5.2 Streams Infinitos
+
+Vimos como suportar a ilusão de manipular streams como entidades completas, mesmo que, na realidade, computemos apenas tanto do stream quanto precisamos acessar. Podemos explorar essa técnica para representar sequências eficientemente como streams, mesmo se as sequências forem muito longas. O que é mais impressionante, podemos usar streams para representar sequências infinitamente longas. Por exemplo, considere a seguinte definição do stream de inteiros positivos:
+
+```javascript
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+
+const integers = integers_starting_from(1);
+```
+
+Isso faz sentido porque `integers` será um par cujo `head` é 1 e cujo `tail` é uma promessa de produzir os inteiros começando com 2. Este é um stream infinitamente longo, mas em qualquer momento dado podemos examinar apenas uma porção finita dele. Assim, nossos programas nunca saberão que o stream infinito inteiro não está lá.
+
+Usando `integers` podemos definir outros streams infinitos, como o stream de inteiros que não são divisíveis por 7:
+
+```javascript
+function is_divisible(x, y) { return x % y === 0; }
+
+const no_sevens = stream_filter(x => ! is_divisible(x, 7),
+                                integers);
+```
+
+Então podemos encontrar inteiros não divisíveis por 7 simplesmente acessando elementos deste stream:
+
+```javascript
+stream_ref(no_sevens, 100);
+```
+
+```
+117
+```
+
+Por analogia com `integers`, podemos definir o stream infinito de números de Fibonacci:
+
+```javascript
+function fibgen(a, b) {
+    return pair(a, () => fibgen(b, a + b));
+}
+
+const fibs = fibgen(0, 1);
+```
+
+A constante `fibs` é um par cujo `head` é 0 e cujo `tail` é uma promessa de avaliar `fibgen(1, 1)`. Quando avaliamos este `fibgen(1, 1)` atrasado, ele produzirá um par cujo `head` é 1 e cujo `tail` é uma promessa de avaliar `fibgen(1, 2)`, e assim por diante.
+
+Para ver um stream infinito mais emocionante, podemos generalizar o exemplo de `no_sevens` para construir o stream infinito de números primos, usando um método conhecido como o *crivo de Eratóstenes*.[^1] Começamos com os inteiros começando com 2, que é o primeiro primo. Para obter o resto dos primos, começamos filtrando os múltiplos de 2 do resto dos inteiros. Isso deixa um stream começando com 3, que é o próximo primo. Agora filtramos os múltiplos de 3 do resto deste stream. Isso deixa um stream começando com 5, que é o próximo primo, e assim por diante. Em outras palavras, construímos os primos por um processo de peneiramento, descrito da seguinte forma: Para peneirar um stream S, forme um stream cujo primeiro elemento é o primeiro elemento de S e o resto do qual é obtido filtrando todos os múltiplos do primeiro elemento de S do resto de S e peneirando o resultado. Este processo é prontamente descrito em termos de operações de stream:
+
+```javascript
+function sieve(stream) {
+    return pair(head(stream),
+                () => sieve(stream_filter(
+                                x => ! is_divisible(x, head(stream)),
+                                stream_tail(stream))));
+}
+const primes = sieve(integers_starting_from(2));
+```
+
+Agora para encontrar um primo particular precisamos apenas pedi-lo:
+
+```javascript
+stream_ref(primes, 50);
+```
+
+```
+233
+```
+
+É interessante contemplar o sistema de processamento de sinais configurado por `sieve`, mostrado no "diagrama de Henderson" na figura 3.31. O stream de entrada alimenta um "desempacotador" que separa o primeiro elemento do stream do resto do stream. O primeiro elemento é usado para construir um filtro de divisibilidade, através do qual o resto é passado, e a saída do filtro é alimentada para outra caixa de peneiramento. Então o primeiro elemento original é adjunto à saída do peneiramento interno para formar o stream de saída. Assim, não apenas o stream é infinito, mas o processador de sinal também é infinito, porque o crivo contém um crivo dentro dele.
+
+## Definindo streams implicitamente
+
+Os streams `integers` e `fibs` acima foram definidos especificando funções "geradoras" que explicitamente computam os elementos do stream um por um. Uma maneira alternativa de especificar streams é tirar vantagem da avaliação atrasada para definir streams implicitamente. Por exemplo, a seguinte instrução define o stream `ones` para ser um stream infinito de uns:
+
+```javascript
+const ones = pair(1, () => ones);
+```
+
+Isso funciona muito como a declaração de uma função recursiva: `ones` é um par cujo `head` é 1 e cujo `tail` é uma promessa de avaliar `ones`. Avaliar o `tail` nos dá novamente um 1 e uma promessa de avaliar `ones`, e assim por diante.
+
+Podemos fazer coisas mais interessantes manipulando streams com operações como `add_streams`, que produz a soma elemento por elemento de dois streams dados:[^2]
+
+```javascript
+function add_streams(s1, s2) {
+    return stream_map_2((x1, x2) => x1 + x2, s1, s2);
+}
+```
+
+Agora podemos definir os inteiros da seguinte forma:
+
+```javascript
+const integers = pair(1, () => add_streams(ones, integers));
+```
+
+Isso define `integers` para ser um stream cujo primeiro elemento é 1 e o resto do qual é a soma de `ones` e `integers`. Assim, o segundo elemento de `integers` é 1 mais o primeiro elemento de `integers`, ou 2; o terceiro elemento de `integers` é 1 mais o segundo elemento de `integers`, ou 3; e assim por diante. Esta definição funciona porque, em qualquer ponto, o suficiente do stream `integers` foi gerado de modo que podemos alimentá-lo de volta à definição para produzir o próximo inteiro.
+
+Podemos definir os números de Fibonacci no mesmo estilo:
+
+```javascript
+const fibs = pair(0,
+                  () => pair(1,
+                             () => add_streams(stream_tail(fibs),
+                                               fibs)));
+```
+
+Esta definição diz que `fibs` é um stream começando com 0 e 1, tal que o resto do stream pode ser gerado adicionando `fibs` a si mesmo deslocado por um lugar:
+
+```
+      1 1 2 3 5  8 13 21 ... = stream_tail(fibs)
+      0 1 1 2 3  5  8 13 ... = fibs
+    -------------------------
+0 1 1 2 3 5 8 13 21 34 ... = fibs
+```
+
+A função `scale_stream` também é útil na formulação de tais definições de stream. Isso multiplica cada item em um stream por uma constante dada:
+
+```javascript
+function scale_stream(stream, factor) {
+    return stream_map(x => x * factor,
+                      stream);
+}
+```
+
+Por exemplo,
+
+```javascript
+const double = pair(1, () => scale_stream(double, 2));
+```
+
+produz o stream de potências de 2: 1, 2, 4, 8, 16, 32, ...
+
+Uma definição alternativa do stream de primos pode ser dada começando com os inteiros e filtrando-os testando para primalidade. Precisaremos do primeiro primo, 2, para começar:
+
+```javascript
+const primes = pair(2,
+                    () => stream_filter(is_prime,
+                                        integers_starting_from(3)));
+```
+
+Esta definição não é tão direta quanto parece, porque testaremos se um número $n$ é primo verificando se $n$ é divisível por um primo (não por qualquer inteiro) menor ou igual a $\sqrt{n}$:
+
+```javascript
+function is_prime(n) {
+    function iter(ps) {
+        return square(head(ps)) > n
+               ? true
+               : is_divisible(n, head(ps))
+               ? false
+               : iter(stream_tail(ps));
+    }
+    return iter(primes);
+}
+```
+
+Esta é uma definição recursiva, já que `primes` é definido em termos do predicado `is_prime`, que por si só usa o stream `primes`. A razão desta função funcionar é que, em qualquer ponto, o suficiente do stream `primes` foi gerado para testar a primalidade dos números que precisamos verificar em seguida. Ou seja, para todo $n$ que testamos para primalidade, ou $n$ não é primo (caso em que há um primo já gerado que o divide) ou $n$ é primo (caso em que há um primo já gerado—isto é, um primo menor que $n$—que é maior que $\sqrt{n}$).
+
+## Exercício 3.53
+
+Sem executar o programa, descreva os elementos do stream definido por
+
+```javascript
+const s = pair(1, () => add_streams(s, s));
+```
+
+## Exercício 3.54
+
+Defina uma função `mul_streams`, análoga a `add_streams`, que produz o produto elemento por elemento de seus dois streams de argumento de entrada. Use isso juntamente com o stream `integers` para completar a seguinte definição do stream cujos elementos são os fatoriais:
+
+```javascript
+const factorials = pair(1, () => mul_streams(..., ...));
+```
+
+## Exercício 3.55
+
+Defina uma função `partial_sums` que recebe como argumento um stream $S$ e retorna o stream cujos elementos são $S_0$, $S_0 + S_1$, $S_0 + S_1 + S_2$, ... Por exemplo, `partial_sums(integers)` deve ser o stream 1, 3, 6, 10, 15, ...
+
+## Exercício 3.56
+
+Um famoso problema, apresentado pela primeira vez por R. Hamming, é enumerar, em ordem ascendente sem repetições, todos os inteiros positivos sem fatores primos além de 2, 3 ou 5. Uma maneira óbvia de fazer isso é simplesmente testar cada inteiro por sua vez para ver se tem outros fatores primos além de 2, 3 e 5. Mas isso é muito ineficiente, já que, à medida que os inteiros ficam maiores, cada vez menos deles atenderão ao requisito. Como alternativa, vamos chamar o stream requerido de `S` e notar os seguintes fatos sobre ele:
+
+- `S` começa com 1.
+- Os elementos de `scale_stream(S, 2)` também são elementos de `S`.
+- O mesmo é verdade para `scale_stream(S, 3)` e `scale_stream(S, 5)`.
+- Estes são *todos* os elementos de `S`.
+
+Agora tudo o que temos a fazer é combinar elementos dos três streams. Para isso precisamos definir uma função `merge` que combina dois streams ordenados em um stream ordenado resultado, eliminando repetições. Então o stream requerido pode ser construído com
+
+```javascript
+const S = pair(1, () => merge(..., merge(..., ...)));
+```
+
+Complete a definição de `S` preenchendo as partes faltantes na definição da função `merge` e fornecendo as expressões faltantes nas lacunas.
+
+## Exercício 3.57
+
+Quantas adições são realizadas quando computamos o $n$-ésimo número de Fibonacci usando a definição de `fibs` baseada em `add_streams`? Mostre que o número de adições seria exponencialmente maior se tivéssemos implementado `add_streams` sem usar a otimização de memoização fornecida pela função `memo` (exercício 3.50).
+
+## Exercício 3.58
+
+Dê uma interpretação da função stream
+
+```javascript
+function expand(num, den, radix) {
+    return pair(math_trunc((num * radix) / den),
+                () => expand((num * radix) % den, den, radix));
+}
+```
+
+(`math_trunc` produz a parte inteira de seu argumento.) O que são os streams sucessivos gerados por
+
+```javascript
+expand(1, 7, 10);
+expand(3, 8, 10);
+```
+
+## Exercício 3.59
+
+Na seção 2.5.3 vimos como implementar uma aritmética de polinômios representando polinômios como listas de coeficientes. Aqui trabalharemos com *séries de potências infinitas*, que também podem ser representadas como streams infinitos. Representaremos a série de potências $a_0 + a_1 x + a_2 x^2 + a_3 x^3 + \cdots$ como o stream de coeficientes $(a_0, a_1, a_2, a_3, \ldots)$.
+
+a. A série de potências integral pode ser realizada termo por termo:
+
+$$\int(a_0 + a_1 x + a_2 x^2 + a_3 x^3 + \cdots)dx = C + a_0 x + \frac{1}{2} a_1 x^2 + \frac{1}{3} a_2 x^3 + \frac{1}{4} a_3 x^4 + \cdots$$
+
+(onde $C$ é qualquer constante de integração). Defina uma função `integrate_series` que recebe como entrada um stream $a_0, a_1, a_2, \ldots$ representando uma série de potências e retorna o stream $a_0, \frac{1}{2} a_1, \frac{1}{3} a_2, \ldots$ de coeficientes da série de potências integral não integrada (ou seja, a série para a integral da série original, assumindo constante zero de integração).
+
+b. A função exponencial (assim como seno e cosseno) pode ser definida em termos da integração de sua própria derivada:
+
+$$\frac{de^x}{dx} = e^x$$
+
+com $e^0 = 1$. Gere o stream de séries de potências para $e^x$.
+
+## Exercício 3.60
+
+Com séries de potências representadas como streams de coeficientes como na série do exercício 3.59, adicionar séries é implementado por `add_streams`. Complete a definição da seguinte função para multiplicar séries:
+
+```javascript
+function mul_series(s1, s2) {
+    pair(...,
+         () => add_streams(..., ...));
+}
+```
+
+Você pode testar sua função verificando que $\sin^2 x + \cos^2 x = 1$, usando as séries do exercício 3.59.
+
+## Exercício 3.61
+
+Seja $S$ uma série de potências (exercício 3.59) cujo termo constante é 1. Suponha que queremos encontrar a série de potências $1/S$, isto é, a série $X$ tal que $SX = 1$. Escreva $S = 1 + S_R$ onde $S_R$ é a parte de $S$ após o termo constante. Então podemos resolver para $X$ da seguinte forma:
+
+$$\begin{align*}
+S \cdot X &= 1 \\
+(1 + S_R) \cdot X &= 1 \\
+X + S_R \cdot X &= 1 \\
+X &= 1 - S_R \cdot X
+\end{align*}$$
+
+Em outras palavras, $X$ é a série de potências cujo termo constante é 1 e cujos termos de ordem superior são o negativo de $S_R$ vezes $X$. Use esta ideia para escrever uma função `invert_unit_series` que computa $1/S$ para uma série de potências $S$ com termo constante 1. Você precisará usar `mul_series` do exercício 3.60.
+
+## Exercício 3.62
+
+Use os resultados dos exercícios 3.60 e 3.61 para definir uma função `div_series` que divide duas séries de potências. A função `div_series` deve funcionar para qualquer duas séries, desde que o denominador comece com um termo constante não zero. (Se o denominador tiver um termo constante zero, então `div_series` deve sinalizar um erro.) Mostre como usar `div_series` juntamente com os resultados do exercício 3.59 para gerar a série de potências para a tangente.
+
+[^1]: Eratóstenes, um filósofo grego alexandrino do século III aC, é famoso por dar a primeira estimativa precisa da circunferência da Terra, que ele computou observando sombras lançadas ao meio-dia no dia do solstício de verão. O método de crivo de Eratóstenes, embora antigo, formou a base para "crivos" de hardware de propósito especial que, até os anos 1970, eram as ferramentas mais poderosas existentes para localizar grandes primos. Desde então, no entanto, esses métodos foram suplantados por derivações das técnicas probabilísticas discutidas na seção 1.2.6.
+
+[^2]: Isso usa a função `stream_map_2` do exercício 3.50.

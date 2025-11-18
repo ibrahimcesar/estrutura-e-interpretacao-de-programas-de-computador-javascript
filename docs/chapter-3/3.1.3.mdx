@@ -1,0 +1,298 @@
+---
+title: 3.1.3 Os Custos de Introduzir Atribuição
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.1.3 Os Custos de Introduzir Atribuição
+
+Como vimos, a atribuição nos permite modelar objetos que têm estado local. No entanto, esta vantagem vem a um preço. Nossa linguagem de programação não pode mais ser interpretada em termos do modelo de substituição de aplicação de função que introduzimos na seção 1.1.5. Além disso, nenhum modelo simples com propriedades matemáticas "agradáveis" pode ser uma estrutura adequada para lidar com objetos e atribuição em linguagens de programação.
+
+Enquanto não usamos atribuições, duas avaliações da mesma função com os mesmos argumentos produzirão o mesmo resultado, de modo que as funções podem ser vistas como computando funções matemáticas. Programar sem nenhum uso de atribuições, como fizemos ao longo dos dois primeiros capítulos deste livro, é consequentemente conhecido como *programação funcional*.
+
+Para entender como a atribuição complica as coisas, considere uma versão simplificada da função `make_withdraw` da seção 3.1.1 que não se preocupa em verificar se há um valor insuficiente:
+
+<CodePlayground
+  code={`function make_simplified_withdraw(balance) {
+    return amount => {
+               balance = balance - amount;
+               return balance;
+           };
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+<CodePlayground
+  code={`const W = make_simplified_withdraw(25);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`W(20);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+5
+```
+
+<CodePlayground
+  code={`W(10);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+-5
+```
+
+Compare esta função com a seguinte função `make_decrementer`, que não usa atribuição:
+
+<CodePlayground
+  code={`function make_decrementer(balance) {
+    return amount => balance - amount;
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+A função `make_decrementer` retorna uma função que subtrai sua entrada de um valor designado `balance`, mas não há efeito acumulado sobre chamadas sucessivas, como com `make_simplified_withdraw`:
+
+<CodePlayground
+  code={`const D = make_decrementer(25);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+<CodePlayground
+  code={`D(20);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+5
+```
+
+<CodePlayground
+  code={`D(10);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+15
+```
+
+Podemos usar o modelo de substituição para explicar como `make_decrementer` funciona. Por exemplo, vamos analisar a avaliação da expressão
+
+<CodePlayground
+  code={`make_decrementer(25)(20);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+Primeiro simplificamos a expressão de função da aplicação substituindo 25 por `balance` no corpo de `make_decrementer`. Isso reduz a expressão a
+
+```javascript
+(amount => 25 - amount)(20)
+```
+
+Agora aplicamos a função substituindo 20 por `amount` no corpo da expressão lambda:
+
+```javascript
+25 - 20
+```
+
+A resposta final é 5.
+
+Observe, no entanto, o que acontece se tentarmos uma análise de substituição similar com `make_simplified_withdraw`:
+
+```javascript
+make_simplified_withdraw(25)(20)
+```
+
+Primeiro simplificamos a expressão de função substituindo 25 por `balance` no corpo de `make_simplified_withdraw`. Isso reduz a expressão a<sup>[1](#footnote-1)</sup>
+
+```javascript
+(amount => {
+     balance = 25 - amount;
+     return 25;
+ })(20)
+```
+
+Agora aplicamos a função substituindo 20 por `amount` no corpo da expressão lambda:
+
+```javascript
+balance = 25 - 20;
+return 25;
+```
+
+Se aderirmos ao modelo de substituição, teríamos que dizer que o significado da aplicação da função é primeiro definir `balance` como 5 e então retornar 25 como o valor da expressão. Isso dá a resposta errada. Para obter a resposta correta, teríamos que de alguma forma distinguir a primeira ocorrência de `balance` (antes do efeito da atribuição) da segunda ocorrência de `balance` (após o efeito da atribuição), e o modelo de substituição não pode fazer isso.
+
+O problema aqui é que a substituição é baseada, em última análise, na noção de que os nomes em nossa linguagem são essencialmente símbolos para valores. Isso funcionou bem para constantes. Mas uma variável, cujo valor pode mudar com atribuição, não pode simplesmente ser um nome para um valor. Uma variável de alguma forma se refere a um lugar onde um valor pode ser armazenado, e o valor armazenado nesse lugar pode mudar. Na seção 3.2 veremos como ambientes desempenham este papel de "lugar" em nosso modelo computacional.
+
+## Semelhança e mudança
+
+A questão que está surgindo aqui é mais profunda do que a mera quebra de um modelo particular de computação. Assim que introduzimos mudança em nossos modelos computacionais, muitas noções que eram anteriormente diretas tornam-se problemáticas. Considere o conceito de duas coisas sendo "iguais".
+
+Suponha que chamemos `make_decrementer` duas vezes com o mesmo argumento para criar duas funções:
+
+<CodePlayground
+  code={`const D1 = make_decrementer(25);
+
+const D2 = make_decrementer(25);`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+`D1` e `D2` são iguais? Uma resposta aceitável é sim, porque `D1` e `D2` têm o mesmo comportamento computacional—cada uma é uma função que subtrai sua entrada de 25. De fato, `D1` poderia ser substituído por `D2` em qualquer computação sem alterar o resultado.
+
+Contraste isso com fazer duas chamadas a `make_simplified_withdraw`:
+
+<CodePlayground
+  code={`const W1 = make_simplified_withdraw(25);
+
+const W2 = make_simplified_withdraw(25);`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+`W1` e `W2` são iguais? Certamente não, porque chamadas a `W1` e `W2` têm efeitos distintos, como mostrado pela seguinte sequência de interações:
+
+<CodePlayground
+  code={`W1(20);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+5
+```
+
+<CodePlayground
+  code={`W1(20);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+-15
+```
+
+<CodePlayground
+  code={`W2(20);`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+```
+5
+```
+
+Mesmo que `W1` e `W2` sejam "iguais" no sentido de que ambos são criados avaliando a mesma expressão, `make_simplified_withdraw(25)`, não é verdade que `W1` poderia ser substituído por `W2` em qualquer expressão sem alterar o resultado da avaliação da expressão.
+
+Uma linguagem que suporta o conceito de que "iguais podem ser substituídos por iguais" em uma expressão sem alterar o valor da expressão é dita ser *referencialmente transparente*. A transparência referencial é violada quando incluímos atribuição em nossa linguagem de computador. Isso torna complicado determinar quando podemos simplificar expressões substituindo expressões equivalentes. Consequentemente, raciocinar sobre programas que usam atribuição torna-se drasticamente mais difícil.
+
+Uma vez que abandonamos a transparência referencial, a noção do que significa para objetos computacionais serem "iguais" torna-se difícil de capturar de forma formal. De fato, o significado de "igual" no mundo real que nossos programas modelam dificilmente é claro em si mesmo. Em geral, podemos determinar que dois objetos aparentemente idênticos são de fato "o mesmo" apenas modificando um objeto e então observando se o outro objeto mudou da mesma maneira. Mas como podemos dizer se um objeto "mudou" a não ser observando o "mesmo" objeto duas vezes e vendo se alguma propriedade do objeto difere de uma observação para a seguinte? Assim, não podemos determinar "mudança" sem alguma noção a priori de "semelhança", e não podemos determinar semelhança sem observar os efeitos da mudança.
+
+Como exemplo de como esta questão surge em programação, considere a situação em que Pedro e Paulo têm uma conta bancária com $100 nela. Há uma diferença substancial entre modelar isso como
+
+<CodePlayground
+  code={`const peter_acc = make_account(100);
+const paul_acc = make_account(100);`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+e modelar isso como
+
+<CodePlayground
+  code={`const peter_acc = make_account(100);
+const paul_acc = peter_acc;`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+Na primeira situação, as duas contas bancárias são distintas. Transações feitas por Pedro não afetarão a conta de Paulo, e vice-versa. Na segunda situação, no entanto, definimos `paul_acc` como sendo *a mesma coisa* que `peter_acc`. Em efeito, Pedro e Paulo agora têm uma conta bancária conjunta, e se Pedro fizer um saque de `peter_acc`, Paulo observará menos dinheiro em `paul_acc`. Estas duas situações similares mas distintas podem causar confusão na construção de modelos computacionais. Com a conta compartilhada, em particular, pode ser especialmente confuso que há um objeto (a conta bancária) que tem dois nomes diferentes (`peter_acc` e `paul_acc`); se estivermos procurando por todos os lugares em nosso programa onde `paul_acc` pode ser alterado, devemos lembrar de procurar também por coisas que alteram `peter_acc`.<sup>[2](#footnote-2)</sup>
+
+Com referência às observações acima sobre "semelhança" e "mudança", observe que se Pedro e Paulo pudessem apenas examinar seus saldos bancários, e não pudessem realizar operações que alterassem o saldo, então a questão de se as duas contas são distintas seria irrelevante. Em geral, enquanto nunca modificarmos objetos de dados, podemos considerar um objeto de dados composto como sendo precisamente a totalidade de suas partes. Por exemplo, um número racional é determinado dando seu numerador e seu denominador. Mas esta visão não é mais válida na presença de mudança, onde um objeto de dados composto tem uma "identidade" que é algo diferente das partes das quais é composto. Uma conta bancária ainda é "a mesma" conta bancária mesmo se mudarmos o saldo fazendo um saque; inversamente, poderíamos ter duas contas bancárias diferentes com a mesma informação de estado. Esta complicação é uma consequência, não de nossa linguagem de programação, mas de nossa percepção de uma conta bancária como um objeto. Não consideramos, por exemplo, ordinariamente um número racional como um objeto mutável com identidade, tal que pudéssemos mudar o numerador e ainda ter "o mesmo" número racional.
+
+## Armadilhas da programação imperativa
+
+Em contraste com a programação funcional, a programação que faz uso extensivo de atribuição é conhecida como *programação imperativa*. Além de levantar complicações sobre modelos computacionais, programas escritos em estilo imperativo são suscetíveis a bugs que não podem ocorrer em programas funcionais. Por exemplo, relembre o programa fatorial iterativo da seção 1.2.1 (aqui usando uma instrução condicional em vez de uma expressão condicional):
+
+<CodePlayground
+  code={`function factorial(n) {
+    function iter(product, counter) {
+        if (counter > n) {
+            return product;
+        } else {
+            return iter(counter * product,
+                        counter + 1);
+        }
+    }
+    return iter(1, 1);
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+Em vez de passar argumentos no loop iterativo interno, poderíamos adotar um estilo mais imperativo usando atribuição explícita para atualizar os valores das variáveis `product` e `counter`:
+
+<CodePlayground
+  code={`function factorial(n) {
+    let product = 1;
+    let counter = 1;
+    function iter() {
+        if (counter > n) {
+            return product;
+        } else {
+            product = counter * product;
+            counter = counter + 1;
+            return iter();
+        }
+    }
+    return iter();
+}`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Isso não muda os resultados produzidos pelo programa, mas introduz uma armadilha sutil. Como decidimos a ordem das atribuições? Como acontece, o programa está correto como escrito. Mas escrever as atribuições na ordem oposta
+
+```javascript
+counter = counter + 1;
+product = counter * product;
+```
+
+teria produzido um resultado diferente e incorreto. Em geral, programar com atribuição nos força a considerar cuidadosamente as ordens relativas das atribuições para garantir que cada instrução esteja usando a versão correta das variáveis que foram alteradas. Esta questão simplesmente não surge em programas funcionais.<sup>[3](#footnote-3)</sup>
+
+A complexidade de programas imperativos torna-se ainda pior se considerarmos aplicações nas quais vários processos executam concorrentemente. Retornaremos a isso na seção 3.4. Primeiro, no entanto, abordaremos a questão de fornecer um modelo computacional para expressões que envolvem atribuição, e explorar os usos de objetos com estado local no design de simulações.
+
+## Exercício 3.7
+
+Considere os objetos de conta bancária criados por `make_account`, com a modificação de senha descrita no exercício 3.3. Suponha que nosso sistema bancário requer a capacidade de fazer contas conjuntas. Defina uma função `make_joint` que realize isso. A função `make_joint` deve receber três argumentos. O primeiro é uma conta protegida por senha. O segundo argumento deve corresponder à senha com a qual a conta foi definida para que a operação `make_joint` prossiga. O terceiro argumento é uma nova senha. A função `make_joint` deve criar um acesso adicional à conta original usando a nova senha. Por exemplo, se `peter_acc` é uma conta bancária com a senha `"open sesame"`, então
+
+<CodePlayground
+  code={`const paul_acc = make_joint(peter_acc, "open sesame", "rosebud");`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+permitirá que se faça transações em `peter_acc` usando o nome `paul_acc` e a senha `"rosebud"`. Você pode desejar modificar sua solução do exercício 3.3 para acomodar este novo recurso.
+
+## Exercício 3.8
+
+Quando definimos o modelo de avaliação na seção 1.1.3, dissemos que o primeiro passo na avaliação de uma expressão é avaliar suas subexpressões. Mas nunca especificamos a ordem na qual as subexpressões devem ser avaliadas (por exemplo, da esquerda para a direita ou da direita para a esquerda). Quando introduzimos atribuição, a ordem na qual os operandos de uma combinação de operadores são avaliados pode fazer diferença no resultado. Defina uma função simples `f` tal que avaliar `f(0) + f(1)` retornará 0 se os operandos de `+` forem avaliados da esquerda para a direita, mas retornará 1 se os operandos forem avaliados da direita para a esquerda.
+
+-----
+
+<a name="footnote-1"></a>[1] Não substituímos a ocorrência de `balance` na atribuição porque o nome em uma atribuição não é avaliado. Se substituíssemos por ele, obteríamos `25 = 25 - amount;`, o que não faz sentido.
+
+<a name="footnote-2"></a>[2] O fenômeno de um único objeto computacional ser acessado por mais de um nome é conhecido como *aliasing*. A situação da conta bancária conjunta ilustra um exemplo muito simples de um alias. Na seção 3.3 veremos exemplos muito mais complexos, como estruturas de dados compostas "distintas" que compartilham partes. Bugs podem ocorrer em nossos programas se esquecermos que uma mudança em um objeto também pode, como um "efeito colateral", mudar um objeto "diferente" porque os dois objetos "diferentes" são na verdade um único objeto aparecendo sob aliases diferentes. Estes chamados *bugs de efeito colateral* são tão difíceis de localizar e analisar que algumas pessoas propuseram que linguagens de programação sejam projetadas de forma a não permitir efeitos colaterais ou aliasing (Lampson et al. 1981; Morris, Schmidt, and Wadler 1980).
+
+<a name="footnote-3"></a>[3] Em vista disso, é irônico que a programação introdutória seja mais frequentemente ensinada em um estilo altamente imperativo. Isso pode ser um vestígio de uma crença, comum ao longo dos anos 1960 e 1970, de que programas que chamam funções devem ser inerentemente menos eficientes do que programas que realizam atribuições. (Steele (1977) desmente este argumento.) Alternativamente, pode refletir uma visão de que atribuição passo a passo é mais fácil para iniciantes visualizarem do que chamadas de função. Qualquer que seja a razão, isso frequentemente sobrecarrega programadores iniciantes com preocupações de "devo definir esta variável antes ou depois daquela" que podem complicar a programação e obscurecer as ideias importantes.

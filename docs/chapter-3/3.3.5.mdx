@@ -1,0 +1,425 @@
+---
+title: 3.3.5 Propagação de Restrições
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 3.3.5 Propagação de Restrições
+
+Programas de computador são tradicionalmente organizados como computações unidirecionais, que realizam operações em argumentos pré-especificados para produzir saídas desejadas. Por outro lado, frequentemente modelamos sistemas em termos de relações entre quantidades. Por exemplo, um modelo matemático de uma estrutura mecânica pode incluir a informação de que a deflexão d de uma haste metálica está relacionada à força F na haste, ao comprimento L da haste, à área de seção transversal A e ao módulo elástico E através da equação
+
+```
+d A E = F L
+```
+
+Tal equação não é unidirecional. Dados quaisquer quatro das quantidades, podemos usá-la para calcular a quinta. No entanto, traduzir a equação para uma linguagem de computador tradicional nos forçaria a escolher uma das quantidades para ser calculada em termos das outras quatro. Assim, uma função para calcular a área A não poderia ser usada para calcular a deflexão d, mesmo que os cálculos de A e d surjam da mesma equação.
+
+Nesta seção, esboçamos o design de uma linguagem que nos permite trabalhar em termos das próprias relações. Os elementos primitivos da linguagem são *restrições primitivas*, que afirmam que certas relações se mantêm entre quantidades. Por exemplo, `adder(a, b, c)` especifica que as quantidades a, b e c devem estar relacionadas pela equação a + b = c, `multiplier(x, y, z)` expressa a restrição xy = z, e `constant(3.14, x)` diz que o valor de x deve ser 3.14.
+
+Nossa linguagem fornece um meio de combinar restrições primitivas para expressar relações mais complexas. Combinamos restrições construindo *redes de restrições*, nas quais as restrições são unidas por *conectores*. Um conector é um objeto que "mantém" um valor que pode participar de uma ou mais restrições. Por exemplo, sabemos que a relação entre temperaturas Fahrenheit e Celsius é
+
+```
+9C = 5(F - 32)
+```
+
+Tal restrição pode ser pensada como uma rede consistindo de restrições primitivas adder, multiplier e constant (Figura 3.28). Na figura, vemos à esquerda uma caixa multiplicadora com três terminais, rotulados m₁, m₂ e p. Estes conectam o multiplicador ao resto da rede da seguinte forma: O terminal m₁ está ligado a um conector C, que manterá a temperatura Celsius. O terminal m₂ está ligado a um conector w, que também está ligado a uma caixa constante que mantém 9. O terminal p, que a caixa multiplicadora restringe a ser o produto de m₁ e m₂, está ligado ao terminal p de outra caixa multiplicadora, cujo m₂ está conectado a uma constante 5 e cujo m₁ está conectado a um dos termos em uma soma.
+
+A computação por tal rede prossegue da seguinte forma: Quando um conector recebe um valor (pelo usuário ou por uma caixa de restrição à qual está ligado), ele acorda todas as suas restrições associadas (exceto pela restrição que acabou de acordá-lo) para informá-las de que tem um valor. Cada caixa de restrição acordada então consulta seus conectores para ver se há informação suficiente para determinar um valor para um conector. Se sim, a caixa define esse conector, que então acorda todas as suas restrições associadas, e assim por diante. Por exemplo, na conversão entre Celsius e Fahrenheit, w, x e y são imediatamente definidos pelas caixas constantes para 9, 5 e 32, respectivamente. Os conectores acordam os multiplicadores e o somador, que determinam que não há informação suficiente para prosseguir. Se o usuário (ou alguma outra parte da rede) define C para um valor (digamos 25), o multiplicador mais à esquerda será acordado, e ele definirá u para 25 × 9 = 225. Então u acorda o segundo multiplicador, que define v para 45, e v acorda o somador, que define F para 77.
+
+## Usando o sistema de restrições
+
+Para usar o sistema de restrições para realizar o cálculo de temperatura descrito acima, primeiro chamamos o construtor `make_connector` para criar dois conectores, C e F, e então os ligamos em uma rede apropriada:
+
+```javascript
+const C = make_connector();
+const F = make_connector();
+celsius_fahrenheit_converter(C, F);
+// "ok"
+```
+
+A função que cria a rede é definida da seguinte forma:
+
+```javascript
+function celsius_fahrenheit_converter(c, f) {
+    const u = make_connector();
+    const v = make_connector();
+    const w = make_connector();
+    const x = make_connector();
+    const y = make_connector();
+    multiplier(c, w, u);
+    multiplier(v, x, u);
+    adder(v, y, f);
+    constant(9, w);
+    constant(5, x);
+    constant(32, y);
+    return "ok";
+}
+```
+
+Esta função cria os conectores internos u, v, w, x e y, e os liga como mostrado na Figura 3.28 usando os construtores de restrição primitivos `adder`, `multiplier` e `constant`. Assim como com o simulador de circuito digital da seção 3.3.4, expressar essas combinações de elementos primitivos em termos de funções automaticamente fornece à nossa linguagem um meio de abstração para objetos compostos.
+
+Para observar a rede em ação, podemos colocar sondas nos conectores C e F, usando uma função `probe` similar à que usamos para monitorar fios na seção 3.3.4. Colocar uma sonda em um conector fará com que uma mensagem seja impressa sempre que o conector receber um valor:
+
+```javascript
+probe("Celsius temp", C);
+probe("Fahrenheit temp", F);
+```
+
+Em seguida, definimos o valor de C para 25. (O terceiro argumento para `set_value` diz a C que esta diretiva vem do `"user"`.)
+
+```javascript
+set_value(C, 25, "user");
+// "Probe: Celsius temp = 25"
+// "Probe: Fahrenheit temp = 77"
+// "done"
+```
+
+A sonda em C acorda e relata o valor. C também propaga seu valor através da rede conforme descrito acima. Isso define F para 77, que é relatado pela sonda em F.
+
+Agora podemos tentar definir F para um novo valor, digamos 212:
+
+```javascript
+set_value(F, 212, "user");
+// "Error! Contradiction: (77, 212)"
+```
+
+O conector reclama que detectou uma contradição: Seu valor é 77, e alguém está tentando defini-lo para 212. Se realmente queremos reutilizar a rede com novos valores, podemos dizer a C para esquecer seu valor antigo:
+
+```javascript
+forget_value(C, "user");
+// "Probe: Celsius temp = ?"
+// "Probe: Fahrenheit temp = ?"
+// "done"
+```
+
+C descobre que o `"user"`, que definiu seu valor originalmente, agora está retratando esse valor, então C concorda em perder seu valor, como mostrado pela sonda, e informa o resto da rede desse fato. Esta informação eventualmente se propaga para F, que agora descobre que não tem razão para continuar acreditando que seu próprio valor é 77. Assim, F também desiste de seu valor, como mostrado pela sonda.
+
+Agora que F não tem valor, somos livres para defini-lo para 212:
+
+```javascript
+set_value(F, 212, "user");
+// "Probe: Fahrenheit temp = 212"
+// "Probe: Celsius temp = 100"
+// "done"
+```
+
+Este novo valor, quando propagado através da rede, força C a ter um valor de 100, e isso é registrado pela sonda em C. Note que a mesma rede está sendo usada para calcular C dado F e para calcular F dado C. Essa não direcionalidade da computação é a característica distintiva de sistemas baseados em restrições.
+
+## Implementando o sistema de restrições
+
+O sistema de restrições é implementado via objetos procedurais com estado local, de maneira muito similar ao simulador de circuito digital da seção 3.3.4. Embora os objetos primitivos do sistema de restrições sejam um pouco mais complexos, o sistema geral é mais simples, já que não há preocupação com agendas e atrasos lógicos.
+
+As operações básicas em conectores são as seguintes:
+
+- `has_value(connector)` diz se o conector tem um valor.
+- `get_value(connector)` retorna o valor atual do conector.
+- `set_value(connector, new_value, informant)` indica que o informante está solicitando que o conector defina seu valor para o novo valor.
+- `forget_value(connector, retractor)` diz ao conector que o retractor está solicitando que ele esqueça seu valor.
+- `connect(connector, new_constraint)` diz ao conector para participar da nova restrição.
+
+Os conectores comunicam-se com as restrições por meio das funções `inform_about_value`, que diz à restrição dada que o conector tem um valor, e `inform_about_no_value`, que diz à restrição que o conector perdeu seu valor.
+
+`Adder` constrói uma restrição de somador entre os conectores de somandos a1 e a2 e um conector `sum`. Um somador é implementado como uma função com estado local (a função `me` abaixo):
+
+```javascript
+function adder(a1, a2, sum) {
+    function process_new_value() {
+        if (has_value(a1) && has_value(a2)) {
+            set_value(sum, get_value(a1) + get_value(a2), me);
+        } else if (has_value(a1) && has_value(sum)) {
+            set_value(a2, get_value(sum) - get_value(a1), me);
+        } else if (has_value(a2) && has_value(sum)) {
+            set_value(a1, get_value(sum) - get_value(a2), me);
+        } else {}
+    }
+    function process_forget_value() {
+        forget_value(sum, me);
+        forget_value(a1, me);
+        forget_value(a2, me);
+        process_new_value();
+    }
+    function me(request) {
+        if (request === "I have a value.") {
+            process_new_value();
+        } else if (request === "I lost my value.") {
+            process_forget_value();
+        } else {
+            error(request, "unknown request -- adder");
+        }
+    }
+    connect(a1, me);
+    connect(a2, me);
+    connect(sum, me);
+    return me;
+}
+```
+
+A função `adder` conecta o novo somador aos conectores designados e o retorna como seu valor. A função `me`, que representa o somador, age como um despachante para as funções locais. As seguintes "interfaces de sintaxe" são usadas em conjunto com o despachador:
+
+```javascript
+function inform_about_value(constraint) {
+    return constraint("I have a value.");
+}
+
+function inform_about_no_value(constraint) {
+    return constraint("I lost my value.");
+}
+```
+
+A função local `process_new_value` do somador é chamada quando o somador é informado de que um de seus conectores tem um valor. O somador primeiro verifica se tanto a1 quanto a2 têm valores. Se sim, ele diz a sum para definir seu valor para a soma dos dois somandos. O argumento `informant` para `set_value` é `me`, que é o próprio objeto somador. Se a1 e a2 não têm ambos valores, então o somador verifica se talvez a1 e sum tenham valores. Se sim, ele define a2 para a diferença desses dois. Finalmente, se a2 e sum têm valores, isso dá ao somador informação suficiente para definir a1. Se o somador é informado de que um de seus conectores perdeu um valor, ele solicita que todos os seus conectores agora percam seus valores. (Apenas aqueles valores que foram definidos por este somador são realmente perdidos.) Então ele executa `process_new_value`. A razão para este último passo é que um ou mais conectores ainda podem ter um valor (ou seja, um conector pode ter tido um valor que não foi originalmente definido pelo somador), e esses valores podem precisar ser propagados de volta através do somador.
+
+Um multiplicador é muito similar a um somador. Ele definirá seu `product` para 0 se qualquer um dos fatores for 0, mesmo se o outro fator não for conhecido.
+
+```javascript
+function multiplier(m1, m2, product) {
+    function process_new_value() {
+        if ((has_value(m1) && get_value(m1) === 0)
+         || (has_value(m2) && get_value(m2) === 0)) {
+            set_value(product, 0, me);
+        } else if (has_value(m1) && has_value(m2)) {
+            set_value(product, get_value(m1) * get_value(m2), me);
+        } else if (has_value(product) && has_value(m1)) {
+            set_value(m2, get_value(product) / get_value(m1), me);
+        } else if (has_value(product) && has_value(m2)) {
+            set_value(m1, get_value(product) / get_value(m2), me);
+        } else {}
+    }
+    function process_forget_value() {
+        forget_value(product, me);
+        forget_value(m1, me);
+        forget_value(m2, me);
+        process_new_value();
+    }
+    function me(request) {
+        if (request === "I have a value.") {
+            process_new_value();
+        } else if (request === "I lost my value.") {
+            process_forget_value();
+        } else {
+            error(request, "unknown request -- multiplier");
+        }
+    }
+    connect(m1, me);
+    connect(m2, me);
+    connect(product, me);
+    return me;
+}
+```
+
+Um construtor `constant` simplesmente define o valor do conector designado. Qualquer mensagem `"I have a value."` ou `"I lost my value."` enviada à caixa constante produzirá um erro.
+
+```javascript
+function constant(value, connector) {
+    function me(request) {
+        error(request, "unknown request -- constant");
+    }
+    connect(connector, me);
+    set_value(connector, value, me);
+    return me;
+}
+```
+
+Finalmente, uma sonda imprime uma mensagem sobre a definição ou remoção do conector designado:
+
+```javascript
+function probe(name, connector) {
+    function print_probe(value) {
+        display("Probe: " + name + " = " + stringify(value));
+    }
+    function process_new_value() {
+        print_probe(get_value(connector));
+    }
+    function process_forget_value() {
+        print_probe("?");
+    }
+    function me(request) {
+        return request === "I have a value."
+               ? process_new_value()
+               : request === "I lost my value."
+               ? process_forget_value()
+               : error(request, "unknown request -- probe");
+    }
+    connect(connector, me);
+    return me;
+}
+```
+
+## Representando conectores
+
+Um conector é representado como um objeto procedural com variáveis de estado local `value`, o valor atual do conector; `informant`, o objeto que definiu o valor do conector; e `constraints`, uma lista das restrições nas quais o conector participa.
+
+```javascript
+function make_connector() {
+    let value = false;
+    let informant = false;
+    let constraints = null;
+    function set_my_value(newval, setter) {
+        if (!has_value(me)) {
+            value = newval;
+            informant = setter;
+            return for_each_except(setter,
+                                   inform_about_value,
+                                   constraints);
+        } else if (value !== newval) {
+            error(list(value, newval), "contradiction");
+        } else {
+            return "ignored";
+        }
+    }
+    function forget_my_value(retractor) {
+        if (retractor === informant) {
+            informant = false;
+            return for_each_except(retractor,
+                                   inform_about_no_value,
+                                   constraints);
+        } else {
+            return "ignored";
+        }
+    }
+    function connect(new_constraint) {
+        if (is_null(member(new_constraint, constraints))) {
+            constraints = pair(new_constraint, constraints);
+        } else {}
+        if (has_value(me)) {
+            inform_about_value(new_constraint);
+        } else {}
+        return "done";
+    }
+    function me(request) {
+        if (request === "has_value") {
+            return informant !== false;
+        } else if (request === "value") {
+            return value;
+        } else if (request === "set_value") {
+            return set_my_value;
+        } else if (request === "forget") {
+            return forget_my_value;
+        } else if (request === "connect") {
+            return connect;
+        } else {
+            error(request, "unknown operation -- connector");
+        }
+    }
+    return me;
+}
+```
+
+A função local `set_my_value` do conector é chamada quando há uma solicitação para definir o valor do conector. Se o conector não tem atualmente um valor, ele definirá seu valor e se lembrará como `informant` da restrição que solicitou que o valor fosse definido. Então o conector notificará todas as suas restrições participantes, exceto a restrição que solicitou que o valor fosse definido. Isso é feito usando o seguinte iterador, que aplica uma função designada a todos os itens em uma lista, exceto um dado:
+
+```javascript
+function for_each_except(exception, fun, list) {
+    function loop(items) {
+        if (is_null(items)) {
+            return "done";
+        } else if (head(items) === exception) {
+            return loop(tail(items));
+        } else {
+            fun(head(items));
+            return loop(tail(items));
+        }
+    }
+    return loop(list);
+}
+```
+
+Se um conector é solicitado a esquecer seu valor, ele executa `forget_my_value`, uma função local que primeiro verifica se a solicitação está vindo do mesmo objeto que definiu o valor originalmente. Se sim, o conector informa suas restrições associadas sobre a perda do valor.
+
+A função local `connect` adiciona a nova restrição designada à lista de restrições se ela ainda não estiver nessa lista. Então, se o conector tem um valor, ele informa a nova restrição deste fato.
+
+A função `me` do conector serve como um despachador para as outras funções internas e também representa o conector como um objeto. As seguintes funções fornecem uma interface de sintaxe para o despachador:
+
+```javascript
+function has_value(connector) {
+    return connector("has_value");
+}
+function get_value(connector) {
+    return connector("value");
+}
+function set_value(connector, new_value, informant) {
+    return connector("set_value")(new_value, informant);
+}
+function forget_value(connector, retractor) {
+    return connector("forget")(retractor);
+}
+
+function connect(connector, new_constraint) {
+    return connector("connect")(new_constraint);
+}
+```
+
+**Exercício 3.33:** Usando restrições primitivas multiplier, adder e constant, defina uma função `averager` que recebe três conectores a, b e c como entradas e estabelece a restrição de que o valor de c é a média dos valores de a e b.
+
+**Exercício 3.34:** Louis Reasoner quer construir um elevador ao quadrado, um dispositivo de restrição com dois terminais tal que o valor do conector b no segundo terminal será sempre o quadrado do valor a no primeiro terminal. Ele propõe o seguinte dispositivo simples feito de um multiplicador:
+
+```javascript
+function squarer(a, b) {
+    return multiplier(a, a, b);
+}
+```
+
+Há uma falha séria nessa ideia. Explique.
+
+**Exercício 3.35:** Ben Bitdiddle diz a Louis que uma maneira de evitar o problema no exercício 3.34 é definir um elevador ao quadrado como uma nova restrição primitiva. Preencha as partes faltantes no esboço de Ben para uma função para implementar tal restrição:
+
+```javascript
+function squarer(a, b) {
+    function process_new_value() {
+        if (has_value(b)) {
+            if (get_value(b) < 0) {
+                error(get_value(b), "square less than 0 -- squarer");
+            } else {
+                <alternativa_1>
+            }
+        } else {
+            <alternativa_2>
+        }
+    }
+    function process_forget_value() {
+        <corpo_1>
+    }
+    function me(request) {
+        <corpo_2>
+    }
+    <instruções>
+    return me;
+}
+```
+
+**Exercício 3.36:** Suponha que avaliemos a seguinte sequência de instruções no ambiente programa:
+
+```javascript
+const a = make_connector();
+const b = make_connector();
+set_value(a, 10, "user");
+```
+
+Em algum momento durante a avaliação do `set_value`, a seguinte expressão da função local do conector é avaliada:
+
+```javascript
+for_each_except(setter, inform_about_value, constraints);
+```
+
+Desenhe um diagrama de ambiente mostrando o ambiente no qual a expressão acima é avaliada.
+
+**Exercício 3.37:** A função `celsius_fahrenheit_converter` é pesada quando comparada com um estilo de definição mais orientado a expressão, tal como
+
+```javascript
+function celsius_fahrenheit_converter(x) {
+    return cplus(cmul(cdiv(cv(9), cv(5)), x), cv(32));
+}
+
+const C = make_connector();
+const F = celsius_fahrenheit_converter(C);
+```
+
+Aqui `cplus`, `cmul`, etc. são as versões de "restrição" das operações aritméticas. Por exemplo, `cplus` recebe dois conectores como argumentos e retorna um conector que está relacionado a esses por uma restrição de somador:
+
+```javascript
+function cplus(x, y) {
+    const z = make_connector();
+    adder(x, y, z);
+    return z;
+}
+```
+
+Defina funções análogas `cminus`, `cmul`, `cdiv` e `cv` (valor constante) que nos permitem definir restrições compostas como no exemplo do conversor acima.
