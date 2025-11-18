@@ -276,6 +276,17 @@ div[class*='announcementBar'] {
   font-weight: 600;
 }
 
+/* Links no banner de anúncio - garantir contraste no fundo amarelo */
+div[class*='announcementBar'] a {
+  color: #0d47a1 !important;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+div[class*='announcementBar'] a:hover {
+  color: #01579b !important;
+}
+
 /* Footer */
 .footer {
   padding: 2rem 0;
@@ -309,4 +320,52 @@ div[class*='announcementBar'] {
 .sp-preview-container,
 .sp-preview-iframe {
   font-size: 16px !important;
+}
+
+/* Personalização do botão "Run" para "Executar" */
+.sp-button[title="Run code"],
+button[aria-label="Run code"] {
+  font-size: 0 !important;
+}
+
+.sp-button[title="Run code"]::after,
+button[aria-label="Run code"]::after {
+  content: "Executar";
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Esconder mensagens de debug do Sandpack no console */
+/* Esconde mensagens que começam com "Injecting", "First element", etc */
+.sp-console-item .sp-console-message {
+  display: none !important;
+}
+
+/* Garantir que os outputs reais (console.log, etc) sejam mostrados */
+.sp-console-item .sp-console-output,
+.sp-console-item .sp-console-error,
+.sp-console-item .sp-console-warning {
+  display: block !important;
+}
+
+/* Reorganizar layout do painel lateral - dar mais espaço ao output */
+.sp-layout {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Console com mais espaço */
+.sp-console {
+  flex: 1 1 auto !important;
+  min-height: 200px !important;
+  order: 1 !important;
+}
+
+/* Botões de ação (reload, open sandbox) na parte inferior */
+.sp-button-group,
+.sp-preview-actions {
+  order: 2 !important;
+  margin-top: auto !important;
+  padding-top: 8px !important;
+  border-top: 1px solid var(--sp-colors-surface2, #e4e4e7);
 }
