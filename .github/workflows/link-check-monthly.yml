@@ -1,0 +1,107 @@
+name: 🔗 Verificação Mensal de Links
+
+on:
+  schedule:
+    # Executa no dia 1 de cada mês às 9:00 UTC (6:00 BRT)
+    - cron: '0 9 1 * *'
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  link-check:
+    name: Verificar Links Quebrados
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: npm ci
+
+      - name: 🔗 Verificar links
+        id: link_check
+        continue-on-error: true
+        run: |
+          echo "## 🔗 Relatório de Links Quebrados" > link-report.md
+          echo "" >> link-report.md
+          echo "**Data da verificação:** $(date '+%d/%m/%Y às %H:%M UTC')" >> link-report.md
+          echo "" >> link-report.md
+
+          # Roda link check e captura output
+          if NODE_NO_WARNINGS=1 npm run link-check > link-output.txt 2>&1; then
+            echo "✅ Nenhum link quebrado encontrado!" >> link-report.md
+            echo "has_broken_links=false" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ **Links quebrados encontrados:**" >> link-report.md
+            echo "" >> link-report.md
+            echo '```' >> link-report.md
+            cat link-output.txt | grep -A 5 "✖" >> link-report.md || true
+            echo '```' >> link-report.md
+            echo "has_broken_links=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Upload do relatório como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-check-report-${{ github.run_number }}
+          path: link-report.md
+          retention-days: 90
+
+      - name: 🐛 Criar issue com links quebrados
+        if: steps.link_check.outputs.has_broken_links == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('link-report.md', 'utf8');
+
+            // Verifica se já existe issue aberta
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'links-quebrados,automated'
+            });
+
+            const existingIssue = issues.data.find(issue =>
+              issue.title.includes('Links Quebrados - Verificação Mensal')
+            );
+
+            if (existingIssue) {
+              // Atualiza issue existente
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `## 🔄 Nova verificação realizada\n\n${report}\n\n---\n*Verificação automática executada em ${new Date().toLocaleString('pt-BR')}*`
+              });
+
+              console.log(`Issue #${existingIssue.number} atualizada com novo relatório`);
+            } else {
+              // Cria nova issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🔗 Links Quebrados - Verificação Mensal',
+                body: `${report}\n\n---\n\n### 📝 Próximos Passos\n\n- [ ] Revisar todos os links quebrados\n- [ ] Atualizar ou remover links mortos\n- [ ] Verificar se há URLs alternativas\n- [ ] Fechar esta issue após correção\n\n---\n*Issue criada automaticamente pela verificação mensal de links*\n*Próxima verificação: Dia 1 do próximo mês*`,
+                labels: ['links-quebrados', 'automated', 'maintenance']
+              });
+
+              console.log(`Issue #${issue.data.number} criada com sucesso`);
+            }
+
+      - name: ✅ Comentar no commit se tudo OK
+        if: steps.link_check.outputs.has_broken_links == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Opcional: pode enviar notificação ou comentar em algum lugar
+            console.log('✅ Verificação mensal concluída: nenhum link quebrado!');
