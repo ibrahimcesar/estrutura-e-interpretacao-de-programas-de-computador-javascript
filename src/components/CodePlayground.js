@@ -10,7 +10,9 @@ import { useColorMode } from '@docusaurus/theme-common';
  * usando Sandpack (CodeSandbox).
  *
  * @param {Object} props
- * @param {string} props.code - Código JavaScript a ser executado
+ * @param {string} props.code - Código JavaScript a ser executado (para uso simples)
+ * @param {string} props.hiddenCode - Código auxiliar oculto (funções de dependência)
+ * @param {Array<{name: string, code: string, hidden?: boolean}>} props.files - Array de arquivos para uso avançado
  * @param {string} props.title - Título do exemplo (opcional)
  * @param {boolean} props.showLineNumbers - Mostrar números de linha (padrão: true)
  * @param {boolean} props.showConsole - Mostrar console (padrão: true)
@@ -19,6 +21,8 @@ import { useColorMode } from '@docusaurus/theme-common';
  */
 export default function CodePlayground({
   code,
+  hiddenCode,
+  files,
   title = "Exemplo de Código",
   showLineNumbers = true,
   showConsole = true,
@@ -27,6 +31,44 @@ export default function CodePlayground({
 }) {
   const { colorMode } = useColorMode();
   const theme = colorMode === 'dark' ? nightOwl : aquaBlue;
+
+  // Construir estrutura de arquivos baseado nas props
+  let sandpackFiles;
+
+  if (files) {
+    // Modo avançado: usar array de arquivos
+    sandpackFiles = {};
+    let hasActiveFile = false;
+
+    files.forEach((file) => {
+      const fileName = file.name.startsWith('/') ? file.name : `/${file.name}`;
+      const isActive = !file.hidden && !hasActiveFile;
+      if (isActive) hasActiveFile = true;
+
+      sandpackFiles[fileName] = {
+        code: file.code,
+        hidden: file.hidden || false,
+        active: isActive,
+      };
+    });
+  } else {
+    // Modo simples: usar code e hiddenCode
+    sandpackFiles = {};
+
+    // Adicionar arquivo oculto com dependências, se fornecido
+    if (hiddenCode) {
+      sandpackFiles["/helpers.js"] = {
+        code: hiddenCode,
+        hidden: true,
+      };
+    }
+
+    // Adicionar arquivo principal
+    sandpackFiles["/index.js"] = {
+      code: code || "",
+      active: true,
+    };
+  }
 
   return (
     <div style={{ marginBottom: '2rem' }}>
@@ -43,12 +85,7 @@ export default function CodePlayground({
       )}
       <Sandpack
         template="vanilla"
-        files={{
-          "/index.js": {
-            code: code,
-            active: true,
-          },
-        }}
+        files={sandpackFiles}
         theme={theme}
         options={{
           showNavigator: false,
