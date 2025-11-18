@@ -1,0 +1,125 @@
+---
+title: 2.4.1 Representações para Números Complexos
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.4.1  Representações para Números Complexos
+
+Desenvolvemos a abstração de dados de números racionais como uma combinação de um numerador e um denominador. Um objeto de dados abstrato de números complexos pode ser pensado de duas maneiras quase equivalentes. A forma retangular especifica um número complexo em termos de suas partes real e imaginária, enquanto a forma polar especifica em termos de magnitude e ângulo.
+
+## As Duas Representações
+
+**Forma Retangular:** números complexos como pares ordenados (parte real, parte imaginária)
+- Adição e subtração são naturalmente expressas nesta forma
+- z1 + z2 = (x1 + x2, y1 + y2)
+
+**Forma Polar:** números complexos como magnitude e ângulo (r, A)
+- Multiplicação e divisão são naturalmente expressas nesta forma
+- z1 × z2 = (r1 × r2, A1 + A2)
+
+## Interface Abstrata
+
+Independentemente de qual representação usamos, precisamos das seguintes operações:
+
+<CodePlayground
+  code={`// Operações aritméticas genéricas
+function add_complex(z1, z2) {
+    return make_from_real_imag(
+        real_part(z1) + real_part(z2),
+        imag_part(z1) + imag_part(z2)
+    );
+}
+
+function sub_complex(z1, z2) {
+    return make_from_real_imag(
+        real_part(z1) - real_part(z2),
+        imag_part(z1) - imag_part(z2)
+    );
+}
+
+function mul_complex(z1, z2) {
+    return make_from_mag_ang(
+        magnitude(z1) * magnitude(z2),
+        angle(z1) + angle(z2)
+    );
+}
+
+function div_complex(z1, z2) {
+    return make_from_mag_ang(
+        magnitude(z1) / magnitude(z2),
+        angle(z1) - angle(z2)
+    );
+}`}
+  height={450}
+/>
+
+## Representação Retangular de Ben
+
+Ben decide representar números complexos como pares de partes real e imaginária:
+
+<CodePlayground
+  code={`// Representação Retangular
+function make_from_real_imag(x, y) {
+    return pair(x, y);
+}
+
+function real_part(z) {
+    return head(z);
+}
+
+function imag_part(z) {
+    return tail(z);
+}
+
+function magnitude(z) {
+    return math_sqrt(square(real_part(z)) +
+                     square(imag_part(z)));
+}
+
+function angle(z) {
+    return math_atan(imag_part(z), real_part(z));
+}
+
+function make_from_mag_ang(r, a) {
+    return pair(r * math_cos(a), r * math_sin(a));
+}`}
+  height={450}
+/>
+
+## Representação Polar de Alyssa
+
+Alyssa P. Hacker decide representar números complexos em forma polar como pares (magnitude, ângulo):
+
+<CodePlayground
+  code={`// Representação Polar
+function make_from_mag_ang(r, a) {
+    return pair(r, a);
+}
+
+function magnitude(z) {
+    return head(z);
+}
+
+function angle(z) {
+    return tail(z);
+}
+
+function real_part(z) {
+    return magnitude(z) * math_cos(angle(z));
+}
+
+function imag_part(z) {
+    return magnitude(z) * math_sin(angle(z));
+}
+
+function make_from_real_imag(x, y) {
+    return pair(math_sqrt(square(x) + square(y)),
+                math_atan(y, x));
+}`}
+  height={450}
+/>
+
+## O Poder da Abstração de Dados
+
+A disciplina da abstração de dados garante que a mesma implementação de `add_complex`, `sub_complex`, `mul_complex` e `div_complex` funcionará com a representação de Ben ou a representação de Alyssa. Essa é a essência da abstração de dados—separa o uso de dados de sua representação.

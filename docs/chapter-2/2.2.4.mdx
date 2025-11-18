@@ -1,0 +1,111 @@
+---
+title: 2.2.4 Exemplo - Uma Linguagem de Imagens
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.2.4  Exemplo: Uma Linguagem de Imagens
+
+Esta seção apresenta uma linguagem simples para desenhar imagens que ilustra o poder da abstração de dados e da propriedade de closure. A linguagem é projetada para tornar fácil experimentar padrões como os desenhos do artista M.C. Escher.
+
+## Fundamentos da Linguagem
+
+A linguagem tem apenas um tipo de elemento, chamado *painter* (pintor). Um painter desenha uma imagem que é deslocada e escalada para se ajustar dentro de um paralelogramo especificado chamado *frame* (quadro).
+
+### Frames
+
+Um frame pode ser descrito por três vetores—um vetor de origem e dois vetores de borda. O frame coordena o processo de desenho:
+- O vetor de origem especifica o deslocamento da imagem
+- Os vetores de borda especificam a escala e orientação da imagem
+
+### Painters
+
+Painters são funções que recebem um frame como argumento e desenham sua imagem transformada para se ajustar ao frame. Por exemplo:
+- `wave` - desenha uma figura de linha
+- `rogers` - desenha uma foto de William Barton Rogers
+- `einstein` - desenha uma foto de Albert Einstein
+
+## Combinando Painters
+
+A linguagem fornece operações que criam novos painters a partir de painters existentes:
+
+### Transformações Simples
+
+<CodePlayground
+  code={`// flip_vert vira o painter verticalmente
+const flipped_wave = flip_vert(wave);
+
+// flip_horiz vira horizontalmente
+const flipped_horiz_wave = flip_horiz(wave);
+
+// rotate90 rotaciona 90 graus
+const rotated_wave = rotate90(wave);`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+### Composição
+
+<CodePlayground
+  code={`// beside coloca dois painters lado a lado
+const wave2 = beside(wave, flip_vert(wave));
+
+// below empilha painters verticalmente
+const wave4 = below(wave2, wave2);`}
+  height={180}
+  showLineNumbers={false}
+/>
+
+## Closure e Abstração
+
+Como `beside` e `below` retornam painters, podemos usá-los como building blocks para padrões cada vez mais complexos:
+
+<CodePlayground
+  code={`function flipped_pairs(painter) {
+    const painter2 = beside(painter, flip_vert(painter));
+    return below(painter2, painter2);
+}
+
+const wave4 = flipped_pairs(wave);
+
+function right_split(painter, n) {
+    if (n === 0) {
+        return painter;
+    } else {
+        const smaller = right_split(painter, n - 1);
+        return beside(painter, below(smaller, smaller));
+    }
+}
+
+function corner_split(painter, n) {
+    if (n === 0) {
+        return painter;
+    } else {
+        const up = up_split(painter, n - 1);
+        const right = right_split(painter, n - 1);
+        const top_left = beside(up, up);
+        const bottom_right = below(right, right);
+        const corner = corner_split(painter, n - 1);
+        return beside(below(painter, top_left),
+                     below(bottom_right, corner));
+    }
+}`}
+  height={550}
+  showLineNumbers={false}
+/>
+
+## Design Estratificado
+
+Esta linguagem de imagens ilustra o *design estratificado*—a noção de que um sistema complexo deve ser estruturado como uma sequência de níveis descritos usando uma sequência de linguagens. Cada nível é construído combinando partes que são consideradas primitivas naquele nível, e as partes construídas em cada nível são usadas como primitivas no próximo nível.
+
+A abordagem de design estratificado ajuda a tornar os programas *robustos*—pequenas mudanças na especificação se traduzem em pequenas mudanças no programa.
+
+## Exercícios
+
+**Exercício 2.44**: Defina a função `up_split` usada por `corner_split`. Ela é similar a `right_split`, exceto que troca os papéis de `below` e `beside`.
+
+**Exercício 2.45**: `right_split` e `up_split` podem ser expressas como instâncias de uma operação geral de divisão. Defina uma função `split` que permita definir ambas.
+
+**Exercício 2.46-2.49**: Implemente a representação de vetores e frames, e defina um painter primitivo `segments_painter` que desenha uma lista de segmentos de linha.
+
+**Exercício 2.50-2.52**: Defina transformações de painters (`flip_horiz`, `rotate180`, `rotate270`) e crie novos níveis de padrões combinando `corner_split` e `square_limit` de maneiras diferentes.
