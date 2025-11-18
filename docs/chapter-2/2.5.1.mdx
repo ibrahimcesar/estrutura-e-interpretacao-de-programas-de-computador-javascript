@@ -1,0 +1,172 @@
+---
+title: 2.5.1 Operações Aritméticas Genéricas
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.5.1  Operações Aritméticas Genéricas
+
+A tarefa de projetar operações aritméticas genéricas é análoga à tarefa de projetar as operações genéricas de seletor de números complexos. Gostaríamos, por exemplo, de ter uma função genérica de adição `add` que atue como aritmética ordinária `+` em números ordinários, como `add_rat` em números racionais e como `add_complex` em números complexos.
+
+## Interface Genérica
+
+Podemos implementar as operações aritméticas genéricas usando a estratégia de programação orientada a dados:
+
+<CodePlayground
+  code={`function add(x, y) {
+    return apply_generic("add", list(x, y));
+}
+
+function sub(x, y) {
+    return apply_generic("sub", list(x, y));
+}
+
+function mul(x, y) {
+    return apply_generic("mul", list(x, y));
+}
+
+function div(x, y) {
+    return apply_generic("div", list(x, y));
+}`}
+  height={300}
+/>
+
+## Instalando Pacotes Aritméticos
+
+Agora podemos instalar cada pacote aritmético:
+
+### Pacote de Números JavaScript
+
+<CodePlayground
+  code={`function install_javascript_number_package() {
+    function tag(x) {
+        return attach_tag("javascript_number", x);
+    }
+
+    put("add", list("javascript_number", "javascript_number"),
+        (x, y) => tag(x + y));
+    put("sub", list("javascript_number", "javascript_number"),
+        (x, y) => tag(x - y));
+    put("mul", list("javascript_number", "javascript_number"),
+        (x, y) => tag(x * y));
+    put("div", list("javascript_number", "javascript_number"),
+        (x, y) => tag(x / y));
+    put("make", "javascript_number",
+        x => tag(x));
+
+    return "done";
+}`}
+  height={400}
+/>
+
+### Pacote de Números Racionais
+
+<CodePlayground
+  code={`function install_rational_package() {
+    // funções internas
+    function numer(x) { return head(x); }
+    function denom(x) { return tail(x); }
+    function make_rat(n, d) {
+        const g = gcd(n, d);
+        return pair(n / g, d / g);
+    }
+    function add_rat(x, y) {
+        return make_rat(numer(x) * denom(y) + numer(y) * denom(x),
+                        denom(x) * denom(y));
+    }
+    function sub_rat(x, y) {
+        return make_rat(numer(x) * denom(y) - numer(y) * denom(x),
+                        denom(x) * denom(y));
+    }
+    function mul_rat(x, y) {
+        return make_rat(numer(x) * numer(y),
+                        denom(x) * denom(y));
+    }
+    function div_rat(x, y) {
+        return make_rat(numer(x) * denom(y),
+                        denom(x) * numer(y));
+    }
+
+    // interface para o resto do sistema
+    function tag(x) { return attach_tag("rational", x); }
+
+    put("add", list("rational", "rational"),
+        (x, y) => tag(add_rat(x, y)));
+    put("sub", list("rational", "rational"),
+        (x, y) => tag(sub_rat(x, y)));
+    put("mul", list("rational", "rational"),
+        (x, y) => tag(mul_rat(x, y)));
+    put("div", list("rational", "rational"),
+        (x, y) => tag(div_rat(x, y)));
+    put("make", "rational",
+        (n, d) => tag(make_rat(n, d)));
+
+    return "done";
+}`}
+  height={650}
+/>
+
+### Pacote de Números Complexos
+
+<CodePlayground
+  code={`function install_complex_package() {
+    // importar funções dos pacotes retangular e polar
+    function make_from_real_imag(x, y) {
+        return get("make_from_real_imag", "rectangular")(x, y);
+    }
+    function make_from_mag_ang(r, a) {
+        return get("make_from_mag_ang", "polar")(r, a);
+    }
+
+    // operações internas
+    function add_complex(z1, z2) {
+        return make_from_real_imag(real_part(z1) + real_part(z2),
+                                   imag_part(z1) + imag_part(z2));
+    }
+    function sub_complex(z1, z2) {
+        return make_from_real_imag(real_part(z1) - real_part(z2),
+                                   imag_part(z1) - imag_part(z2));
+    }
+    function mul_complex(z1, z2) {
+        return make_from_mag_ang(magnitude(z1) * magnitude(z2),
+                                 angle(z1) + angle(z2));
+    }
+    function div_complex(z1, z2) {
+        return make_from_mag_ang(magnitude(z1) / magnitude(z2),
+                                 angle(z1) - angle(z2));
+    }
+
+    // interface para o resto do sistema
+    function tag(z) { return attach_tag("complex", z); }
+
+    put("add", list("complex", "complex"),
+        (z1, z2) => tag(add_complex(z1, z2)));
+    put("sub", list("complex", "complex"),
+        (z1, z2) => tag(sub_complex(z1, z2)));
+    put("mul", list("complex", "complex"),
+        (z1, z2) => tag(mul_complex(z1, z2)));
+    put("div", list("complex", "complex"),
+        (z1, z2) => tag(div_complex(z1, z2)));
+    put("make_from_real_imag", "complex",
+        (x, y) => tag(make_from_real_imag(x, y)));
+    put("make_from_mag_ang", "complex",
+        (r, a) => tag(make_from_mag_ang(r, a)));
+
+    return "done";
+}`}
+  height={700}
+/>
+
+## Sistema de Tipos em Duas Níveis
+
+Observe que um número complexo em forma retangular recebe etiquetas aninhadas: a etiqueta externa `"complex"` direciona para o pacote complexo, enquanto a etiqueta interna `"rectangular"` direciona dentro daquele pacote. À medida que as operações executam para baixo através das camadas de abstração, as etiquetas externas são removidas, revelando as etiquetas internas para o dispatch continuado.
+
+## Exercícios
+
+**Exercício 2.77**: Trace através das chamadas de função que ocorrem ao avaliar a expressão `magnitude(z)` onde `z` é um número complexo etiquetado.
+
+**Exercício 2.78**: A representação de números JavaScript internos com etiquetas é ineficiente. Modifique o sistema para tirar vantagem do sistema de tipos do próprio JavaScript.
+
+**Exercício 2.79**: Defina um predicado genérico de igualdade `is_equal` que funciona para números ordinários, racionais e complexos.
+
+**Exercício 2.80**: Defina um predicado genérico `is_equal_to_zero` que testa se seu argumento é zero.

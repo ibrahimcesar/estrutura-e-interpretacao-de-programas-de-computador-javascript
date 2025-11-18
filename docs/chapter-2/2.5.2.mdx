@@ -1,0 +1,117 @@
+---
+title: 2.5.2 Combinando Dados de Diferentes Tipos
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.5.2  Combinando Dados de Diferentes Tipos
+
+Ignoramos uma questão importante ao implementar as operações aritméticas genéricas: as operações que definimos até agora tratam objetos de um único tipo. O que fazer se queremos manipular objetos de tipos diferentes, como adicionar um número complexo a um número ordinário?
+
+## Operações entre Tipos
+
+Uma maneira de lidar com operações entre tipos é projetar um procedimento diferente para cada combinação possível de tipos. Por exemplo, poderíamos ter:
+
+<CodePlayground
+  code={`// Definindo operação específica para complex + javascript_number
+put("add", list("complex", "javascript_number"),
+    (z, x) => make_complex_from_real_imag(
+                  add(real_part(z), x),
+                  imag_part(z)));`}
+  height={180}
+/>
+
+No entanto, este enfoque rapidamente se torna inviável à medida que adicionamos mais tipos ao sistema.
+
+## Coerção
+
+Uma maneira mais geral de lidar com operações entre tipos é usar *coerção*. Muitas vezes podemos ver um tipo como um caso especial de outro tipo. Por exemplo, um número inteiro pode ser visto como um número racional cujo denominador é 1, ou um número ordinário pode ser visto como um número complexo cuja parte imaginária é zero.
+
+<CodePlayground
+  code={`function javascript_number_to_complex(n) {
+    return make_complex_from_real_imag(contents(n), 0);
+}
+
+// Instalando a função de coerção
+put_coercion("javascript_number", "complex",
+             javascript_number_to_complex);`}
+  height={200}
+/>
+
+Agora podemos modificar `apply_generic` para tentar coerção se não houver operação direta disponível:
+
+<CodePlayground
+  code={`function apply_generic(op, args) {
+    const type_tags = map(type_tag, args);
+    const fun = get(op, type_tags);
+    if (fun !== undefined) {
+        return apply(fun, map(contents, args));
+    } else {
+        if (length(args) === 2) {
+            const type1 = head(type_tags);
+            const type2 = head(tail(type_tags));
+            const a1 = head(args);
+            const a2 = head(tail(args));
+            const t1_to_t2 = get_coercion(type1, type2);
+            const t2_to_t1 = get_coercion(type2, type1);
+            return t1_to_t2 !== undefined
+                   ? apply_generic(op, list(t1_to_t2(a1), a2))
+                   : t2_to_t1 !== undefined
+                   ? apply_generic(op, list(a1, t2_to_t1(a2)))
+                   : error(list(op, type_tags),
+                          "no method for these types");
+        } else {
+            return error(list(op, type_tags),
+                        "no method for these types");
+        }
+    }
+}`}
+  height={550}
+/>
+
+## Hierarquia de Tipos (Torre)
+
+Em muitos casos, os tipos podem ser organizados em uma *torre* onde cada tipo tem no máximo um supertipo e um subtipo. Por exemplo:
+
+```
+inteiro → racional → real → complexo
+```
+
+Nessa hierarquia, podemos simplificar a coerção "elevando" sucessivamente tipos até que ambos os argumentos estejam no mesmo nível:
+
+<CodePlayground
+  code={`function apply_generic(op, args) {
+    const type_tags = map(type_tag, args);
+    const fun = get(op, type_tags);
+    if (fun !== undefined) {
+        return apply(fun, map(contents, args));
+    } else {
+        // Tentar elevar ao tipo mais alto
+        const raised_args = map(raise_to_common_type, args);
+        const raised_fun = get(op, map(type_tag, raised_args));
+        return raised_fun !== undefined
+               ? apply(raised_fun, map(contents, raised_args))
+               : error(list(op, type_tags),
+                      "no method for these types");
+    }
+}`}
+  height={350}
+/>
+
+## Limitações
+
+Nem todos os sistemas de tipos podem ser organizados em uma torre simples. Em sistemas do mundo real, os tipos frequentemente têm múltiplos supertipos e subtipos, criando complexidade significativa no gerenciamento de operações genéricas.
+
+## Exercícios
+
+**Exercício 2.81**: Louis Reasoner nota que `apply_generic` pode tentar forçar argumentos para seu próprio tipo. Modifique `apply_generic` para que não tente coerção se os dois argumentos já têm o mesmo tipo.
+
+**Exercício 2.82**: Mostre como generalizar `apply_generic` para lidar com coerção no caso geral de múltiplos argumentos.
+
+**Exercício 2.83**: Suponha que você está projetando um sistema aritmético genérico para lidar com a torre de tipos mostrada acima. Para cada tipo (exceto complexo), projete uma função `raise` que eleva objetos daquele tipo um nível na torre.
+
+**Exercício 2.84**: Usando a função `raise` do exercício 2.83, modifique a função `apply_generic` para que ela força seus argumentos para terem o mesmo tipo pelo método de sucessivamente elevar o argumento de tipo mais baixo até que todos os argumentos tenham o mesmo tipo.
+
+**Exercício 2.85**: Esta seção mencionou um método para "simplificar" um objeto de dados movendo-o para baixo na torre de tipos tanto quanto possível. Projete uma função `drop` que realiza a simplificação.
+
+**Exercício 2.86**: Suponha que queremos lidar com números complexos cujas partes real e imaginária são elas mesmas números ordinários, números racionais ou outros números para os quais operações aritméticas genéricas são definidas. Descreva e implemente as mudanças ao sistema necessárias para acomodar isso.

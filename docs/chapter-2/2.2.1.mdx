@@ -1,0 +1,144 @@
+---
+title: 2.2.1 Representando Sequências
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.2.1  Representando Sequências
+
+Uma das estruturas de dados úteis que podemos construir com pares é uma *sequência*—uma coleção ordenada de objetos de dados. Existem, é claro, muitas maneiras de representar sequências em termos de pares. Uma representação particularmente direta é ilustrada abaixo, onde a sequência 1, 2, 3, 4 é representada como uma cadeia de pares:
+
+![Sequência 1, 2, 3, 4 como cadeia de pares](/img/javascript/ch2-Z-G-13.svg)
+
+O head de cada par é o item correspondente na cadeia, e o tail do par é o próximo par na cadeia. O tail do par final sinaliza o fim da sequência apontando para um valor distinto de qualquer par, que representamos na diagrama de box-and-pointer como um símbolo diagonal e em programas como o valor de `null`. A sequência inteira é construída por operações `pair` aninhadas:
+
+<CodePlayground
+  code={`pair(1,
+     pair(2,
+          pair(3,
+               pair(4, null))));`}
+  height={150}
+/>
+
+Tal sequência de pares é chamada de *lista*, e JavaScript fornece uma função primitiva chamada `list` para ajudar a construir listas. A definição acima é equivalente a:
+
+<CodePlayground
+  code={`list(1, 2, 3, 4);`}
+  height={120}
+/>
+
+Podemos pensar em `head` como selecionando o primeiro item na lista, e `tail` como selecionando a sublista consistindo de todos, exceto o primeiro item.
+
+<CodePlayground
+  code={`const one_through_four = list(1, 2, 3, 4);
+
+head(one_through_four);`}
+  height={150}
+/>
+
+<CodePlayground
+  code={`const one_through_four = list(1, 2, 3, 4);
+
+tail(one_through_four);`}
+  height={150}
+/>
+
+## Operações de Lista
+
+O uso de pares para representar sequências de elementos como listas é acompanhado por técnicas convencionais de programação para manipular listas através de operações sucessivas de `head` e `tail`. Por exemplo, a função `list_ref` pega como argumentos uma lista e um número n e retorna o n-ésimo item da lista (convenção: o primeiro item é o item zero):
+
+<CodePlayground
+  code={`function list_ref(items, n) {
+    return n === 0
+           ? head(items)
+           : list_ref(tail(items), n - 1);
+}
+
+const squares = list(1, 4, 9, 16, 25);
+
+list_ref(squares, 3);`}
+  height={300}
+/>
+
+Frequentemente usamos `head` e `tail` de forma `caminhando` pela lista inteira. Por exemplo, a função `length`, que retorna o número de itens em uma lista, pode ser implementada recursivamente:
+
+<CodePlayground
+  code={`function length(items) {
+    return is_null(items)
+           ? 0
+           : 1 + length(tail(items));
+}
+
+const odds = list(1, 3, 5, 7);
+
+length(odds);`}
+  height={250}
+/>
+
+A função `append` recebe duas listas como argumentos e combina seus elementos para fazer uma nova lista:
+
+<CodePlayground
+  code={`function append(list1, list2) {
+    return is_null(list1)
+           ? list2
+           : pair(head(list1), append(tail(list1), list2));
+}
+
+append(list(1, 2, 3), list(4, 5, 6));`}
+  height={200}
+/>
+
+## Mapeamento sobre Listas
+
+Uma operação extremamente útil é aplicar alguma transformação a cada elemento em uma lista e gerar a lista de resultados. Por exemplo, a seguinte função escala cada número em uma lista por um dado fator:
+
+<CodePlayground
+  code={`function scale_list(items, factor) {
+    return is_null(items)
+           ? null
+           : pair(head(items) * factor,
+                  scale_list(tail(items), factor));
+}
+
+scale_list(list(1, 2, 3, 4, 5), 10);`}
+  height={250}
+/>
+
+Podemos abstrair este padrão geral e capturá-lo como um padrão comum expresso como uma função de ordem superior, assim como na seção 1.3. A função de ordem superior aqui é chamada `map`:
+
+<CodePlayground
+  code={`function map(fun, items) {
+    return is_null(items)
+           ? null
+           : pair(fun(head(items)),
+                  map(fun, tail(items)));
+}
+
+map(x => x * x, list(1, 2, 3, 4));`}
+  height={250}
+/>
+
+A função `map` é uma abstração importante porque estabelece uma barreira de abstração de nível superior na programação de listas. Usar `map` nos ajuda a separar a transformação dos elementos da mecânica de percorrer a estrutura de dados.
+
+## Exercícios
+
+**Exercício 2.17**: Defina uma função `last_pair` que retorna a lista que contém apenas o último elemento de uma dada lista (não vazia).
+
+**Exercício 2.18**: Defina uma função `reverse` que recebe uma lista como argumento e retorna uma lista dos mesmos elementos em ordem inversa.
+
+**Exercício 2.19**: No programa de contagem de moedas da seção 1.2.2, modifique o programa para que a lista de tipos de moedas seja uma lista. Defina as funções `first_denomination`, `except_first_denomination` e `no_more`.
+
+**Exercício 2.21**: Complete as duas definições diferentes de `square_list`, uma usando recursão direta e outra usando `map`.
+
+**Exercício 2.22**: Louis Reasoner tenta reescrever a primeira função `square_list` como um processo iterativo, mas ela produz a lista de resposta em ordem reversa. Explique por que.
+
+**Exercício 2.23**: A função `for_each` é similar a `map`, mas não retorna uma lista de resultados. Em vez disso, ela apenas aplica a função a cada elemento por seus efeitos colaterais. Implemente `for_each`.
+
+<CodePlayground
+  code={`function for_each(fun, items) {
+    // Sua implementação aqui
+}
+
+for_each(x => display(x), list(57, 321, 88));`}
+  height={200}
+/>

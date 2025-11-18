@@ -1,0 +1,131 @@
+---
+title: 2.4.2 Dados Etiquetados
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.4.2  Dados Etiquetados
+
+Uma maneira de ver a abstração de dados é como uma aplicação do "princípio do menor compromisso". Na implementação do sistema de números complexos, podemos adiar a escolha entre a representação retangular e a polar. No entanto, eventualmente devemos escolher uma representação. E se quisermos que um único sistema trabalhe com ambas as representações?
+
+## Type Tags (Etiquetas de Tipo)
+
+A solução é incluir uma *etiqueta de tipo*—o símbolo `rectangular` ou `polar`—como parte de cada número complexo. Isso nos permite distinguir entre formas polares e retangulares:
+
+<CodePlayground
+  code={`// Sistema de etiquetas
+function attach_tag(type_tag, contents) {
+    return pair(type_tag, contents);
+}
+
+function type_tag(datum) {
+    return is_pair(datum)
+           ? head(datum)
+           : error(datum, "bad tagged datum -- type_tag");
+}
+
+function contents(datum) {
+    return is_pair(datum)
+           ? tail(datum)
+           : error(datum, "bad tagged datum -- contents");
+}
+
+// Predicados para tipos
+function is_rectangular(z) {
+    return type_tag(z) === "rectangular";
+}
+
+function is_polar(z) {
+    return type_tag(z) === "polar";
+}`}
+  height={500}
+/>
+
+## Representações Etiquetadas
+
+Agora modificamos a representação de Ben e Alyssa para incluir etiquetas:
+
+<CodePlayground
+  code={`// Pacote Retangular de Ben
+function make_from_real_imag_rectangular(x, y) {
+    return attach_tag("rectangular", pair(x, y));
+}
+
+function real_part_rectangular(z) {
+    return head(z);
+}
+
+function imag_part_rectangular(z) {
+    return tail(z);
+}
+
+// Pacote Polar de Alyssa
+function make_from_mag_ang_polar(r, a) {
+    return attach_tag("polar", pair(r, a));
+}
+
+function magnitude_polar(z) {
+    return head(z);
+}
+
+function angle_polar(z) {
+    return tail(z);
+}`}
+  height={450}
+/>
+
+## Seletores Genéricos
+
+Agora podemos escrever seletores genéricos que verificam a etiqueta e chamam a função apropriada:
+
+<CodePlayground
+  code={`function real_part(z) {
+    return is_rectangular(z)
+           ? real_part_rectangular(contents(z))
+           : is_polar(z)
+           ? real_part_polar(contents(z))
+           : error(z, "unknown type -- real_part");
+}
+
+function imag_part(z) {
+    return is_rectangular(z)
+           ? imag_part_rectangular(contents(z))
+           : is_polar(z)
+           ? imag_part_polar(contents(z))
+           : error(z, "unknown type -- imag_part");
+}
+
+function magnitude(z) {
+    return is_rectangular(z)
+           ? magnitude_rectangular(contents(z))
+           : is_polar(z)
+           ? magnitude_polar(contents(z))
+           : error(z, "unknown type -- magnitude");
+}
+
+function angle(z) {
+    return is_rectangular(z)
+           ? angle_rectangular(contents(z))
+           : is_polar(z)
+           ? angle_polar(contents(z))
+           : error(z, "unknown type -- angle");
+}`}
+  height={500}
+/>
+
+## Construtores Genéricos
+
+Os construtores escolhem automaticamente a representação mais conveniente:
+
+<CodePlayground
+  code={`function make_from_real_imag(x, y) {
+    return make_from_real_imag_rectangular(x, y);
+}
+
+function make_from_mag_ang(r, a) {
+    return make_from_mag_ang_polar(r, a);
+}`}
+  height={180}
+/>
+
+Esta abordagem permite que diferentes representações coexistam no mesmo sistema. As operações aritméticas de nível superior (`add_complex`, `sub_complex`, etc.) não precisam saber qual representação está sendo usada—elas simplesmente chamam os seletores genéricos.

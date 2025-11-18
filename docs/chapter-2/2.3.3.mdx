@@ -1,0 +1,137 @@
+---
+title: 2.3.3 Exemplo - Representando Conjuntos
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.3.3  Exemplo: Representando Conjuntos
+
+Nesta seção, examinamos maneiras de usar listas para representar conjuntos. Um conjunto é uma coleção de objetos distintos. Para dar uma definição mais precisa, podemos empregar o método de abstração de dados: Definimos um conjunto especificando as operações que serão usadas em conjuntos.
+
+## Operações em Conjuntos
+
+As operações básicas incluem:
+- `is_element_of_set(x, set)` - testa se x é membro do conjunto
+- `adjoin_set(x, set)` - adiciona x ao conjunto
+- `union_set(set1, set2)` - retorna a união de dois conjuntos
+- `intersection_set(set1, set2)` - retorna a interseção de dois conjuntos
+
+## Conjuntos como Listas Não Ordenadas
+
+<CodePlayground
+  code={`function is_element_of_set(x, set) {
+    return is_null(set)
+           ? false
+           : equal(x, head(set))
+           ? true
+           : is_element_of_set(x, tail(set));
+}
+
+function adjoin_set(x, set) {
+    return is_element_of_set(x, set)
+           ? set
+           : pair(x, set);
+}
+
+function intersection_set(set1, set2) {
+    return is_null(set1) || is_null(set2)
+           ? null
+           : is_element_of_set(head(set1), set2)
+           ? pair(head(set1), intersection_set(tail(set1), set2))
+           : intersection_set(tail(set1), set2);
+}`}
+  height={450}
+/>
+
+**Complexidade:** `is_element_of_set` requer O(n) passos. `intersection_set` requer O(n²) passos.
+
+## Conjuntos como Listas Ordenadas
+
+Podemos acelerar as operações organizando os elementos do conjunto em ordem crescente:
+
+<CodePlayground
+  code={`function is_element_of_set(x, set) {
+    return is_null(set)
+           ? false
+           : x === head(set)
+           ? true
+           : x < head(set)
+           ? false
+           : is_element_of_set(x, tail(set));
+}
+
+function intersection_set(set1, set2) {
+    if (is_null(set1) || is_null(set2)) {
+        return null;
+    } else {
+        const x1 = head(set1);
+        const x2 = head(set2);
+        return x1 === x2
+               ? pair(x1, intersection_set(tail(set1), tail(set2)))
+               : x1 < x2
+               ? intersection_set(tail(set1), set2)
+               : intersection_set(set1, tail(set2));
+    }
+}`}
+  height={450}
+/>
+
+**Complexidade:** `intersection_set` agora requer apenas O(n) passos.
+
+## Conjuntos como Árvores Binárias
+
+Podemos fazer melhor usando uma árvore binária. Cada nó contém um elemento e dois ramos. Todos os elementos no ramo esquerdo são menores que o elemento no nó, e todos os elementos no ramo direito são maiores.
+
+<CodePlayground
+  code={`function entry(tree) { return head(tree); }
+function left_branch(tree) { return head(tail(tree)); }
+function right_branch(tree) { return head(tail(tail(tree))); }
+function make_tree(entry, left, right) {
+    return list(entry, left, right);
+}
+
+function is_element_of_set(x, set) {
+    return is_null(set)
+           ? false
+           : x === entry(set)
+           ? true
+           : x < entry(set)
+           ? is_element_of_set(x, left_branch(set))
+           : is_element_of_set(x, right_branch(set));
+}
+
+function adjoin_set(x, set) {
+    return is_null(set)
+           ? make_tree(x, null, null)
+           : x === entry(set)
+           ? set
+           : x < entry(set)
+           ? make_tree(entry(set),
+                       adjoin_set(x, left_branch(set)),
+                       right_branch(set))
+           : make_tree(entry(set),
+                       left_branch(set),
+                       adjoin_set(x, right_branch(set)));
+}`}
+  height={550}
+/>
+
+**Complexidade:** Para uma árvore balanceada, operações requerem O(log n) passos. No pior caso (árvore desbalanceada), requer O(n).
+
+## Exercícios
+
+**Exercício 2.59**: Implemente a operação `union_set` para a representação de conjunto como lista não ordenada.
+
+**Exercício 2.60**: Especifique implementações das funções se permitirmos duplicatas. Como isso afeta a eficiência?
+
+**Exercício 2.61**: Implemente `adjoin_set` para listas ordenadas.
+
+**Exercício 2.62**: Implemente `union_set` para listas ordenadas em tempo O(n).
+
+**Exercício 2.63**: Cada uma das duas funções seguintes converte uma árvore binária em uma lista. Elas produzem o mesmo resultado? Elas têm a mesma ordem de crescimento?
+
+**Exercício 2.64**: A função `list_to_tree` converte uma lista ordenada em uma árvore binária balanceada. Explique como funciona.
+
+**Exercício 2.65**: Use os resultados dos exercícios anteriores para dar implementações O(n) de `union_set` e `intersection_set` para conjuntos implementados como árvores binárias (balanceadas).
+
+**Exercício 2.66**: Implemente a função `lookup` para um banco de dados implementado como uma árvore binária, ordenada pela chave numérica.

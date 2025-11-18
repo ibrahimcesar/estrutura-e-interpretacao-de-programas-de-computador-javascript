@@ -335,13 +335,7 @@ button[aria-label="Run code"]::after {
   font-weight: 500;
 }
 
-/* Esconder mensagens de debug do Sandpack no console */
-/* Esconde mensagens que começam com "Injecting", "First element", etc */
-.sp-console-item .sp-console-message {
-  display: none !important;
-}
-
-/* Garantir que os outputs reais (console.log, etc) sejam mostrados */
+/* Console output styling */
 .sp-console-item .sp-console-output,
 .sp-console-item .sp-console-error,
 .sp-console-item .sp-console-warning {

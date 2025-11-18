@@ -83,6 +83,84 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Capítulo 2: Construindo Abstrações com Dados',
+      link: {
+        type: 'doc',
+        id: 'chapter-2/2.0',
+      },
+      items: [
+        {
+          type: 'category',
+          label: '2.1 Introdução à Abstração de Dados',
+          link: {
+            type: 'doc',
+            id: 'chapter-2/2.1',
+          },
+          items: [
+            'chapter-2/2.1.1',
+            'chapter-2/2.1.2',
+            'chapter-2/2.1.3',
+            'chapter-2/2.1.4',
+          ],
+        },
+        {
+          type: 'category',
+          label: '2.2 Dados Hierárquicos e a Propriedade de Closure',
+          link: {
+            type: 'doc',
+            id: 'chapter-2/2.2',
+          },
+          items: [
+            'chapter-2/2.2.1',
+            'chapter-2/2.2.2',
+            'chapter-2/2.2.3',
+            'chapter-2/2.2.4',
+          ],
+        },
+        {
+          type: 'category',
+          label: '2.3 Dados Simbólicos',
+          link: {
+            type: 'doc',
+            id: 'chapter-2/2.3',
+          },
+          items: [
+            'chapter-2/2.3.1',
+            'chapter-2/2.3.2',
+            'chapter-2/2.3.3',
+            'chapter-2/2.3.4',
+          ],
+        },
+        {
+          type: 'category',
+          label: '2.4 Múltiplas Representações para Dados Abstratos',
+          link: {
+            type: 'doc',
+            id: 'chapter-2/2.4',
+          },
+          items: [
+            'chapter-2/2.4.1',
+            'chapter-2/2.4.2',
+            'chapter-2/2.4.3',
+          ],
+        },
+        {
+          type: 'category',
+          label: '2.5 Sistemas com Operações Genéricas',
+          link: {
+            type: 'doc',
+            id: 'chapter-2/2.5',
+          },
+          items: [
+            'chapter-2/2.5.1',
+            'chapter-2/2.5.2',
+            'chapter-2/2.5.3',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
       label: 'Capítulo 3: Modularidade, Objetos e Estado',
       link: {
         type: 'doc',

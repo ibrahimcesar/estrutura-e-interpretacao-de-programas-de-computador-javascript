@@ -1,0 +1,135 @@
+---
+title: 2.3.2 Exemplo - Diferenciação Simbólica
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.3.2  Exemplo: Diferenciação Simbólica
+
+Como uma ilustração de manipulação de símbolos e um exemplo adicional de abstração de dados, considere o design de uma função que realiza diferenciação simbólica de expressões algébricas.
+
+## Regras de Derivação
+
+O programa implementa quatro regras básicas de diferenciação:
+
+$$
+\begin{array}{ll}
+\dfrac{dc}{dx} = 0 & \text{(constante)} \\[10pt]
+\dfrac{dx}{dx} = 1 & \text{(variável)} \\[10pt]
+\dfrac{d(u+v)}{dx} = \dfrac{du}{dx} + \dfrac{dv}{dx} & \text{(soma)} \\[10pt]
+\dfrac{d(uv)}{dx} = u\dfrac{dv}{dx} + v\dfrac{du}{dx} & \text{(produto)}
+\end{array}
+$$
+
+## Representação de Expressões Algébricas
+
+Usamos notação de prefixo para representar expressões. Por exemplo, a expressão `ax + b` é representada como:
+
+```javascript
+list("+", list("*", "a", "x"), "b")
+```
+
+## O Programa de Diferenciação
+
+<CodePlayground
+  code={`function deriv(exp, variable) {
+    return is_number(exp)
+           ? 0
+           : is_variable(exp)
+           ? (is_same_variable(exp, variable) ? 1 : 0)
+           : is_sum(exp)
+           ? make_sum(deriv(addend(exp), variable),
+                      deriv(augend(exp), variable))
+           : is_product(exp)
+           ? make_sum(make_product(multiplier(exp),
+                                   deriv(multiplicand(exp), variable)),
+                      make_product(deriv(multiplier(exp), variable),
+                                   multiplicand(exp)))
+           : error(exp, "unknown expression type -- deriv");
+}`}
+  height={400}
+/>
+
+## Representando Expressões Algébricas
+
+Implementamos os seletores e construtores para expressões:
+
+<CodePlayground
+  code={`function is_variable(x) {
+    return is_string(x);
+}
+
+function is_same_variable(v1, v2) {
+    return is_variable(v1) && is_variable(v2) && v1 === v2;
+}
+
+function is_sum(x) {
+    return is_pair(x) && head(x) === "+";
+}
+
+function addend(s) {
+    return head(tail(s));
+}
+
+function augend(s) {
+    return head(tail(tail(s)));
+}
+
+function make_sum(a1, a2) {
+    return list("+", a1, a2);
+}
+
+function is_product(x) {
+    return is_pair(x) && head(x) === "*";
+}
+
+function multiplier(p) {
+    return head(tail(p));
+}
+
+function multiplicand(p) {
+    return head(tail(tail(p)));
+}
+
+function make_product(m1, m2) {
+    return list("*", m1, m2);
+}`}
+  height={600}
+/>
+
+## Simplificação Algébrica
+
+Podemos melhorar o programa fazendo os construtores realizarem simplificação:
+
+<CodePlayground
+  code={`function make_sum(a1, a2) {
+    return number_equal(a1, 0)
+           ? a2
+           : number_equal(a2, 0)
+           ? a1
+           : is_number(a1) && is_number(a2)
+           ? a1 + a2
+           : list("+", a1, a2);
+}
+
+function make_product(m1, m2) {
+    return number_equal(m1, 0) || number_equal(m2, 0)
+           ? 0
+           : number_equal(m1, 1)
+           ? m2
+           : number_equal(m2, 1)
+           ? m1
+           : is_number(m1) && is_number(m2)
+           ? m1 * m2
+           : list("*", m1, m2);
+}`}
+  height={350}
+/>
+
+## Exercícios
+
+**Exercício 2.56**: Estenda o programa básico de diferenciação para lidar com mais regras de diferenciação, como a regra da potência.
+
+**Exercício 2.57**: Estenda o programa de diferenciação para lidar com somas e produtos de quantidades arbitrárias de termos (dois ou mais).
+
+**Exercício 2.58**: Suponha que queremos modificar o programa de diferenciação para que ele funcione com notação algébrica ordinária (infixa), em que `+` e `*` são operadores infixos. Como o programa precisaria ser modificado?

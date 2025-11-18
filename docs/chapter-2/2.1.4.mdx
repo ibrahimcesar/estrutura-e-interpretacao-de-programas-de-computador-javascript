@@ -1,0 +1,145 @@
+---
+title: 2.1.4 Exercício Estendido - Aritmética de Intervalos
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.1.4  Exercício Estendido: Aritmética de Intervalos
+
+Alyssa P. Hacker está projetando um sistema para ajudar pessoas a resolver problemas de engenharia. Um recurso que ela quer fornecer em seu sistema é a capacidade de manipular quantidades inexatas (como parâmetros medidos de dispositivos físicos) com precisão conhecida, de modo que quando os cálculos são feitos com tais quantidades aproximadas, os resultados serão números de precisão conhecida.
+
+Engenheiros elétricos usarão o sistema de Alyssa para calcular quantidades elétricas. Às vezes é necessário para eles calcular o valor de uma resistência equivalente paralela Rp de dois resistores R1 e R2 usando a fórmula:
+
+$$
+R_{p} = \dfrac{1}{1/R_{1}+1/R_{2}}
+$$
+
+Os valores de resistência geralmente são conhecidos apenas até alguma tolerância garantida pelo fabricante do resistor. Por exemplo, se você comprar um resistor rotulado "6.8 ohms com 10% de tolerância", você só pode ter certeza de que o resistor tem uma resistência entre 6.12 e 7.48 ohms. Assim, se você tiver um resistor de 6.8 ohms com 10% de tolerância em paralelo com um resistor de 4.7 ohms com 5% de tolerância, a resistência da combinação pode variar de cerca de 2.58 ohms (se os dois resistores estiverem nos limites inferiores) a cerca de 2.97 ohms (se os dois resistores estiverem nos limites superiores).
+
+A ideia de Alyssa é implementar "aritmética de intervalos" como um conjunto de operações aritméticas para combinar "intervalos" (objetos que representam o intervalo de valores possíveis de uma quantidade inexata). O resultado de adicionar, subtrair, multiplicar ou dividir dois intervalos é em si um intervalo, representando o intervalo do resultado.
+
+Alyssa postula a existência de um objeto abstrato chamado "intervalo" que tem dois pontos extremos: um limite inferior e um limite superior. Ela também presume que, dados os pontos extremos de um intervalo, ela pode construir o intervalo usando o construtor de dados `make_interval`. Alyssa primeiro escreve uma função para adicionar dois intervalos. Ela raciocina que o valor mínimo que a soma poderia ser é a soma dos dois limites inferiores e o valor máximo que poderia ser é a soma dos dois limites superiores:
+
+<CodePlayground
+  code={`function make_interval(x, y) {
+    return pair(x, y);
+}
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+
+function add_interval(x, y) {
+    return make_interval(lower_bound(x) + lower_bound(y),
+                         upper_bound(x) + upper_bound(y));
+}
+
+// Testando
+const i1 = make_interval(2, 4);
+const i2 = make_interval(1, 3);
+const i3 = add_interval(i1, i2);
+
+lower_bound(i3); // deve ser 3
+upper_bound(i3); // deve ser 7`}
+  height={450}
+/>
+
+Alyssa também calcula o produto de dois intervalos encontrando o mínimo e o máximo dos produtos dos limites e usando-os como os limites do intervalo resultante:
+
+<CodePlayground
+  code={`function make_interval(x, y) { return pair(x, y); }
+function lower_bound(i) { return head(i); }
+function upper_bound(i) { return tail(i); }
+
+function mul_interval(x, y) {
+    const p1 = lower_bound(x) * lower_bound(y);
+    const p2 = lower_bound(x) * upper_bound(y);
+    const p3 = upper_bound(x) * lower_bound(y);
+    const p4 = upper_bound(x) * upper_bound(y);
+    return make_interval(math_min(p1, p2, p3, p4),
+                         math_max(p1, p2, p3, p4));
+}`}
+  height={350}
+/>
+
+Para dividir dois intervalos, Alyssa multiplica o primeiro pelo recíproco do segundo. Observe que os limites do intervalo recíproco são o recíproco do limite superior e o recíproco do limite inferior, nessa ordem:
+
+<CodePlayground
+  code={`function div_interval(x, y) {
+    return mul_interval(x, make_interval(1 / upper_bound(y),
+                                         1 / lower_bound(y)));
+}`}
+  height={150}
+/>
+
+## Exercício 2.7
+
+O programa de Alyssa está incompleto porque ela não especificou a implementação da abstração de intervalo. Defina os seletores `upper_bound` e `lower_bound` para completar a implementação.
+
+## Exercício 2.8
+
+Usando um raciocínio análogo ao de Alyssa, descreva como a diferença de dois intervalos pode ser calculada. Defina uma função correspondente chamada `sub_interval`.
+
+## Exercício 2.9
+
+A *largura* de um intervalo é metade da diferença entre seus limites superior e inferior. A largura é uma medida da incerteza do número especificado pelo intervalo. Para algumas operações aritméticas, a largura do resultado de combinar dois intervalos é uma função apenas das larguras dos intervalos argumentos, enquanto para outras a largura do intervalo resultado da combinação não é uma função das larguras dos intervalos argumentos. Mostre que a largura da soma (ou diferença) de dois intervalos é uma função apenas das larguras dos intervalos sendo adicionados (ou subtraídos). Dê exemplos para mostrar que isso não é verdadeiro para multiplicação ou divisão.
+
+## Exercício 2.10
+
+Ben Bitdiddle, um especialista programador, observa que não faz sentido dividir por um intervalo que abrange zero. Modifique o código de Alyssa para verificar essa condição e sinalizar um erro se isso ocorrer.
+
+## Exercício 2.11
+
+Em passando por esse código, Ben também observa que é possível melhorar a eficiência de `mul_interval` usando o fato de que os pontos extremos dos intervalos são números. Mostre que existem nove casos para computar o produto de dois intervalos com base nos sinais dos pontos extremos, e reescreva `mul_interval` para levar vantagem disso.
+
+## Exercício 2.12
+
+Defina um construtor `make_center_percent` que recebe um centro e uma tolerância percentual e produz o intervalo desejado. Você também deve definir um seletor `percent` que produz a tolerância percentual para um dado intervalo.
+
+<CodePlayground
+  code={`function make_center_width(c, w) {
+    return make_interval(c - w, c + w);
+}
+function center(i) {
+    return (lower_bound(i) + upper_bound(i)) / 2;
+}
+function width(i) {
+    return (upper_bound(i) - lower_bound(i)) / 2;
+}
+
+function make_center_percent(c, p) {
+    // Sua implementação aqui
+    // p é a tolerância percentual
+}
+
+function percent(i) {
+    // Sua implementação aqui
+}`}
+  height={350}
+/>
+
+## O Problema da Dependência
+
+Ao explorar mais profundamente o sistema, você descobrirá que diferentes expressões algébricas que são matematicamente equivalentes podem produzir intervalos de resultados diferentes quando implementadas na aritmética de intervalos. Por exemplo, duas fórmulas para calcular resistências paralelas:
+
+```javascript
+function par1(r1, r2) {
+    return div_interval(mul_interval(r1, r2),
+                       add_interval(r1, r2));
+}
+
+function par2(r1, r2) {
+    const one = make_interval(1, 1);
+    return div_interval(one,
+                       add_interval(div_interval(one, r1),
+                                   div_interval(one, r2)));
+}
+```
+
+Essas duas funções produzem resultados diferentes! Isso ocorre porque a aritmética de intervalos trata cada ocorrência de uma variável como uma quantidade independente, levando a resultados mais imprecisos quando uma variável aparece várias vezes em uma expressão. Este é o *problema da dependência* na aritmética de intervalos.
+
+## Exercícios 2.13-2.16
+
+Os exercícios restantes exploram mais profundamente este problema da dependência, derivando fórmulas para tolerância percentual em produtos, investigando por que `par2` produz resultados melhores que `par1`, e explorando se é possível projetar um sistema de aritmética de intervalos que evite completamente esse problema.

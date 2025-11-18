@@ -1,0 +1,164 @@
+---
+title: 2.1.3 O Que Se Entende por Dados?
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 2.1.3  O Que Se Entende por Dados?
+
+Começamos a implementação de números racionais na seção 2.1.1 implementando as operações de números racionais `add_rat`, `sub_rat` e assim por diante em termos de três funções não especificadas: `make_rat`, `numer` e `denom`. Naquele ponto, poderíamos pensar nas operações como sendo definidas em termos de objetos de dados—numeradores, denominadores e números racionais—cujo comportamento foi especificado pelas três funções posteriores.
+
+Mas o que exatamente se entende por *dados*? Não é suficiente dizer "o que quer que seja implementado pelos seletores e construtores dados". Claramente, nem todo conjunto arbitrário de três funções pode servir como uma base apropriada para a implementação de números racionais. Precisamos garantir que, se construirmos um número racional `x` a partir de um par de inteiros `n` e `d`, então extrair o `numer` e o `denom` de `x` e dividi-los deve produzir o mesmo resultado que dividir `n` por `d`. Em outras palavras, `make_rat`, `numer` e `denom` devem satisfazer a condição de que, para qualquer inteiro `n` e qualquer inteiro não-zero `d`, se `x` é `make_rat(n, d)`, então
+
+$$
+\dfrac{\texttt{numer}(\texttt{x})}{\texttt{denom}(\texttt{x})} = \dfrac{\texttt{n}}{\texttt{d}}
+$$
+
+Na verdade, esta é a única condição que `make_rat`, `numer` e `denom` devem cumprir para formar uma base adequada para uma representação de número racional. Em geral, podemos pensar em dados como definidos por alguma coleção de seletores e construtores, juntamente com condições especificadas que essas funções devem cumprir para serem uma representação válida.
+
+Este ponto de vista pode servir para definir não apenas objetos de dados de "alto nível", como números racionais, mas também objetos de nível mais baixo. Considere a noção de um par, que usamos para definir nossos números racionais. Nunca dissemos realmente o que era um par, apenas que a linguagem fornecia funções `pair`, `head` e `tail` para operar em pares. Mas a única coisa que precisamos saber sobre essas três operações é que, se colarmos dois objetos juntos usando `pair`, podemos recuperar os objetos usando `head` e `tail`. Ou seja, as operações satisfazem a condição de que, para quaisquer objetos `x` e `y`, se `z` é `pair(x, y)`, então `head(z)` é `x` e `tail(z)` é `y`. De fato, mencionamos que essas três funções estão incluídas como primitivas em nossa linguagem. No entanto, qualquer trio de funções que satisfaça a condição acima pode ser usado como base para implementar pares. Este ponto é ilustrado de forma marcante pelo fato de que poderíamos implementar `pair`, `head` e `tail` sem usar nenhuma estrutura de dados, mas apenas usando funções. Aqui estão as definições:
+
+<CodePlayground
+  code={`function pair(x, y) {
+    function dispatch(m) {
+        return m === 0
+               ? x
+               : m === 1
+               ? y
+               : error(m, "argument not 0 or 1 -- pair");
+    }
+    return dispatch;
+}
+function head(z) { return z(0); }
+
+function tail(z) { return z(1); }
+
+// Testando
+const x = pair(1, 2);
+head(x);`}
+  height={400}
+/>
+
+Este uso de funções corresponde a nada parecido com nossa noção intuitiva do que os dados deveriam ser. No entanto, tudo o que precisamos fazer para mostrar que esta é uma maneira válida de representar pares é verificar que essas funções satisfazem a condição dada acima.
+
+O ponto sutil a notar é que o valor retornado por `pair(x, y)` é uma função—a saber, a função `dispatch` definida internamente, que recebe um argumento e retorna `x` ou `y` dependendo se o argumento é 0 ou 1. Correspondentemente, `head(z)` é definido para aplicar `z` a 0. Portanto, se `z` é a função formada por `pair(x, y)`, então `z` aplicado a 0 produzirá `x`. Assim, mostramos que `head(pair(x, y))` produz `x`, como desejado. Similarmente, `tail(pair(x, y))` aplica a função retornada por `pair(x, y)` a 1, que retorna `y`. Portanto, esta implementação funcional de pares é uma implementação válida, e se acessarmos pares usando apenas `pair`, `head` e `tail`, não podemos distinguir esta implementação de uma que usa estruturas de dados "reais".
+
+O ponto de exibir a representação funcional de pares não é que nossa linguagem funcione dessa maneira (uma implementação eficiente de pares pode usar a estrutura de dados nativa *vector* do JavaScript), mas que ela poderia funcionar dessa maneira. A representação funcional, embora obscura, é uma maneira perfeitamente adequada de representar pares, pois cumpre as únicas condições que os pares precisam cumprir. Este exemplo também demonstra que a capacidade de manipular funções como objetos fornece automaticamente a capacidade de representar dados compostos. Isso pode parecer uma curiosidade agora, mas as representações funcionais de dados desempenharão um papel central em nosso repertório de programação. Este estilo de programação é frequentemente chamado de *message passing* (passagem de mensagens), e o usaremos como uma ferramenta básica no capítulo 3 quando abordarmos as questões de modelagem e simulação.
+
+## Exercício 2.4
+
+Aqui está uma representação funcional alternativa de pares. Para esta representação, verifique que `head(pair(x, y))` produz `x` para quaisquer objetos `x` e `y`.
+
+<CodePlayground
+  code={`function pair(x, y) {
+    return m => m(x, y);
+}
+function head(z) {
+    return z((p, q) => p);
+}
+
+// Testando
+const x = pair(1, 2);
+head(x);`}
+  height={300}
+/>
+
+Qual é a definição correspondente de `tail`? (Dica: Para verificar que isso funciona, faça uso do modelo de substituição da seção 1.1.5.)
+
+<CodePlayground
+  code={`function pair(x, y) {
+    return m => m(x, y);
+}
+function head(z) {
+    return z((p, q) => p);
+}
+function tail(z) {
+    // Sua implementação aqui
+}
+
+// Testando
+const x = pair(1, 2);
+tail(x);`}
+  height={300}
+/>
+
+## Exercício 2.5
+
+Mostre que podemos representar pares de inteiros não-negativos usando apenas números e operações aritméticas se representarmos o par a e b como o inteiro que é o produto 2^a 3^b. Dê as definições correspondentes das funções `pair`, `head` e `tail`.
+
+<CodePlayground
+  code={`function fast_expt(base, n) {
+    return n === 0
+           ? 1
+           : n % 2 === 0
+           ? fast_expt(base * base, n / 2)
+           : base * fast_expt(base, n - 1);
+}
+
+function pair(a, b) {
+    return fast_expt(2, a) * fast_expt(3, b);
+}
+
+function head(p) {
+    return p % 2 === 0
+           ? head(p / 2) + 1
+           : 0;
+}
+
+function tail(p) {
+    // Sua implementação aqui
+}
+
+// Testando
+tail(pair(3, 4));`}
+  height={450}
+/>
+
+## Exercício 2.6
+
+Caso representar pares como funções (exercício 2.4) não tenha sido suficientemente alucinante, considere que, em uma linguagem que pode manipular funções, podemos nos virar sem números (pelo menos no que diz respeito aos inteiros não-negativos) implementando 0 e a operação de adicionar 1 como:
+
+<CodePlayground
+  code={`const zero = f => x => x;
+
+function add_1(n) {
+    return f => x => f(n(f)(x));
+}
+
+// Testando
+const one = add_1(zero);
+const two = add_1(one);
+
+function church_to_number(c) {
+    return c(n => n + 1)(0);
+}
+
+church_to_number(two);`}
+  height={350}
+/>
+
+Esta representação é conhecida como *numerais de Church*, em homenagem ao seu inventor, Alonzo Church, o lógico que inventou o cálculo lambda.
+
+Defina `one` e `two` diretamente (não em termos de `zero` e `add_1`). (Dica: Use substituição para avaliar `add_1(zero)`). Dê uma definição direta da função de adição `plus` (não em termos de aplicação repetida de `add_1`).
+
+<CodePlayground
+  code={`const zero = f => x => x;
+
+const one = // Sua implementação direta aqui
+
+const two = // Sua implementação direta aqui
+
+function plus(n, m) {
+    // Sua implementação aqui
+}
+
+// Testando
+const three = plus(one, two);
+
+function church_to_number(c) {
+    return c(n => n + 1)(0);
+}
+
+church_to_number(three);`}
+  height={400}
+/>

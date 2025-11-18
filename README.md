@@ -111,8 +111,8 @@ Para informações detalhadas sobre o processo de tradução, convenções de es
 
 ```
 Tradução: 🟢 Em Andamento
-Capítulos Concluídos: 2/5
-Progresso Estimado: ~40%
+Capítulos Concluídos: 3/5
+Progresso Estimado: ~60%
 ```
 
 ### Detalhamento por Capítulo
@@ -164,27 +164,43 @@ Progresso Estimado: ~40%
 
 #### 📖 Capítulo 2: Construindo Abstrações com Dados
 
-##### 2.1 Introdução à Abstração de Dados
-- ⬜ 2.1.md (Introdução da seção)
-- ⬜ Todas as subseções
+##### 2.0 Introdução
+- ✅ 2.0.md
 
-##### 2.2 Dados Hierárquicos e a Propriedade de Fechamento
-- ⬜ 2.2.md (Introdução da seção)
-- ⬜ Todas as subseções
+##### 2.1 Introdução à Abstração de Dados
+- ✅ 2.1.md (Introdução da seção)
+- ✅ 2.1.1 Exemplo: Operações Aritméticas para Números Racionais
+- ✅ 2.1.2 Barreiras de Abstração
+- ✅ 2.1.3 O Que Se Entende por Dados?
+- ✅ 2.1.4 Exercício Estendido: Aritmética de Intervalos
+
+##### 2.2 Dados Hierárquicos e a Propriedade de Closure
+- ✅ 2.2.md (Introdução da seção)
+- ✅ 2.2.1 Representando Sequências
+- ✅ 2.2.2 Estruturas Hierárquicas
+- ✅ 2.2.3 Sequências como Interfaces Convencionais
+- ✅ 2.2.4 Exemplo: Uma Linguagem de Imagens
 
 ##### 2.3 Dados Simbólicos
-- ⬜ 2.3.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 2.3.md (Introdução da seção)
+- ✅ 2.3.1 Strings como Objetos de Dados
+- ✅ 2.3.2 Exemplo: Diferenciação Simbólica
+- ✅ 2.3.3 Exemplo: Representando Conjuntos
+- ✅ 2.3.4 Exemplo: Árvores de Codificação de Huffman
 
 ##### 2.4 Múltiplas Representações para Dados Abstratos
-- ⬜ 2.4.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 2.4.md (Introdução da seção)
+- ✅ 2.4.1 Representações para Números Complexos
+- ✅ 2.4.2 Dados Etiquetados
+- ✅ 2.4.3 Programação Orientada a Dados e Aditividade
 
 ##### 2.5 Sistemas com Operações Genéricas
-- ⬜ 2.5.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 2.5.md (Introdução da seção)
+- ✅ 2.5.1 Operações Aritméticas Genéricas
+- ✅ 2.5.2 Combinando Dados de Diferentes Tipos
+- ✅ 2.5.3 Exemplo: Álgebra Simbólica
 
-**Status: ⬜ Não Iniciado (0/~25)**
+**Status: ✅ Completo (24/24 - 100%)**
 
 ---
 
@@ -282,12 +298,12 @@ Progresso Estimado: ~40%
 
 ### 🎯 Próximas Prioridades de Tradução
 
-1. **Capítulo 2 - Construindo Abstrações com Dados**
-   - Iniciar tradução completa do capítulo
-   - Aproximadamente 25 seções a serem traduzidas
+1. **Capítulo 4 - Abstração Metalinguística**
+   - Iniciar tradução completa de todas as seções
+   - Aproximadamente 20 seções a serem traduzidas
 
-2. **Capítulo 4 - Abstração Metalinguística**
-   - Próximo após conclusão do Capítulo 2
+2. **Capítulo 5 - Computação com Máquinas de Registradores**
+   - Próximo após conclusão do Capítulo 4
 
 ### 📊 Como Acompanhar o Progresso
 
