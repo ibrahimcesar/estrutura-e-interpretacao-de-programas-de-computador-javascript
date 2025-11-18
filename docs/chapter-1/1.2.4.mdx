@@ -1,0 +1,165 @@
+# 1.2.4 Exponenciação
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+Considere o problema de calcular a exponencial de um número dado. Gostaríamos de uma função que recebe como argumentos uma base $b$ e um expoente inteiro positivo $n$ e calcula $b^n$. Uma maneira de fazer isso é através da definição recursiva
+
+$$
+\begin{array}{lll}
+b^{n} = b\cdot b^{n-1}\\
+b^{0} = 1
+\end{array}
+$$
+
+que se traduz prontamente na função
+
+<CodePlayground
+  code={`function expt(b, n) {
+    return n === 0
+           ? 1
+           : b * expt(b, n - 1);
+}`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+Este é um processo recursivo linear, que requer $\Theta(n)$ passos e $\Theta(n)$ espaço. Assim como com o fatorial, podemos prontamente formular uma iteração linear equivalente:
+
+<CodePlayground
+  code={`function expt(b, n) {
+    return expt_iter(b, n, 1);
+}
+function expt_iter(b, counter, product) {
+    return counter === 0
+           ? product
+           : expt_iter(b, counter - 1, b * product);
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+Esta versão requer $\Theta(n)$ passos e $\Theta(1)$ espaço.
+
+Podemos calcular exponenciais em menos passos usando *sucessivas elevações ao quadrado* (*successive squaring*). Por exemplo, em vez de calcular $b^8$ como
+
+$$
+b\cdot(b\cdot(b\cdot(b\cdot(b\cdot(b\cdot(b\cdot b))))))
+$$
+
+podemos calculá-lo usando três multiplicações:
+
+$$
+\begin{array}{lll}
+b^{2} = b\cdot b\\
+b^{4} = b^{2}\cdot b^{2}\\
+b^{8} = b^{4}\cdot b^{4}
+\end{array}
+$$
+
+<a name="footnote-link-1"></a> <a name="footnote-link-2"></a> <a name="footnote-link-3"></a>
+Este método funciona bem para expoentes que são potências de 2. Também podemos tirar proveito de sucessivas elevações ao quadrado no cálculo de exponenciais em geral se usarmos a regra
+
+$$
+\begin{array}{llll}
+b^{n} = (b^{n/2})^{2}  \quad\mbox{se}\ n\ \mbox{é par}\\
+b^{n} = b\cdot b^{n-1} \quad\mbox{se}\ n\ \mbox{é ímpar}
+\end{array}
+$$
+
+Podemos expressar este método como uma função:[<sup>1</sup>](#footnote-1)
+
+<CodePlayground
+  code={`function fast_expt(b, n) {
+    return n === 0
+           ? 1
+           : is_even(n)
+           ? square(fast_expt(b, n / 2))
+           : b * fast_expt(b, n - 1);
+}`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}
+function square(x) {
+    return x * x;
+}`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+onde o predicado para testar se um inteiro é par é definido em termos do operador `%`, que calcula o resto após a divisão de inteiros, por
+
+<CodePlayground
+  code={`function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={150}
+  showLineNumbers={false}
+/>
+
+O processo evoluído por `fast_expt` cresce logaritmicamente com $n$ tanto em espaço quanto em número de passos. Para ver isso, observe que calcular $b^{2n}$ usando `fast_expt` requer apenas uma multiplicação a mais do que calcular $b^n$. O tamanho do expoente que podemos calcular, portanto, dobra (aproximadamente) com cada nova multiplicação que nos é permitida. Assim, o número de multiplicações necessárias para um expoente de $n$ cresce aproximadamente tão rápido quanto o logaritmo de $n$ na base 2. O processo tem crescimento $\Theta(\log n)$.[<sup>2</sup>](#footnote-2)
+
+A diferença entre crescimento $\Theta(\log n)$ e crescimento $\Theta(n)$ torna-se impressionante à medida que $n$ se torna grande. Por exemplo, `fast_expt` para $n=1000$ requer apenas 14 multiplicações.[<sup>3</sup>](#footnote-3) Também é possível usar a ideia de sucessivas elevações ao quadrado para desenvolver um algoritmo iterativo que calcula exponenciais com um número logarítmico de passos (veja o exercício 1.16), embora, como é frequentemente o caso com algoritmos iterativos, este não seja escrito tão diretamente quanto o algoritmo recursivo.
+
+## Exercício 1.16
+
+<a name="ex-1-16"></a>
+Projete uma função que evolui um processo de exponenciação iterativo que usa sucessivas elevações ao quadrado e usa um número logarítmico de passos, assim como `fast_expt`. (Dica: Usando a observação de que $(b^{n/2})^2 =(b^2)^{n/2}$, mantenha, junto com o expoente $n$ e a base $b$, uma variável de estado adicional $a$, e defina a transformação de estado de tal forma que o produto $a b^n$ não mude de estado para estado. No início do processo, $a$ é tomado como 1, e a resposta é dada pelo valor de $a$ no final do processo. Em geral, a técnica de definir uma *quantidade invariante* que permanece inalterada de estado para estado é uma maneira poderosa de pensar sobre o projeto de algoritmos iterativos.)
+
+## Exercício 1.17
+
+<a name="ex-1-17"></a>
+Os algoritmos de exponenciação nesta seção são baseados em realizar exponenciação por meio de multiplicação repetida. De maneira similar, pode-se realizar a multiplicação de inteiros por meio de adição repetida. O seguinte algoritmo de multiplicação (no qual assumimos que nossa linguagem só pode adicionar, não multiplicar) é análogo à função `expt`:
+
+```javascript
+function times(a, b) {
+    return b === 0
+           ? 0
+           : a + times(a, b - 1);
+}
+```
+
+Este algoritmo leva um número de passos que é linear em `b`. Agora suponha que incluímos, junto com adição, as operações `double`, que dobra um inteiro, e `halve`, que divide um inteiro (par) por 2. Usando estas, projete um algoritmo de multiplicação análogo a `fast_expt` que usa um número logarítmico de passos.
+
+## Exercício 1.18
+
+<a name="ex-1-18"></a>
+Usando os resultados dos exercícios 1.16 e 1.17, desenvolva uma função que gera um processo iterativo para multiplicar dois inteiros em termos de adicionar, dobrar e dividir pela metade e usa um número logarítmico de passos.
+
+## Exercício 1.19
+
+<a name="ex-1-19"></a>
+Existe um algoritmo inteligente para calcular os números de Fibonacci em um número logarítmico de passos. Lembre-se da transformação das variáveis de estado $a$ e $b$ no processo `fib_iter` da seção 1.2.2: $a \leftarrow a + b$ e $b \leftarrow a$. Chame essa transformação de $T$, e observe que aplicar $T$ $n$ vezes, começando com 1 e 0, produz o par Fib($n + 1$) e Fib($n$). Em outras palavras, os números de Fibonacci são produzidos aplicando $T^n$, a $n$-ésima potência da transformação $T$, começando com o par (1,0). Agora considere $T$ como o caso especial de $p = 0$ e $q = 1$ em uma família de transformações $T_{pq}$, onde $T_{pq}$ transforma o par $(a,b)$ de acordo com $a \leftarrow bq + aq + ap$ e $b \leftarrow bp + aq$. Mostre que se aplicarmos tal transformação $T_{pq}$ duas vezes, o efeito é o mesmo que usar uma única transformação $T_{p'q'}$ da mesma forma, e calcule $p'$ e $q'$ em termos de $p$ e $q$. Isso nos dá um meio explícito de elevar ao quadrado essas transformações, e assim podemos calcular $T^n$ usando sucessivas elevações ao quadrado, como no método `fast_expt`. Coloque tudo isso junto para completar a seguinte função, que executa em um número logarítmico de passos:
+
+```javascript
+function fib(n) {
+    return fib_iter(1, 0, 0, 1, n);
+}
+function fib_iter(a, b, p, q, count) {
+    return count === 0
+           ? b
+           : is_even(count)
+           ? fib_iter(a,
+                      b,
+                      ⟨??⟩,  // calcular p'
+                      ⟨??⟩,  // calcular q'
+                      count / 2)
+           : fib_iter(b * q + a * q + a * p,
+                      b * p + a * q,
+                      p,
+                      q,
+                      count - 1);
+}
+```
+
+---
+
+## Notas de Rodapé
+
+<a name="footnote-1"></a>
+**[1](#footnote-link-1)** Mais precisamente, o número de multiplicações necessárias é igual a 1 a menos que o logaritmo na base 2 de $n$, mais o número de uns na representação binária de $n$. Este total é sempre menor que o dobro do logaritmo na base 2 de $n$. As constantes arbitrárias $k_1$ e $k_2$ na definição de notação de ordem implicam que, para um processo logarítmico, a base na qual os logaritmos são tomados não importa, então todos esses processos são descritos como $\Theta(\log n)$.
+
+<a name="footnote-2"></a>
+**[2](#footnote-link-2)** Você pode se perguntar por que alguém se importaria em elevar números à 1000ª potência. Veja a seção 1.2.6.
+
+<a name="footnote-3"></a>
+**[3](#footnote-link-3)** Este algoritmo iterativo é antigo. Ele aparece no *Chandah-sutra* de Āchārya Piṅgala, escrito antes de 200 a.C. Veja Knuth (1997b), seção 4.6.3, para uma discussão completa e análise deste e outros métodos de exponenciação.
