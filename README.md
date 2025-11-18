@@ -107,11 +107,188 @@ Para informações detalhadas sobre o processo de tradução, convenções de es
 
 ## 📋 Status da Tradução
 
-Para ver o status atual da tradução, execute:
+### Progresso Geral
+
+```
+Tradução: 🟢 Em Andamento
+Capítulos Concluídos: 0/5
+Progresso Estimado: ~15%
+```
+
+### Detalhamento por Capítulo
+
+#### 📖 Capítulo 0: Prefácios e Introdução
+- ✅ Prefácio de 1984 (foreword84.md)
+- ✅ Prefácio de 1996 (prefaces96.md)
+- ✅ Prefácio de 2003 (prefaces03.md)
+
+**Status: ✅ Completo (3/3)**
+
+---
+
+#### 📖 Capítulo 1: Construindo Abstrações com Funções
+
+##### 1.0 Introdução
+- ✅ 1.0.md
+
+##### 1.1 Os Elementos da Programação
+- ✅ 1.1.md (Introdução da seção)
+- ✅ 1.1.1 Expressões
+- ✅ 1.1.2 Nomenclatura e o Ambiente
+- ✅ 1.1.3 Avaliando Combinações de Operadores
+- ✅ 1.1.4 Funções Compostas
+- ✅ 1.1.5 O Modelo de Substituição para Aplicação de Função
+- ⬜ 1.1.6 Expressões Condicionais e Predicados
+- ⬜ 1.1.7 Exemplo: Raiz Quadrada pelo Método de Newton
+- ✅ 1.1.8 Funções como Abstrações de Caixa Preta
+
+##### 1.2 Funções e os Processos que Geram
+- ✅ 1.2.md (Introdução da seção)
+- ⬜ 1.2.1 Recursão Linear e Iteração
+- ✅ 1.2.2 Recursão em Árvore
+- ⬜ 1.2.3 Ordens de Crescimento
+- ⬜ 1.2.4 Exponenciação
+- ⬜ 1.2.5 Máximo Divisor Comum
+- ⬜ 1.2.6 Exemplo: Testando a Primalidade
+
+##### 1.3 Formulação de Abstrações com Funções de Ordem Superior
+- ✅ 1.3.mdx (Introdução da seção)
+- ⬜ 1.3.1 Funções como Argumentos
+- ⬜ 1.3.2 Construindo Funções Usando Lambda
+- ⬜ 1.3.3 Funções como Métodos Gerais
+- ✅ 1.3.4 Funções como Retorno
+
+**Status: 🟡 Em Andamento (12/22 - 55%)**
+
+---
+
+#### 📖 Capítulo 2: Construindo Abstrações com Dados
+
+##### 2.1 Introdução à Abstração de Dados
+- ⬜ 2.1.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 2.2 Dados Hierárquicos e a Propriedade de Fechamento
+- ⬜ 2.2.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 2.3 Dados Simbólicos
+- ⬜ 2.3.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 2.4 Múltiplas Representações para Dados Abstratos
+- ⬜ 2.4.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 2.5 Sistemas com Operações Genéricas
+- ⬜ 2.5.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+**Status: ⬜ Não Iniciado (0/~25)**
+
+---
+
+#### 📖 Capítulo 3: Modularidade, Objetos e Estado
+
+##### 3.1 Atribuição e Estado Local
+- ⬜ 3.1.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 3.2 O Modelo de Ambiente de Avaliação
+- ⬜ 3.2.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 3.3 Modelando com Dados Mutáveis
+- ⬜ 3.3.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 3.4 Concorrência: Tempo é da Essência
+- ⬜ 3.4.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 3.5 Streams
+- ⬜ 3.5.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+**Status: ⬜ Não Iniciado (0/~25)**
+
+---
+
+#### 📖 Capítulo 4: Abstração Metalinguística
+
+##### 4.1 O Avaliador Metacircular
+- ⬜ 4.1.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 4.2 Variações sobre um Scheme - Avaliação Preguiçosa
+- ⬜ 4.2.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 4.3 Variações sobre um Scheme - Computação Não-Determinística
+- ⬜ 4.3.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 4.4 Programação Lógica
+- ⬜ 4.4.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+**Status: ⬜ Não Iniciado (0/~20)**
+
+---
+
+#### 📖 Capítulo 5: Computação com Máquinas de Registradores
+
+##### 5.1 Projetando Máquinas de Registradores
+- ⬜ 5.1.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 5.2 Um Simulador de Máquina de Registradores
+- ⬜ 5.2.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 5.3 Alocação de Armazenamento e Coleta de Lixo
+- ⬜ 5.3.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 5.4 O Avaliador Explícito-Control
+- ⬜ 5.4.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+##### 5.5 Compilação
+- ⬜ 5.5.md (Introdução da seção)
+- ⬜ Todas as subseções
+
+**Status: ⬜ Não Iniciado (0/~25)**
+
+---
+
+### 🎯 Próximas Prioridades de Tradução
+
+1. **Capítulo 1 - Seções Faltantes:**
+   - 1.1.6 Expressões Condicionais e Predicados
+   - 1.1.7 Exemplo: Raiz Quadrada pelo Método de Newton
+   - 1.2.1 Recursão Linear e Iteração
+   - 1.2.3 Ordens de Crescimento
+   - 1.2.4 Exponenciação
+   - 1.2.5 Máximo Divisor Comum
+   - 1.2.6 Exemplo: Testando a Primalidade
+   - 1.3.1 Funções como Argumentos
+   - 1.3.2 Construindo Funções Usando Lambda
+   - 1.3.3 Funções como Métodos Gerais
+
+2. **Capítulo 2 - Iniciar tradução completa**
+
+### 📊 Como Acompanhar o Progresso
+
+Para ver o status detalhado da tradução, execute:
 
 ```bash
 make translation-status
 ```
+
+### 🔗 Fonte Original
+
+Toda tradução é baseada no repositório oficial: [Source Academy SICP](https://github.com/source-academy/sicp)
 
 ## 🤝 Código de Conduta
 
