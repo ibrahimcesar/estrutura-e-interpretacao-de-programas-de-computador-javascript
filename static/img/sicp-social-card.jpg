@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#f7df1e"/>
+
+  <!-- Title -->
+  <text x="600" y="280" font-family="Arial, sans-serif" font-size="80" font-weight="bold" text-anchor="middle" fill="#323330">
+    SICP.js
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="360" font-family="Arial, sans-serif" font-size="36" text-anchor="middle" fill="#323330">
+    Estrutura e Interpretação de Programas de Computador
+  </text>
+
+  <!-- JavaScript icon -->
+  <circle cx="600" cy="480" r="60" fill="#323330" opacity="0.2"/>
+  <text x="600" y="510" font-family="Arial, sans-serif" font-size="72" font-weight="bold" text-anchor="middle" fill="#323330">
+    JS
+  </text>
+</svg>
