@@ -36,7 +36,7 @@ Agora usamos nossa linguagem de máquina de registradores para descrever o algor
 
 A coleta de lixo é disparada quando esgotamos as células livres na memória de trabalho atual, ou seja, quando uma operação `pair` tenta incrementar o ponteiro `free` além do fim do vetor de memória. Quando o processo de coleta de lixo estiver completo, o ponteiro `root` apontará para a nova memória, todos os objetos acessíveis a partir da `root` terão sido movidos para a nova memória, e o ponteiro `free` indicará o próximo lugar na nova memória onde um novo par pode ser alocado. Além disso, os papéis da memória de trabalho e da nova memória terão sido intercambiados — novos pares serão construídos na nova memória, começando no lugar indicado por `free`, e a memória de trabalho (anterior) estará disponível como a nova memória para a próxima coleta de lixo. A Figura 5.15 mostra a disposição da memória logo antes e logo depois da coleta de lixo.
 
-![Figura 5.15](img_javascript/Fig5.15c.std.svg)
+<MemoryDiagram type="garbage-collection" />
 
 **Figura 5.15:** Reconfiguração da memória pelo processo de coleta de lixo.
 
