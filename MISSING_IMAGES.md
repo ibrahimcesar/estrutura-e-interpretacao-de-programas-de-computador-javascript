@@ -2,46 +2,49 @@
 
 ## Executive Summary
 
-This report identifies all pages in the SICP JavaScript translation that reference figures/diagrams but are missing the corresponding image files.
+This report tracks figures/diagrams in the SICP JavaScript translation. Many missing diagrams have been implemented using Mermaid.js for inline rendering.
 
-**Total Missing Images: ~25+ figures across 11 pages**
+**Status Update:**
+- ✅ **13 diagrams implemented** using Mermaid.js
+- ⏳ **12+ diagrams still missing**
+- 📊 **Total figures tracked:** ~25+
 
 ---
 
 ## Chapter 3: Modularity, Objects, and State
 
-### 3.3.1 Mutable List Structure
+### 3.3.1 Mutable List Structure ✅ COMPLETE
 **File:** `docs/chapter-3/3.3.1.mdx`
-**Missing Images (6):**
-- **Figure 3.12** - Initial box-and-pointer diagram showing lists x and y
-- **Figure 3.13** - Effect of `set_head(x, y)` operation
-- **Figure 3.14** - Effect of `const z = pair(y, tail(x))` operation
-- **Figure 3.15** - Effect of `set_tail(x, y)` operation
-- **Figure 3.16** - Sharing structure in `z1`
-- **Figure 3.17** - Alternative structure created by different operations
+**Implemented with Mermaid.js (6):**
+- **Figure 3.12** ✅ - Initial box-and-pointer diagram showing lists x and y
+- **Figure 3.13** ✅ - Effect of `set_head(x, y)` operation
+- **Figure 3.14** ✅ - Effect of `const z = pair(y, tail(x))` operation
+- **Figure 3.15** ✅ - Effect of `set_tail(x, y)` operation
+- **Figure 3.16** ✅ - Sharing structure in `z1`
+- **Figure 3.17** ✅ - Alternative structure created by different operations
 
-**Context:** These diagrams illustrate mutable list operations and box-and-pointer representations.
+**Implementation:** Box-and-pointer diagrams using Mermaid graph syntax with color-coded nodes.
 
 ---
 
-### 3.3.2 Representing Queues
+### 3.3.2 Representing Queues ✅ COMPLETE
 **File:** `docs/chapter-3/3.3.2.mdx`
-**Missing Images (3):**
-- **Figure 3.18** - Queue representation with `front_ptr` and `rear_ptr` pointers
-- **Figure 3.19** - Result of `insert_queue` operation showing pointer modifications
-- **Figure 3.20** - Result of `delete_queue` operation showing pointer modifications
+**Implemented with Mermaid.js (3):**
+- **Figure 3.18** ✅ - Queue representation with `front_ptr` and `rear_ptr` pointers
+- **Figure 3.19** ✅ - Result of `insert_queue` operation showing pointer modifications
+- **Figure 3.20** ✅ - Result of `delete_queue` operation showing pointer modifications
 
-**Context:** Queue data structure diagrams showing how front and rear pointers manage the queue.
+**Implementation:** Queue diagrams using Mermaid showing pointer manipulations with labels and color coding.
 
 ---
 
-### 3.3.3 Representing Tables
+### 3.3.3 Representing Tables ✅ COMPLETE
 **File:** `docs/chapter-3/3.3.3.mdx`
-**Missing Images (2):**
-- **Figure 3.21** - Box-and-pointer diagram of a one-dimensional table
-- **Figure 3.22** - Box-and-pointer diagram of a two-dimensional table with subtables
+**Implemented with Mermaid.js (2):**
+- **Figure 3.21** ✅ - Box-and-pointer diagram of a one-dimensional table
+- **Figure 3.22** ✅ - Box-and-pointer diagram of a two-dimensional table with subtables
 
-**Context:** Table data structure representations showing headed lists and nested structures.
+**Implementation:** Table structures showing headed lists (1D) and nested subtables (2D) using Mermaid.
 
 ---
 
@@ -87,12 +90,12 @@ This report identifies all pages in the SICP JavaScript translation that referen
 
 ## Chapter 4: Metalinguistic Abstraction
 
-### 4.1 The Metacircular Evaluator
+### 4.1 The Metacircular Evaluator ✅ COMPLETE
 **File:** `docs/chapter-4/4.1.md`
-**Missing Images (1):**
-- **Figure 4.1** - Eval-apply cycle diagram
+**Implemented with Mermaid.js (1):**
+- **Figure 4.1** ✅ - Eval-apply cycle diagram
 
-**Context:** Shows the circular relationship between `evaluate` and `apply` functions. Referenced at lines 13 and 21.
+**Implementation:** Flowchart showing the circular relationship between `evaluate` and `apply` with base cases.
 
 ---
 
@@ -127,20 +130,20 @@ This report identifies all pages in the SICP JavaScript translation that referen
 
 ## Summary by Chapter
 
-| Chapter | Section | Missing Figures | Priority |
-|---------|---------|----------------|----------|
-| 3.3.1 | Mutable Lists | 6 | High |
-| 3.3.2 | Queues | 3 | High |
-| 3.3.3 | Tables | 2 | High |
-| 3.3.4 | Digital Circuits | 3 | High |
-| 3.3.5 | Constraints | 1 | High |
-| 3.5.3 | Streams | 1+ | Medium |
-| 3.5.4 | Delayed Evaluation | 3+ | Medium |
-| 4.1 | Evaluator | 1 | High |
-| 4.1.2 | Syntax | 1 | Medium |
-| 4.1.5 | Data as Programs | 2 | High |
-| 4.4.4 | Query System | 2 | Medium |
-| **TOTAL** | **11 pages** | **~25+** | |
+| Chapter | Section | Status | Figures | Priority |
+|---------|---------|--------|---------|----------|
+| 3.3.1 | Mutable Lists | ✅ Complete | 6 Mermaid | High |
+| 3.3.2 | Queues | ✅ Complete | 3 Mermaid | High |
+| 3.3.3 | Tables | ✅ Complete | 2 Mermaid | High |
+| 3.3.4 | Digital Circuits | ⏳ Missing | 3 SVG needed | High |
+| 3.3.5 | Constraints | ⏳ Missing | 1 SVG needed | High |
+| 3.5.3 | Streams | ⏳ Missing | 1+ diagrams | Medium |
+| 3.5.4 | Delayed Evaluation | ⏳ Missing | 3+ diagrams | Medium |
+| 4.1 | Evaluator | ✅ Complete | 1 Mermaid | High |
+| 4.1.2 | Syntax | ⏳ Missing | 1 diagram | Medium |
+| 4.1.5 | Data as Programs | ⏳ Missing | 2 SVG needed | High |
+| 4.4.4 | Query System | ⏳ Missing | 2 diagrams | Medium |
+| **TOTAL** | **11 pages** | **4 complete** | **13 done, 12+ todo** | |
 
 ---
 
@@ -189,8 +192,45 @@ All markdown references have been updated to use the new paths.
 
 ---
 
+## Mermaid.js Implementation
+
+### What Was Implemented
+
+Successfully implemented **13 diagrams** using Mermaid.js inline rendering:
+
+**Chapter 3.3 - Data Structures (11 diagrams):**
+- ✅ Figures 3.12-3.17: Mutable list structures with box-and-pointer notation
+- ✅ Figures 3.18-3.20: Queue operations showing front/rear pointer management
+- ✅ Figures 3.21-3.22: Table structures (1D and 2D with subtables)
+
+**Chapter 4.1 - Evaluator (1 diagram):**
+- ✅ Figure 4.1: Eval-apply cycle flowchart
+
+### Benefits of Mermaid
+
+1. **No external files** - diagrams defined directly in markdown
+2. **Version controlled** - changes tracked as text in git
+3. **Easy to update** - community can edit without image tools
+4. **Consistent styling** - unified visual appearance
+5. **Accessible** - better than static images for screen readers
+
+### Configuration
+
+Mermaid support enabled in `docusaurus.config.js`:
+```javascript
+markdown: {
+  mermaid: true,
+},
+themes: ['@docusaurus/theme-mermaid'],
+```
+
+Package installed: `@docusaurus/theme-mermaid@3.9.2`
+
+---
+
 ## Notes
 
 - All existing Chapter 1, 2, 3 (partial), and 5 (partial) images are present and working
 - The original SICP book contains all these diagrams, they just need to be converted/adapted to JavaScript syntax
-- Consider sourcing images from upstream repositories that have already adapted SICP figures for JavaScript
+- Mermaid is excellent for data structures but complex circuits/signal diagrams may need SVG or React components
+- Consider sourcing remaining images from upstream repositories that have already adapted SICP figures for JavaScript
