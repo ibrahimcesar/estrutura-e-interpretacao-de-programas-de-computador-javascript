@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sandpack } from "@codesandbox/sandpack-react";
 import { useColorMode } from '@docusaurus/theme-common';
 
@@ -16,7 +16,7 @@ import { useColorMode } from '@docusaurus/theme-common';
  * @param {boolean} props.showLineNumbers - Mostrar números de linha (padrão: true)
  * @param {boolean} props.showConsole - Mostrar console (padrão: true)
  * @param {boolean} props.autorun - Executar automaticamente (padrão: true)
- * @param {number} props.height - Altura do editor (padrão: 400)
+ * @param {number} props.height - Altura do editor (padrão: 300)
  */
 export default function CodePlayground({
   code,
@@ -26,10 +26,32 @@ export default function CodePlayground({
   showLineNumbers = true,
   showConsole = true,
   autorun = true,
-  height = 400,
+  height = 300,
 }) {
   const { colorMode } = useColorMode();
   const theme = colorMode === 'dark' ? 'dark' : 'light';
+
+  // Suprimir mensagens de debug do Sandpack
+  useEffect(() => {
+    const originalLog = console.log;
+    const suppressedMessages = [
+      'Injecting file system access api patch',
+      'Injecting element creation patch',
+      'First element creation parent found'
+    ];
+
+    console.log = function(...args) {
+      const message = args[0];
+      if (typeof message === 'string' && suppressedMessages.some(msg => message.includes(msg))) {
+        return; // Suprimir essas mensagens
+      }
+      originalLog.apply(console, args);
+    };
+
+    return () => {
+      console.log = originalLog; // Restaurar console.log original na limpeza
+    };
+  }, []);
 
   // Construir estrutura de arquivos baseado nas props
   let sandpackFiles;
