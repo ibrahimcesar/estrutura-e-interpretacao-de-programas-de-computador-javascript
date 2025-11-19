@@ -1,0 +1,567 @@
+# 4.4.1 Recuperação Dedutiva de Informações
+
+A programação lógica se destaca em fornecer interfaces para bancos de dados para recuperação de informações. A linguagem de consulta que implementaremos neste capítulo foi projetada para ser usada dessa maneira.
+
+Para ilustrar o que o sistema de consulta faz, mostraremos como ele pode ser usado para gerenciar o banco de dados de registros de pessoal da Gargle, uma próspera empresa de alta tecnologia na área de Boston. A linguagem fornece acesso direcionado por padrões às informações de pessoal e também pode aproveitar regras gerais para fazer deduções lógicas.
+
+## Um banco de dados de exemplo
+
+O banco de dados de pessoal da Gargle contém **asserções** sobre o pessoal da empresa. Aqui estão as informações sobre Ben Bitdiddle, o mago residente de computação:
+
+```javascript
+address(list("Bitdiddle", "Ben"),
+        list("Slumerville", list("Ridge", "Road"), 10))
+job(list("Bitdiddle", "Ben"), list("computer", "wizard"))
+salary(list("Bitdiddle", "Ben"), 122000)
+```
+
+As asserções se parecem com aplicações de função em JavaScript, mas na verdade representam informações no banco de dados. Os primeiros símbolos—aqui `address`, `job` e `salary`—descrevem o **tipo de informação** contida na respectiva asserção, e os "argumentos" são listas ou valores primitivos como strings e números. Os primeiros símbolos não precisam ser declarados, como constantes ou variáveis em JavaScript; seu escopo é global.
+
+Como mago residente, Ben está encarregado da divisão de computação da empresa e supervisiona dois programadores e um técnico. Aqui estão as informações sobre eles:
+
+```javascript
+address(list("Hacker", "Alyssa", "P"),
+        list("Cambridge", list("Mass", "Ave"), 78))
+job(list("Hacker", "Alyssa", "P"), list("computer", "programmer"))
+salary(list("Hacker", "Alyssa", "P"), 81000)
+supervisor(list("Hacker", "Alyssa", "P"), list("Bitdiddle", "Ben"))
+
+address(list("Fect", "Cy", "D"),
+        list("Cambridge", list("Ames", "Street"), 3))
+job(list("Fect", "Cy", "D"), list("computer", "programmer"))
+salary(list("Fect", "Cy", "D"), 70000)
+supervisor(list("Fect", "Cy", "D"), list("Bitdiddle", "Ben"))
+
+address(list("Tweakit", "Lem", "E"),
+        list("Boston", list("Bay", "State", "Road"), 22))
+job(list("Tweakit", "Lem", "E"), list("computer", "technician"))
+salary(list("Tweakit", "Lem", "E"), 51000)
+supervisor(list("Tweakit", "Lem", "E"), list("Bitdiddle", "Ben"))
+```
+
+Também há um estagiário de programação, que é supervisionado por Alyssa:
+
+```javascript
+address(list("Reasoner", "Louis"),
+        list("Slumerville", list("Pine", "Tree", "Road"), 80))
+job(list("Reasoner", "Louis"),
+         list("computer", "programmer", "trainee"))
+salary(list("Reasoner", "Louis"), 62000)
+supervisor(list("Reasoner", "Louis"), list("Hacker", "Alyssa", "P"))
+```
+
+Todas essas pessoas estão na divisão de computação, conforme indicado pela palavra `"computer"` como o primeiro item em suas descrições de cargo.
+
+Ben é um funcionário de alto nível. Seu supervisor é o próprio grande chefe da empresa:
+
+```javascript
+supervisor(list("Bitdiddle", "Ben"), list("Warbucks", "Oliver"))
+
+address(list("Warbucks", "Oliver"),
+        list("Swellesley", list("Top", "Heap", "Road")))
+job(list("Warbucks", "Oliver"), list("administration", "big", "wheel"))
+salary(list("Warbucks", "Oliver"), 314159)
+```
+
+Além da divisão de computação supervisionada por Ben, a empresa tem uma divisão de contabilidade, consistindo de um contador-chefe e seu assistente:
+
+```javascript
+address(list("Scrooge", "Eben"),
+        list("Weston", list("Shady", "Lane"), 10))
+job(list("Scrooge", "Eben"), list("accounting", "chief", "accountant"))
+salary(list("Scrooge", "Eben"), 141421)
+supervisor(list("Scrooge", "Eben"), list("Warbucks", "Oliver"))
+
+address(list("Cratchit", "Robert"),
+        list("Allston", list("N", "Harvard", "Street"), 16))
+job(list("Cratchit", "Robert"), list("accounting", "scrivener"))
+salary(list("Cratchit", "Robert"), 26100)
+supervisor(list("Cratchit", "Robert"), list("Scrooge", "Eben"))
+```
+
+Há também um assistente administrativo para o grande chefe:
+
+```javascript
+address(list("Aull", "DeWitt"),
+        list("Slumerville", list("Onion", "Square"), 5))
+job(list("Aull", "DeWitt"), list("administration", "assistant"))
+salary(list("Aull", "DeWitt"), 42195)
+supervisor(list("Aull", "DeWitt"), list("Warbucks", "Oliver"))
+```
+
+O banco de dados também contém asserções sobre quais tipos de trabalhos podem ser feitos por pessoas que ocupam outros tipos de trabalhos. Por exemplo, um mago de computação pode fazer o trabalho tanto de um programador de computação quanto de um técnico de computação:
+
+```javascript
+can_do_job(list("computer", "wizard"),
+           list("computer", "programmer"))
+can_do_job(list("computer", "wizard"),
+           list("computer", "technician"))
+```
+
+Um programador de computação poderia substituir um estagiário:
+
+```javascript
+can_do_job(list("computer", "programmer"),
+           list("computer", "programmer", "trainee"))
+```
+
+Além disso, como é bem conhecido,
+
+```javascript
+can_do_job(list("administration", "assistant"),
+           list("administration", "big", "wheel"))
+```
+
+## Consultas simples
+
+A linguagem de consulta permite que os usuários recuperem informações do banco de dados fazendo consultas em resposta ao prompt do sistema. Por exemplo, para encontrar todos os programadores de computação, pode-se dizer:
+
+```javascript
+Query input:
+job($x, list("computer", "programmer"))
+```
+
+O sistema responderá com os seguintes itens:
+
+```javascript
+Query results:
+job(list("Hacker", "Alyssa", "P"), list("computer", "programmer"))
+job(list("Fect", "Cy", "D"), list("computer", "programmer"))
+```
+
+A consulta de entrada especifica que estamos procurando entradas no banco de dados que correspondam a um certo **padrão**. Neste exemplo, o padrão especifica `job` como o tipo de informação que estamos procurando. O primeiro item pode ser qualquer coisa, e o segundo é a lista literal `list("computer", "programmer")`. O "qualquer coisa" que pode ser o primeiro item na asserção correspondente é especificado por uma **variável de padrão**, `$x`. Como variáveis de padrão, usamos nomes JavaScript que começam com um cifrão. Veremos abaixo por que é útil especificar nomes para variáveis de padrão em vez de apenas colocar um único símbolo como `$` em padrões para representar "qualquer coisa".
+
+O sistema responde a uma consulta simples mostrando todas as entradas no banco de dados que correspondem ao padrão especificado.
+
+Um padrão pode ter mais de uma variável. Por exemplo, a consulta
+
+```javascript
+address($x, $y)
+```
+
+listará todos os endereços dos funcionários.
+
+Um padrão pode não ter variáveis, caso em que a consulta simplesmente determina se esse padrão é uma entrada no banco de dados. Se for, haverá uma correspondência; se não, não haverá correspondências.
+
+A mesma variável de padrão pode aparecer mais de uma vez em uma consulta, especificando que a mesma "qualquer coisa" deve aparecer em cada posição. É por isso que as variáveis têm nomes. Por exemplo,
+
+```javascript
+supervisor($x, $x)
+```
+
+encontra todas as pessoas que supervisionam a si mesmas (embora não haja tais asserções em nosso banco de dados de exemplo).
+
+A consulta
+
+```javascript
+job($x, list("computer", $type))
+```
+
+corresponde a todas as entradas de trabalho cujo segundo item é uma lista de dois elementos cujo primeiro item é `"computer"`:
+
+```javascript
+job(list("Bitdiddle", "Ben"), list("computer", "wizard"))
+job(list("Hacker", "Alyssa", "P"), list("computer", "programmer"))
+job(list("Fect", "Cy", "D"), list("computer", "programmer"))
+job(list("Tweakit", "Lem", "E"), list("computer", "technician"))
+```
+
+Este mesmo padrão **não** corresponde a
+
+```javascript
+job(list("Reasoner", "Louis"),
+    list("computer", "programmer", "trainee"))
+```
+
+porque o segundo item na asserção é uma lista de três elementos, e o segundo item do padrão especifica que deve haver dois elementos. Se quiséssemos alterar o padrão para que o segundo item pudesse ser qualquer lista começando com `"computer"`, poderíamos especificar
+
+```javascript
+job($x, pair("computer", $type))
+```
+
+Por exemplo,
+
+```javascript
+pair("computer", $type)
+```
+
+corresponde aos dados
+
+```javascript
+list("computer", "programmer", "trainee")
+```
+
+com `$type` como `list("programmer", "trainee")`. Também corresponde aos dados
+
+```javascript
+list("computer", "programmer")
+```
+
+com `$type` como `list("programmer")`, e corresponde aos dados
+
+```javascript
+list("computer")
+```
+
+com `$type` como a lista vazia, `null`.
+
+Podemos descrever o processamento da linguagem de consulta de consultas simples da seguinte forma:
+
+- O sistema encontra todas as atribuições a variáveis no padrão de consulta que **satisfazem** o padrão—ou seja, todos os conjuntos de valores para as variáveis tais que, se as variáveis de padrão forem **instanciadas com** (substituídas por) os valores, o resultado esteja no banco de dados.
+
+- O sistema responde à consulta listando todas as instanciações do padrão de consulta com as atribuições de variáveis que o satisfazem.
+
+Note que se o padrão não tiver variáveis, a consulta se reduz a uma determinação se esse padrão está no banco de dados. Se estiver, a atribuição vazia, que não atribui valores a variáveis, satisfaz esse padrão para esse banco de dados.
+
+### Exercício 4.53
+
+Forneça consultas simples que recuperem as seguintes informações do banco de dados:
+
+1. todas as pessoas supervisionadas por Ben Bitdiddle;
+2. os nomes e cargos de todas as pessoas na divisão de contabilidade;
+3. os nomes e endereços de todas as pessoas que moram em Slumerville.
+
+## Consultas compostas
+
+Consultas simples formam as operações primitivas da linguagem de consulta. Para formar operações compostas, a linguagem de consulta fornece meios de combinação. Uma coisa que torna a linguagem de consulta uma linguagem de programação lógica é que os meios de combinação espelham os meios de combinação usados na formação de expressões lógicas: `and`, `or` e `not`.
+
+Podemos usar `and` da seguinte forma para encontrar os endereços de todos os programadores de computação:
+
+```javascript
+and(job($person, list("computer", "programmer")),
+    address($person, $where))
+```
+
+A saída resultante é
+
+```javascript
+and(job(list("Hacker", "Alyssa", "P"), list("computer", "programmer")),
+    address(list("Hacker", "Alyssa", "P"),
+            list("Cambridge", list("Mass", "Ave"), 78)))
+
+and(job(list("Fect", "Cy", "D"), list("computer", "programmer")),
+    address(list("Fect", "Cy", "D"),
+            list("Cambridge", list("Ames", "Street"), 3)))
+```
+
+Em geral,
+
+```javascript
+and(query₁, query₂, …, queryₙ)
+```
+
+é satisfeita por todos os conjuntos de valores para as variáveis de padrão que satisfazem simultaneamente query₁, …, queryₙ.
+
+Assim como para consultas simples, o sistema processa uma consulta composta encontrando todas as atribuições às variáveis de padrão que satisfazem a consulta e, em seguida, exibindo instanciações da consulta com esses valores.
+
+Outro meio de construir consultas compostas é através de `or`. Por exemplo,
+
+```javascript
+or(supervisor($x, list("Bitdiddle", "Ben")),
+   supervisor($x, list("Hacker", "Alyssa", "P")))
+```
+
+encontrará todos os funcionários supervisionados por Ben Bitdiddle ou Alyssa P. Hacker:
+
+```javascript
+or(supervisor(list("Hacker", "Alyssa", "P"),
+              list("Bitdiddle", "Ben")),
+   supervisor(list("Hacker", "Alyssa", "P"),
+              list("Hacker", "Alyssa", "P")))
+
+or(supervisor(list("Fect", "Cy", "D"),
+              list("Bitdiddle", "Ben")),
+   supervisor(list("Fect", "Cy", "D"),
+              list("Hacker", "Alyssa", "P")))
+
+or(supervisor(list("Tweakit", "Lem", "E"),
+              list("Bitdiddle", "Ben")),
+   supervisor(list("Tweakit", "Lem", "E"),
+              list("Hacker", "Alyssa", "P")))
+
+or(supervisor(list("Reasoner", "Louis"),
+              list("Bitdiddle", "Ben")),
+   supervisor(list("Reasoner", "Louis"),
+              list("Hacker", "Alyssa", "P")))
+```
+
+Em geral,
+
+```javascript
+or(query₁, query₂, …, queryₙ)
+```
+
+é satisfeita por todos os conjuntos de valores para as variáveis de padrão que satisfazem pelo menos uma de query₁ … queryₙ.
+
+Consultas compostas também podem ser formadas com `not`. Por exemplo,
+
+```javascript
+and(supervisor($x, list("Bitdiddle", "Ben")),
+    not(job($x, list("computer", "programmer"))))
+```
+
+encontra todas as pessoas supervisionadas por Ben Bitdiddle que não são programadores de computador. Em geral,
+
+```javascript
+not(query₁)
+```
+
+é satisfeita por todas as atribuições às variáveis de padrão que não satisfazem query₁.[^1]
+
+[^1]: Na verdade, esta descrição de `not` é válida apenas para casos simples. O comportamento real de `not` é mais complexo. Examinaremos as peculiaridades de `not` nas seções 4.4.2 e 4.4.3.
+
+A forma de combinação final começa com `javascript_predicate` e contém um predicado JavaScript. Em geral,
+
+```javascript
+javascript_predicate(predicate)
+```
+
+será satisfeita por atribuições às variáveis de padrão no predicado para as quais o predicado instanciado é verdadeiro. Por exemplo, para encontrar todas as pessoas cujo salário é maior que $50.000, poderíamos escrever[^2]
+
+```javascript
+and(salary($person, $amount), javascript_predicate($amount > 50000))
+```
+
+[^2]: Uma consulta deve usar `javascript_predicate` apenas para executar uma operação não fornecida na linguagem de consulta. Em particular, `javascript_predicate` não deve ser usado para testar igualdade (já que isso é o que a correspondência na linguagem de consulta foi projetada para fazer) ou desigualdade (já que isso pode ser feito com a regra `same` mostrada abaixo).
+
+### Exercício 4.54
+
+Formule consultas compostas que recuperem as seguintes informações:
+
+1. os nomes de todas as pessoas que são supervisionadas por Ben Bitdiddle, juntamente com seus endereços;
+2. todas as pessoas cujo salário é menor que o de Ben Bitdiddle, juntamente com seus salários e o salário de Ben Bitdiddle;
+3. todas as pessoas que são supervisionadas por alguém que não está na divisão de computação, juntamente com o nome e cargo do supervisor.
+
+## Regras
+
+Além de consultas primitivas e consultas compostas, a linguagem de consulta fornece meios para abstrair consultas. Eles são dados por **regras**. A regra
+
+```javascript
+rule(lives_near($person_1, $person_2),
+     and(address($person_1, pair($town, $rest_1)),
+         address($person_2, pair($town, $rest_2)),
+         not(same($person_1, $person_2))))
+```
+
+especifica que duas pessoas moram perto uma da outra se morarem na mesma cidade. A cláusula final `not` impede a regra de dizer que todas as pessoas moram perto de si mesmas. A relação `same` é definida por uma regra muito simples:[^3]
+
+```javascript
+rule(same($x, $x))
+```
+
+[^3]: Note que não precisamos de `same` para fazer duas coisas serem iguais: Simplesmente usamos a mesma variável de padrão para cada—na verdade, temos uma coisa em vez de duas coisas em primeiro lugar. Por exemplo, veja `$town` na regra `lives_near` e `$middle_manager` na regra `wheel` abaixo. A relação `same` é útil quando queremos forçar duas coisas a serem diferentes, como `$person_1` e `$person_2` na regra `lives_near`. Embora usar a mesma variável de padrão em duas partes de uma consulta force o mesmo valor a aparecer em ambos os lugares, usar variáveis de padrão diferentes não força valores diferentes a aparecer. (Os valores atribuídos a diferentes variáveis de padrão podem ser iguais ou diferentes.)
+
+A seguinte regra declara que uma pessoa é um "grande chefe" ("wheel") em uma organização se ela supervisiona alguém que, por sua vez, é um supervisor:
+
+```javascript
+rule(wheel($person),
+     and(supervisor($middle_manager, $person),
+         supervisor($x, $middle_manager)))
+```
+
+A forma geral de uma regra é
+
+```javascript
+rule(conclusion, body)
+```
+
+onde conclusão é um padrão e corpo é qualquer consulta.[^4] Podemos pensar em uma regra como representando um conjunto grande (até infinito) de asserções, ou seja, todas as instanciações da conclusão da regra com atribuições de variáveis que satisfazem o corpo da regra. Quando descrevemos consultas simples (padrões), dissemos que uma atribuição a variáveis satisfaz um padrão se o padrão instanciado estiver no banco de dados. Mas o padrão não precisa estar explicitamente no banco de dados como uma asserção. Pode ser uma asserção implícita implicada por uma regra. Por exemplo, a consulta
+
+[^4]: Também permitiremos regras sem corpos, como em `same`, e interpretaremos tal regra para significar que a conclusão da regra é satisfeita por quaisquer valores das variáveis.
+
+```javascript
+lives_near($x, list("Bitdiddle", "Ben"))
+```
+
+resulta em
+
+```javascript
+lives_near(list("Reasoner", "Louis"), list("Bitdiddle", "Ben"))
+lives_near(list("Aull", "DeWitt"), list("Bitdiddle", "Ben"))
+```
+
+Para encontrar todos os programadores de computação que moram perto de Ben Bitdiddle, podemos perguntar
+
+```javascript
+and(job($x, list("computer", "programmer")),
+    lives_near($x, list("Bitdiddle", "Ben")))
+```
+
+Como no caso de funções compostas, as regras podem ser usadas como partes de outras regras (como vimos com a regra `lives_near` acima) ou até mesmo ser definidas recursivamente. Por exemplo, a regra
+
+```javascript
+rule(outranked_by($staff_person, $boss),
+     or(supervisor($staff_person, $boss),
+        and(supervisor($staff_person, $middle_manager),
+            outranked_by($middle_manager, $boss))))
+```
+
+diz que uma pessoa da equipe é superada por um chefe na organização se o chefe é o supervisor da pessoa ou (recursivamente) se o supervisor da pessoa é superado pelo chefe.
+
+### Exercício 4.55
+
+Defina uma regra que diga que a pessoa 1 pode substituir a pessoa 2 se a pessoa 1 faz o mesmo trabalho que a pessoa 2 ou alguém que faz o trabalho da pessoa 1 também pode fazer o trabalho da pessoa 2, e se a pessoa 1 e a pessoa 2 não são a mesma pessoa. Usando sua regra, forneça consultas que encontrem o seguinte:
+
+1. todas as pessoas que podem substituir Cy D. Fect;
+2. todas as pessoas que podem substituir alguém que está sendo pago mais do que elas, juntamente com os dois salários.
+
+### Exercício 4.56
+
+Defina uma regra que diga que uma pessoa é um "grande chefe" em uma divisão se a pessoa trabalha na divisão mas não tem um supervisor que trabalhe na divisão.
+
+### Exercício 4.57
+
+Ben Bitdiddle perdeu uma reunião a mais. Temendo que seu hábito de esquecer reuniões possa custar-lhe seu emprego, Ben decide fazer algo a respeito. Ele adiciona todas as reuniões semanais da empresa ao banco de dados Gargle afirmando o seguinte:
+
+```javascript
+meeting("accounting", list("Monday", "9am"))
+meeting("administration", list("Monday", "10am"))
+meeting("computer", list("Wednesday", "3pm"))
+meeting("administration", list("Friday", "1pm"))
+```
+
+Cada uma das asserções acima é para uma reunião de uma divisão inteira. Ben também adiciona uma entrada para a reunião de toda a empresa que abrange todas as divisões. Todos os funcionários da empresa participam desta reunião.
+
+```javascript
+meeting("whole-company", list("Wednesday", "4pm"))
+```
+
+1. Na sexta-feira de manhã, Ben quer consultar o banco de dados para todas as reuniões que ocorrem naquele dia. Que consulta ele deve usar?
+2. Alyssa P. Hacker não está impressionada. Ela acha que seria muito mais útil poder pedir suas reuniões especificando seu nome. Então ela projeta uma regra que diz que as reuniões de uma pessoa incluem todas as reuniões de `"whole-company"` mais todas as reuniões da divisão dessa pessoa. Preencha o corpo da regra de Alyssa.
+
+   ```javascript
+   rule(meeting_time($person, $day_and_time),
+        rule-body)
+   ```
+
+3. Alyssa chega ao trabalho na quarta-feira de manhã e se pergunta quais reuniões ela tem para participar naquele dia. Tendo definido a regra acima, que consulta ela deve fazer para descobrir isso?
+
+### Exercício 4.58
+
+Ao fazer a consulta
+
+```javascript
+lives_near($person, list("Hacker", "Alyssa", "P"))
+```
+
+Alyssa P. Hacker é capaz de encontrar pessoas que moram perto dela, com quem ela pode ir para o trabalho. Por outro lado, quando ela tenta encontrar todos os pares de pessoas que moram perto uma da outra consultando
+
+```javascript
+lives_near($person_1, $person_2)
+```
+
+ela percebe que cada par de pessoas que moram perto uma da outra é listado duas vezes; por exemplo,
+
+```javascript
+lives_near(list("Hacker", "Alyssa", "P"), list("Fect", "Cy", "D"))
+lives_near(list("Fect", "Cy", "D"), list("Hacker", "Alyssa", "P"))
+```
+
+Por que isso acontece? Existe uma maneira de encontrar uma lista de pessoas que moram perto uma da outra, na qual cada par aparece apenas uma vez? Explique.
+
+## Lógica como programas
+
+Podemos considerar uma regra como um tipo de implicação lógica: **Se** uma atribuição de valores a variáveis de padrão satisfaz o corpo, **então** ela satisfaz a conclusão. Consequentemente, podemos considerar a linguagem de consulta como tendo a capacidade de realizar **deduções lógicas** baseadas nas regras. Como exemplo, considere a operação `append` descrita no início da seção 4.4. Como dissemos, `append` pode ser caracterizado pelas seguintes duas regras:
+
+- Para qualquer lista `y`, a lista vazia e `y` fazem `append` para formar `y`.
+- Para quaisquer `u`, `v`, `y` e `z`, `pair(u, v)` e `y` fazem `append` para formar `pair(u, z)` se `v` e `y` fazem `append` para formar `z`.
+
+Para expressar isso em nossa linguagem de consulta, definimos duas regras para uma relação
+
+```javascript
+append_to_form(x, y, z)
+```
+
+que podemos interpretar como "`x` e `y` fazem `append` para formar `z`":
+
+```javascript
+rule(append_to_form(null, $y, $y))
+
+rule(append_to_form(pair($u, $v), $y, pair($u, $z)),
+     append_to_form($v, $y, $z))
+```
+
+A primeira regra não tem corpo, o que significa que a conclusão vale para qualquer valor de `$y`. Observe como a segunda regra usa `pair` para nomear a cabeça e a cauda de uma lista.
+
+Dadas essas duas regras, podemos formular consultas que calculam o `append` de duas listas:
+
+```javascript
+Query input:
+append_to_form(list("a", "b"), list("c", "d"), $z)
+
+Query results:
+append_to_form(list("a", "b"), list("c", "d"), list("a", "b", "c", "d"))
+```
+
+O que é mais impressionante, podemos usar as mesmas regras para fazer a pergunta "Qual lista, quando anexada a `list("a", "b")`, produz `list("a", "b", "c", "d")`?" Isso é feito da seguinte forma:
+
+```javascript
+Query input:
+append_to_form(list("a", "b"), $y, list("a", "b", "c", "d"))
+
+Query results:
+append_to_form(list("a", "b"), list("c", "d"), list("a", "b", "c", "d"))
+```
+
+Também podemos pedir todos os pares de listas que fazem `append` para formar `list("a", "b", "c", "d")`:
+
+```javascript
+Query input:
+append_to_form($x, $y, list("a", "b", "c", "d"))
+
+Query results:
+append_to_form(null, list("a", "b", "c", "d"), list("a", "b", "c", "d"))
+append_to_form(list("a"), list("b", "c", "d"), list("a", "b", "c", "d"))
+append_to_form(list("a", "b"), list("c", "d"), list("a", "b", "c", "d"))
+append_to_form(list("a", "b", "c"), list("d"), list("a", "b", "c", "d"))
+append_to_form(list("a", "b", "c", "d"), null, list("a", "b", "c", "d"))
+```
+
+O sistema de consulta pode parecer exibir bastante inteligência ao usar as regras para deduzir as respostas às consultas acima. Na verdade, como veremos na próxima seção, o sistema está seguindo um algoritmo bem determinado ao desvendar as regras. Infelizmente, embora o sistema funcione de forma impressionante no caso de `append`, os métodos gerais podem falhar em casos mais complexos, como veremos na seção 4.4.3.
+
+### Exercício 4.59
+
+As seguintes regras implementam uma relação `next_to_in` que encontra elementos adjacentes de uma lista:
+
+```javascript
+rule(next_to_in($x, $y, pair($x, pair($y, $u))))
+
+rule(next_to_in($x, $y, pair($v, $z)),
+     next_to_in($x, $y, $z))
+```
+
+Qual será a resposta às seguintes consultas?
+
+```javascript
+next_to_in($x, $y, list(1, list(2, 3), 4))
+
+next_to_in($x, 1, list(2, 1, 3, 1))
+```
+
+### Exercício 4.60
+
+Defina regras para implementar a operação `last_pair` do exercício 2.17, que retorna uma lista contendo o último elemento de uma lista não vazia. Verifique suas regras nas seguintes consultas:
+
+- `last_pair(list(3), $x)`
+- `last_pair(list(1, 2, 3), $x)`
+- `last_pair(list(2, $x), list(3))`
+
+Suas regras funcionam corretamente em consultas como `last_pair($x, list(3))`?
+
+### Exercício 4.61
+
+O seguinte banco de dados (veja Gênesis 4) traça a genealogia dos descendentes de Ada até Adão, através de Caim:
+
+```javascript
+son("Adam", "Cain")
+son("Cain", "Enoch")
+son("Enoch", "Irad")
+son("Irad", "Mehujael")
+son("Mehujael", "Methushael")
+son("Methushael", "Lamech")
+wife("Lamech", "Ada")
+son("Ada", "Jabal")
+son("Ada", "Jubal")
+```
+
+Formule regras como "Se S é o filho de F, e F é o filho de G, então S é o neto de G" e "Se W é a esposa de M, e S é o filho de W, então S é o filho de M" (o que supostamente era mais verdadeiro em tempos bíblicos do que hoje) que permitirão ao sistema de consulta encontrar o neto de Caim; os filhos de Lamech; os netos de Methushael. (Veja o exercício 4.62 para algumas regras para deduzir relacionamentos mais complicados.)

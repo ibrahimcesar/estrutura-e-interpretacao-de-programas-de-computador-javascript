@@ -1,0 +1,75 @@
+# 4.1.5 Dados como Programas
+
+Ao pensar sobre um programa JavaScript que avalia declarações e expressões JavaScript, uma analogia pode ser útil. Uma visão operacional do significado de um programa é que um programa é uma descrição de uma máquina abstrata (talvez infinitamente grande). Por exemplo, considere o programa familiar para computar fatoriais:
+
+```javascript
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+```
+
+Podemos considerar este programa como a descrição de uma máquina contendo partes que decrementam, multiplicam e testam igualdade, juntamente com um switch de duas posições e outra máquina de fatorial. (A máquina de fatorial é infinita porque contém outra máquina de fatorial dentro dela.) A figura 4.2 é um diagrama de fluxo para a máquina de fatorial, mostrando como as partes são conectadas.
+
+<Figure
+  src="/img/chapter-4/ch4-Z-G-2.svg"
+  alt="O programa fatorial, visto como uma máquina abstrata"
+  caption="O programa fatorial, visto como uma máquina abstrata."
+/>
+
+De maneira similar, podemos considerar o avaliador como uma máquina muito especial que recebe como entrada uma descrição de uma máquina. Dada esta entrada, o avaliador se configura para emular a máquina descrita. Por exemplo, se alimentarmos nosso avaliador com a definição de `factorial`, como mostrado na figura 4.3, o avaliador será capaz de computar fatoriais.
+
+<Figure
+  src="/img/chapter-4/ch4-Z-G-3.svg"
+  alt="O avaliador emulando uma máquina de fatorial"
+  caption="O avaliador emulando uma máquina de fatorial."
+/>
+
+Desta perspectiva, nosso avaliador é visto como uma _máquina universal_. Ele imita outras máquinas quando estas são descritas como programas JavaScript.[^1]
+
+[^1]: O fato de que as máquinas são descritas em JavaScript não é essencial. Se dermos ao nosso avaliador um programa JavaScript que se comporta como um avaliador para alguma outra linguagem, digamos C, o avaliador JavaScript emulará o avaliador C, que por sua vez pode emular qualquer máquina descrita como um programa C. Similarmente, escrever um avaliador JavaScript em C produz um programa C que pode executar qualquer programa JavaScript. A ideia profunda aqui é que qualquer avaliador pode emular qualquer outro. Assim, a noção de "o que pode em princípio ser computado" (ignorando praticidades de tempo e memória requeridos) é independente da linguagem ou do computador, e em vez disso reflete uma noção subjacente de _computabilidade_. Isso foi demonstrado pela primeira vez de forma clara por Alan M. Turing (1912–1954), cujo artigo de 1936 lançou as fundações para a ciência da computação teórica. No artigo, Turing apresentou um modelo computacional simples — agora conhecido como uma _máquina de Turing_ — e argumentou que qualquer "processo efetivo" pode ser formulado como um programa para tal máquina. (Este argumento é conhecido como a _tese de Church-Turing_.) Turing então implementou uma máquina universal, i.e., uma máquina de Turing que se comporta como um avaliador para programas de máquina de Turing. Ele usou este framework para demonstrar que existem problemas bem formulados que não podem ser computados por máquinas de Turing (veja o exercício 4.18), e portanto por implicação não podem ser formulados como "processos efetivos". Turing continuou a fazer contribuições fundamentais à ciência da computação prática também. Por exemplo, ele inventou a ideia de estruturar programas usando sub-rotinas de propósito geral. Veja Hodges 1983 para uma biografia de Turing.
+
+Isso é impressionante. Tente imaginar um avaliador análogo para circuitos elétricos. Este seria um circuito que recebe como entrada um sinal codificando os planos para algum outro circuito, como um filtro. Dada esta entrada, o avaliador de circuito então se comportaria como um filtro com a mesma descrição. Tal circuito elétrico universal é quase inimaginavelmente complexo. É notável que o avaliador de programa é um programa relativamente simples.[^2]
+
+[^2]: Algumas pessoas acham contraintuitivo que um avaliador, que é implementado por uma função relativamente simples, possa emular programas que são mais complexos que o próprio avaliador. A existência de uma máquina avaliadora universal é uma propriedade profunda e maravilhosa da computação. A _teoria da recursão_, um ramo da lógica matemática, está preocupada com limites lógicos da computação. O belo livro de Douglas Hofstadter _Gödel, Escher, Bach_ (1979) explora algumas dessas ideias.
+
+Outro aspecto impressionante do avaliador é que ele age como uma ponte entre os objetos de dados que são manipulados por nossa linguagem de programação e a própria linguagem de programação. Imagine que o programa avaliador (implementado em JavaScript) está executando, e que um usuário está digitando programas para o avaliador e observando os resultados. Da perspectiva do usuário, um programa de entrada como `x * x;` é um programa na linguagem de programação, que o avaliador deve executar. Da perspectiva do avaliador, no entanto, o programa é simplesmente uma string ou — após análise (parsing) — uma representação de lista marcada que deve ser manipulada de acordo com um conjunto bem definido de regras.
+
+Que os programas do usuário sejam os dados do avaliador não precisa ser uma fonte de confusão. De fato, às vezes é conveniente ignorar esta distinção, e dar ao usuário a capacidade de avaliar explicitamente uma string como uma declaração JavaScript, usando a função primitiva `eval` do JavaScript que recebe como argumento uma string. Ela analisa a string e — desde que seja sintaticamente correta — avalia a representação resultante no ambiente no qual `eval` é aplicado. Assim,
+
+```javascript
+eval("5 * 5;");
+```
+
+e
+
+```javascript
+evaluate(parse("5 * 5;"), the_global_environment);
+```
+
+ambos retornarão 25.[^3]
+
+[^3]: Note que `eval` pode não estar disponível no ambiente JavaScript que você está usando, ou seu uso pode ser restrito por razões de segurança.
+
+<Exercise id="4.18">
+
+Dada uma função `f` de um argumento e um objeto `a`, `f` é dito "parar" em `a` se avaliar a expressão `f(a)` retornar um valor (ao contrário de terminar com uma mensagem de erro ou executar para sempre). Mostre que é impossível escrever uma função `halts` que determine corretamente se `f` para em `a` para qualquer função `f` e objeto `a`.
+
+Use o seguinte raciocínio: Se você tivesse tal função `halts`, você poderia implementar o seguinte programa:
+
+```javascript
+function run_forever() { return run_forever(); }
+
+function strange(f) {
+    return halts(f, f)
+           ? run_forever()
+           : "halted";
+}
+```
+
+Agora considere avaliar a expressão `strange(strange)` e mostre que qualquer resultado possível (ou parar ou executar para sempre) viola o comportamento pretendido de `halts`.[^4]
+
+[^4]: Embora tenhamos estipulado que `halts` recebe um objeto de função, note que este raciocínio ainda se aplica mesmo se `halts` puder ganhar acesso ao texto da função e seu ambiente. Este é o celebrado _Teorema da Parada_ de Turing, que deu o primeiro exemplo claro de um problema _não computável_, i.e., uma tarefa bem formulada que não pode ser realizada como uma função computacional.
+
+</Exercise>

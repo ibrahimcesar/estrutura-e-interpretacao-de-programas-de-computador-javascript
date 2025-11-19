@@ -1,0 +1,77 @@
+# 4.2.1 Ordem Normal e Ordem Aplicativa
+
+Na seção 1.1, onde começamos nossa discussão sobre modelos de avaliação, observamos que JavaScript é uma linguagem de **ordem aplicativa**, ou seja, todos os argumentos para funções JavaScript são avaliados quando a função é aplicada. Em contraste, linguagens de **ordem normal** atrasam a avaliação de argumentos de funções até que os valores reais dos argumentos sejam necessários. Atrasar a avaliação de argumentos de funções até o último momento possível (por exemplo, até que sejam exigidos por uma operação primitiva) é chamado de **avaliação preguiçosa** (_lazy evaluation_)[^1].
+
+[^1]: A diferença entre a terminologia "preguiçosa" e a terminologia "ordem normal" é um tanto vaga. Geralmente, "preguiçosa" refere-se aos mecanismos de avaliadores específicos, enquanto "ordem normal" refere-se à semântica de linguagens, independente de qualquer estratégia particular de avaliação. Mas esta não é uma distinção rígida, e as duas terminologias são frequentemente usadas de forma intercambiável.
+
+Considere a função:
+
+```javascript
+function try_me(a, b) {
+    return a === 0 ? 1 : b;
+}
+```
+
+Avaliar `try_me(0, head(null));` sinaliza um erro em JavaScript. Com avaliação preguiçosa, não haveria erro. Avaliar a instrução retornaria 1, porque o argumento `head(null)` nunca seria avaliado.
+
+## A função `unless`
+
+Um exemplo que explora a avaliação preguiçosa é a declaração de uma função `unless`:
+
+```javascript
+function unless(condition, usual_value, exceptional_value) {
+    return condition ? exceptional_value : usual_value;
+}
+```
+
+que pode ser usada em instruções como:
+
+```javascript
+unless(is_null(xs), head(xs), display("error: xs should not be null"));
+```
+
+Isso não funcionará em uma linguagem de ordem aplicativa porque tanto o valor usual quanto o valor excepcional serão avaliados antes que `unless` seja chamada (compare com o exercício 1.6). Uma vantagem da avaliação preguiçosa é que algumas funções, como `unless`, podem fazer computação útil mesmo se a avaliação de alguns de seus argumentos produzisse erros ou não terminasse.
+
+## Funções estritas e não estritas
+
+Se o corpo de uma função é executado antes que um argumento seja avaliado, dizemos que a função é **não estrita** (_non-strict_) naquele argumento. Se o argumento é avaliado antes que o corpo da função seja executado, dizemos que a função é **estrita** (_strict_) naquele argumento[^2].
+
+[^2]: A terminologia "estrita" versus "não estrita" significa essencialmente o mesmo que "ordem aplicativa" versus "ordem normal", exceto que se refere a funções e argumentos individuais ao invés da linguagem como um todo. Em uma conferência sobre linguagens de programação, você pode ouvir alguém dizer: "A linguagem de ordem normal Hassle tem certas primitivas estritas. Outras funções recebem seus argumentos por avaliação preguiçosa."
+
+Em uma linguagem puramente de ordem aplicativa, todas as funções são estritas em cada argumento. Em uma linguagem puramente de ordem normal, todas as funções compostas são não estritas em cada argumento, e as funções primitivas podem ser estritas ou não estritas. Existem também linguagens (veja o exercício 4.31) que dão aos programadores controle detalhado sobre a rigorosidade das funções que eles definem.
+
+## Pares não estritos
+
+Um exemplo marcante de uma função que pode ser útil tornar não estrita é `pair` (ou, em geral, quase qualquer construtor de estruturas de dados). Podemos fazer computação útil, combinando elementos para formar estruturas de dados e operando nas estruturas de dados resultantes, mesmo que os valores dos elementos não sejam conhecidos. Faz perfeito sentido, por exemplo, calcular o comprimento de uma lista sem conhecer os valores dos elementos individuais na lista. Exploraremos essa ideia na seção 4.2.3 para implementar os streams do capítulo 3 como listas formadas por pares não estritos.
+
+## Exercícios
+
+### Exercício 4.25
+
+Suponha que (em JavaScript de ordem aplicativa comum) definimos `unless` como mostrado acima e então definimos `factorial` em termos de `unless` como:
+
+```javascript
+function factorial(n) {
+    return unless(n === 1,
+                  n * factorial(n - 1),
+                  1);
+}
+```
+
+O que acontece se tentarmos avaliar `factorial(5)`? Nossas funções funcionarão em uma linguagem de ordem normal?
+
+<details>
+<summary>Solução</summary>
+
+(fornecido pelo usuário do GitHub joeng03)
+
+Quando avaliado em modo padrão ('estrito'), o código passa por redução de ordem aplicativa e entra em um loop infinito porque precisa avaliar os argumentos da função `unless`, mas a função `factorial` não tem uma condição de término.
+
+Quando avaliado em modo preguiçoso, o código passa por redução de ordem normal. Ele produz a saída correta porque a função `unless` é aplicada antes que seus argumentos sejam avaliados.
+</details>
+
+### Exercício 4.26
+
+Ben Bitdiddle e Alyssa P. Hacker discordam sobre a importância da avaliação preguiçosa para implementar coisas como `unless`. Ben aponta que é possível implementar `unless` em ordem aplicativa como uma forma sintática. Alyssa contra-argumenta que, se fizéssemos isso, `unless` seria meramente sintaxe, não uma função que poderia ser usada em conjunto com funções de ordem superior.
+
+Preencha os detalhes de ambos os lados do argumento. Mostre como implementar `unless` como um componente derivado (como combinação de operadores), capturando em `evaluate` aplicações cuja expressão de função é o nome `unless`. Dê um exemplo de uma situação onde pode ser útil ter `unless` disponível como uma função, ao invés de uma forma sintática.

@@ -1,0 +1,206 @@
+# 4.1.3 Estruturas de Dados do Avaliador
+
+Além de definir a representação de componentes, a implementação do avaliador também deve definir as estruturas de dados que o avaliador manipula internamente, como parte da execução de um programa, como a representação de funções e ambientes e a representação de verdadeiro e falso.
+
+## Teste de predicados
+
+Para limitar as expressões de predicado de condicionais a predicados adequados (expressões que avaliam para um valor booleano) como fazemos ao longo deste livro, insistimos aqui que a função `is_truthy` seja aplicada apenas a valores booleanos, e aceitamos apenas o valor booleano `true` como verdadeiro. O oposto de `is_truthy` é chamado `is_falsy`.[^1]
+
+```javascript
+function is_truthy(x) {
+    return is_boolean(x)
+           ? x
+           : error(x, "boolean expected, received");
+}
+function is_falsy(x) { return ! is_truthy(x); }
+```
+
+[^1]: Condicionais em JavaScript completo aceitam _qualquer_ valor, não apenas um booleano, como o resultado da avaliação da expressão de "predicado". A noção de JavaScript de veracidade (truthiness) e falsidade (falsiness) é capturada pelas seguintes variantes de `is_truthy` e `is_falsy`:
+    ```javascript
+    function is_truthy(x) { return ! is_falsy(x); }
+
+    function is_falsy(x) {
+        return (is_boolean(x) && !x )                  ||
+               (is_number(x) && (x === 0 || x !== x )) ||
+               (is_string(x) && x === "")              ||
+               is_null(x)                              ||
+               is_undefined(x);
+    }
+    ```
+    O teste `x !== x` não é um erro de digitação; o único valor JavaScript para o qual `x !== x` produz true é o valor `NaN` ("Not a Number"), que é considerado um número falso (também não é um erro de digitação), junto com 0. O valor numérico `NaN` é o resultado de certos casos extremos aritméticos como `0 / 0`. Os termos "truthy" e "falsy" foram cunhados por Douglas Crockford, um de cujos livros (Crockford 2008) inspirou esta adaptação JavaScript.
+
+## Representando funções
+
+Para lidar com primitivos, assumimos que temos disponíveis as seguintes funções:
+
+- `apply_primitive_function(`_fun_`,` _args_`)` aplica a função primitiva dada aos valores de argumento na lista _args_ e retorna o resultado da aplicação.
+- `is_primitive_function(`_fun_`)` testa se _fun_ é uma função primitiva.
+
+Esses mecanismos para lidar com primitivos são descritos mais adiante na seção 4.1.4.
+
+Funções compostas são construídas a partir de parâmetros, corpos de função e ambientes usando o construtor `make_function`:
+
+```javascript
+function make_function(parameters, body, env) {
+    return list("compound_function", parameters, body, env);
+}
+function is_compound_function(f) {
+    return is_tagged_list(f, "compound_function");
+}
+function function_parameters(f) { return list_ref(f, 1); }
+
+function function_body(f) { return list_ref(f, 2); }
+
+function function_environment(f) { return list_ref(f, 3); }
+```
+
+## Representando valores de retorno
+
+Vimos na seção 4.1.1 que a avaliação de uma sequência termina quando uma declaração de retorno é encontrada, e que a avaliação de uma aplicação de função precisa retornar o valor `undefined` se a avaliação do corpo da função não encontrar uma declaração de retorno. Para reconhecer que um valor resultou de uma declaração de retorno, introduzimos _valores de retorno_ como estruturas de dados do avaliador.
+
+```javascript
+function make_return_value(content) {
+    return list("return_value", content);
+}
+function is_return_value(value) {
+    return is_tagged_list(value, "return_value");
+}
+function return_value_content(value) {
+    return head(tail(value));
+}
+```
+
+## Operações sobre ambientes
+
+O avaliador precisa de operações para manipular ambientes. Como explicado na seção 3.2, um ambiente é uma sequência de frames, onde cada frame é uma tabela de vinculações que associam símbolos com seus valores correspondentes. Usamos as seguintes operações para manipular ambientes:
+
+- `lookup_symbol_value(`_symbol_`,` _env_`)` retorna o valor que está vinculado a _symbol_ no ambiente _env_, ou sinaliza um erro se _symbol_ estiver não vinculado.
+- `extend_environment(`_symbols_`,` _values_`,` _base-env_`)` retorna um novo ambiente, consistindo de um novo frame no qual os símbolos na lista _symbols_ estão vinculados aos elementos correspondentes na lista _values_, onde o ambiente envolvente é o ambiente _base-env_.
+- `assign_symbol_value(`_symbol_`,` _value_`,` _env_`)` encontra o frame mais interno de _env_ no qual _symbol_ está vinculado, e muda esse frame de modo que _symbol_ agora esteja vinculado a _value_, ou sinaliza um erro se _symbol_ estiver não vinculado.
+
+Para implementar essas operações, representamos um ambiente como uma lista de frames. O ambiente envolvente de um ambiente é o `tail` da lista. O ambiente vazio é simplesmente a lista vazia.
+
+```javascript
+function enclosing_environment(env) { return tail(env); }
+
+function first_frame(env) { return head(env); }
+
+const the_empty_environment = null;
+```
+
+Cada frame de um ambiente é representado como um par de listas: uma lista dos nomes vinculados naquele frame e uma lista dos valores associados.[^2]
+
+```javascript
+function make_frame(symbols, values) { return pair(symbols, values); }
+
+function frame_symbols(frame) { return head(frame); }
+
+function frame_values(frame) { return tail(frame); }
+```
+
+[^2]: Frames não são realmente uma abstração de dados: A função `assign_symbol_value` abaixo usa `set_head` para modificar diretamente os valores em um frame. O propósito das funções de frame é tornar as funções de manipulação de ambiente fáceis de ler.
+
+Para estender um ambiente por um novo frame que associa símbolos com valores, fazemos um frame consistindo da lista de símbolos e da lista de valores, e juntamos isso ao ambiente. Sinalizamos um erro se o número de símbolos não corresponder ao número de valores.
+
+```javascript
+function extend_environment(symbols, vals, base_env) {
+    return length(symbols) === length(vals)
+           ? pair(make_frame(symbols, vals), base_env)
+           : error(pair(symbols, vals),
+                   length(symbols) < length(vals)
+                   ? "too many arguments supplied"
+                   : "too few arguments supplied");
+}
+```
+
+Isso é usado por `apply` na seção 4.1.1 para vincular os parâmetros de uma função aos seus argumentos.
+
+Para procurar um símbolo em um ambiente, varremos a lista de símbolos no primeiro frame. Se encontrarmos o símbolo desejado, retornamos o elemento correspondente na lista de valores. Se não encontrarmos o símbolo no frame atual, pesquisamos o ambiente envolvente, e assim por diante. Se alcançarmos o ambiente vazio, sinalizamos um erro de `"unbound name"`.
+
+```javascript
+function lookup_symbol_value(symbol, env) {
+    function env_loop(env) {
+        function scan(symbols, vals) {
+            return is_null(symbols)
+                   ? env_loop(enclosing_environment(env))
+                   : symbol === head(symbols)
+                   ? head(vals)
+                   : scan(tail(symbols), tail(vals));
+        }
+        if (env === the_empty_environment) {
+            error(symbol, "unbound name");
+        } else {
+            const frame = first_frame(env);
+            return scan(frame_symbols(frame), frame_values(frame));
+        }
+    }
+    return env_loop(env);
+}
+```
+
+Para atribuir um novo valor a um símbolo em um ambiente especificado, varremos o símbolo, assim como em `lookup_symbol_value`, e mudamos o valor correspondente quando o encontramos.
+
+```javascript
+function assign_symbol_value(symbol, val, env) {
+    function env_loop(env) {
+        function scan(symbols, vals) {
+            return is_null(symbols)
+                   ? env_loop(enclosing_environment(env))
+                   : symbol === head(symbols)
+                   ? set_head(vals, val)
+                   : scan(tail(symbols), tail(vals));
+        }
+        if (env === the_empty_environment) {
+            error(symbol, "unbound name -- assignment");
+        } else {
+            const frame = first_frame(env);
+            return scan(frame_symbols(frame), frame_values(frame));
+        }
+    }
+    return env_loop(env);
+}
+```
+
+O método descrito aqui é apenas uma das muitas maneiras plausíveis de representar ambientes. Como usamos abstração de dados para isolar o resto do avaliador da escolha detalhada de representação, poderíamos mudar a representação de ambiente se quiséssemos. (Veja o exercício 4.11.) Em um sistema JavaScript de qualidade de produção, a velocidade das operações de ambiente do avaliador — especialmente a de busca de símbolos — tem um grande impacto no desempenho do sistema. A representação descrita aqui, embora conceitualmente simples, não é eficiente e não seria ordinariamente usada em um sistema de produção.[^3]
+
+[^3]: A desvantagem desta representação (bem como da variante no exercício 4.11) é que o avaliador pode ter que pesquisar através de muitos frames para encontrar a vinculação para uma dada variável. (Tal abordagem é referida como _deep binding_ (vinculação profunda).) Uma maneira de evitar essa ineficiência é fazer uso de uma estratégia chamada _lexical addressing_ (endereçamento léxico), que será discutida na seção 5.5.6.
+
+<Exercise id="4.11">
+
+Em vez de representar um frame como um par de listas, podemos representar um frame como uma lista de vinculações, onde cada vinculação é um par símbolo-valor. Reescreva as operações de ambiente para usar esta representação alternativa.
+
+</Exercise>
+
+<Exercise id="4.12">
+
+As funções `lookup_symbol_value` e `assign_symbol_value` podem ser expressas em termos de uma função mais abstrata para percorrer a estrutura de ambiente. Defina uma abstração que capture o padrão comum e redefina as duas funções em termos desta abstração.
+
+</Exercise>
+
+<Exercise id="4.13">
+
+Nossa linguagem distingue constantes de variáveis usando diferentes palavras-chave — `const` e `let` — e previne atribuição a constantes. No entanto, nosso interpretador não faz uso desta distinção; a função `assign_symbol_value` alegremente atribuirá um novo valor a um dado símbolo, independentemente de ter sido declarado como uma constante ou uma variável. Corrija essa falha chamando a função `error` sempre que uma tentativa for feita de usar uma constante no lado esquerdo de uma atribuição. Você pode proceder da seguinte forma:
+
+- Introduza predicados `is_constant_declaration` e `is_variable_declaration` que permitam distinguir os dois tipos. Como mostrado na seção 4.1.2, `parse` os distingue usando as tags `"constant_declaration"` e `"variable_declaration"`.
+- Mude `scan_out_declarations` e (se necessário) `extend_environment` de modo que constantes sejam distinguíveis de variáveis nos frames nos quais elas são vinculadas.
+- Mude `assign_symbol_value` de modo que ela verifique se o dado símbolo foi declarado como uma variável ou como uma constante, e no último caso sinalize um erro de que operações de atribuição não são permitidas em constantes.
+- Mude `eval_declaration` de modo que quando ela encontrar uma declaração de constante, ela chame uma nova função, `assign_constant_value`, que não realiza a verificação que você introduziu em `assign_symbol_value`.
+- Se necessário, mude `apply` para garantir que atribuição a parâmetros de função permaneça possível.
+
+</Exercise>
+
+<Exercise id="4.16">
+
+1. A especificação do JavaScript requer que uma implementação sinalize um erro de tempo de execução ao tentar acessar o valor de um nome antes que sua declaração seja avaliada (veja o final da seção 3.2.4). Para alcançar este comportamento no avaliador, mude `lookup_symbol_value` para sinalizar um erro se o valor que ela encontrar for `"*unassigned*"`.
+2. Similarmente, não devemos atribuir um novo valor a uma variável se ainda não avaliamos sua declaração `let`. Mude a avaliação de atribuição de modo que atribuição a uma variável declarada com `let` sinalize um erro neste caso.
+
+</Exercise>
+
+<Exercise id="4.17">
+
+Antes do modo estrito do ECMAScript 2015 que estamos usando neste livro, as variáveis JavaScript funcionavam de forma bastante diferente das variáveis Scheme, o que teria tornado esta adaptação para JavaScript consideravelmente menos convincente.
+
+1. Antes do ECMAScript 2015, a única maneira de declarar uma variável local em JavaScript era usando a palavra-chave `var` em vez da palavra-chave `let`. O escopo de variáveis declaradas com `var` é o corpo inteiro da declaração de função ou expressão lambda imediatamente envolvente, em vez de apenas o bloco imediatamente envolvente. Modifique `scan_out_declarations` e `eval_block` de modo que nomes declarados com `const` e `let` sigam as regras de escopo de `var`.
+2. Quando não em modo estrito, JavaScript permite que nomes não declarados apareçam à esquerda do `=` em atribuições. Tal atribuição adiciona a nova vinculação ao ambiente global. Modifique a função `assign_symbol_value` para fazer a atribuição se comportar desta maneira. O modo estrito, que proíbe tais atribuições, foi introduzido em JavaScript para tornar programas mais seguros. Que questão de segurança é abordada ao prevenir que atribuição adicione vinculações ao ambiente global?
+
+</Exercise>

@@ -1,0 +1,239 @@
+# 4.1.7 Separando Análise Sintática da Execução
+
+O avaliador implementado acima é simples, mas é muito ineficiente, porque a análise sintática de componentes é intercalada com sua execução. Assim, se um programa é executado muitas vezes, sua sintaxe é analisada muitas vezes. Considere, por exemplo, avaliar `factorial(4)` usando a seguinte definição de `factorial`:
+
+```javascript
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+```
+
+Cada vez que `factorial` é chamado, o avaliador deve determinar que o corpo é uma expressão condicional e extrair o predicado. Somente então ele pode avaliar o predicado e despachar com base em seu valor. Cada vez que avalia a expressão `factorial(n - 1) * n`, ou as subexpressões `factorial(n - 1)` e `n - 1`, o avaliador deve realizar a análise de caso em `evaluate` para determinar que a expressão é uma aplicação, e deve extrair sua expressão de função e expressões de argumento. Esta análise é cara. Realizá-la repetidamente é desperdiçador.
+
+Podemos transformar o avaliador para ser significativamente mais eficiente organizando as coisas de modo que a análise sintática seja realizada apenas uma vez.[^1] Dividimos `evaluate`, que recebe um componente e um ambiente, em duas partes. A função `analyze` recebe apenas o componente. Ela realiza a análise sintática e retorna uma nova função, a *função de execução*, que encapsula o trabalho a ser feito na execução do componente analisado. A função de execução recebe um ambiente como seu argumento e completa a avaliação. Isso economiza trabalho porque `analyze` será chamado apenas uma vez em um componente, enquanto a função de execução pode ser chamada muitas vezes.
+
+[^1]: Esta técnica é uma parte integral do processo de compilação, que discutiremos no capítulo 5. Jonathan Rees escreveu um interpretador Scheme como este por volta de 1982 para o projeto T (Rees e Adams 1982). Marc Feeley 1986 (veja também Feeley e Lapalme 1987) inventou independentemente esta técnica em sua tese de mestrado.
+
+Com a separação em análise e execução, `evaluate` agora se torna:
+
+```javascript
+function evaluate(component, env) {
+    return analyze(component)(env);
+}
+```
+
+O resultado de chamar `analyze` é a função de execução a ser aplicada ao ambiente. A função `analyze` é a mesma análise de caso realizada pelo `evaluate` original da seção 4.1.1, exceto que as funções para as quais despachamos realizam apenas análise, não avaliação completa:
+
+```javascript
+function analyze(component) {
+    return is_literal(component)
+           ? analyze_literal(component)
+           : is_name(component)
+           ? analyze_name(component)
+           : is_application(component)
+           ? analyze_application(component)
+           : is_operator_combination(component)
+           ? analyze(operator_combination_to_application(component))
+           : is_conditional(component)
+           ? analyze_conditional(component)
+           : is_lambda_expression(component)
+           ? analyze_lambda_expression(component)
+           : is_sequence(component)
+           ? analyze_sequence(sequence_statements(component))
+           : is_block(component)
+           ? analyze_block(component)
+           : is_return_statement(component)
+           ? analyze_return_statement(component)
+           : is_function_declaration(component)
+           ? analyze(function_decl_to_constant_decl(component))
+           : is_declaration(component)
+           ? analyze_declaration(component)
+           : is_assignment(component)
+           ? analyze_assignment(component)
+           : error(component, "unknown syntax -- analyze");
+}
+```
+
+Aqui está a função de análise sintática mais simples, que trata expressões literais. Ela retorna uma função de execução que ignora seu argumento de ambiente e apenas retorna o valor do literal:
+
+```javascript
+function analyze_literal(component) {
+    return env => literal_value(component);
+}
+```
+
+Procurar o valor de um nome ainda deve ser feito na fase de execução, já que isso depende de conhecer o ambiente.[^2]
+
+[^2]: Há, no entanto, uma parte importante da busca por um nome que *pode* ser feita como parte da análise sintática. Como mostraremos na seção 5.5.6, pode-se determinar a posição na estrutura do ambiente onde o valor da variável será encontrado, evitando assim a necessidade de escanear o ambiente pela entrada que corresponde à variável.
+
+```javascript
+function analyze_name(component) {
+    return env => lookup_symbol_value(symbol_of_name(component), env);
+}
+```
+
+A função `analyze_assignment` também deve adiar a avaliação real da expressão de valor até a fase de execução:
+
+```javascript
+function analyze_assignment(component) {
+    const symbol = assignment_symbol(component);
+    const value_function = analyze(assignment_value_expression(component));
+    return env => {
+               const value = value_function(env);
+               assign_symbol_value(symbol, value, env);
+               return value;
+           };
+}
+```
+
+A função `analyze_declaration` é semelhante. Observe que procurar o valor do nome também deve ser adiado para a fase de execução, para tratamento de definições de funções recursivas e mutuamente recursivas:
+
+```javascript
+function analyze_declaration(component) {
+    const symbol = declaration_symbol(component);
+    const value_function = analyze(declaration_value_expression(component));
+    return env => {
+               const value = value_function(env);
+               assign_symbol_value(symbol, value, env);
+               return undefined;
+           };
+}
+```
+
+Para expressões condicionais, começamos analisando o predicado, consequente e alternativa. Podemos decidir qual avaliar na fase de execução:
+
+```javascript
+function analyze_conditional(component) {
+    const pfun = analyze(conditional_predicate(component));
+    const cfun = analyze(conditional_consequent(component));
+    const afun = analyze(conditional_alternative(component));
+    return env => is_truthy(pfun(env)) ? cfun(env) : afun(env);
+}
+```
+
+Analisar uma expressão lambda também alcança um ganho importante de eficiência: Analisamos o corpo da lambda apenas uma vez, mesmo que a função resultante seja aplicada muitas vezes.
+
+```javascript
+function analyze_lambda_expression(component) {
+    const parameters = lambda_parameter_symbols(component);
+    const bfun = analyze(lambda_body(component));
+    return env => make_function(parameters, bfun, env);
+}
+```
+
+A análise de uma sequência de declarações é mais envolvida.[^3] Cada declaração na sequência é analisada, produzindo uma função de execução. Essas funções de execução são combinadas para produzir uma função de execução que recebe um ambiente como argumento e executa sequencialmente as funções de execução individuais.
+
+[^3]: Observe que aqui não estamos preocupados com a avaliação ou análise da estrutura *externa* da sequência—digamos, o bloco delimitador da sequência ou a expressão lambda onde a sequência aparece—apenas com a avaliação e análise das declarações *individuais* na sequência.
+
+```javascript
+function analyze_sequence(stmts) {
+    function sequentially(fun1, fun2) {
+        return env => {
+                   const fun1_val = fun1(env);
+                   return is_return_value(fun1_val)
+                          ? fun1_val
+                          : fun2(env);
+               };
+    }
+    function loop(first_fun, rest_funs) {
+        return is_null(rest_funs)
+               ? first_fun
+               : loop(sequentially(first_fun, head(rest_funs)),
+                      tail(rest_funs));
+    }
+    const funs = map(analyze, stmts);
+    return is_null(funs)
+           ? env => undefined
+           : loop(head(funs), tail(funs));
+}
+```
+
+Para analisar uma aplicação, analisamos a expressão de função e as expressões de argumento e construímos uma função de execução que chama a função de execução da expressão de função (para obter a função real a ser aplicada) e as funções de execução das expressões de argumento (para obter a lista de argumentos real). Passamos estes para `execute_application`, que é o análogo de `apply` na seção 4.1.1. A função `execute_application` difere de `apply` por chamar as funções de execução das partes da função (o corpo das funções compostas), em vez de chamar `evaluate`.
+
+```javascript
+function analyze_application(component) {
+    const ffun = analyze(function_expression(component));
+    const afuns = map(analyze, arg_expressions(component));
+    return env => execute_application(ffun(env),
+                                       map(afun => afun(env), afuns));
+}
+```
+
+```javascript
+function execute_application(fun, args) {
+    if (is_primitive_function(fun)) {
+        return apply_primitive_function(fun, args);
+    } else if (is_compound_function(fun)) {
+        const result = function_body(fun)(
+                           extend_environment(
+                               function_parameters(fun),
+                               args,
+                               function_environment(fun)));
+        return is_return_value(result)
+               ? return_value_content(result)
+               : undefined;
+    } else {
+        error(fun, "unknown function type -- execute_application");
+    }
+}
+```
+
+Para blocos, analisamos o corpo e criamos uma função que estende o ambiente apropriadamente quando executada:
+
+```javascript
+function analyze_block(component) {
+    const body = block_body(component);
+    const bfun = analyze(body);
+    const locals = scan_out_declarations(body);
+    const unassigneds = list_of_unassigned(locals);
+    return env => bfun(extend_environment(locals, unassigneds, env));
+}
+```
+
+Para declarações de retorno, analisamos a expressão de retorno e aplicamos `make_return_value` ao resultado na fase de execução:
+
+```javascript
+function analyze_return_statement(component) {
+    const rfun = analyze(return_expression(component));
+    return env => make_return_value(rfun(env));
+}
+```
+
+Nosso novo avaliador usa as mesmas estruturas de dados, funções de sintaxe e operações de execução da seção 4.1.2, 4.1.3 e 4.1.4.
+
+## Exercício 4.22
+
+Estenda o avaliador de análise sintática nesta seção para suportar a forma sintática especial derivada `let` (do exercício 4.6).
+
+## Exercício 4.23
+
+Alyssa P. Hacker não entende por que `analyze_sequence` precisa ser tão complicada. Tudo o que outras funções de análise fazem é analisar seus componentes e retornar uma função de execução. Ela o reescreve como:
+
+```javascript
+function analyze_sequence(stmts) {
+    function execute_sequence(funs, env) {
+        if (is_null(funs)) {
+            return undefined;
+        } else if (is_null(tail(funs))) {
+            return head(funs)(env);
+        } else {
+            const head_val = head(funs)(env);
+            return is_return_value(head_val)
+                   ? head_val
+                   : execute_sequence(tail(funs), env);
+        }
+    }
+    const funs = map(analyze, stmts);
+    return env => execute_sequence(funs, env);
+}
+```
+
+Eva Lu Ator explica a Alyssa que a versão no texto faz mais da análise na fase de análise. O programa de Alyssa faz trabalho extra na fase de execução, todo ele sem qualquer ganho em eficiência.
+
+Compare as duas versões de `analyze_sequence`. Por exemplo, considere o caso comum (típico de corpos de função) onde a sequência tem apenas uma declaração. Que trabalho a função de execução produzida pelo programa de Alyssa fará? E quanto à função de execução produzida pelo programa no texto acima? Como as duas versões se comparam para uma sequência com duas expressões?
+
+## Exercício 4.24
+
+Projete e realize alguns experimentos para comparar a velocidade do avaliador metacircular original com a versão nesta seção. Use seus resultados para estimar a fração de tempo que é gasto em análise versus execução para várias funções.

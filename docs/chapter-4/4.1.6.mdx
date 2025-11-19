@@ -1,0 +1,94 @@
+# 4.1.6 Declarações Internas
+
+Em JavaScript, o escopo de uma declaração é o bloco inteiro que imediatamente envolve a declaração, não apenas a porção do bloco começando no ponto onde a declaração ocorre. Esta seção examina mais de perto essa escolha de design.
+
+Vamos revisitar o par de funções mutuamente recursivas `is_even` e `is_odd` da Seção 3.2.3, declaradas localmente no corpo de uma função `f`.
+
+```javascript
+function f(x) {
+    function is_even(n) {
+        return n === 0
+               ? true
+               : is_odd(n - 1);
+    }
+    function is_odd(n) {
+        return n === 0
+               ? false
+               : is_even(n - 1);
+    }
+    return is_even(x);
+}
+```
+
+Nossa intenção aqui é que o nome `is_odd` no corpo da função `is_even` deve se referir à função `is_odd` que é declarada após `is_even`. O escopo do nome `is_odd` é o bloco corpo inteiro de `f`, não apenas a porção do corpo de `f` começando no ponto onde a declaração de `is_odd` ocorre. De fato, quando consideramos que `is_odd` é ela mesma definida em termos de `is_even`—de modo que `is_even` e `is_odd` são funções mutuamente recursivas—vemos que a única interpretação satisfatória das duas declarações é considerá-las como se os nomes `is_even` e `is_odd` estivessem sendo adicionados ao ambiente simultaneamente. Mais geralmente, na estrutura de bloco, o escopo de um nome local é o bloco inteiro no qual a declaração é avaliada.
+
+A avaliação de blocos no avaliador metacircular da seção 4.1.1 alcança tal escopo simultâneo para nomes locais escaneando as declarações no bloco e estendendo o ambiente atual com um frame contendo vinculações para todos os nomes declarados antes de avaliar as declarações. Assim, o novo ambiente no qual o corpo do bloco é avaliado já contém vinculações para `is_even` e `is_odd`, e qualquer ocorrência de um desses nomes refere-se à vinculação correta. Uma vez que suas declarações são avaliadas, esses nomes são vinculados aos seus valores declarados, ou seja, objetos de função que têm o ambiente estendido como sua parte de ambiente. Assim, por exemplo, quando `is_even` é aplicado no corpo de `f`, seu ambiente já contém a vinculação correta para o símbolo `is_odd`, e a avaliação do nome `is_odd` no corpo de `is_even` recupera o valor correto.
+
+## Exercício 4.16
+
+Considere a função `f_3` da seção 1.3.2:
+
+```javascript
+function f_3(x, y) {
+    const a = 1 + x * y;
+    const b = 1 - y;
+    return x * square(a) + y * b + a * b;
+}
+```
+
+1. Desenhe um diagrama do ambiente em vigor durante a avaliação da expressão de retorno de `f_3`.
+
+2. Ao avaliar uma aplicação de função, o avaliador cria dois frames: um para os parâmetros e um para os nomes declarados *diretamente* no bloco corpo da função, em oposição a um bloco interno. Uma vez que todos esses nomes têm o mesmo escopo, uma implementação poderia combinar os dois frames. Altere o avaliador de modo que a avaliação do bloco corpo não crie um novo frame. Você pode assumir que isso não resultará em nomes duplicados no frame (o exercício 4.17 justifica isso).
+
+## Exercício 4.17
+
+Eva Lu Ator está escrevendo programas nos quais declarações de função e outras declarações estão intercaladas. Ela precisa ter certeza de que as declarações são avaliadas antes que as funções sejam aplicadas. Ela reclama: "Por que o avaliador não pode cuidar dessa tarefa e içar todas as declarações de função para o início do bloco em que aparecem? Declarações de função fora de blocos devem ser içadas para o início do programa."
+
+1. Modifique o avaliador seguindo a sugestão de Eva.
+
+2. Os designers do JavaScript decidiram seguir a abordagem de Eva. Discuta esta decisão.
+
+3. Além disso, os designers do JavaScript decidiram permitir que o nome declarado por uma declaração de função seja reatribuído usando atribuição. Modifique sua solução de acordo e discuta esta decisão.
+
+## Exercício 4.18
+
+Funções recursivas são obtidas de uma maneira indireta em nosso interpretador: Primeiro declare o nome que se referirá à função recursiva e atribua a ele o valor especial `"*unassigned*"`; depois defina a função recursiva no escopo desse nome; e finalmente atribua a função definida ao nome. Quando a função recursiva é aplicada, quaisquer ocorrências do nome no corpo se referem apropriadamente à função recursiva. Surpreendentemente, é possível especificar funções recursivas sem usar declarações ou atribuição. O programa a seguir calcula 10 fatorial aplicando uma função fatorial recursiva:[^1]
+
+[^1]: Este exemplo ilustra um truque de programação para formular funções recursivas sem usar atribuição. O truque mais geral deste tipo é o operador *Y*, que pode ser usado para dar uma implementação de "cálculo lambda puro" de recursão. (Veja Stoy 1977 para detalhes sobre o cálculo lambda, e Gabriel 1988 para uma exposição do operador Y na linguagem Scheme.)
+
+```javascript
+(n => (fact => fact(fact, n))
+      ((ft, k) => k === 1
+                  ? 1
+                  : k * ft(ft, k - 1)))(10);
+```
+
+1. Verifique (avaliando a expressão) que isso realmente calcula fatoriais. Elabore uma expressão análoga para calcular números de Fibonacci.
+
+2. Considere a função `f` dada acima:
+
+```javascript
+function f(x) {
+    function is_even(n) {
+        return n === 0
+               ? true
+               : is_odd(n - 1);
+    }
+    function is_odd(n) {
+        return n === 0
+               ? false
+               : is_even(n - 1);
+    }
+    return is_even(x);
+}
+```
+
+Preencha as expressões faltantes para completar uma declaração alternativa de `f`, que não tem declarações internas de função:
+
+```javascript
+function f(x) {
+    return ((is_even, is_odd) => is_even(is_even, is_odd, x))
+           ((is_ev, is_od, n) => n === 0 ? true : is_od(??, ??, ??),
+            (is_ev, is_od, n) => n === 0 ? false : is_ev(??, ??, ??));
+}
+```
