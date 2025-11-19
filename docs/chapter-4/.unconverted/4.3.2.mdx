@@ -1,0 +1,1089 @@
+<SUBSECTION>
+  <NAME>
+    Exemplos de Programas Não Determinísticos
+  </NAME>
+
+  <LABEL NAME="sec:amb-examples"/>
+  <TEXT>
+    A seção<SPACE/><REF NAME="sec:amb-implementation"/> descreve a
+    implementação do avaliador <SCHEMEINLINE>amb</SCHEMEINLINE>. Primeiro,
+    no entanto, damos alguns exemplos de como ele pode ser usado. A vantagem da
+    programação não determinística é que podemos suprimir os detalhes de como
+    a busca é realizada, assim
+    expressando nossos programas em um nível mais alto de
+    <INDEX>abstraction<SUBINDEX><ORDER>search</ORDER>of search in nondeterministic programming</SUBINDEX></INDEX>
+    abstração.
+  </TEXT>
+
+  <SUBHEADING>
+    <NAME>Quebra-cabeças Lógicos</NAME>
+  </SUBHEADING>
+
+  <INDEX>puzzles<SUBINDEX>logic puzzles<OPEN/></SUBINDEX></INDEX>
+  <INDEX>logic puzzles<OPEN/></INDEX>
+  <INDEX>nondeterministic programs<SUBINDEX>logic puzzles<OPEN/></SUBINDEX></INDEX>
+
+  <TEXT>
+    O seguinte quebra-cabeça (adaptado de
+    <INDEX>Dinesman, Howard P.</INDEX>
+    <CITATION>Dinesman 1968</CITATION>)
+    é típico de uma grande classe de quebra-cabeças lógicos simples:
+    <BLOCKQUOTE>
+      A empresa de software
+      <INDEX>Gargle</INDEX>
+      Gargle está se expandindo, e Alyssa, Ben, Cy, Lem e Louis
+      estão se mudando para uma fileira de cinco escritórios privativos em um
+      novo edifício. Alyssa não se muda para o último escritório. Ben não se
+      muda para o primeiro escritório. Cy não fica nem no primeiro nem no último escritório.
+      Lem se muda para um escritório depois do de Ben. O escritório de Louis não é ao lado
+      do de Cy. O escritório de Cy não é ao lado do de Ben. Quem se muda para qual escritório?
+      <!--
+	  Baker    => Alyssa
+	  Cooper   => Ben
+	  Fletcher => Cy
+	  Miller   => Lem
+	  Smith    => Louis
+      Baker, Cooper, Fletcher, Miller, and Smith live on different floors of
+      an apartment house that contains only five floors.  Baker does not
+      live on the top floor.  Cooper does not live on the bottom floor.
+      Fletcher does not live on either the top or the bottom floor.  Miller
+      lives on a higher floor than does Cooper.  Smith does not live on a
+      floor adjacent to Fletcher<APOS/>s.  Fletcher does not live on a floor
+      adjacent to Cooper<APOS/>s.  Where does everyone live? -->
+    </BLOCKQUOTE>
+  </TEXT>
+  <TEXT>
+    Podemos determinar quem se muda para qual escritório de forma direta
+    enumerando todas as possibilidades e impondo as
+    restrições dadas:<FOOTNOTE>Nosso programa usa a seguinte
+    <SPLITINLINE>
+      <SCHEME>procedure</SCHEME>
+      <JAVASCRIPT>função</JAVASCRIPT>
+    </SPLITINLINE>
+    para determinar se os elementos de uma lista são distintos:
+    <SNIPPET HIDE="yes">
+      <NAME>distinct_example</NAME>
+      <JAVASCRIPT>
+distinct(list(1, 2, 4, 4, 5));
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SNIPPET>
+      <INDEX><DECLARATION>distinct</DECLARATION></INDEX>
+      <NAME>distinct</NAME>
+      <EXAMPLE>distinct_example</EXAMPLE>
+      <EXPECTED>false</EXPECTED>
+      <SCHEME>
+(define (distinct? items)
+  (cond ((null? items) true)
+        ((null? (cdr items)) true)
+        ((member (car items) (cdr items)) false)
+        (else (distinct? (cdr items)))))
+      </SCHEME>
+      <JAVASCRIPT>
+function distinct(items) {
+    return is_null(items)
+           ? true
+           : is_null(tail(items))
+           ? true
+           : is_null(member(head(items), tail(items)))
+           ? distinct(tail(items))
+           : false;
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>Member</SCHEMEINLINE>
+	<INDEX><USE>member</USE></INDEX>
+	is like
+	<SCHEMEINLINE>memq</SCHEMEINLINE>
+	except that it uses <SCHEMEINLINE>equal?</SCHEMEINLINE> instead
+	of <SCHEMEINLINE>eq?</SCHEMEINLINE> to test for equality.
+      </SCHEME>
+    </SPLITINLINE></FOOTNOTE>
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <INDEX><DECLARATION>office_move</DECLARATION></INDEX>
+      <NAME>office_move</NAME>
+      <REQUIRES>distinct</REQUIRES>
+      <EXAMPLE>office_move_example</EXAMPLE>
+      <EXPECTED>[ 'alyssa', [ 3, null ] ]</EXPECTED>
+      <SCHEME>
+(define (multiple-dwelling)
+  (let ((baker (amb 1 2 3 4 5))
+        (cooper (amb 1 2 3 4 5))
+        (fletcher (amb 1 2 3 4 5))
+        (miller (amb 1 2 3 4 5))
+        (smith (amb 1 2 3 4 5)))
+    (require
+     (distinct? (list baker cooper fletcher miller smith)))
+    (require (not (= baker 5)))
+    (require (not (= cooper 1)))
+    (require (not (= fletcher 5)))
+    (require (not (= fletcher 1)))
+    (require (&gt; miller cooper))
+    (require (not (= (abs (- smith fletcher)) 1)))
+    (require (not (= (abs (- fletcher cooper)) 1)))
+    (list (list 'baker baker)
+          (list 'cooper cooper)
+          (list 'fletcher fletcher)
+          (list 'miller miller)
+          (list 'smith smith))))
+      </SCHEME>
+      <JAVASCRIPT>
+function office_move() {
+    const alyssa = amb(1, 2, 3, 4, 5);
+    const ben = amb(1, 2, 3, 4, 5);
+    const cy = amb(1, 2, 3, 4, 5);
+    const lem = amb(1, 2, 3, 4, 5);
+    const louis = amb(1, 2, 3, 4, 5);
+    require(distinct(list(alyssa, ben, cy, lem, louis)));
+    require(alyssa !== 5);
+    require(ben !== 1);
+    require(cy !== 5);
+    require(cy !== 1);
+    require(lem &gt; ben);
+    require(math_abs(louis - cy) !== 1);
+    require(math_abs(cy - ben) !== 1);
+    return list(list("alyssa", alyssa),
+                list("ben", ben),
+                list("cy", cy),
+                list("lem", lem),
+                list("louis", louis));
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SNIPPET HIDE="yes">
+      <NAME>office_move_example</NAME>
+      <SCHEME>
+(multiple-dwelling)
+      </SCHEME>
+      <JAVASCRIPT>
+office_move();
+      </JAVASCRIPT>
+      <JAVASCRIPT_TEST>
+head(office_move());
+      </JAVASCRIPT_TEST>
+    </SNIPPET>
+  </TEXT>
+
+  <TEXT>
+    Avaliar a expressão
+    <SPLITINLINE><SCHEME><SCHEMEINLINE>(multiple-dwelling)</SCHEMEINLINE>
+  </SCHEME>
+  <JAVASCRIPT><JAVASCRIPTINLINE>office_move()</JAVASCRIPTINLINE>
+  </JAVASCRIPT>
+    </SPLITINLINE>
+    produz o resultado
+    <SNIPPET EVAL="no">
+    <SCHEME>
+((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))
+    </SCHEME>
+    <JAVASCRIPT>
+list(list("alyssa", 3), list("ben", 2), list("cy", 4),
+     list("lem", 5), list("louis", 1))
+    </JAVASCRIPT>
+    </SNIPPET>
+    Embora esta
+    <SPLITINLINE>
+      <SCHEME>procedure</SCHEME>
+      <JAVASCRIPT>função</JAVASCRIPT>
+    </SPLITINLINE>
+    simples funcione, ela é muito lenta.
+    Os exercícios<SPACE/><REF NAME="ex:better-office-move1"/>
+    e<SPACE/><REF NAME="ex:better-office-move2"/> discutem algumas possíveis
+    melhorias.
+  </TEXT>
+
+  <EXERCISE>
+    <LABEL NAME="ex:office_move_1"/>
+    Modifique a
+    <SPLITINLINE>
+      <SCHEME>procedure</SCHEME>
+      <JAVASCRIPT>função</JAVASCRIPT>
+    </SPLITINLINE>
+    de mudança de escritório para omitir a exigência de que o escritório de Louis não seja ao lado do de Cy.
+    Quantas soluções existem para este quebra-cabeça modificado?
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:better-office-move1"/>
+    A ordem das restrições na
+    <SPLITINLINE>
+      <SCHEME>procedure</SCHEME>
+      <JAVASCRIPT>função</JAVASCRIPT>
+    </SPLITINLINE>
+    de mudança de escritório afeta a resposta? Afeta o tempo para encontrar uma resposta? Se você
+    acha que importa, demonstre um programa mais rápido obtido do dado
+    reordenando as restrições. Se você acha que não importa,
+    argumente seu caso.
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:better-office-move2"/>
+    No problema de mudança de escritório, quantos conjuntos de atribuições há
+    de pessoas para escritórios, tanto antes quanto depois da exigência de que
+    as atribuições de escritório sejam distintas? É muito ineficiente gerar todas
+    as atribuições possíveis de pessoas para escritórios e depois deixar para
+    o backtracking eliminá-las. Por exemplo, a maioria das restrições
+    depende de apenas uma ou duas das
+    <SPLITINLINE>
+      <SCHEME>variables,</SCHEME>
+      <JAVASCRIPT>nomes,</JAVASCRIPT>
+    </SPLITINLINE>
+    pessoa-escritório, e podem assim ser impostas antes que escritórios tenham sido selecionados para todas as pessoas.
+    Escreva e demonstre uma
+    <SPLITINLINE>
+      <SCHEME>procedure</SCHEME>
+      <JAVASCRIPT>função</JAVASCRIPT>
+    </SPLITINLINE>
+    não determinística muito mais eficiente que resolva este problema baseando-se em gerar apenas as possibilidades que
+    não são já descartadas por restrições anteriores.
+    <SPLITINLINE>
+      <SCHEME>
+	(Dica: Isto exigirá um aninhamento de expressões <SCHEMEINLINE>let</SCHEMEINLINE>.)
+      </SCHEME>
+    </SPLITINLINE>
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:office_move_4"/>
+    Escreva um programa
+    <INDEX>nondeterministic programming vs.<SPACE/>JavaScript programming</INDEX>
+    <SPLITINLINE>
+      <SCHEME>Scheme</SCHEME>
+      <JAVASCRIPT>JavaScript</JAVASCRIPT>
+    </SPLITINLINE>
+    comum para resolver o quebra-cabeça de mudança de escritório.
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:liars"/>
+    Resolva o seguinte quebra-cabeça <QUOTE>Mentirosos</QUOTE> (adaptado de
+    <INDEX>Phillips, Hubert</INDEX>
+    <CITATION>Phillips 1934</CITATION>):
+    <BLOCKQUOTE>
+      Alyssa, Cy, Eva, Lem e Louis se encontram para um almoço de negócios no SoSoService.
+      Suas refeições chegam uma após a outra, um tempo considerável depois que
+      fizeram seus pedidos. Para entreter Ben, que os espera de volta no escritório
+      para uma reunião, eles decidem cada um fazer uma declaração verdadeira e uma falsa
+      sobre seus pedidos:
+      <UL>
+	<LI>
+          Alyssa:
+	  <QUOTE>A refeição de Lem chegou em segundo. A minha chegou em terceiro.</QUOTE>
+	</LI>
+	<LI>
+	  Cy:
+	  <QUOTE>A minha chegou primeiro. A de Eva chegou em segundo.</QUOTE>
+	</LI>
+	<LI>
+	  Eva:
+	  <QUOTE>A minha chegou em terceiro, e a do pobre Cy chegou por último.</QUOTE>
+	</LI>
+	<LI>
+	  Lem:
+	  <QUOTE>A minha chegou em segundo. A de Louis chegou em quarto.</QUOTE>
+	</LI>
+	<LI>
+	  Louis:
+	  <QUOTE>A minha chegou em quarto. A refeição de Alyssa chegou primeiro.</QUOTE>
+	</LI>
+      </UL>
+      Qual foi a ordem real em que os cinco comensais receberam suas refeições?
+      <!--
+	   Betty => Alyssa
+	   Ethel => Cy
+	   Joan  => Eva
+	   Kitty => Lem
+	   Mary  => Louis
+
+      Five schoolgirls sat for an examination.  Their parents<EMDASH/>so they
+      thought<EMDASH/>showed an undue degree of interest in the result.  They
+      therefore agreed that, in writing home about the examination, each
+      girl should make one true statement and one untrue one.  The following
+      are the relevant passages from their letters:
+      <UL>
+	<LI>
+	  Betty:
+	  <QUOTE>Kitty was second in the examination.  I was only third.</QUOTE>
+	</LI>
+	<LI>
+	  Ethel:
+	  <QUOTE>You<APOS/>ll be glad to hear that I was on top.
+	  Joan was second.</QUOTE>
+	</LI>
+	<LI>
+	  Joan: <QUOTE>I was third, and poor old Ethel was bottom.</QUOTE>
+	</LI>
+	<LI>
+	  Kitty: <QUOTE>I came out second.  Mary was only fourth.</QUOTE>
+	</LI>
+	<LI>
+	  Mary: <QUOTE>I was fourth.  Top place was taken by Betty.</QUOTE>
+	</LI>
+      </UL>
+      What in fact was the order in which the five girls were placed? -->
+    </BLOCKQUOTE>
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:checking"/>
+    Use o avaliador <SCHEMEINLINE>amb</SCHEMEINLINE> para resolver o seguinte
+    quebra-cabeça (adaptado de
+    <INDEX>Phillips, Hubert</INDEX>
+    <CITATION>Phillips 1961</CITATION>):
+      <BLOCKQUOTE>
+	Alyssa, Ben, Cy, Eva e Louis cada um escolhe um capítulo diferente do SICP JS
+	e resolve todos os exercícios naquele capítulo.
+	Louis resolve os exercícios no capítulo <QUOTE>Functions</QUOTE>,
+	Alyssa os do capítulo <QUOTE>Data</QUOTE>, e
+	Cy os do capítulo <QUOTE>State</QUOTE>.
+	Eles decidem verificar o trabalho uns dos outros, e
+	Alyssa se oferece para verificar os exercícios do capítulo <QUOTE>Meta</QUOTE>.
+	Os exercícios do capítulo <QUOTE>Register Machines</QUOTE> são resolvidos por Ben
+	e verificados por Louis.
+	A pessoa que verifica os exercícios do capítulo <QUOTE>Functions</QUOTE>
+	resolve os exercícios que são verificados por Eva.
+	Quem verifica os exercícios do capítulo <QUOTE>Data</QUOTE>?
+      </BLOCKQUOTE>
+	   Tente escrever o programa para que ele rode eficientemente (veja
+	   exercício<SPACE/><REF NAME="ex:better-office-move2"/>). Determine também
+	   quantas soluções existem se não nos for dito que Alyssa verifica os
+	   exercícios do capítulo <QUOTE>Meta</QUOTE>.
+	   <!-- <BLOCKQUOTE>
+	   A father x owning a yacht called y.
+	   =>
+	   A person x solving the exercises in chapter y.
+
+	   A father x having a daughter called y.
+	   =>
+	   A person x checking the exercises in chapter y.
+
+	   Moore             => Alyssa!      Mary Ann  => Meta!
+	   Sir Barnacle Hood => Louis!       Gabrielle => Functions!
+	   Hall              => Cy!          Lorna     => Data!
+	   Downing           => Ben!         Rosalind  => State!
+	   Parker            => Eva!         Melissa   => Register Machines!
+
+	   Mary Ann Moore<APOS/>s father has a yacht and so has each of his four
+	   friends:  Colonel Downing, Mr.<SPACE/>Hall, Sir Barnacle Hood, and
+	   Dr.<SPACE/>Parker.
+	   Each of the five also has one daughter and each has named his
+	   yacht after a daughter of one of the others.
+	   Sir Barnacle<APOS/>s yacht is the Gabrielle,
+	   Mr.<SPACE/>Moore owns the Lorna;
+	   Mr.<SPACE/>Hall the Rosalind.
+	   The Melissa, owned by Colonel Downing,
+	   is named after Sir Barnacle<APOS/>s daughter.
+	   Gabrielle<APOS/>s father owns the yacht that is named after
+	   Dr.<SPACE/>Parker<APOS/>s daughter.
+	   Who is Lorna<APOS/>s father?
+	   </BLOCKQUOTE>
+	   Try to write the program so that it runs efficiently (see
+	   exercise<SPACE/><REF NAME="ex:better-office-move2"/>).  Also determine
+	   how many solutions there are if we are not told that Mary Ann<APOS/>s last
+	   name is Moore. -->
+  </EXERCISE>
+
+  <INDEX>puzzles<SUBINDEX>logic puzzles<CLOSE/></SUBINDEX></INDEX>
+  <INDEX>logic puzzles<CLOSE/></INDEX>
+  <INDEX>nondeterministic programs<SUBINDEX>logic puzzles<CLOSE/></SUBINDEX></INDEX>
+
+  <EXERCISE>
+    <LABEL NAME="ex:queens_amb"/>
+    O exercício<SPACE/><REF NAME="ex:8queens"/> descreveu o
+    <INDEX>chess, eight-queens puzzle</INDEX>
+    <INDEX>eight-queens puzzle</INDEX>
+    <INDEX>puzzles<SUBINDEX>eight-queens puzzle</SUBINDEX></INDEX>
+    <INDEX>nondeterministic programming vs.<SPACE/>JavaScript programming</INDEX>
+    <QUOTE>quebra-cabeça das oito rainhas</QUOTE> de colocar rainhas em um tabuleiro de xadrez de modo que
+    nenhuma duas se ataquem. Escreva um programa não determinístico para resolver este
+    quebra-cabeça.
+  </EXERCISE>
+
+  <SUBHEADING>
+    <NAME>Análise sintática de linguagem natural</NAME>
+  </SUBHEADING>
+
+  <INDEX>parsing natural language<OPEN/></INDEX>
+  <INDEX>nondeterministic programs<SUBINDEX>parsing natural language<OPEN/></SUBINDEX></INDEX>
+
+  <TEXT>
+    Programas projetados para aceitar linguagem natural como entrada geralmente começam
+    tentando <EM>analisar sintaticamente</EM> a entrada, isto é, fazer a entrada corresponder
+    a alguma estrutura gramatical. Por exemplo, poderíamos tentar
+    reconhecer sentenças simples consistindo de um artigo seguido por um substantivo
+    seguido por um verbo, como <QUOTE>The cat eats.</QUOTE> Para realizar
+    tal análise, devemos ser capazes de identificar as classes gramaticais de
+    palavras individuais. Poderíamos começar com algumas listas que classificam várias
+    palavras:<FOOTNOTE>Aqui usamos a convenção de que o primeiro elemento de cada
+    lista designa a classe gramatical para o resto das palavras na
+    lista.</FOOTNOTE>
+    <SNIPPET>
+      <INDEX><DECLARATION>nouns</DECLARATION></INDEX>
+      <INDEX><DECLARATION>verbs</DECLARATION></INDEX>
+      <INDEX><DECLARATION>articles</DECLARATION></INDEX>
+      <NAME>nouns</NAME>
+      <SCHEME>
+(define nouns '(noun student professor cat class))
+
+(define verbs '(verb studies lectures eats sleeps))
+
+(define articles '(article the a))
+      </SCHEME>
+      <JAVASCRIPT>
+const nouns = list("noun", "student", "professor", "cat", "class");
+
+const verbs = list("verb", "studies", "lectures", "eats", "sleeps");
+
+const articles = list("article", "the", "a");
+      </JAVASCRIPT>
+    </SNIPPET>
+    Também precisamos de uma
+    <INDEX>grammar</INDEX>
+    <EM>gramática</EM>, isto é, um conjunto de regras descrevendo como
+    elementos gramaticais são compostos a partir de elementos mais simples. Uma
+    gramática muito simples poderia estipular que uma sentença sempre consiste de duas
+    partes<EMDASH/>uma frase nominal seguida por um verbo<EMDASH/>e que uma frase
+    nominal consiste de um artigo seguido por um substantivo. Com esta gramática, a
+    sentença <QUOTE>The cat eats</QUOTE> é analisada da seguinte forma:
+    <SNIPPET EVAL="no">
+      <SCHEME>
+(sentence (noun-phrase (article the) (noun cat))
+          (verb eats))
+      </SCHEME>
+      <JAVASCRIPT>
+list("sentence",
+     list("noun-phrase", list("article", "the"), list("noun", "cat"),
+     list("verb", "eats"))
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+
+  <INDEX><USE>parse_...</USE><OPEN/></INDEX>
+
+  <TEXT>
+    Podemos gerar tal análise com um programa simples que tem
+    <SPLITINLINE>
+      <SCHEME>procedures</SCHEME>
+      <JAVASCRIPT>funções</JAVASCRIPT>
+    </SPLITINLINE>
+    separadas para cada uma das regras gramaticais. Para analisar uma sentença, identificamos suas
+    duas partes constituintes e retornamos uma lista desses dois elementos, marcada com
+    o símbolo <SCHEMEINLINE>sentence</SCHEMEINLINE>:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_sentence</NAME>
+      <REQUIRES>parse_noun_phrase</REQUIRES>
+      <REQUIRES>nouns</REQUIRES>
+      <EXAMPLE>parse_input_example</EXAMPLE>
+      <EXPECTED>[ "sentence", [ ["noun-phrase", [["article", ["the", null]], [["noun", ["cat", null]], null]]], [["verb", ["eats", null]], null]]]</EXPECTED>
+      <SCHEME>
+(define (parse-sentence)
+  (list 'sentence
+        (parse-noun-phrase)
+        (parse-word verbs)))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_sentence() {
+    return list("sentence",
+                parse_noun_phrase(),
+                parse_word(verbs));
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+    Uma frase nominal, similarmente, é analisada encontrando um artigo seguido por um
+    substantivo:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_noun_phrase</NAME>
+      <REQUIRES>nouns</REQUIRES>
+      <REQUIRES>parse_word</REQUIRES>
+      <EXAMPLE>parse_input_example</EXAMPLE>
+      <SCHEME>
+(define (parse-noun-phrase)
+  (list 'noun-phrase
+        (parse-word articles)
+        (parse-word nouns)))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_noun_phrase() {
+    return list("noun-phrase",
+                parse_word(articles),
+                parse_word(nouns));
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+
+  <TEXT>
+    No nível mais baixo, a análise sintática se resume a verificar repetidamente que
+    a próxima palavra
+    <SPLITINLINE>
+      <SCHEME>unparsed</SCHEME>
+      <JAVASCRIPT>ainda não analisada</JAVASCRIPT>
+    </SPLITINLINE>
+    é um membro da lista de palavras para a
+    classe gramatical requerida. Para implementar isso, mantemos uma variável global
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>*unparsed*</SCHEMEINLINE>,
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>not_yet_parsed</JAVASCRIPTINLINE>,
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    que é a entrada que ainda não foi analisada. Cada vez que verificamos uma palavra,
+    exigimos que
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>*unparsed*</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>not_yet_parsed</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    não esteja vazia e que ela deva começar com uma palavra da lista designada.
+    Se sim, removemos aquela palavra de
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>*unparsed*</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>not_yet_parsed</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    e retornamos a palavra junto com sua classe gramatical (que é encontrada no
+    cabeçalho da lista):<FOOTNOTE>Note que
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>parse-word</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>parse_word</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    usa
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>set!</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>atribuição</JAVASCRIPT>
+    </SPLITINLINE>
+    para modificar a
+    <SPLITINLINE>
+      <SCHEME>unparsed</SCHEME>
+      <JAVASCRIPT>lista de entrada ainda não analisada</JAVASCRIPT>
+    </SPLITINLINE>
+    . Para que isso funcione, nosso
+    avaliador <SCHEMEINLINE>amb</SCHEMEINLINE> deve desfazer os efeitos de
+    <SPLITINLINE>
+      <SCHEME>operações <SCHEMEINLINE>set!</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>atribuições</JAVASCRIPT>
+    </SPLITINLINE>
+    quando ele retrocede.</FOOTNOTE>
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_word</NAME>
+      <REQUIRES>unparsed</REQUIRES>
+      <EXAMPLE>parse_input_example</EXAMPLE>
+      <SCHEME>
+(define (parse-word word-list)
+  (require (not (null? *unparsed*)))
+  (require (memq (car *unparsed*) (cdr word-list)))
+  (let ((found-word (car *unparsed*)))
+    (set! *unparsed* (cdr *unparsed*))
+    (list (car word-list) found-word)))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_word(word_list) {
+    require(! is_null(not_yet_parsed));
+    require(! is_null(member(head(not_yet_parsed), tail(word_list))));
+    const found_word = head(not_yet_parsed);
+    not_yet_parsed = tail(not_yet_parsed);
+    return list(head(word_list), found_word);
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+
+  <TEXT>
+    Para iniciar a análise sintática, tudo o que precisamos fazer é definir
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>*unparsed*</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>not_yet_parsed</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    como
+    a entrada inteira, tentar analisar uma sentença e verificar que nada
+    sobrou:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>unparsed</NAME>
+      <SCHEME>
+(define *unparsed* '())
+      </SCHEME>
+      <JAVASCRIPT>
+let not_yet_parsed = null;
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_input</NAME>
+      <REQUIRES>unparsed</REQUIRES>
+      <REQUIRES>parse_sentence</REQUIRES>
+      <EXAMPLE>parse_input_example</EXAMPLE>
+      <SCHEME>
+(define (parse input)
+  (set! *unparsed* input)
+  (let ((sent (parse-sentence)))
+    (require (null? *unparsed*))
+    sent))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_input(input) {
+    not_yet_parsed = input;
+    const sent = parse_sentence();
+    require(is_null(not_yet_parsed));
+    return sent;
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+  <TEXT>
+    Agora podemos testar o analisador e verificar que ele funciona para nossa sentença de teste
+    simples:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_input_example</NAME>
+      <REQUIRES>parse_input</REQUIRES>
+      <SCHEMEPROMPT>
+;;; Amb-Eval input:
+      </SCHEMEPROMPT>
+      <SCHEME>
+(parse '(the cat eats))
+      </SCHEME>
+      <SCHEMEOUTPUT>
+;;; Starting a new problem
+;;; Amb-Eval value:
+(sentence (noun-phrase (article the) (noun cat)) (verb eats))
+      </SCHEMEOUTPUT>
+      <JAVASCRIPT_PROMPT>
+amb-evaluate input:
+      </JAVASCRIPT_PROMPT>
+      <JAVASCRIPT>
+parse_input(list("the",  "cat",  "eats"));
+      </JAVASCRIPT>
+      <JAVASCRIPT_RUN>
+parse_input(list("the",  "cat",  "eats"));
+      </JAVASCRIPT_RUN>
+      <JAVASCRIPT_OUTPUT>
+Iniciando um novo problema
+amb-evaluate value:
+list("sentence",
+     list("noun-phrase", list("article", "the"), list("noun", "cat")),
+     list("verb", "eats"))
+      </JAVASCRIPT_OUTPUT>
+    </SNIPPET>
+  </TEXT>
+
+  <TEXT>
+    O avaliador <SCHEMEINLINE>amb</SCHEMEINLINE> é útil aqui porque é
+    conveniente expressar as restrições de análise com a ajuda de
+    <SCHEMEINLINE>require</SCHEMEINLINE>. Busca automática e backtracking
+    realmente compensam, no entanto, quando consideramos gramáticas mais complexas onde há
+    escolhas de como as unidades podem ser decompostas.
+  </TEXT>
+
+  <TEXT>
+    Vamos adicionar à nossa gramática uma lista de preposições:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <INDEX><DECLARATION>prepositions</DECLARATION></INDEX>
+      <NAME>prepositions</NAME>
+      <SCHEME>
+(define prepositions '(prep for to in by with))
+      </SCHEME>
+      <JAVASCRIPT>
+const prepositions = list("prep", "for", "to", "in", "by", "with");
+      </JAVASCRIPT>
+    </SNIPPET>
+    e definir uma frase preposicional (por exemplo, <QUOTE>for the cat</QUOTE>) como sendo
+    uma preposição seguida por uma frase nominal:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_prepositional_phrase</NAME>
+      <REQUIRES>parse_word</REQUIRES>
+      <REQUIRES>prepositions</REQUIRES>
+      <EXAMPLE>parse_input_example_2</EXAMPLE>
+      <EXPECTED>[ "sentence", [ [ "noun-phrase", [ [ "simple-noun-phrase", [["article", ["the", null]], [["noun", ["student", null]], null]]], [ [ "prep-phrase", [ ["prep", ["with", null]], [ [ "simple-noun-phrase", [["article", ["the", null]], [["noun", ["cat", null]], null]]], null]]], null]]], [ [ "verb-phrase", [ ["verb", ["sleeps", null]], [ [ "prep-phrase", [ ["prep", ["in", null]], [ [ "simple-noun-phrase", [["article", ["the", null]], [["noun", ["class", null]], null]]], null]]], null]]], null]]]</EXPECTED>
+      <SCHEME>
+(define (parse-prepositional-phrase)
+  (list 'prep-phrase
+        (parse-word prepositions)
+        (parse-noun-phrase)))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_prepositional_phrase() {
+    return list("prep-phrase",
+                parse_word(prepositions),
+                parse_noun_phrase());
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+    Agora podemos definir uma sentença como sendo uma frase nominal seguida por uma frase
+    verbal, onde uma frase verbal pode ser ou um verbo ou uma frase verbal
+    estendida por uma frase preposicional:<FOOTNOTE>Observe que esta
+    definição é recursiva<EMDASH/>um verbo pode ser seguido por qualquer número
+    de frases preposicionais.</FOOTNOTE>
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_sentence_2</NAME>
+      <REQUIRES>parse_prepositional_phrase</REQUIRES>
+      <REQUIRES>parse_word</REQUIRES>
+      <REQUIRES>parse_noun_phrase_2</REQUIRES>
+      <EXAMPLE>parse_input_example_2</EXAMPLE>
+      <SCHEME>
+(define (parse-sentence)
+  (list 'sentence
+        (parse-noun-phrase)
+        (parse-verb-phrase)))
+
+(define (parse-verb-phrase)
+  (define (maybe-extend verb-phrase)
+    (amb verb-phrase
+         (maybe-extend (list 'verb-phrase
+                             verb-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-word verbs)))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_sentence() {
+    return list("sentence",
+                parse_noun_phrase(),
+                parse_verb_phrase());
+}
+function parse_verb_phrase() {
+    function maybe_extend(verb_phrase) {
+        return amb(verb_phrase,
+                   maybe_extend(list("verb-phrase",
+                                     verb_phrase,
+                                     parse_prepositional_phrase())));
+    }
+    return maybe_extend(parse_word(verbs));
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SNIPPET CHAP="3" VARIANT="non-det" HIDE="yes">
+      <NAME>parse_input_2</NAME>
+      <REQUIRES>unparsed</REQUIRES>
+      <REQUIRES>parse_sentence_2</REQUIRES>
+      <SCHEME>
+(define (parse input)
+  (set! *unparsed* input)
+  (let ((sent (parse-sentence)))
+    (require (null? *unparsed*))
+    sent))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_input(input) {
+    not_yet_parsed = input;
+    const sent = parse_sentence();
+    require(is_null(not_yet_parsed));
+    return sent;
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+
+  <TEXT>
+    Já que estamos nisso, também podemos elaborar a definição de frases
+    nominais para permitir coisas como <QUOTE>a cat in the class.</QUOTE> O que
+    costumávamos chamar de frase nominal, agora chamaremos de frase nominal simples,
+    e uma frase nominal agora será ou uma frase nominal simples ou uma frase nominal
+    estendida por uma frase preposicional:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_noun_phrase_2</NAME>
+      <REQUIRES>parse_prepositional_phrase</REQUIRES>
+      <REQUIRES>parse_word</REQUIRES>
+      <REQUIRES>nouns</REQUIRES>
+      <EXAMPLE>parse_input_example_2</EXAMPLE>
+      <SCHEME>
+(define (parse-simple-noun-phrase)
+  (list 'simple-noun-phrase
+        (parse-word articles)
+        (parse-word nouns)))
+
+(define (parse-noun-phrase)
+  (define (maybe-extend noun-phrase)
+    (amb noun-phrase
+         (maybe-extend (list 'noun-phrase
+                             noun-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-simple-noun-phrase)))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_simple_noun_phrase() {
+    return list("simple-noun-phrase",
+                parse_word(articles),
+                parse_word(nouns));
+}
+function parse_noun_phrase() {
+    function maybe_extend(noun_phrase) {
+        return amb(noun_phrase,
+                   maybe_extend(list("noun-phrase",
+                                     noun_phrase,
+                                     parse_prepositional_phrase())));
+    }
+    return maybe_extend(parse_simple_noun_phrase());
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+
+  <INDEX><USE>parse_...</USE><CLOSE/></INDEX>
+
+  <TEXT>
+    Nossa nova gramática nos permite analisar sentenças mais complexas. Por exemplo
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>parse_input_example_2</NAME>
+      <REQUIRES>parse_input_2</REQUIRES>
+      <SCHEME>
+(parse '(the student with the cat sleeps in the class))
+      </SCHEME>
+      <JAVASCRIPT>
+parse_input(list("the", "student", "with", "the", "cat",
+                 "sleeps", "in", "the", "class"));
+      </JAVASCRIPT>
+    </SNIPPET>
+  produz
+  <SNIPPET EVAL="no">
+    <SCHEME>
+(sentence
+ (noun-phrase
+  (simple-noun-phrase (article the) (noun student))
+  (prep-phrase (prep with)
+   (simple-noun-phrase
+    (article the) (noun cat))))
+ (verb-phrase
+  (verb sleeps)
+  (prep-phrase (prep in)
+   (simple-noun-phrase
+    (article the) (noun class)))))
+    </SCHEME>
+    <JAVASCRIPT>
+list("sentence",
+     list("noun-phrase",
+          list("simple-noun-phrase",
+               list("article", "the"), list("noun", "student")),
+          list("prep-phrase", list("prep", "with"),
+               list("simple-noun-phrase",
+                    list("article", "the"),
+                    list("noun", "cat")))),
+     list("verb-phrase",
+          list("verb", "sleeps"),
+          list("prep-phrase", list("prep", "in"),
+               list("simple-noun-phrase",
+                    list("article", "the"),
+                    list("noun", "class")))))
+    </JAVASCRIPT>
+  </SNIPPET>
+  </TEXT>
+
+  <TEXT>
+    Observe que uma entrada dada pode ter mais de uma análise legal. Na
+    sentença <QUOTE>The professor lectures to the student with the cat,</QUOTE>
+    pode ser que o professor esteja palestrando com o gato, ou que o estudante
+    tenha o gato. Nosso programa não determinístico encontra ambas as possibilidades:
+    <SNIPPET CHAP="3" VARIANT="non-det">
+      <NAME>multiple_legal_parses</NAME>
+      <REQUIRES>parse_input_2</REQUIRES>
+      <SCHEME>
+(parse '(the professor lectures to the student with the cat))
+      </SCHEME>
+      <JAVASCRIPT>
+parse_input(list("the", "professor", "lectures",
+                 "to", "the", "student", "with", "the", "cat"));
+      </JAVASCRIPT>
+    </SNIPPET>
+    produz
+    <SNIPPET EVAL="no">
+      <SCHEME>
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb-phrase
+   (verb lectures)
+   (prep-phrase (prep to)
+    (simple-noun-phrase
+     (article the) (noun student))))
+  (prep-phrase (prep with)
+   (simple-noun-phrase
+    (article the) (noun cat)))))
+      </SCHEME>
+      <JAVASCRIPT>
+list("sentence",
+     list("simple-noun-phrase",
+          list("article", "the"), list("noun", "professor")),
+     list("verb-phrase",
+          list("verb-phrase",
+               list("verb", "lectures"),
+               list("prep-phrase", list("prep", "to"),
+                    list("simple-noun-phrase",
+                    list("article", "the"),
+		    list("noun", "student")))),
+          list("prep-phrase", list("prep", "with"),
+               list("simple-noun-phrase",
+                    list("article", "the"),
+                    list("noun", "cat")))))
+      </JAVASCRIPT>
+    </SNIPPET>
+  <LONG_PAGE lines="1"/>
+    Pedir ao avaliador para tentar novamente produz
+    <SNIPPET EVAL="no">
+      <SCHEME>
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb lectures)
+  (prep-phrase (prep to)
+   (noun-phrase
+    (simple-noun-phrase
+     (article the) (noun student))
+    (prep-phrase (prep with)
+     (simple-noun-phrase
+      (article the) (noun cat)))))))
+      </SCHEME>
+      <JAVASCRIPT>
+list("sentence",
+     list("simple-noun-phrase",
+          list("article", "the"), list("noun", "professor")),
+     list("verb-phrase",
+          list("verb", "lectures"),
+          list("prep-phrase", list("prep", "to"),
+               list("noun-phrase",
+                    list("simple-noun-phrase",
+                         list("article", "the"),
+                         list("noun", "student")),
+                    list("prep-phrase", list("prep", "with"),
+                         list("simple-noun-phrase",
+                              list("article", "the"),
+                              list("noun", "cat")))))))
+      </JAVASCRIPT>
+    </SNIPPET>
+  </TEXT>
+
+  <INDEX>nondeterministic programs<SUBINDEX>parsing natural language<CLOSE/></SUBINDEX></INDEX>
+
+  <EXERCISE>
+    <LABEL NAME="ex:five_ways"/>
+    Com a gramática dada acima, a seguinte sentença pode ser analisada de cinco
+    maneiras diferentes: <QUOTE>The professor lectures to the student in the class
+    with the cat.</QUOTE> Forneça as cinco análises e explique as diferenças em
+    nuances de significado entre elas.
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:ordered_parsing"/>
+    Os
+    <INDEX>nondeterministic evaluator<SUBINDEX>order of argument evaluation</SUBINDEX></INDEX>
+    avaliadores nas seções<SPACE/><REF NAME="sec:mc-eval"/> e
+    <REF NAME="sec:lazy-evaluation"/> não determinam em qual ordem as
+    <SPLITINLINE>
+      <SCHEME>operands</SCHEME>
+      <JAVASCRIPT>expressões de argumento</JAVASCRIPT>
+    </SPLITINLINE>
+    são
+    avaliadas. Veremos que o avaliador <SCHEMEINLINE>amb</SCHEMEINLINE>
+    as avalia da esquerda para a direita. Explique por que nosso programa de análise
+    não funcionaria se as
+    <SPLITINLINE>
+      <SCHEME>operands</SCHEME>
+      <JAVASCRIPT>expressões de argumento</JAVASCRIPT>
+    </SPLITINLINE>
+    fossem avaliadas em alguma outra ordem.
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:louis_verb_phrase"/>
+    Louis Reasoner sugere que, já que uma frase verbal é ou um verbo ou
+    uma frase verbal seguida por uma frase preposicional, seria muito mais
+    direto
+    <SPLITINLINE>
+      <SCHEME>define</SCHEME>
+      <JAVASCRIPT>declarar</JAVASCRIPT>
+    </SPLITINLINE>
+    a
+    <SPLITINLINE>
+      <SCHEME>procedure</SCHEME>
+      <JAVASCRIPT>função</JAVASCRIPT>
+    </SPLITINLINE>
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>parse-verb-phrase</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT><JAVASCRIPTINLINE>parse_verb_phrase</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    da seguinte forma (e similarmente para frases nominais):
+    <SNIPPET EVAL="no">
+      <SCHEME>
+(define (parse-verb-phrase)
+  (amb (parse-word verbs)
+       (list 'verb-phrase
+             (parse-verb-phrase)
+             (parse-prepositional-phrase))))
+      </SCHEME>
+      <JAVASCRIPT>
+function parse_verb_phrase() {
+    return amb(parse_word(verbs),
+               list("verb-phrase",
+                    parse_verb_phrase(),
+                    parse_prepositional_phrase()));
+}
+      </JAVASCRIPT>
+    </SNIPPET>
+    Isso funciona? O comportamento do programa muda se intercambiarmos
+    a ordem das expressões no <SCHEMEINLINE>amb</SCHEMEINLINE>?
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:complex_sentences"/>
+    Estenda a gramática dada acima para lidar com sentenças mais complexas. Por
+    exemplo, você poderia estender frases nominais e frases verbais para incluir adjetivos
+    e advérbios, ou poderia lidar com sentenças compostas.<FOOTNOTE>Este tipo de
+    gramática pode se tornar arbitrariamente complexa, mas ela
+    é apenas um
+    <INDEX>parsing natural language<SUBINDEX>real language understanding vs.<SPACE/>toy parser</SUBINDEX></INDEX>
+    brinquedo no que diz respeito à compreensão real de linguagem.
+    A compreensão real de linguagem natural por computador requer uma
+    mistura elaborada de análise sintática e interpretação de significado. Por
+    outro lado, até analisadores de brinquedo podem ser úteis no suporte a
+    linguagens de comando flexíveis para programas como sistemas de recuperação de informação.
+    <INDEX>Winston, Patrick Henry</INDEX>
+    <CITATION>Winston 1992</CITATION> discute abordagens computacionais para
+    compreensão de linguagem real e também as aplicações de gramáticas simples
+    a linguagens de comando.</FOOTNOTE>
+  </EXERCISE>
+
+  <EXERCISE>
+    <LABEL NAME="ex:sentence-generate"/>
+    Alyssa P. Hacker está mais interessada em
+    <INDEX>generating sentences</INDEX>
+    gerar sentenças interessantes
+    do que em analisá-las. Ela raciocina que simplesmente mudando a
+    <SPLITINLINE>
+      <SCHEME>procedure
+      <SCHEMEINLINE>parse-word</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>função
+      <JAVASCRIPTINLINE>parse_word</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    para que ela ignore a <QUOTE>sentença de entrada</QUOTE> e em vez disso sempre
+    tenha sucesso e gere uma palavra apropriada, podemos usar os programas que
+    construímos para análise para fazer geração em vez disso. Implemente a ideia de Alyssa,
+    e mostre a primeira meia dúzia ou mais de sentenças geradas.<FOOTNOTE>Embora
+    a ideia de Alyssa funcione muito bem (e seja surpreendentemente simples), as
+    sentenças que ela gera são um pouco chatas<EMDASH/>elas não
+    amostram as sentenças possíveis desta linguagem de uma maneira muito interessante.
+    Na verdade, a gramática é altamente recursiva em muitos lugares, e
+    a técnica de Alyssa <QUOTE>cai em</QUOTE> uma dessas recursões
+    e fica presa. Veja o exercício<SPACE/><REF NAME="ex:ramb"/> para uma maneira de lidar
+    com isso.</FOOTNOTE>
+  </EXERCISE>
+
+  <INDEX>parsing natural language<CLOSE/></INDEX>
+  <INDEX>nondeterministic computing<CLOSE/></INDEX>
+
+</SUBSECTION>
