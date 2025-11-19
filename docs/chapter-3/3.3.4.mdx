@@ -3,6 +3,7 @@ title: 3.3.4 Um Simulador para Circuitos Digitais
 ---
 
 import CodePlayground from '@site/src/components/CodePlayground';
+import CircuitDiagram from '@site/src/components/CircuitDiagram';
 
 # 3.3.4 Um Simulador para Circuitos Digitais
 
@@ -72,6 +73,10 @@ function logical_and(s1, s2) {
 
 **Exercício 3.30:** A Figura 3.27 mostra um *ripple-carry adder* formado encadeando *full-adders*. Este é o circuito mais simples para adicionar dois números binários. As entradas A1, A2, A3, ... An e B1, B2, B3, ... Bn são os dois números binários a serem adicionados (cada Ak e Bk é um bit 0 ou 1). A saída do circuito é a soma S1, S2, S3, ... Sn mais um carry Cn. Escreva uma função `ripple_carry_adder` que gera esse circuito. A função deve receber como argumentos três listas de n fios cada—as entradas An, Bn, e as somas Sn—bem como outro fio C. O maior atraso de propagação (em termos de atrasos de portas) do somador deve ser proporcional a n. Qual é o atraso?
 
+<CircuitDiagram type="ripple-carry-adder" />
+
+**Figura 3.27:** Somador com propagação de vai-um (ripple-carry adder). Este circuito adiciona dois números binários de n bits encadeando n somadores completos (FA). O carry de saída de cada estágio se torna o carry de entrada do próximo estágio. Neste exemplo, mostramos um somador de 3 bits com três estágios FA₀, FA₁ e FA₂.
+
 ## Representando fios
 
 Um fio em nosso sistema de simulação será um objeto computacional com dois valores locais: um valor `signal` (inicialmente tomado como 0) e uma coleção de `action_functions` a serem executadas quando o sinal mudar de valor. Implementamos o fio usando passagem de mensagem de estilo local:
@@ -139,6 +144,10 @@ Para avaliar as consequências de mudar o sinal em um fio, precisamos especifica
 
 **Exercício 3.31:** A função interna `accept_action_function` definida em `make_wire` especifica que, quando uma nova função de ação é adicionada a um fio, a função é imediatamente executada. Explique por que essa inicialização é necessária. Em particular, trace através do circuito meio-somador na figura 3.25 e diga como os valores de saída do sistema seriam computados se não executássemos as funções de ação de cada fio recém-adicionado.
 
+<CircuitDiagram type="half-adder" />
+
+**Figura 3.25:** Meio-somador (half-adder). Este circuito soma dois bits A e B, produzindo uma soma S e um vai-um (carry) C. O circuito usa portas XOR e AND para computar o resultado.
+
 ## A agenda
 
 A única coisa que falta em nosso simulador é `after_delay`. A ideia aqui é que mantemos uma estrutura de dados, chamada *agenda*, que contém um cronograma de coisas para fazer. A agenda seguinte, a qual podemos criar, implementa a agenda como um par consistindo do tempo atual e uma fila de segmentos de tempo. Cada segmento de tempo é um par consistindo de um número (o tempo) e uma fila que contém os procedimentos que estão programados para serem executados durante esse segmento de tempo.
@@ -183,6 +192,10 @@ function half_adder(a, b, s, c) {
 ```
 
 O somador completo é mostrado na Figura 3.26. A implementação é direta:
+
+<CircuitDiagram type="full-adder" />
+
+**Figura 3.26:** Somador completo (full-adder). Este circuito soma três bits (A, B e carry de entrada C_in), produzindo uma soma S e um carry de saída C_out. O circuito é construído usando dois meio-somadores e uma porta OR.
 
 ```javascript
 function full_adder(a, b, c_in, sum, c_out) {
