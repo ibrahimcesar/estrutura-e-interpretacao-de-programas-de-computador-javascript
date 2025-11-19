@@ -1,15 +1,362 @@
-# 4.3.2 Exemplos de Programas Não-Determinísticos
+# 4.3.2 Exemplos de Programas Não Determinísticos
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo original está sendo convertido do formato fonte para o formato Docusaurus/MDX.
+A seção 4.3.3 descreve a implementação do avaliador `amb`. Primeiro, no entanto, damos alguns exemplos de como ele pode ser usado. A vantagem da programação não determinística é que podemos suprimir os detalhes de como a busca é realizada, assim expressando nossos programas em um nível mais alto de abstração.
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+## Quebra-cabeças Lógicos
 
-## Próximos Passos
+O seguinte quebra-cabeça (adaptado de Dinesman 1968) é típico de uma grande classe de quebra-cabeças lógicos simples:
 
-Esta seção abordará:
-- Exemplos práticos de programação não-determinística
-- Uso de `amb` para resolver problemas de busca
-- Casos de uso e aplicações
+> A empresa de software Gargle está se expandindo, e Alyssa, Ben, Cy, Lem e Louis estão se mudando para uma fileira de cinco escritórios privativos em um novo edifício. Alyssa não se muda para o último escritório. Ben não se muda para o primeiro escritório. Cy não fica nem no primeiro nem no último escritório. Lem se muda para um escritório depois do de Ben. O escritório de Louis não é ao lado do de Cy. O escritório de Cy não é ao lado do de Ben. Quem se muda para qual escritório?
 
+Podemos determinar quem se muda para qual escritório de forma direta enumerando todas as possibilidades e impondo as restrições dadas:[^1]
+
+```javascript
+function office_move() {
+    const alyssa = amb(1, 2, 3, 4, 5);
+    const ben = amb(1, 2, 3, 4, 5);
+    const cy = amb(1, 2, 3, 4, 5);
+    const lem = amb(1, 2, 3, 4, 5);
+    const louis = amb(1, 2, 3, 4, 5);
+    require(distinct(list(alyssa, ben, cy, lem, louis)));
+    require(alyssa !== 5);
+    require(ben !== 1);
+    require(cy !== 5);
+    require(cy !== 1);
+    require(lem > ben);
+    require(math_abs(louis - cy) !== 1);
+    require(math_abs(cy - ben) !== 1);
+    return list(list("alyssa", alyssa),
+                list("ben", ben),
+                list("cy", cy),
+                list("lem", lem),
+                list("louis", louis));
+}
+```
+
+[^1]: Nosso programa usa a seguinte função para determinar se os elementos de uma lista são distintos:
+    ```javascript
+    function distinct(items) {
+        return is_null(items)
+               ? true
+               : is_null(tail(items))
+               ? true
+               : is_null(member(head(items), tail(items)))
+               ? distinct(tail(items))
+               : false;
+    }
+    ```
+
+Avaliar a expressão `office_move()` produz o resultado
+
+```javascript
+list(list("alyssa", 3), list("ben", 2), list("cy", 4),
+     list("lem", 5), list("louis", 1))
+```
+
+Embora esta função simples funcione, ela é muito lenta. Os exercícios 4.37 e 4.38 discutem algumas possíveis melhorias.
+
+<Exercise id="4.35">
+
+Modifique a função de mudança de escritório para omitir a exigência de que o escritório de Louis não seja ao lado do de Cy. Quantas soluções existem para este quebra-cabeça modificado?
+
+</Exercise>
+
+<Exercise id="4.36">
+
+A ordem das restrições na função de mudança de escritório afeta a resposta? Afeta o tempo para encontrar uma resposta? Se você acha que importa, demonstre um programa mais rápido obtido do dado reordenando as restrições. Se você acha que não importa, argumente seu caso.
+
+</Exercise>
+
+<Exercise id="4.37">
+
+No problema de mudança de escritório, quantos conjuntos de atribuições há de pessoas para escritórios, tanto antes quanto depois da exigência de que as atribuições de escritório sejam distintas? É muito ineficiente gerar todas as atribuições possíveis de pessoas para escritórios e depois deixar para o backtracking eliminá-las. Por exemplo, a maioria das restrições depende de apenas uma ou duas das nomes, pessoa-escritório, e podem assim ser impostas antes que escritórios tenham sido selecionados para todas as pessoas. Escreva e demonstre uma função não determinística muito mais eficiente que resolva este problema baseando-se em gerar apenas as possibilidades que não são já descartadas por restrições anteriores.
+
+</Exercise>
+
+<Exercise id="4.38">
+
+Escreva um programa JavaScript comum para resolver o quebra-cabeça de mudança de escritório.
+
+</Exercise>
+
+<Exercise id="4.39">
+
+Resolva o seguinte quebra-cabeça "Mentirosos" (adaptado de Phillips 1934):
+
+> Alyssa, Cy, Eva, Lem e Louis se encontram para um almoço de negócios no SoSoService. Suas refeições chegam uma após a outra, um tempo considerável depois que fizeram seus pedidos. Para entreter Ben, que os espera de volta no escritório para uma reunião, eles decidem cada um fazer uma declaração verdadeira e uma falsa sobre seus pedidos:
+> - Alyssa: "A refeição de Lem chegou em segundo. A minha chegou em terceiro."
+> - Cy: "A minha chegou primeiro. A de Eva chegou em segundo."
+> - Eva: "A minha chegou em terceiro, e a do pobre Cy chegou por último."
+> - Lem: "A minha chegou em segundo. A de Louis chegou em quarto."
+> - Louis: "A minha chegou em quarto. A refeição de Alyssa chegou primeiro."
+>
+> Qual foi a ordem real em que os cinco comensais receberam suas refeições?
+
+</Exercise>
+
+<Exercise id="4.40">
+
+Use o avaliador `amb` para resolver o seguinte quebra-cabeça (adaptado de Phillips 1961):
+
+> Alyssa, Ben, Cy, Eva e Louis cada um escolhe um capítulo diferente do SICP JS e resolve todos os exercícios naquele capítulo. Louis resolve os exercícios no capítulo "Functions", Alyssa os do capítulo "Data", e Cy os do capítulo "State". Eles decidem verificar o trabalho uns dos outros, e Alyssa se oferece para verificar os exercícios do capítulo "Meta". Os exercícios do capítulo "Register Machines" são resolvidos por Ben e verificados por Louis. A pessoa que verifica os exercícios do capítulo "Functions" resolve os exercícios que são verificados por Eva. Quem verifica os exercícios do capítulo "Data"?
+
+Tente escrever o programa para que ele rode eficientemente (veja exercício 4.37). Determine também quantas soluções existem se não nos for dito que Alyssa verifica os exercícios do capítulo "Meta".
+
+</Exercise>
+
+<Exercise id="4.41">
+
+O exercício 2.42 descreveu o "quebra-cabeça das oito rainhas" de colocar rainhas em um tabuleiro de xadrez de modo que nenhuma duas se ataquem. Escreva um programa não determinístico para resolver este quebra-cabeça.
+
+</Exercise>
+
+## Análise sintática de linguagem natural
+
+Programas projetados para aceitar linguagem natural como entrada geralmente começam tentando _analisar sintaticamente_ a entrada, isto é, fazer a entrada corresponder a alguma estrutura gramatical. Por exemplo, poderíamos tentar reconhecer sentenças simples consistindo de um artigo seguido por um substantivo seguido por um verbo, como "The cat eats." Para realizar tal análise, devemos ser capazes de identificar as classes gramaticais de palavras individuais. Poderíamos começar com algumas listas que classificam várias palavras:[^2]
+
+```javascript
+const nouns = list("noun", "student", "professor", "cat", "class");
+
+const verbs = list("verb", "studies", "lectures", "eats", "sleeps");
+
+const articles = list("article", "the", "a");
+```
+
+[^2]: Aqui usamos a convenção de que o primeiro elemento de cada lista designa a classe gramatical para o resto das palavras na lista.
+
+Também precisamos de uma _gramática_, isto é, um conjunto de regras descrevendo como elementos gramaticais são compostos a partir de elementos mais simples. Uma gramática muito simples poderia estipular que uma sentença sempre consiste de duas partes—uma frase nominal seguida por um verbo—e que uma frase nominal consiste de um artigo seguido por um substantivo. Com esta gramática, a sentença "The cat eats" é analisada da seguinte forma:
+
+```javascript
+list("sentence",
+     list("noun-phrase", list("article", "the"), list("noun", "cat"),
+     list("verb", "eats"))
+```
+
+Podemos gerar tal análise com um programa simples que tem funções separadas para cada uma das regras gramaticais. Para analisar uma sentença, identificamos suas duas partes constituintes e retornamos uma lista desses dois elementos, marcada com o símbolo `sentence`:
+
+```javascript
+function parse_sentence() {
+    return list("sentence",
+                parse_noun_phrase(),
+                parse_word(verbs));
+}
+```
+
+Uma frase nominal, similarmente, é analisada encontrando um artigo seguido por um substantivo:
+
+```javascript
+function parse_noun_phrase() {
+    return list("noun-phrase",
+                parse_word(articles),
+                parse_word(nouns));
+}
+```
+
+No nível mais baixo, a análise sintática se resume a verificar repetidamente que a próxima palavra ainda não analisada é um membro da lista de palavras para a classe gramatical requerida. Para implementar isso, mantemos uma variável global `not_yet_parsed`, que é a entrada que ainda não foi analisada. Cada vez que verificamos uma palavra, exigimos que `not_yet_parsed` não esteja vazia e que ela deva começar com uma palavra da lista designada. Se sim, removemos aquela palavra de `not_yet_parsed` e retornamos a palavra junto com sua classe gramatical (que é encontrada no cabeçalho da lista):[^3]
+
+```javascript
+function parse_word(word_list) {
+    require(! is_null(not_yet_parsed));
+    require(! is_null(member(head(not_yet_parsed), tail(word_list))));
+    const found_word = head(not_yet_parsed);
+    not_yet_parsed = tail(not_yet_parsed);
+    return list(head(word_list), found_word);
+}
+```
+
+[^3]: Note que `parse_word` usa atribuição para modificar a lista de entrada ainda não analisada. Para que isso funcione, nosso avaliador `amb` deve desfazer os efeitos de atribuições quando ele retrocede.
+
+Para iniciar a análise sintática, tudo o que precisamos fazer é definir `not_yet_parsed` como a entrada inteira, tentar analisar uma sentença e verificar que nada sobrou:
+
+```javascript
+let not_yet_parsed = null;
+```
+
+```javascript
+function parse_input(input) {
+    not_yet_parsed = input;
+    const sent = parse_sentence();
+    require(is_null(not_yet_parsed));
+    return sent;
+}
+```
+
+Agora podemos testar o analisador e verificar que ele funciona para nossa sentença de teste simples:
+
+```javascript
+parse_input(list("the",  "cat",  "eats"));
+```
+
+O avaliador `amb` é útil aqui porque é conveniente expressar as restrições de análise com a ajuda de `require`. Busca automática e backtracking realmente compensam, no entanto, quando consideramos gramáticas mais complexas onde há escolhas de como as unidades podem ser decompostas.
+
+Vamos adicionar à nossa gramática uma lista de preposições:
+
+```javascript
+const prepositions = list("prep", "for", "to", "in", "by", "with");
+```
+
+e definir uma frase preposicional (por exemplo, "for the cat") como sendo uma preposição seguida por uma frase nominal:
+
+```javascript
+function parse_prepositional_phrase() {
+    return list("prep-phrase",
+                parse_word(prepositions),
+                parse_noun_phrase());
+}
+```
+
+Agora podemos definir uma sentença como sendo uma frase nominal seguida por uma frase verbal, onde uma frase verbal pode ser ou um verbo ou uma frase verbal estendida por uma frase preposicional:[^4]
+
+```javascript
+function parse_sentence() {
+    return list("sentence",
+                parse_noun_phrase(),
+                parse_verb_phrase());
+}
+function parse_verb_phrase() {
+    function maybe_extend(verb_phrase) {
+        return amb(verb_phrase,
+                   maybe_extend(list("verb-phrase",
+                                     verb_phrase,
+                                     parse_prepositional_phrase())));
+    }
+    return maybe_extend(parse_word(verbs));
+}
+```
+
+[^4]: Observe que esta definição é recursiva—um verbo pode ser seguido por qualquer número de frases preposicionais.
+
+Já que estamos nisso, também podemos elaborar a definição de frases nominais para permitir coisas como "a cat in the class." O que costumávamos chamar de frase nominal, agora chamaremos de frase nominal simples, e uma frase nominal agora será ou uma frase nominal simples ou uma frase nominal estendida por uma frase preposicional:
+
+```javascript
+function parse_simple_noun_phrase() {
+    return list("simple-noun-phrase",
+                parse_word(articles),
+                parse_word(nouns));
+}
+function parse_noun_phrase() {
+    function maybe_extend(noun_phrase) {
+        return amb(noun_phrase,
+                   maybe_extend(list("noun-phrase",
+                                     noun_phrase,
+                                     parse_prepositional_phrase())));
+    }
+    return maybe_extend(parse_simple_noun_phrase());
+}
+```
+
+Nossa nova gramática nos permite analisar sentenças mais complexas. Por exemplo
+
+```javascript
+parse_input(list("the", "student", "with", "the", "cat",
+                 "sleeps", "in", "the", "class"));
+```
+
+produz
+
+```javascript
+list("sentence",
+     list("noun-phrase",
+          list("simple-noun-phrase",
+               list("article", "the"), list("noun", "student")),
+          list("prep-phrase", list("prep", "with"),
+               list("simple-noun-phrase",
+                    list("article", "the"),
+                    list("noun", "cat")))),
+     list("verb-phrase",
+          list("verb", "sleeps"),
+          list("prep-phrase", list("prep", "in"),
+               list("simple-noun-phrase",
+                    list("article", "the"),
+                    list("noun", "class")))))
+```
+
+Observe que uma entrada dada pode ter mais de uma análise legal. Na sentença "The professor lectures to the student with the cat," pode ser que o professor esteja palestrando com o gato, ou que o estudante tenha o gato. Nosso programa não determinístico encontra ambas as possibilidades:
+
+```javascript
+parse_input(list("the", "professor", "lectures",
+                 "to", "the", "student", "with", "the", "cat"));
+```
+
+produz
+
+```javascript
+list("sentence",
+     list("simple-noun-phrase",
+          list("article", "the"), list("noun", "professor")),
+     list("verb-phrase",
+          list("verb-phrase",
+               list("verb", "lectures"),
+               list("prep-phrase", list("prep", "to"),
+                    list("simple-noun-phrase",
+                    list("article", "the"),
+		    list("noun", "student")))),
+          list("prep-phrase", list("prep", "with"),
+               list("simple-noun-phrase",
+                    list("article", "the"),
+                    list("noun", "cat")))))
+```
+
+Pedir ao avaliador para tentar novamente produz
+
+```javascript
+list("sentence",
+     list("simple-noun-phrase",
+          list("article", "the"), list("noun", "professor")),
+     list("verb-phrase",
+          list("verb", "lectures"),
+          list("prep-phrase", list("prep", "to"),
+               list("noun-phrase",
+                    list("simple-noun-phrase",
+                         list("article", "the"),
+                         list("noun", "student")),
+                    list("prep-phrase", list("prep", "with"),
+                         list("simple-noun-phrase",
+                              list("article", "the"),
+                              list("noun", "cat")))))))
+```
+
+<Exercise id="4.42">
+
+Com a gramática dada acima, a seguinte sentença pode ser analisada de cinco maneiras diferentes: "The professor lectures to the student in the class with the cat." Forneça as cinco análises e explique as diferenças em nuances de significado entre elas.
+
+</Exercise>
+
+<Exercise id="4.43">
+
+Os avaliadores nas seções 4.1.1 e 4.2 não determinam em qual ordem as expressões de argumento são avaliadas. Veremos que o avaliador `amb` as avalia da esquerda para a direita. Explique por que nosso programa de análise não funcionaria se as expressões de argumento fossem avaliadas em alguma outra ordem.
+
+</Exercise>
+
+<Exercise id="4.44">
+
+Louis Reasoner sugere que, já que uma frase verbal é ou um verbo ou uma frase verbal seguida por uma frase preposicional, seria muito mais direto declarar a função `parse_verb_phrase` da seguinte forma (e similarmente para frases nominais):
+
+```javascript
+function parse_verb_phrase() {
+    return amb(parse_word(verbs),
+               list("verb-phrase",
+                    parse_verb_phrase(),
+                    parse_prepositional_phrase()));
+}
+```
+
+Isso funciona? O comportamento do programa muda se intercambiarmos a ordem das expressões no `amb`?
+
+</Exercise>
+
+<Exercise id="4.45">
+
+Estenda a gramática dada acima para lidar com sentenças mais complexas. Por exemplo, você poderia estender frases nominais e frases verbais para incluir adjetivos e advérbios, ou poderia lidar com sentenças compostas.[^5]
+
+</Exercise>
+
+[^5]: Este tipo de gramática pode se tornar arbitrariamente complexa, mas ela é apenas um brinquedo no que diz respeito à compreensão real de linguagem. A compreensão real de linguagem natural por computador requer uma mistura elaborada de análise sintática e interpretação de significado. Por outro lado, até analisadores de brinquedo podem ser úteis no suporte a linguagens de comando flexíveis para programas como sistemas de recuperação de informação. Winston 1992 discute abordagens computacionais para compreensão de linguagem real e também as aplicações de gramáticas simples a linguagens de comando.
+
+<Exercise id="4.46">
+
+Alyssa P. Hacker está mais interessada em gerar sentenças interessantes do que em analisá-las. Ela raciocina que simplesmente mudando a função `parse_word` para que ela ignore a "sentença de entrada" e em vez disso sempre tenha sucesso e gere uma palavra apropriada, podemos usar os programas que construímos para análise para fazer geração em vez disso. Implemente a ideia de Alyssa, e mostre a primeira meia dúzia ou mais de sentenças geradas.[^6]
+
+</Exercise>
+
+[^6]: Embora a ideia de Alyssa funcione muito bem (e seja surpreendentemente simples), as sentenças que ela gera são um pouco chatas—elas não amostram as sentenças possíveis desta linguagem de uma maneira muito interessante. Na verdade, a gramática é altamente recursiva em muitos lugares, e a técnica de Alyssa "cai em" uma dessas recursões e fica presa. Veja o exercício 4.50 para uma maneira de lidar com isso.
