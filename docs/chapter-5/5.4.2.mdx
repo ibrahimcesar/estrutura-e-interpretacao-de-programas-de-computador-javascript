@@ -1,46 +1,269 @@
 ---
-title: 5.4.2 Avaliação de Sequências e Recursão em Cauda
+title: 5.4.2 Avaliando Aplicações de Funções
 ---
 
-# 5.4.2 Avaliação de Sequências e Recursão em Cauda
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.4.2 Avaliando Aplicações de Funções
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+Uma aplicação de função é especificada por uma combinação contendo uma expressão de função e expressões de argumento. A expressão de função é uma subexpressão cujo valor é uma função, e as expressões de argumento são subexpressões cujos valores são os argumentos aos quais a função deve ser aplicada. O `evaluate` metacircular trata aplicações chamando a si mesmo recursivamente para avaliar cada elemento da combinação, e então passando os resultados para `apply`, que realiza a aplicação de função propriamente dita. O avaliador de controle explícito faz a mesma coisa; essas chamadas recursivas são implementadas por instruções `go_to`, juntamente com uso da pilha para salvar registradores que serão restaurados após o retorno da chamada recursiva. Antes de cada chamada, teremos cuidado para identificar quais registradores devem ser salvos (porque seus valores serão necessários depois).[^1]
 
-## Visão Geral
+Assim como no avaliador metacircular, combinações de operadores são transformadas em aplicações de funções primitivas correspondentes aos operadores. Isso ocorre em `ev_operator_combination`, que realiza essa transformação no lugar em `comp` e passa para `ev_application`.[^2]
 
-Esta seção crucial explica a implementação de recursão em cauda (tail recursion):
+Começamos a avaliação de uma aplicação avaliando a expressão de função para produzir uma função, que será aplicada posteriormente às expressões de argumento avaliadas. Para avaliar a expressão de função, movemos ela para o registrador `comp` e vamos para `eval_dispatch`. O ambiente no registrador `env` já é o correto no qual avaliar a expressão de função. No entanto, salvamos `env` porque vamos precisar dele depois para avaliar as expressões de argumento. Também extraímos as expressões de argumento em `unev` e salvamos isso na pilha. Configuramos `continue` de modo que `eval_dispatch` retome em `ev_appl_did_function_expression` após a expressão de função ter sido avaliada. Primeiro, no entanto, salvamos o valor antigo de `continue`, que diz ao controlador onde continuar após a aplicação.
 
-- Avaliação de sequências de declarações
-- Identificação de posições de cauda (tail positions)
-- Implementação eficiente de recursão em cauda
-- Diferença entre processos iterativos e recursivos no nível de máquina
+<CodePlayground
+  code={`"ev_operator_combination",
+  assign("comp", list(op("operator_combination_to_application"),
+                      reg("comp"), reg("env"))),
+"ev_application",
+  save("continue"),
+  save("env"),
+  assign("unev", list(op("arg_expressions"), reg("comp"))),
+  save("unev"),
+  assign("comp", list(op("function_expression"), reg("comp"))),
+  assign("continue", label("ev_appl_did_function_expression")),
+  go_to(label("eval_dispatch")),`}
+  height={300}
+  showLineNumbers={true}
+/>
 
-## Tópicos Principais
+## Avaliação de argumentos
 
-- Tail call optimization (otimização de chamadas em cauda)
-- Tratamento de sequências
-- Posições de cauda em diferentes construtos
-- Uso eficiente de pilha
-- Implementação de processos iterativos com espaço constante
+Ao retornar da avaliação da expressão de função, prosseguimos para avaliar as expressões de argumento da aplicação e acumular os argumentos resultantes em uma lista, mantida em `argl`. (Isso é como a avaliação de uma sequência de instruções, exceto que coletamos os valores.) Primeiro restauramos as expressões de argumento não avaliadas e o ambiente. Inicializamos `argl` como uma lista vazia. Então atribuímos ao registrador `fun` a função que foi produzida ao avaliar a expressão de função. Se não há expressões de argumento, vamos diretamente para `apply_dispatch`. Caso contrário, salvamos `fun` na pilha e iniciamos o laço de avaliação de argumentos:[^3]
 
-## Análise de Recursão em Cauda
+<CodePlayground
+  code={`"ev_appl_did_function_expression",
+  restore("unev"), // as expressões de argumento
+  restore("env"),
+  assign("argl", list(op("empty_arglist"))),
+  assign("fun", reg("val")), // a função
+  test(list(op("is_null"), reg("unev"))),
+  branch(label("apply_dispatch")),
+  save("fun"),`}
+  height={250}
+  showLineNumbers={true}
+/>
 
-- Identificação de chamadas em posição de cauda
-- Reutilização de continuações
-- Não salvamento de estado desnecessário
-- Comparação com avaliador metacircular
+Cada ciclo do laço de avaliação de argumentos avalia uma expressão de argumento da lista em `unev` e acumula o resultado em `argl`. Para avaliar uma expressão de argumento, colocamos ela no registrador `comp` e vamos para `eval_dispatch`, após configurar `continue` de modo que a execução retome com a fase de acumulação de argumentos. Mas primeiro salvamos os argumentos acumulados até agora (mantidos em `argl`), o ambiente (mantido em `env`), e as expressões de argumento restantes a serem avaliadas (mantidas em `unev`). Um caso especial é feito para a avaliação da última expressão de argumento, que é tratada em `ev_appl_last_arg`.
 
-## Exercícios
+<CodePlayground
+  code={`"ev_appl_argument_expression_loop",
+  save("argl"),
+  assign("comp", list(op("head"), reg("unev"))),
+  test(list(op("is_last_argument_expression"), reg("unev"))),
+  branch(label("ev_appl_last_arg")),
+  save("env"),
+  save("unev"),
+  assign("continue", label("ev_appl_accumulate_arg")),
+  go_to(label("eval_dispatch")),`}
+  height={300}
+  showLineNumbers={true}
+/>
 
-Exercícios sobre:
-- Análise de uso de pilha
-- Modificações para suportar/não suportar tail call optimization
-- Comparação de desempenho
+Quando uma expressão de argumento foi avaliada, o valor é acumulado na lista mantida em `argl`. A expressão de argumento é então removida da lista de expressões de argumento não avaliadas em `unev`, e o laço de avaliação de argumentos continua.
+
+<CodePlayground
+  code={`"ev_appl_accumulate_arg",
+  restore("unev"),
+  restore("env"),
+  restore("argl"),
+  assign("argl", list(op("adjoin_arg"), reg("val"), reg("argl"))),
+  assign("unev", list(op("tail"), reg("unev"))),
+  go_to(label("ev_appl_argument_expression_loop")),`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+A avaliação da última expressão de argumento é tratada de forma diferente, assim como a última instrução em uma sequência. Não há necessidade de salvar o ambiente ou a lista de expressões de argumento não avaliadas antes de ir para `eval_dispatch`, pois elas não serão necessárias após a última expressão de argumento ser avaliada. Assim, retornamos da avaliação para um ponto de entrada especial `ev_appl_accum_last_arg`, que restaura a lista de argumentos, acumula o novo argumento, restaura a função salva, e vai realizar a aplicação.[^4]
+
+<CodePlayground
+  code={`"ev_appl_last_arg",
+  assign("continue", label("ev_appl_accum_last_arg")),
+  go_to(label("eval_dispatch")),
+"ev_appl_accum_last_arg",
+  restore("argl"),
+  assign("argl", list(op("adjoin_arg"), reg("val"), reg("argl"))),
+  restore("fun"),
+  go_to(label("apply_dispatch")),`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+Os detalhes do laço de avaliação de argumentos determinam a ordem na qual o interpretador avalia as expressões de argumento de uma combinação (por exemplo, da esquerda para a direita ou da direita para a esquerda—veja exercício 4.1). Esta ordem não é determinada pelo avaliador metacircular, que herda sua estrutura de controle do JavaScript subjacente no qual está implementado.[^5]
+
+Como usamos `head` em `ev_appl_argument_expression_loop` para extrair expressões de argumento sucessivas de `unev` e `tail` em `ev_appl_accumulate_arg` para extrair o resto das expressões de argumento, o avaliador de controle explícito avaliará as expressões de argumento de uma combinação em ordem da esquerda para a direita, conforme exigido pela especificação ECMAScript.
+
+## Aplicação de Função
+
+O ponto de entrada `apply_dispatch` corresponde à função `apply` do avaliador metacircular. Quando chegamos a `apply_dispatch`, o registrador `fun` contém a função a ser aplicada e `argl` contém a lista de argumentos avaliados aos quais ela deve ser aplicada. O valor salvo de `continue` (originalmente passado para `eval_dispatch` e salvo em `ev_application`), que diz onde retornar com o resultado da aplicação de função, está na pilha. Quando a aplicação está completa, o controlador transfere para o ponto de entrada especificado pelo `continue` salvo, com o resultado da aplicação em `val`. Assim como no `apply` metacircular, há dois casos a considerar. Ou a função a ser aplicada é uma primitiva ou é uma função composta.
+
+<CodePlayground
+  code={`"apply_dispatch",
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_apply")),
+  test(list(op("is_compound_function"), reg("fun"))),
+  branch(label("compound_apply")),
+  go_to(label("unknown_function_type")),`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+Assumimos que cada primitiva é implementada de modo a obter seus argumentos de `argl` e colocar seu resultado em `val`. Para especificar como a máquina trata primitivas, teríamos que fornecer uma sequência de instruções do controlador para implementar cada primitiva e arranjar para `primitive_apply` despachar para as instruções para a primitiva identificada pelos conteúdos de `fun`. Como estamos interessados na estrutura do processo de avaliação em vez dos detalhes das primitivas, simplesmente usaremos uma operação `apply_primitive_function` que aplica a função em `fun` aos argumentos em `argl`. Para o propósito de simular o avaliador com o simulador da seção 5.2, usamos a função `apply_primitive_function`, que chama o sistema JavaScript subjacente para realizar a aplicação, assim como fizemos para o avaliador metacircular na seção 4.1.1. Após calcular o valor da aplicação primitiva, restauramos `continue` e vamos para o ponto de entrada designado.
+
+<CodePlayground
+  code={`"primitive_apply",
+  assign("val", list(op("apply_primitive_function"),
+                     reg("fun"), reg("argl"))),
+  restore("continue"),
+  go_to(reg("continue")),`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+A sequência de instruções rotulada `compound_apply` especifica a aplicação de funções compostas. Para aplicar uma função composta, procedemos de maneira similar ao que fizemos no avaliador metacircular. Construímos um frame que vincula os parâmetros da função aos argumentos, usamos esse frame para estender o ambiente transportado pela função, e avaliamos nesse ambiente estendido o corpo da função.
+
+Neste ponto a função composta está no registrador `fun` e seus argumentos estão em `argl`. Extraímos os parâmetros da função em `unev` e seu ambiente em `env`. Então substituímos o ambiente em `env` pelo ambiente construído ao estendê-lo com vinculações dos parâmetros aos argumentos dados. Então extraímos o corpo da função em `comp`. O próximo passo natural seria restaurar o `continue` salvo e prosseguir para `eval_dispatch` para avaliar o corpo e ir para a continuação restaurada com o resultado em `val`, como é feito para a última instrução de uma sequência. Mas há uma complicação!
+
+A complicação tem dois aspectos. Um é que em qualquer ponto na avaliação do corpo, uma instrução return pode exigir que a função retorne o valor da expressão de retorno como o valor do corpo. Mas uma instrução return pode estar aninhada arbitrariamente profundamente no corpo; então a pilha no momento em que a instrução return é encontrada não é necessariamente a pilha que é necessária para um retorno da função. Uma maneira de tornar possível ajustar a pilha para o retorno é colocar um *marcador* na pilha que pode ser encontrado pelo código de retorno. Isso é implementado pela instrução `push_marker_to_stack`. O código de retorno pode então usar a instrução `revert_stack_to_marker` para restaurar a pilha ao local indicado pelo marcador antes de avaliar a expressão de retorno.[^6]
+
+O outro aspecto da complicação é que se a avaliação do corpo termina sem executar uma instrução return, o valor do corpo deve ser `undefined`. Para tratar isso, configuramos o registrador `continue` para apontar para o ponto de entrada `return_undefined` antes de ir para `eval_dispatch` para avaliar o corpo. Se uma instrução return não é encontrada durante a avaliação do corpo, a avaliação do corpo continuará em `return_undefined`.
+
+<CodePlayground
+  code={`"compound_apply",
+  assign("unev", list(op("function_parameters"), reg("fun"))),
+  assign("env", list(op("function_environment"), reg("fun"))),
+  assign("env", list(op("extend_environment"),
+                     reg("unev"), reg("argl"), reg("env"))),
+  assign("comp", list(op("function_body"), reg("fun"))),
+  push_marker_to_stack(),
+  assign("continue", label("return_undefined")),
+  go_to(label("eval_dispatch")),`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+Os únicos lugares no interpretador onde o registrador `env` recebe um novo valor são `compound_apply` e `ev_block` (seção 5.4.3). Assim como no avaliador metacircular, o novo ambiente para avaliação do corpo de uma função é construído a partir do ambiente transportado pela função, juntamente com a lista de argumentos e a lista correspondente de nomes a serem vinculados.
+
+Quando uma instrução return é avaliada em `ev_return`, usamos a instrução `revert_stack_to_marker` para restaurar a pilha ao seu estado no início da chamada de função removendo todos os valores da pilha até e incluindo o marcador. Como consequência, `restore("continue")` irá restaurar a continuação da chamada de função, que foi salva em `ev_application`. Então prosseguimos para avaliar a expressão de retorno, cujo resultado será colocado em `val` e assim será o valor retornado da função quando continuarmos após a avaliação da expressão de retorno.
+
+<CodePlayground
+  code={`"ev_return",
+  revert_stack_to_marker(),
+  restore("continue"),
+  assign("comp", list(op("return_expression"), reg("comp"))),
+  go_to(label("eval_dispatch")),`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+Se nenhuma instrução return é encontrada durante a avaliação do corpo da função, a avaliação continua em `return_undefined`, a continuação que foi configurada em `compound_apply`. Para retornar `undefined` da função, colocamos `undefined` em `val` e vamos para o ponto de entrada que foi colocado na pilha em `ev_application`. Antes de podermos restaurar essa continuação da pilha, no entanto, devemos remover o marcador que foi salvo em `compound_apply`.
+
+<CodePlayground
+  code={`"return_undefined",
+  revert_stack_to_marker(),
+  restore("continue"),
+  assign("val", constant(undefined)),
+  go_to(reg("continue")),`}
+  height={180}
+  showLineNumbers={true}
+/>
+
+## Instruções Return e Recursão em Cauda
+
+No capítulo 1 dissemos que o processo descrito por uma função como
+
+```javascript
+function sqrt_iter(guess, x) {
+    return is_good_enough(guess, x)
+           ? guess
+           : sqrt_iter(improve(guess, x), x);
+}
+```
+
+é um processo iterativo. Embora a função seja sintaticamente recursiva (definida em termos de si mesma), não é logicamente necessário para um avaliador salvar informação ao passar de uma chamada para `sqrt_iter` para a próxima.[^7] Um avaliador que pode executar uma função como `sqrt_iter` sem exigir armazenamento crescente conforme a função continua a se chamar é chamado de avaliador *recursivo em cauda* (tail-recursive).
+
+A implementação metacircular do avaliador no capítulo 4 não é recursiva em cauda. Ela implementa uma instrução return como um construtor de um objeto de valor de retorno contendo o valor a ser retornado e inspeciona o resultado de uma chamada de função para ver se é tal objeto. Se a avaliação do corpo de uma função produz um objeto de valor de retorno, o valor de retorno da função é o conteúdo desse objeto; caso contrário, o valor de retorno é `undefined`. Tanto a construção do objeto de valor de retorno quanto a inspeção eventual do resultado da chamada de função são operações adiadas, que levam a um acúmulo de informação na pilha.
+
+Nosso avaliador de controle explícito *é* recursivo em cauda, porque não precisa encapsular valores de retorno para inspeção e assim evita o acúmulo de pilha de operações adiadas. Em `ev_return`, para avaliar a expressão que calcula o valor de retorno de uma função, transferimos diretamente para `eval_dispatch` sem nada mais na pilha do que imediatamente antes da chamada de função. Conseguimos isso desfazendo quaisquer salvamentos na pilha pela função (que são inúteis porque estamos retornando) usando `revert_stack_to_marker`. Então, em vez de arranjar para `eval_dispatch` voltar aqui e *então* restaurar `continue` da pilha e continuar naquele ponto de entrada, restauramos `continue` da pilha *antes* de ir para `eval_dispatch` de modo que `eval_dispatch` continuará naquele ponto de entrada após avaliar a expressão. Finalmente, transferimos para `eval_dispatch` sem salvar qualquer informação na pilha. Assim, quando procedemos para avaliar uma expressão de retorno, a pilha é a mesma de imediatamente antes da chamada à função cujo valor de retorno estamos prestes a calcular. Portanto, avaliar uma expressão de retorno—mesmo que seja uma chamada de função (como em `sqrt_iter`, onde a expressão condicional se reduz a uma chamada para `sqrt_iter`)—não causará acúmulo de informação na pilha.[^8]
+
+Se não pensássemos em tirar proveito do fato de que é desnecessário manter a informação inútil na pilha durante a avaliação de uma expressão de retorno, poderíamos ter adotado a abordagem direta de avaliar a expressão de retorno, voltar para restaurar a pilha e finalmente continuar no ponto de entrada que está aguardando o resultado da chamada de função:
+
+```javascript
+"ev_return",  // implementação alternativa: não recursiva em cauda
+  assign("comp", list(op("return_expression"), reg("comp"))),
+  assign("continue", label("ev_restore_stack")),
+  go_to(label("eval_dispatch")),
+"ev_restore_stack",
+  revert_stack_to_marker(),    // desfaz salvamentos na função atual
+  restore("continue"),         // desfaz salvamento em ev_application
+  go_to(reg("continue")),
+```
+
+Isso pode parecer uma pequena mudança em nosso código anterior para avaliação de instruções return: A única diferença é que atrasamos desfazer quaisquer salvamentos de registradores na pilha até após a avaliação da expressão de retorno. Mas essa mudança é fatal para a implementação recursiva em cauda, porque devemos agora voltar após avaliar a expressão de retorno para desfazer os salvamentos (inúteis) de registradores. Esses salvamentos extras se acumularão durante um ninho de chamadas de função. Consequentemente, processos como `sqrt_iter` exigirão espaço proporcional ao número de iterações em vez de exigir espaço constante. Essa diferença pode ser significativa. Por exemplo, com recursão em cauda, um laço infinito pode ser expresso usando apenas os mecanismos de chamada de função e retorno:
+
+```javascript
+function count(n) {
+    display(n);
+    return count(n + 1);
+}
+```
+
+Sem recursão em cauda, tal função eventualmente ficaria sem espaço na pilha, e expressar uma verdadeira iteração exigiria algum mecanismo de controle diferente de chamada de função.
+
+Note que nossa implementação JavaScript requer o uso de `return` para ser recursiva em cauda. Como o desfazer dos salvamentos de registradores ocorre em `ev_return`, remover `return` da função `count` acima fará com que ela eventualmente fique sem espaço na pilha. Isso explica o uso de `return` nos laços de driver infinitos no capítulo 4.
+
+### Exercício 5.25
+
+Explique como a pilha se acumula se `return` é removido de `count`:
+
+```javascript
+function count(n) {
+    display(n);
+    count(n + 1);
+}
+```
+
+### Exercício 5.26
+
+Implemente o equivalente de `push_marker_to_stack` usando `save` em `compound_apply` para armazenar um valor marcador especial na pilha. Implemente o equivalente de `revert_stack_to_marker` em `ev_return` e `return_undefined` como um laço que repetidamente realiza um `restore` até atingir o marcador. Note que isso exigirá restaurar um valor para um registrador diferente daquele do qual foi salvo. (Embora tenhamos cuidado para evitar isso em nosso avaliador, nossa implementação de pilha realmente permite isso. Veja exercício 5.11.) Isso é necessário porque a única maneira de retirar da pilha é restaurando para um registrador.
+
+Dica: Você precisará criar uma constante única para servir como marcador, por exemplo com `const marker = list("marker")`. Como `list` cria um novo par, ele não pode ser `===` a qualquer outra coisa na pilha.
+
+### Exercício 5.27
+
+Implemente `push_marker_to_stack` e `revert_stack_to_marker` como instruções de máquina de registradores, seguindo a implementação de `save` e `restore` na seção 5.2.1. Adicione funções `push_marker` e `pop_marker` para acessar pilhas, espelhando a implementação de `push` e `pop` na seção 5.2.1. Note que você não precisa realmente inserir um marcador na pilha. Em vez disso, você pode adicionar uma variável de estado local ao modelo de pilha para rastrear a posição do último `save` antes de cada `push_marker_to_stack`. Se você optar por colocar um marcador na pilha, veja a dica no exercício 5.26.
 
 ---
 
-**Nota**: Esta seção resolve o mistério de como implementações reais alcançam recursão em cauda eficiente.
+[^1]: Este é um ponto importante mas sutil na tradução de algoritmos de uma linguagem procedural, como JavaScript, para uma linguagem de máquina de registradores. Como alternativa a salvar apenas o que é necessário, poderíamos salvar todos os registradores (exceto `val`) antes de cada chamada recursiva. Isso é chamado de disciplina de *pilha enquadrada* (framed-stack). Isso funcionaria, mas poderia salvar mais registradores do que o necessário; isso poderia ser uma consideração importante em um sistema onde operações de pilha são caras. Salvar registradores cujos conteúdos não serão necessários depois também pode reter dados inúteis que poderiam de outra forma ser coletados como lixo, liberando espaço para ser reutilizado.
+
+[^2]: Assumimos que o transformador sintático `operator_combination_to_application` está disponível como uma operação de máquina. Em uma implementação real construída do zero, usaríamos nosso avaliador de controle explícito para interpretar um programa JavaScript que realiza transformações no nível de fonte como esta e `function_decl_to_constant_decl` em uma fase de sintaxe que roda antes da execução.
+
+[^3]: Adicionamos às funções de estrutura de dados do avaliador na seção 4.1.3 as duas funções seguintes para manipular listas de argumentos:
+
+```javascript
+function empty_arglist() { return null; }
+
+function adjoin_arg(arg, arglist) {
+    return append(arglist, list(arg));
+}
+```
+
+Também fazemos uso de uma função sintática adicional para testar a última expressão de argumento em uma aplicação:
+
+```javascript
+function is_last_argument_expression(arg_expression) {
+    return is_null(tail(arg_expression));
+}
+```
+
+[^4]: A otimização de tratar a última expressão de argumento especialmente é conhecida como *recursão em cauda evlis* (evlis tail recursion) (veja Wand 1980). Poderíamos ser um pouco mais eficientes no laço de avaliação de argumentos se fizéssemos da avaliação da primeira expressão de argumento um caso especial também. Isso nos permitiria adiar a inicialização de `argl` até após avaliar a primeira expressão de argumento, de modo a evitar salvar `argl` neste caso. O compilador na seção 5.5 realiza essa otimização. (Compare a função `construct_arglist` da seção 5.5.3.)
+
+[^5]: A ordem de avaliação de expressões de argumento pela função `list_of_values` no avaliador metacircular é determinada pela ordem de avaliação dos argumentos para `pair`, que é usado para construir a lista de argumentos. A versão de `list_of_values` na nota de rodapé 6 da seção 4.1 chama `pair` diretamente; a versão no texto usa `map`, que chama `pair`. (Veja exercício 4.1.)
+
+[^6]: As instruções especiais `push_marker_to_stack` e `revert_stack_to_marker` não são estritamente necessárias e poderiam ser implementadas explicitamente empurrando e removendo um valor marcador de e para a pilha. Qualquer coisa que não possa ser confundida com um valor no programa pode ser usada como marcador. Veja exercício 5.26.
+
+[^7]: Vimos na seção 5.1 como implementar tal processo com uma máquina de registradores que não tinha pilha; o estado do processo era armazenado em um conjunto fixo de registradores.
+
+[^8]: Esta implementação de recursão em cauda é uma variedade de uma técnica de otimização bem conhecida usada por muitos compiladores. Ao compilar uma função que termina com uma chamada de função, pode-se substituir a chamada por um salto para o ponto de entrada da função chamada. Incorporar essa estratégia no interpretador, como fizemos nesta seção, fornece a otimização uniformemente em toda a linguagem.

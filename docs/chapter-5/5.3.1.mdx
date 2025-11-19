@@ -1,46 +1,204 @@
 ---
-title: 5.3.1 Memória como Vetores
+title: 5.3.1 Representação de Memória
 ---
 
-# 5.3.1 Memória como Vetores
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.3.1 Representação de Memória
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+A memória de um computador convencional pode ser pensada como um array de compartimentos, cada um dos quais pode conter uma peça de informação. Cada compartimento tem um nome único, chamado de seu *endereço* ou *localização*. Sistemas de memória típicos fornecem duas operações primitivas: uma que busca os dados armazenados em uma localização especificada e uma que atribui novos dados a uma localização especificada. Endereços de memória podem ser incrementados para suportar acesso sequencial a algum conjunto de compartimentos. De forma mais geral, muitas operações importantes de dados requerem que endereços de memória sejam tratados como dados, que podem ser armazenados em localizações de memória e manipulados em registradores da máquina. A representação de estrutura de lista é uma aplicação de tal *aritmética de endereços*.
 
-## Visão Geral
+Para modelar a memória de um computador, usamos um novo tipo de estrutura de dados chamada *vetor*. Abstratamente, um vetor é um objeto de dado composto cujos elementos individuais podem ser acessados por meio de um índice inteiro em um tempo que é independente do índice.[^1] Para descrever operações de memória, usamos duas funções para manipular vetores:[^2]
 
-Esta seção explica como a memória é implementada usando vetores (arrays):
+- `vector_ref(vector, n)` retorna o n-ésimo elemento do vetor.
+- `vector_set(vector, n, value)` define o n-ésimo elemento do vetor para o valor designado.
 
-- Representação de pares usando vetores
-- Vetores `the_heads` e `the_tails`
-- Operações `head`, `tail` e `pair`
-- Gerenciamento de memória livre
-- Free list e alocação de células
+Por exemplo, se `v` é um vetor, então `vector_ref(v, 5)` obtém a quinta entrada no vetor `v` e `vector_set(v, 5, 7)` muda o valor da quinta entrada do vetor `v` para 7.[^3] Para memória de computador, este acesso pode ser implementado através do uso de aritmética de endereços para combinar um *endereço base* que especifica a localização inicial de um vetor na memória com um *índice* que especifica o deslocamento de um elemento particular do vetor.
 
-## Tópicos Principais
+## Representando dados
 
-- Modelo de memória baseado em vetores
-- Representação de estruturas de lista
-- Ponteiros e índices
-- Lista livre (free list)
-- Alocação de células de memória
-- Operações primitivas de lista
+Podemos usar vetores para implementar as estruturas de par básicas necessárias para uma memória estruturada em lista. Vamos imaginar que a memória do computador está dividida em dois vetores: `the_heads` e `the_tails`. Representaremos a estrutura de lista da seguinte forma: um ponteiro para um par é um índice nos dois vetores. O `head` do par é a entrada em `the_heads` com o índice designado, e o `tail` do par é a entrada em `the_tails` com o índice designado. Também precisamos de uma representação para objetos que não sejam pares (como números e strings) e uma maneira de distinguir um tipo de dado do outro. Existem muitos métodos para realizar isso, mas todos se reduzem a usar *ponteiros tipados*, ou seja, estender a noção de "ponteiro" para incluir informação sobre o tipo de dado.[^4] O tipo de dado permite que o sistema distinga um ponteiro para um par (que consiste do tipo de dado "par" e um índice nos vetores de memória) de ponteiros para outros tipos de dados (que consistem de algum outro tipo de dado e qualquer coisa que esteja sendo usada para representar dados daquele tipo). Dois objetos de dados são considerados os mesmos (`===`) se seus ponteiros forem idênticos. A Figura 5.14 ilustra o uso deste método para representar `list(list(1, 2), 3, 4)`, cujo diagrama de caixas e ponteiros também é mostrado. Usamos prefixos de letra para denotar a informação de tipo de dado. Assim, um ponteiro para o par com índice 5 é denotado `p5`, a lista vazia é denotada pelo ponteiro `e0`, e um ponteiro para o número 4 é denotado `n4`. No diagrama de caixas e ponteiros, indicamos no canto inferior esquerdo de cada par o índice do vetor que especifica onde o `head` e o `tail` do par são armazenados. As localizações em branco em `the_heads` e `the_tails` podem conter partes de outras estruturas de lista (não de interesse aqui).
 
-## Implementação
+![Figura 5.14](img_javascript/Fig5.14b.std.svg)
 
-- Estruturas de dados de memória
-- `pair` como alocação de célula
-- `head` e `tail` como acesso indexado
-- Gerenciamento da free list
-- Inicialização de memória
+**Figura 5.14:** Representações de caixas e ponteiros e vetores de memória da lista `list(list(1, 2), 3, 4)`.
 
-## Exercícios
+Um ponteiro para um número, como `n4`, pode consistir de um tipo indicando dados numéricos junto com a representação real do número 4.[^5] Para lidar com números que são grandes demais para serem representados na quantidade fixa de espaço alocado para um único ponteiro, poderíamos usar um tipo de dado distinto *bignum*, para o qual o ponteiro designa uma lista na qual as partes do número são armazenadas.[^6]
 
-Exercícios sobre implementação e otimização de gerenciamento de memória.
+Uma string pode ser representada como um ponteiro tipado que designa uma sequência dos caracteres que formam a representação impressa da string. O analisador constrói tal sequência quando encontra um literal de string, e o operador de concatenação de strings `+` e funções primitivas produtoras de strings como `stringify` constroem tal sequência. Como queremos que duas instâncias de uma string sejam reconhecidas como a "mesma" string por `===` e queremos que `===` seja um teste simples de igualdade de ponteiros, devemos garantir que se o sistema vê a mesma string duas vezes, ele usará o mesmo ponteiro (para a mesma sequência de caracteres) para representar ambas as ocorrências. Para realizar isso, o sistema mantém uma tabela, chamada *pool de strings*, de todas as strings que ele já encontrou. Quando o sistema está prestes a construir uma string, ele verifica o pool de strings para ver se já viu a mesma string antes. Se não viu, ele constrói uma nova string (um ponteiro tipado para uma nova sequência de caracteres) e insere este ponteiro no pool de strings. Se o sistema viu a string antes, ele retorna o ponteiro de string armazenado no pool de strings. Este processo de substituir strings por ponteiros únicos é chamado *internação de strings*.
+
+## Implementando as operações primitivas de lista
+
+Dado o esquema de representação acima, podemos substituir cada operação de lista "primitiva" de uma máquina de registradores por uma ou mais operações primitivas de vetor. Usaremos dois registradores, `the_heads` e `the_tails`, para identificar os vetores de memória, e assumiremos que `vector_ref` e `vector_set` estão disponíveis como operações primitivas. Também assumimos que operações numéricas em ponteiros (como incrementar um ponteiro, usar um ponteiro de par para indexar um vetor, ou adicionar dois números) usam apenas a porção de índice do ponteiro tipado.
+
+Por exemplo, podemos fazer uma máquina de registradores suportar as instruções
+
+<CodePlayground
+  code={`assign(reg₁, list(op("head"), reg(reg₂)))
+
+assign(reg₁, list(op("tail"), reg(reg₂)))`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+se implementarmos estas, respectivamente, como
+
+<CodePlayground
+  code={`assign(reg₁, list(op("vector_ref"), reg("the_heads"), reg(reg₂)))
+
+assign(reg₁, list(op("vector_ref"), reg("the_tails"), reg(reg₂)))`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+As instruções
+
+<CodePlayground
+  code={`perform(list(op("set_head"), reg(reg₁), reg(reg₂)))
+
+perform(list(op("set_tail"), reg(reg₁), reg(reg₂)))`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+são implementadas como
+
+<CodePlayground
+  code={`perform(list(op("vector_set"), reg("the_heads"), reg(reg₁), reg(reg₂)))
+
+perform(list(op("vector_set"), reg("the_tails"), reg(reg₁), reg(reg₂)))`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+A operação `pair` é realizada alocando um índice não utilizado e armazenando os argumentos de `pair` em `the_heads` e `the_tails` naquela posição indexada do vetor. Presumimos que há um registrador especial, `free`, que sempre contém um ponteiro de par contendo o próximo índice disponível, e que podemos incrementar a parte de índice daquele ponteiro para encontrar a próxima localização livre.[^7] Por exemplo, a instrução
+
+<CodePlayground
+  code={`assign(reg₁, list(op("pair"), reg(reg₂), reg(reg₃)))`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+é implementada como a seguinte sequência de operações de vetor:[^8]
+
+<CodePlayground
+  code={`perform(list(op("vector_set"),
+             reg("the_heads"), reg("free"), reg(reg₂))),
+perform(list(op("vector_set"),
+             reg("the_tails"), reg("free"), reg(reg₃))),
+assign(reg₁, reg("free")),
+assign("free", list(op("+"), reg("free"), constant(1)))`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+A operação `===`
+
+<CodePlayground
+  code={`list(op("==="), reg(reg₁), reg(reg₂))`}
+  height={80}
+  showLineNumbers={true}
+/>
+
+simplesmente testa a igualdade de todos os campos nos registradores, e predicados como `is_pair`, `is_null`, `is_string` e `is_number` precisam verificar apenas o campo de tipo.
+
+## Implementando pilhas
+
+Embora nossas máquinas de registradores usem pilhas, não precisamos fazer nada especial aqui, já que pilhas podem ser modeladas em termos de listas. A pilha pode ser uma lista dos valores salvos, apontada por um registrador especial `the_stack`. Assim, `save(reg)` pode ser implementado como
+
+<CodePlayground
+  code={`assign("the_stack", list(op("pair"), reg(reg), reg("the_stack")))`}
+  height={80}
+  showLineNumbers={true}
+/>
+
+Similarmente, `restore(reg)` pode ser implementado como
+
+<CodePlayground
+  code={`assign(reg, list(op("head"), reg("the_stack")))
+assign("the_stack", list(op("tail"), reg("the_stack")))`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+e `perform(list(op("initialize_stack")))` pode ser implementado como
+
+<CodePlayground
+  code={`assign("the_stack", constant(null))`}
+  height={80}
+  showLineNumbers={true}
+/>
+
+Essas operações podem ser expandidas ainda mais em termos das operações de vetor dadas acima. Em arquiteturas de computador convencionais, no entanto, geralmente é vantajoso alocar a pilha como um vetor separado. Então, empurrar e desempilhar a pilha pode ser realizado incrementando ou decrementando um índice naquele vetor.
+
+## Exercício 5.19
+
+Desenhe a representação de caixas e ponteiros e a representação de vetor de memória (como na figura 5.14) da estrutura de lista produzida por
+
+<CodePlayground
+  code={`const x = pair(1, 2);
+const y = list(x, x);`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+com o ponteiro `free` inicialmente `p1`. Qual é o valor final de `free`? Que ponteiros representam os valores de `x` e `y`?
+
+## Exercício 5.20
+
+Implemente máquinas de registradores para as seguintes funções. Assuma que as operações de memória de estrutura de lista estão disponíveis como primitivas da máquina.
+
+a. `count_leaves` recursiva:
+
+<CodePlayground
+  code={`function count_leaves(tree) {
+    return is_null(tree)
+           ? 0
+           : ! is_pair(tree)
+           ? 1
+           : count_leaves(head(tree)) +
+             count_leaves(tail(tree));
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+b. `count_leaves` recursiva com contador explícito:
+
+<CodePlayground
+  code={`function count_leaves(tree) {
+    function count_iter(tree, n) {
+        return is_null(tree)
+               ? n
+               : ! is_pair(tree)
+               ? n + 1
+               : count_iter(tail(tree),
+                            count_iter(head(tree), n));
+    }
+    return count_iter(tree, 0);
+}`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+## Exercício 5.21
+
+O exercício 3.12 da seção 3.3.1 apresentou uma função `append` que anexa duas listas para formar uma nova lista e uma função `append_mutator` que junta duas listas. Projete uma máquina de registradores para implementar cada uma dessas funções. Assuma que as operações de memória de estrutura de lista estão disponíveis como operações primitivas.
 
 ---
 
-**Nota**: Esta seção mostra como estruturas de dados de alto nível são implementadas em hardware.
+[^1]: Poderíamos representar memória como listas de itens. No entanto, o tempo de acesso não seria independente do índice, já que acessar o n-ésimo elemento de uma lista requer n-1 operações `tail`.
+
+[^2]: Como mencionado na seção 4.1.1 (nota de rodapé 2), JavaScript suporta vetores como estruturas de dados e os chama de "arrays". Usamos o termo *vetor* neste livro, pois é a terminologia mais comum. As funções de vetor acima são facilmente implementadas usando o suporte primitivo de array do JavaScript.
+
+[^3]: Para completude, deveríamos especificar uma operação `make_vector` que constrói vetores. No entanto, na aplicação presente usaremos vetores apenas para modelar divisões fixas da memória do computador.
+
+[^4]: Esta é precisamente a mesma ideia de "dados marcados" que introduzimos no capítulo 2 para lidar com operações genéricas. Aqui, no entanto, os tipos de dados são incluídos no nível primitivo da máquina em vez de construídos através do uso de listas. A informação de tipo pode ser codificada de várias maneiras, dependendo dos detalhes da máquina na qual o sistema JavaScript deve ser implementado. A eficiência de execução de programas JavaScript dependerá fortemente de quão inteligentemente esta escolha é feita, mas é difícil formular regras gerais de design para boas escolhas. A maneira mais direta de implementar ponteiros tipados é alocar um conjunto fixo de bits em cada ponteiro para ser um *campo de tipo* que codifica o tipo de dado. Questões importantes a serem abordadas ao projetar tal representação incluem as seguintes: Quantos bits de tipo são necessários? Quão grandes devem ser os índices do vetor? Com que eficiência as instruções primitivas da máquina podem ser usadas para manipular os campos de tipo dos ponteiros? Máquinas que incluem hardware especial para o manuseio eficiente de campos de tipo são chamadas de *arquiteturas marcadas*.
+
+[^5]: Esta decisão sobre a representação de números determina se `===`, que testa igualdade de ponteiros, pode ser usado para testar igualdade de números. Se o ponteiro contém o próprio número, então números iguais terão o mesmo ponteiro. Mas se o ponteiro contém o índice de uma localização onde o número está armazenado, números iguais terão garantia de ter ponteiros iguais apenas se tomarmos cuidado para nunca armazenar o mesmo número em mais de uma localização.
+
+[^6]: Isso é como escrever um número como uma sequência de dígitos, exceto que cada "dígito" é um número entre 0 e o maior número que pode ser armazenado em um único ponteiro.
+
+[^7]: Existem outras maneiras de encontrar armazenamento livre. Por exemplo, poderíamos vincular todos os pares não utilizados em uma *lista livre*. Nossas localizações livres são consecutivas (e portanto podem ser acessadas incrementando um ponteiro) porque estamos usando um coletor de lixo compactador, como veremos na seção 5.3.2.
+
+[^8]: Esta é essencialmente a implementação de `pair` em termos de `set_head` e `set_tail`, conforme descrito na seção 3.3.1. A operação `get_new_pair` usada naquela implementação é realizada aqui pelo ponteiro `free`.

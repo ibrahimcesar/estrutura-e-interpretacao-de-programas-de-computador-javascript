@@ -1,54 +1,263 @@
 ---
-title: 5.5.7 Interfaceando Código Compilado com o Avaliador
+title: 5.5.7 Interfaceando Código Compilado com a Avaliação
 ---
 
-# 5.5.7 Interfaceando Código Compilado com o Avaliador
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.5.7 Interfaceando Código Compilado com a Avaliação
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+Ainda não explicamos como carregar código compilado na máquina avaliadora ou como executá-lo. Assumiremos que a máquina avaliadora de controle explícito foi definida como na seção 5.4, com as operações adicionais especificadas na nota de rodapé (seção 5.5.1). Implementaremos uma função `compile_and_go` que compila um programa JavaScript, carrega o código objeto resultante na máquina avaliadora, e faz a máquina executar o código no ambiente global do avaliador, imprimir o resultado, e entrar no loop de driver do avaliador. Também modificaremos o avaliador para que componentes interpretados possam chamar funções compiladas assim como interpretadas. Podemos então colocar uma função compilada na máquina e usar o avaliador para chamá-la:
 
-## Visão Geral
+```javascript
+compile_and_go(parse(`
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+                     `));
+```
 
-Esta seção final mostra como integrar código compilado e interpretado:
+Saída:
+```
+EC-evaluate value:
+undefined
+```
 
-- Interpretação e compilação no mesmo sistema
-- Chamadas entre código compilado e interpretado
-- Ambiente compartilhado
-- Primitivos compartilhados
-- Sistema híbrido de execução
+```javascript
+// EC-evaluate input:
+factorial(5);
+```
 
-## Tópicos Principais
+Saída:
+```
+EC-evaluate value:
+120
+```
 
-- Interface compilador-interpretador
-- Funções compiladas chamando funções interpretadas
-- Funções interpretadas chamando funções compiladas
-- Ambiente global compartilhado
-- Operações primitivas compartilhadas
+Para permitir que o avaliador manipule funções compiladas (por exemplo, para avaliar a chamada a `factorial` acima), precisamos mudar o código em `apply_dispatch` (seção 5.4.1) de modo que ele reconheça funções compiladas (como distintas de funções compostas ou primitivas) e transfira o controle diretamente para o ponto de entrada do código compilado:<sup>[1](#footnote-1)</sup>
 
-## Sistema Híbrido
+```javascript
+"apply_dispatch",
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_apply")),
+  test(list(op("is_compound_function"), reg("fun"))),
+  branch(label("compound_apply")),
+  test(list(op("is_compiled_function"), reg("fun"))),
+  branch(label("compiled_apply")),
+  go_to(label("unknown_function_type")),
 
-- Registro de funções compiladas no ambiente
-- Detecção de tipo de função (compilada vs. interpretada)
-- Estratégias de aplicação diferentes
-- Vantagens de sistema híbrido
+"compiled_apply",
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+```
 
-## Implementação
+Em `compiled_apply`, assim como em `compound_apply`, empurramos um marcador para a pilha de modo que uma instrução return na função compilada possa reverter a pilha para este estado. Note que não há save de `continue` em `compiled_apply` antes da marcação da pilha, porque o avaliador foi arranjado de modo que em `apply_dispatch`, a continuação estaria no topo da pilha.
 
-- Modificações no avaliador para suportar código compilado
-- Modificações no compilador para interagir com interpretador
-- Entrada e saída do código compilado
-- Driver loop unificado
+Para nos permitir executar algum código compilado quando iniciamos a máquina avaliadora, adicionamos uma instrução `branch` no início da máquina avaliadora, que faz a máquina ir para um novo ponto de entrada se o registrador `flag` estiver configurado.<sup>[2](#footnote-2)</sup>
 
-## Exercícios
+```javascript
+  branch(label("external_entry")), // ramifica se flag estiver configurado
+"read_evaluate_print_loop",
+  perform(list(op("initialize_stack"))),
+  ...
+```
 
-Exercícios finais sobre:
-- Integração compilador-interpretador
-- Análise de desempenho do sistema completo
-- Extensões e otimizações
+O código em `external_entry` assume que a máquina é iniciada com `val` contendo a localização de uma sequência de instruções que coloca um resultado em `val` e termina com `go_to(reg("continue"))`. Iniciar neste ponto de entrada pula para a localização designada por `val`, mas primeiro atribui `continue` de modo que a execução retornará a `print_result`, que imprime o valor em `val` e então vai para o início do loop read-evaluate-print do avaliador.<sup>[3](#footnote-3)</sup>
+
+```javascript
+"external_entry",
+  perform(list(op("initialize_stack"))),
+  assign("env", list(op("get_current_environment"))),
+  assign("continue", label("print_result")),
+  go_to(reg("val")),
+```
+
+Agora podemos usar a seguinte função para compilar uma declaração de função, executar o código compilado, e executar o loop read-evaluate-print para que possamos experimentar a função. Como queremos que o código compilado prossiga para a localização em `continue` com seu resultado em `val`, compilamos o programa com um alvo de `val` e uma ligação de `"return"`. Para transformar o código objeto produzido pelo compilador em instruções executáveis para a máquina de registradores avaliadora, usamos a função `assemble` do simulador de máquina de registradores (seção 5.2.2). Para que o programa interpretado se refira aos nomes que são declarados no nível superior no programa compilado, escaneamos os nomes de nível superior e estendemos o ambiente global ligando esses nomes a `"*unassigned*"`, sabendo que o código compilado atribuirá a eles os valores corretos. Então inicializamos o registrador `val` para apontar para a lista de instruções, configuramos o `flag` para que o avaliador vá para `external_entry`, e iniciamos o avaliador.
+
+```javascript
+function compile_and_go(program) {
+    const instrs = assemble(instructions(compile(program,
+                                                 "val", "return")),
+                            eceval);
+    const toplevel_names = scan_out_declarations(program);
+    const unassigneds = list_of_unassigned(toplevel_names);
+    set_current_environment(extend_environment(
+                               toplevel_names,
+                               unassigneds,
+                               the_global_environment));
+    set_register_contents(eceval, "val", instrs);
+    set_register_contents(eceval, "flag", true);
+    return start(eceval);
+}
+```
+
+Se configuramos monitoramento de pilha, como no final da seção 5.4.4, podemos examinar o uso da pilha do código compilado:
+
+```javascript
+compile_and_go(parse(`
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+                     `));
+```
+
+Saída:
+```
+total pushes = 0
+maximum depth = 0
+EC-evaluate value:
+undefined
+```
+
+```javascript
+// EC-evaluate input:
+factorial(5);
+```
+
+Saída:
+```
+total pushes = 36
+maximum depth = 14
+EC-evaluate value:
+120
+```
+
+Compare este exemplo com a avaliação de `factorial(5)` usando a versão interpretada da mesma função, mostrada no final da seção 5.4.4. A versão interpretada requereu 151 empurrões e uma profundidade máxima de pilha de 28. Isso ilustra a otimização que resulta de nossa estratégia de compilação.
+
+## Interpretação e compilação
+
+Com os programas nesta seção, agora podemos experimentar com as estratégias alternativas de execução de interpretação e compilação.<sup>[4](#footnote-4)</sup> Um interpretador eleva a máquina ao nível do programa do usuário; um compilador reduz o programa do usuário ao nível da linguagem de máquina. Podemos considerar a linguagem JavaScript (ou qualquer linguagem de programação) como uma família coerente de abstrações erguidas sobre a linguagem de máquina. Interpretadores são bons para desenvolvimento e depuração interativa de programas porque os passos de execução do programa são organizados em termos dessas abstrações, e portanto são mais inteligíveis para o programador. Código compilado pode executar mais rápido, porque os passos de execução do programa são organizados em termos da linguagem de máquina, e o compilador é livre para fazer otimizações que cortam através das abstrações de nível superior.<sup>[5](#footnote-5)</sup>
+
+As alternativas de interpretação e compilação também levam a diferentes estratégias para portar linguagens para novos computadores. Suponha que desejamos implementar JavaScript para uma nova máquina. Uma estratégia é começar com o avaliador de controle explícito da seção 5.4 e traduzir suas instruções para instruções para a nova máquina. Uma estratégia diferente é começar com o compilador e mudar os geradores de código de modo que eles gerem código para a nova máquina. A segunda estratégia nos permite executar qualquer programa JavaScript na nova máquina primeiro compilando-o com o compilador rodando em nosso sistema JavaScript original, e ligando-o com uma versão compilada da biblioteca de tempo de execução.<sup>[6](#footnote-6)</sup> Melhor ainda, podemos compilar o próprio compilador, e executá-lo na nova máquina para compilar outros programas JavaScript.<sup>[7](#footnote-7)</sup> Ou podemos compilar um dos interpretadores da seção 4.1 para produzir um interpretador que roda na nova máquina.
+
+## Exercício 5.48
+
+Comparando as operações de pilha usadas por código compilado às operações de pilha usadas pelo avaliador para a mesma computação, podemos determinar a extensão na qual o compilador otimiza o uso da pilha, tanto em velocidade (reduzindo o número total de operações de pilha) quanto em espaço (reduzindo a profundidade máxima da pilha). Comparar este uso otimizado da pilha ao desempenho de uma máquina de propósito especial para a mesma computação dá alguma indicação da qualidade do compilador.
+
+a. O exercício 5.27 pediu que você determinasse, como uma função de *n*, o número de empurrões e a profundidade máxima da pilha necessários pelo avaliador para calcular *n!* usando o procedimento fatorial recursivo dado acima. O exercício 5.14 pediu que você fizesse as mesmas medidas para a máquina fatorial de propósito especial mostrada na Figura 5.11. Agora realize a mesma análise usando a função `factorial` compilada.
+
+   Tome a razão do número de empurrões na versão compilada para o número de empurrões na versão interpretada, e faça o mesmo para a profundidade máxima da pilha. Como o número de operações e a profundidade da pilha usados para calcular *n!* são lineares em *n*, essas razões devem se aproximar de constantes à medida que *n* se torna grande. Quais são essas constantes? Da mesma forma, encontre as razões do uso da pilha na máquina de propósito especial para o uso na versão interpretada.
+
+   Compare as razões para código de propósito especial versus interpretado às razões para código compilado versus interpretado. Você deve descobrir que a máquina de propósito especial é muito mais eficiente que o código compilado, já que o código do controlador feito à mão deve ser muito melhor do que o que é produzido por nosso compilador rudimentar de propósito geral.
+
+b. Você pode sugerir melhorias ao compilador que o ajudariam a gerar código que se aproximaria em desempenho da versão feita à mão?
+
+## Exercício 5.49
+
+Realize uma análise como aquela no exercício 5.48 para determinar a eficácia de compilar a função Fibonacci recursiva em árvore:
+
+```javascript
+function fib(n) {
+    return n < 2 ? n : fib(n - 1) + fib(n - 2);
+}
+```
+
+comparada à eficácia de usar a máquina Fibonacci de propósito especial da Figura 5.12. (Para medida do desempenho interpretado, veja o exercício 5.29.) Para Fibonacci, o recurso de tempo usado não é linear em *n*; portanto as razões de operações de pilha não se aproximarão de um valor limite que seja independente de *n*.
+
+## Exercício 5.50
+
+Esta seção descreveu como modificar o avaliador de controle explícito para que código interpretado possa chamar funções compiladas. Mostre como modificar o compilador para que funções compiladas possam chamar não apenas funções primitivas e compiladas, mas também funções interpretadas. Isso requer modificar `compile_function_call` para manipular o caso de funções compostas (interpretadas). Certifique-se de manipular todas as mesmas combinações de `target` e `linkage` como em `compile_fun_appl`. Para fazer a aplicação real da função, o código precisa pular para o ponto de entrada `compound_apply` do avaliador. Este rótulo não pode ser referenciado diretamente em código objeto (já que o montador requer que todos os rótulos referenciados pelo código que ele está montando sejam definidos lá), então adicionaremos um registrador chamado `compapp` à máquina avaliadora para conter este ponto de entrada, e adicionaremos uma instrução para inicializá-lo:
+
+```javascript
+  assign("compapp", label("compound_apply")),
+  branch(label("external_entry")),     // ramifica se flag estiver configurado
+"read_evaluate_print_loop",
+  ...
+```
+
+Para testar seu código, comece declarando uma função `f` que chama uma função `g`. Use `compile_and_go` para compilar a declaração de `f` e iniciar o avaliador. Agora, digitando no avaliador, declare `g` e tente chamar `f`.
+
+## Exercício 5.51
+
+A interface `compile_and_go` implementada nesta seção é desajeitada, já que o compilador pode ser chamado apenas uma vez (quando a máquina avaliadora é iniciada). Aumente a interface compilador-interpretador fornecendo uma primitiva `compile_and_run` que pode ser chamada de dentro do avaliador de controle explícito da seguinte forma:
+
+```javascript
+// EC-evaluate input:
+compile_and_run(parse(`
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+                      `));
+```
+
+Saída:
+```
+EC-evaluate value:
+undefined
+```
+
+```javascript
+// EC-evaluate input:
+factorial(5)
+```
+
+Saída:
+```
+EC-Eval value:
+120
+```
+
+## Exercício 5.52
+
+Como uma alternativa a usar o loop read-evaluate-print do avaliador de controle explícito, projete uma máquina de registradores que realiza um loop read-compile-execute-print. Ou seja, a máquina deve executar um loop que lê um programa, compila-o, monta e executa o código resultante, e imprime o resultado. Esta é fácil de executar em nossa configuração simulada, já que podemos arranjar para chamar as funções `compile` e `assemble` como "operações de máquina de registradores".
+
+## Exercício 5.53
+
+Use o compilador para compilar o avaliador metacircular da seção 4.1 e execute este programa usando o simulador de máquina de registradores. Como o parser toma uma string como entrada, você precisará converter o programa em uma string. A forma mais simples de fazer isso é usar as crases (`` ` ``), como fizemos para as entradas de exemplo para `compile_and_go` e `compile_and_run`. O interpretador resultante executará muito lentamente por causa dos múltiplos níveis de interpretação, mas fazer todos os detalhes funcionarem é um exercício instrutivo.
+
+## Exercício 5.54
+
+Desenvolva uma implementação rudimentar de JavaScript em C (ou alguma outra linguagem de baixo nível de sua escolha) traduzindo o avaliador de controle explícito da seção 5.4 para C. Para executar este código você precisará também fornecer rotinas apropriadas de alocação de armazenamento e outro suporte de tempo de execução.
+
+## Exercício 5.55
+
+Como um contraponto ao exercício 5.54, modifique o compilador para que ele compile funções JavaScript em sequências de instruções C. Compile o avaliador metacircular da seção 4.1 para produzir um interpretador JavaScript escrito em C.
 
 ---
 
-**Nota**: Esta seção completa o Capítulo 5, mostrando como compilação e interpretação podem coexistir.
+<a name="footnote-1"></a>[1] Claro, funções compiladas assim como funções interpretadas são compostas (não primitivas). Para compatibilidade com a terminologia usada no avaliador de controle explícito, nesta seção usaremos "composta" para significar interpretada (em oposição a compilada).
+
+<a name="footnote-2"></a>[2] Agora que a máquina avaliadora começa com um `branch`, devemos sempre inicializar o registrador `flag` antes de iniciar a máquina avaliadora. Para iniciar a máquina em seu loop ordinário read-evaluate-print, poderíamos usar:
+
+```javascript
+function start_eceval() {
+    set_register_contents(eceval, "flag", false);
+    return start(eceval);
+}
+```
+
+<a name="footnote-3"></a>[3] Já que uma função compilada é um objeto que o sistema pode tentar imprimir, também modificamos a operação de impressão do sistema `user_print` (da seção 5.4.4) para que ela não tentará imprimir os componentes de uma função compilada:
+
+```javascript
+function user_print(string, object) {
+    function prepare(object) {
+        return is_compound_function(object)
+               ? "< compound function >"
+               : is_primitive_function(object)
+               ? "< primitive function >"
+               : is_compiled_function(object)
+               ? "< compiled function >"
+               : is_pair(object)
+               ? pair(prepare(head(object)),
+                      prepare(tail(object)))
+               : object;
+    }
+    display(string + " " + stringify(prepare(object)));
+}
+```
+
+<a name="footnote-4"></a>[4] Podemos fazer ainda melhor estendendo o compilador para permitir que código compilado chame funções interpretadas. Veja o exercício 5.50.
+
+<a name="footnote-5"></a>[5] Independente da estratégia de execução, incorremos em overhead significativo se insistirmos que erros encontrados na execução de um programa do usuário sejam detectados e sinalizados, ao invés de serem permitidos matar o sistema ou produzir respostas erradas. Por exemplo, uma referência de array fora dos limites pode ser detectada verificando a validade da referência antes de realizá-la. O overhead de verificação, no entanto, pode ser muitas vezes o custo da própria referência de array, e um programador deve pesar velocidade contra segurança ao determinar se tal verificação é desejável. Um bom compilador deve ser capaz de produzir código com tais verificações, deve evitar verificações redundantes, e deve permitir que programadores controlem a extensão e tipo de verificação de erros no código compilado.
+
+Compiladores para linguagens populares, como C e C++, colocam dificilmente qualquer operação de verificação de erro no código em execução, de modo a fazer as coisas executarem o mais rápido possível. Como resultado, cabe aos programadores fornecer explicitamente verificação de erro. Infelizmente, as pessoas frequentemente negligenciam fazer isso, mesmo em aplicações críticas onde velocidade não é uma restrição. Seus programas levam vidas rápidas e perigosas. Por exemplo, o notório "Worm" que paralisou a Internet em 1988 explorou a falha do sistema operacional UNIX™ em verificar se o buffer de entrada havia transbordado no daemon finger. (Veja Spafford 1989.)
+
+<a name="footnote-6"></a>[6] Claro, com qualquer uma das estratégias de interpretação ou compilação também devemos implementar para a nova máquina alocação de armazenamento, entrada e saída, e todas as várias operações que tomamos como "primitivas" em nossa discussão do avaliador e compilador. Uma estratégia para minimizar o trabalho aqui é escrever tantas dessas operações quanto possível em JavaScript e então compilá-las para a nova máquina. No final, tudo se reduz a um pequeno kernel (como coleta de lixo e o mecanismo para aplicar primitivas reais da máquina) que é codificado à mão para a nova máquina.
+
+<a name="footnote-7"></a>[7] Esta estratégia leva a testes divertidos de correção do compilador, como verificar se a compilação de um programa na nova máquina, usando o compilador compilado, é idêntica à compilação do programa no sistema JavaScript original. Rastrear a fonte das diferenças é divertido mas frequentemente frustrante, porque os resultados são extremamente sensíveis a detalhes minúsculos.

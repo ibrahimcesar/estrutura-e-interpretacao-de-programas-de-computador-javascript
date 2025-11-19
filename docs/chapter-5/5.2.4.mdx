@@ -2,46 +2,122 @@
 title: 5.2.4 Monitorando o Desempenho da Máquina
 ---
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 # 5.2.4 Monitorando o Desempenho da Máquina
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+A simulação é útil não apenas para verificar a correção de um projeto de máquina proposto, mas também para medir o desempenho da máquina. Por exemplo, podemos instalar em nosso programa de simulação um "medidor" que mede o número de operações de pilha usadas em uma computação. Para fazer isso, modificamos nossa pilha simulada para manter o controle do número de vezes que registradores são salvos na pilha e a profundidade máxima alcançada pela pilha, e adicionamos uma mensagem à interface da pilha que imprime as estatísticas, como mostrado abaixo. Também adicionamos uma operação ao modelo de máquina básico para imprimir as estatísticas da pilha, inicializando `the_ops` em `make_new_machine` para:
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+```javascript
+list(list("initialize_stack",
+          () => stack("initialize")),
+     list("print_stack_statistics",
+          () => stack("print_statistics")));
+```
 
-## Visão Geral
+Aqui está a nova versão de `make_stack`:
 
-Esta seção apresenta ferramentas para monitorar e analisar o desempenho de máquinas de registradores:
+<CodePlayground
+  code={`function make_stack() {
+    let stack = null;
+    let number_pushes = 0;
+    let max_depth = 0;
+    let current_depth = 0;
+    function push(x) {
+        stack = pair(x, stack);
+        number_pushes = number_pushes + 1;
+        current_depth = current_depth + 1;
+        max_depth = math_max(current_depth, max_depth);
+        return "done";
+    }
+    function pop() {
+        if (is_null(stack)) {
+            error("empty stack -- pop");
+        } else {
+            const top = head(stack);
+            stack = tail(stack);
+            current_depth = current_depth - 1;
+            return top;
+        }
+    }
+    function initialize() {
+        stack = null;
+        number_pushes = 0;
+        max_depth = 0;
+        current_depth = 0;
+        return "done";
+    }
+    function print_statistics() {
+        display("total pushes = " + stringify(number_pushes));
+        display("maximum depth = " + stringify(max_depth));
+    }
+    function dispatch(message) {
+        return message === "push"
+               ? push
+               : message === "pop"
+               ? pop()
+               : message === "initialize"
+               ? initialize()
+               : message === "print_statistics"
+               ? print_statistics()
+               : error(message, "unknown request -- stack");
+    }
+    return dispatch;
+}`}
+  height={700}
+  showLineNumbers={true}
+/>
 
-- Contadores de instruções executadas
-- Rastreamento de operações de pilha
-- Análise de uso de registradores
-- Ferramentas de depuração e profiling
+Os exercícios 5.13 a 5.18 descrevem outros recursos úteis de monitoramento e depuração que podem ser adicionados ao simulador de máquina de registradores.
 
-## Tópicos Principais
+## Exercício 5.13
 
-- Instrumentação do simulador
-- Contagem de instruções
-- Rastreamento de uso de pilha
-- Estatísticas de execução
-- Breakpoints e stepping
-- Inspeção de estado da máquina
+Meça o número de pushes e a profundidade máxima de pilha necessária para calcular *n*! para vários valores pequenos de *n* usando a máquina fatorial mostrada na Figura 5.11. A partir de seus dados, determine fórmulas em termos de *n* para o número total de operações push e a profundidade máxima de pilha usada no cálculo de *n*! para qualquer *n* > 1. Observe que cada uma dessas é uma função linear de *n* e é, portanto, determinada por duas constantes. Para obter as estatísticas impressas, você terá que aumentar a máquina fatorial com instruções para inicializar a pilha e imprimir as estatísticas. Você pode querer também modificar a máquina para que ela leia repetidamente um valor para *n*, calcule o fatorial e imprima o resultado (como fizemos para a máquina MDC na figura 5.4), para que você não tenha que invocar repetidamente `get_register_contents`, `set_register_contents` e `start`.
 
-## Ferramentas de Monitoramento
+## Exercício 5.14
 
-- Contador de instruções
-- Monitor de profundidade de pilha
-- Rastreador de operações
-- Registro de execução (trace)
+Adicione *contagem de instruções* à simulação de máquina de registradores. Ou seja, faça o modelo de máquina manter o controle do número de instruções executadas. Estenda a interface do modelo de máquina para aceitar uma nova mensagem que imprima o valor da contagem de instruções e redefine a contagem para zero.
 
-## Exercícios
+## Exercício 5.15
 
-Exercícios sobre:
-- Adição de funcionalidades de monitoramento
-- Análise de desempenho de máquinas
-- Otimização baseada em profiling
+Aumente o simulador para fornecer *rastreamento de instruções*. Ou seja, antes de cada instrução ser executada, o simulador deve imprimir a instrução. Faça o modelo de máquina aceitar mensagens `trace_on` e `trace_off` para ativar e desativar o rastreamento.
 
----
+## Exercício 5.16
 
-**Nota**: Estas ferramentas são essenciais para entender e otimizar máquinas de registradores.
+Estenda o rastreamento de instruções do exercício 5.15 de modo que antes de imprimir uma instrução, o simulador imprima quaisquer rótulos que precedem imediatamente essa instrução na sequência do controlador. Tenha cuidado para fazer isso de uma maneira que não interfira com a contagem de instruções (exercício 5.14). Você terá que fazer o simulador reter a informação de rótulo necessária.
+
+## Exercício 5.17
+
+Modifique a função `make_register` da seção 5.2.1 de modo que os registradores possam ser rastreados. Registradores devem aceitar mensagens que ativam e desativam o rastreamento. Quando um registrador é rastreado, atribuir um valor ao registrador deve imprimir o nome do registrador, o conteúdo antigo do registrador e o novo conteúdo sendo atribuído. Estenda a interface ao modelo de máquina para permitir que você ative e desative o rastreamento para registradores de máquina designados.
+
+## Exercício 5.18
+
+Alyssa P. Hacker quer um recurso de *breakpoint* no simulador para ajudá-la a depurar seus projetos de máquina. Você foi contratado para instalar este recurso para ela. Ela quer poder especificar um lugar na sequência do controlador onde o simulador irá parar e permitir que ela examine o estado da máquina. Você deve implementar uma função:
+
+```javascript
+set_breakpoint(machine, label, n)
+```
+
+que define um breakpoint logo antes da *n*-ésima instrução após o rótulo dado. Por exemplo,
+
+```javascript
+set_breakpoint(gcd_machine, "test_b", 4)
+```
+
+instala um breakpoint em `gcd_machine` logo antes da atribuição ao registrador `a`. Quando o simulador alcança o breakpoint, ele deve imprimir o rótulo e o deslocamento do breakpoint e parar de executar instruções. Alyssa pode então usar `get_register_contents` e `set_register_contents` para manipular o estado da máquina simulada. Ela deve então poder continuar a execução dizendo:
+
+```javascript
+proceed_machine(machine)
+```
+
+Ela deve também poder remover um breakpoint específico por meio de:
+
+```javascript
+cancel_breakpoint(machine, label, n)
+```
+
+ou remover todos os breakpoints por meio de:
+
+```javascript
+cancel_all_breakpoints(machine)
+```

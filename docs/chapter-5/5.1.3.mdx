@@ -1,36 +1,97 @@
 ---
-title: 5.1.3 Sub-rotinas
+title: 5.1.3 Subrotinas
 ---
 
-# 5.1.3 Sub-rotinas
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.1.3 Subrotinas
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+Ao projetar uma máquina para realizar um cálculo, frequentemente preferiríamos arranjar para que componentes sejam compartilhados por diferentes partes do cálculo em vez de duplicar os componentes. Considere uma máquina que inclui dois cálculos de MDC—um que encontra o MDC dos conteúdos dos registradores `a` e `b` e outro que encontra o MDC dos conteúdos dos registradores `c` e `d`. Poderíamos começar assumindo que temos uma operação primitiva `gcd`, depois expandir as duas instâncias de `gcd` em termos de operações mais primitivas. A Figura 5.7 mostra apenas as porções MDC dos caminhos de dados da máquina resultante, sem mostrar como elas se conectam ao resto da máquina. A figura também mostra as porções correspondentes da sequência do controlador da máquina.
 
-## Visão Geral
+Esta máquina tem duas caixas de operação de resto e duas caixas para testar igualdade. Se os componentes duplicados são complicados, como é a caixa de resto, esta não será uma maneira econômica de construir a máquina. Podemos evitar duplicar os componentes do caminho de dados usando os mesmos componentes para ambos os cálculos de MDC, desde que fazer isso não afete o resto do cálculo da máquina maior. Se os valores nos registradores `a` e `b` não são necessários no momento em que o controlador chega a `gcd_2` (ou se esses valores podem ser movidos para outros registradores para proteção), podemos mudar a máquina para que ela use os registradores `a` e `b`, em vez dos registradores `c` e `d`, ao calcular o segundo MDC bem como o primeiro. Se fizermos isso, obtemos a sequência do controlador mostrada na Figura 5.8.
 
-Esta seção explica como implementar sub-rotinas em máquinas de registradores:
+```javascript
+"gcd_1",
+  test(list(op("="), reg("b"), constant(0))),
+  branch(label("after_gcd_1")),
+  assign("t", list(op("rem"), reg("a"), reg("b"))),
+  assign("a", reg("b")),
+  assign("b", reg("t")),
+  go_to(label("gcd_1")),
+"after_gcd_1",
+  ...
+"gcd_2",
+  test(list(op("="), reg("b"), constant(0))),
+  branch(label("after_gcd_2")),
+  assign("t", list(op("rem"), reg("a"), reg("b"))),
+  assign("a", reg("b")),
+  assign("b", reg("t")),
+  go_to(label("gcd_2")),
+"after_gcd_2"
+```
 
-- Conceito de sub-rotinas em linguagem de máquina
-- Mecanismo de chamada e retorno
-- Uso do registrador `continue` para armazenar endereços de retorno
-- Implementação de procedimentos reutilizáveis
+**Figura 5.8:** Porções da sequência do controlador para uma máquina que usa os mesmos componentes do caminho de dados para dois cálculos de MDC diferentes.
 
-## Tópicos Principais
+Removemos os componentes duplicados do caminho de dados (de modo que os caminhos de dados são novamente como na Figura 5.1), mas o controlador agora tem duas sequências de MDC que diferem apenas em seus rótulos de ponto de entrada. Seria melhor substituir essas duas sequências por ramificações para uma única sequência—uma *subrotina* `gcd`—no final da qual ramificamos de volta ao local correto na sequência de instruções principal. Podemos realizar isso da seguinte forma: antes de ramificar para `gcd`, colocamos um valor distintivo (como 0 ou 1) em um registrador especial, `continue`. No final da subrotina `gcd`, retornamos para `after_gcd_1` ou para `after_gcd_2`, dependendo do valor do registrador `continue`. A Figura 5.9 mostra a porção relevante da sequência do controlador resultante, que inclui apenas uma única cópia das instruções `gcd`.
 
-- Chamadas de sub-rotinas
-- Endereços de retorno
-- Registrador `continue`
-- Passagem de controle entre seções de código
-- Comparação com chamadas de função de alto nível
+<CodePlayground
+  code={`"gcd",
+  test(list(op("="), reg("b"), constant(0))),
+  branch(label("gcd_done")),
+  assign("t", list(op("rem"), reg("a"), reg("b"))),
+  assign("a", reg("b")),
+  assign("b", reg("t")),
+  go_to(label("gcd")),
+"gcd_done",
+  test(list(op("="), reg("continue"), constant(0))),
+  branch(label("after_gcd_1")),
+  go_to(label("after_gcd_2")),
+  ...
+  // Antes de ramificar para gcd do primeiro lugar onde
+  // é necessário, colocamos 0 no registrador continue
+  assign("continue", constant(0)),
+  go_to(label("gcd")),
+"after_gcd_1",
+  ...
+  // Antes do segundo uso de gcd, colocamos 1 no registrador continue
+  assign("continue", constant(1)),
+  go_to(label("gcd")),
+"after_gcd_2"`}
+  height={600}
+  showLineNumbers={true}
+/>
 
-## Exercícios
+**Figura 5.9:** Usando um registrador `continue` para evitar a sequência duplicada do controlador na Figura 5.8.
 
-Exercícios sobre design e implementação de sub-rotinas em máquinas de registradores.
+Esta é uma abordagem razoável para lidar com problemas pequenos, mas seria incômodo se houvesse muitas instâncias de cálculos de MDC na sequência do controlador. Para decidir onde continuar executando após a subrotina `gcd`, precisaríamos de testes nos caminhos de dados e instruções de ramificação no controlador para todos os locais que usam `gcd`. Um método mais poderoso para implementar subrotinas é fazer com que o registrador `continue` contenha o rótulo do ponto de entrada na sequência do controlador no qual a execução deve continuar quando a subrotina terminar. Implementar esta estratégia requer um novo tipo de conexão entre os caminhos de dados e o controlador de uma máquina de registradores: deve haver uma maneira de atribuir a um registrador um rótulo na sequência do controlador de tal forma que este valor possa ser buscado do registrador e usado para continuar a execução no ponto de entrada designado.
 
----
+Para refletir esta habilidade, estenderemos a instrução `assign` da linguagem de máquina de registradores para permitir que um registrador receba como valor um rótulo da sequência do controlador (como um tipo especial de constante). Também estenderemos a instrução `go_to` para permitir que a execução continue no ponto de entrada descrito pelos conteúdos de um registrador em vez de apenas em um ponto de entrada descrito por um rótulo constante. Usando essas novas construções, podemos terminar a subrotina `gcd` com uma ramificação para o local armazenado no registrador `continue`. Isso leva à sequência do controlador mostrada na Figura 5.10.
 
-**Nota**: Sub-rotinas são o equivalente em linguagem de máquina das funções em linguagens de alto nível.
+<CodePlayground
+  code={`"gcd",
+  test(list(op("="), reg("b"), constant(0))),
+  branch(label("gcd_done")),
+  assign("t", list(op("rem"), reg("a"), reg("b"))),
+  assign("a", reg("b")),
+  assign("b", reg("t")),
+  go_to(label("gcd")),
+"gcd_done",
+  go_to(reg("continue")),
+  ...
+  // Antes de chamar gcd, atribuímos a continue
+  // o rótulo para o qual gcd deve retornar.
+  assign("continue", label("after_gcd_1"))),
+  go_to(label("gcd")),
+"after_gcd_1",
+  ...
+  // Aqui está a segunda chamada a gcd, com uma continuação diferente.
+  assign("continue", label("after_gcd_2")),
+  go_to(label("gcd")),
+"after_gcd_2"`}
+  height={500}
+  showLineNumbers={true}
+/>
+
+**Figura 5.10:** Atribuir rótulos ao registrador `continue` simplifica e generaliza a estratégia mostrada na Figura 5.9.
+
+Uma máquina com mais de uma subrotina poderia usar múltiplos registradores de continuação (por exemplo, `gcd_continue`, `factorial_continue`) ou poderíamos fazer com que todas as subrotinas compartilhem um único registrador `continue`. Compartilhar é mais econômico, mas devemos ter cuidado se tivermos uma subrotina (`sub1`) que chama outra subrotina (`sub2`). A menos que `sub1` salve os conteúdos de `continue` em algum outro registrador antes de configurar `continue` para a chamada a `sub2`, `sub1` não saberá para onde ir quando terminar. O mecanismo desenvolvido na próxima seção para lidar com recursão também fornece uma solução melhor para este problema de chamadas de subrotinas aninhadas.
