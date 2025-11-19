@@ -297,6 +297,25 @@ div[class*='announcementBar'] a:hover {
   margin-bottom: 1rem;
 }
 
+/* Sandpack CodePlayground - Garantir visibilidade */
+.sp-wrapper,
+.sp-stack {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 400px !important;
+}
+
+.sp-layout {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 400px !important;
+  width: 100% !important;
+}
+
 /* Sandpack CodePlayground - Aumentar tamanho da fonte do output */
 .sp-console-item,
 .sp-console-output,
@@ -340,26 +359,4 @@ button[aria-label="Run code"]::after {
 .sp-console-item .sp-console-error,
 .sp-console-item .sp-console-warning {
   display: block !important;
-}
-
-/* Reorganizar layout do painel lateral - dar mais espaço ao output */
-.sp-layout {
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Console com mais espaço */
-.sp-console {
-  flex: 1 1 auto !important;
-  min-height: 200px !important;
-  order: 1 !important;
-}
-
-/* Botões de ação (reload, open sandbox) na parte inferior */
-.sp-button-group,
-.sp-preview-actions {
-  order: 2 !important;
-  margin-top: auto !important;
-  padding-top: 8px !important;
-  border-top: 1px solid var(--sp-colors-surface2, #e4e4e7);
 }
