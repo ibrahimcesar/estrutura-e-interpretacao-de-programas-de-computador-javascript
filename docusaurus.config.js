@@ -106,16 +106,6 @@ const config = {
             label: 'Livro',
           },
           {
-            to: '/guia-traducao',
-            label: 'Guia de Tradução',
-            position: 'left',
-          },
-          {
-            to: '/como-contribuir',
-            label: 'Como Contribuir',
-            position: 'left',
-          },
-          {
             href: 'https://sourceacademy.org/sicpjs',
             label: 'Original (EN)',
             position: 'right',

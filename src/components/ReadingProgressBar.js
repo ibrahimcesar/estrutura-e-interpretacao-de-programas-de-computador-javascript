@@ -21,6 +21,8 @@ export default function ReadingProgressBar() {
     '/pt_BR/agradecimentos',            // Agradecimentos
     '/pt_BR/sobre-o-projeto',           // Sobre o Projeto
     '/pt_BR/sobre-traducao-brasileira', // Sobre a Tradução Brasileira
+    '/pt_BR/como-contribuir',           // Como Contribuir
+    '/pt_BR/guia-traducao',             // Guia de Tradução
     '/pt_BR/recomendacoes',             // Recomendações
     '/pt_BR/referencias',               // Referências
   ];
