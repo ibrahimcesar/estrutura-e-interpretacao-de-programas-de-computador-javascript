@@ -1,0 +1,45 @@
+---
+title: 5.5.1 Estrutura do Compilador
+---
+
+# 5.5.1 Estrutura do Compilador
+
+:::info Em Tradução
+Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+
+Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
+:::
+
+## Visão Geral
+
+Esta seção introduz a estrutura geral do compilador JavaScript:
+
+- Visão geral do processo de compilação
+- Diferença entre interpretação e compilação
+- Estrutura de dados para sequências de instruções
+- Registradores alvo e linkage descriptors
+- Preservação de registradores
+
+## Tópicos Principais
+
+- Arquitetura do compilador
+- Compilação vs. interpretação
+- Sequências de instruções (instruction sequences)
+- Registradores necessários e modificados
+- Tipos de linkage: `return`, `next`, `label`
+- Análise estática de uso de registradores
+
+## Funções Principais
+
+- `compile` - Função principal de compilação
+- `make_instruction_sequence` - Construir sequência de instruções
+- `preserving` - Preservar registradores entre sequências
+- `tack_on_instruction_sequence` - Concatenar sequências
+
+## Exercícios
+
+Exercícios sobre a estrutura e organização do compilador.
+
+---
+
+**Nota**: Esta seção estabelece os fundamentos para entender como código é compilado para linguagem de máquina.

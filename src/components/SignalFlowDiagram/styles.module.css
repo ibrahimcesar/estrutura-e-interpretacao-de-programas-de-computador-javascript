@@ -1,0 +1,89 @@
+.diagramContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+  border-radius: 12px;
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.diagram {
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.diagram text {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  user-select: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .diagramContainer {
+    padding: 1rem 0.5rem;
+  }
+
+  .diagram {
+    width: 100%;
+  }
+
+  .diagram text {
+    font-size: 0.9em;
+  }
+}
+
+/* Dark mode support */
+[data-theme='dark'] .diagramContainer {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+}
+
+[data-theme='dark'] .diagram rect,
+[data-theme='dark'] .diagram circle,
+[data-theme='dark'] .diagram path {
+  stroke: #90caf9;
+}
+
+[data-theme='dark'] .diagram rect[fill='#E3F2FD'] {
+  fill: #1e3a5f;
+}
+
+[data-theme='dark'] .diagram rect[fill='#FFF9C4'] {
+  fill: #5d4e37;
+}
+
+[data-theme='dark'] .diagram circle[fill='#FFF9C4'] {
+  fill: #5d4e37;
+}
+
+[data-theme='dark'] .diagram circle[fill='#FFE0B2'] {
+  fill: #5d4037;
+}
+
+[data-theme='dark'] .diagram rect[fill='#C8E6C9'] {
+  fill: #1b5e20;
+}
+
+[data-theme='dark'] .diagram path[fill='#BBDEFB'] {
+  fill: #1a237e;
+}
+
+[data-theme='dark'] .diagram circle[fill='#E1BEE7'] {
+  fill: #4a148c;
+}
+
+[data-theme='dark'] .diagram circle[fill='#C8E6C9'] {
+  fill: #1b5e20;
+}
+
+[data-theme='dark'] .diagram text {
+  fill: #e0e0e0;
+}
+
+[data-theme='dark'] .diagram line,
+[data-theme='dark'] .diagram polygon {
+  stroke: #90caf9;
+  fill: #90caf9;
+}

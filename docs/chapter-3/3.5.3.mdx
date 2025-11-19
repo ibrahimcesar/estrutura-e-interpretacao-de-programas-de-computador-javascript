@@ -3,6 +3,7 @@ title: 3.5.3 Explorando o Paradigma de Streams
 ---
 
 import CodePlayground from '@site/src/components/CodePlayground';
+import SignalFlowDiagram from '@site/src/components/SignalFlowDiagram';
 
 # 3.5.3 Explorando o Paradigma de Streams
 
@@ -150,6 +151,10 @@ function integral(integrand, initial_value, dt) {
     return integ;
 }
 ```
+
+<SignalFlowDiagram type="rc-integrator" />
+
+**Figura 3.53:** Diagrama de fluxo de sinal para um integrador RC. O sinal de entrada `v` é multiplicado por `1/R`, integrado ao longo do tempo (∫dt), e então o resultado é multiplicado por `1/C` para produzir a corrente `i`. O loop de realimentação mostra como a saída do integrador influencia o estado do sistema.
 
 A figura mostra um diagrama de processamento de sinal para o integrador. O diagrama mostra claramente como as operações de stream são combinadas para processar sinais. Este ponto de vista nos permite trabalhar com sistemas altamente complexos de uma maneira modular.
 

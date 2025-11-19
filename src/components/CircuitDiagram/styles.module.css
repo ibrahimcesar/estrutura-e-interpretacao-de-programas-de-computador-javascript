@@ -1,0 +1,56 @@
+.circuitContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.circuit {
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.circuit text {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  user-select: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .circuitContainer {
+    padding: 1rem 0.5rem;
+  }
+
+  .circuit {
+    width: 100%;
+  }
+}
+
+/* Dark mode support */
+[data-theme='dark'] .circuitContainer {
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+}
+
+[data-theme='dark'] .circuit path,
+[data-theme='dark'] .circuit line,
+[data-theme='dark'] .circuit circle,
+[data-theme='dark'] .circuit rect {
+  stroke: #e2e8f0;
+}
+
+[data-theme='dark'] .circuit path {
+  fill: #2d3748;
+}
+
+[data-theme='dark'] .circuit text {
+  fill: #e2e8f0;
+}
+
+[data-theme='dark'] .circuit polygon {
+  fill: #e2e8f0;
+}

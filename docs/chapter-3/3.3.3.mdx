@@ -16,6 +16,46 @@ b: 2
 c: 3
 ```
 
+**Figura 3.21:** Tabela unidimensional representada como lista encabeçada
+
+```mermaid
+graph LR
+    Table["table"] --> H["●|●"]
+    H --> Header["*table*"]
+    H --> S1["●|●"]
+
+    S1 --> R1["●|●"]
+    R1 --> K1["a"]
+    R1 --> V1["1"]
+
+    S1 --> S2["●|●"]
+    S2 --> R2["●|●"]
+    R2 --> K2["b"]
+    R2 --> V2["2"]
+
+    S2 --> S3["●|null"]
+    S3 --> R3["●|●"]
+    R3 --> K3["c"]
+    R3 --> V3["3"]
+
+    style Table fill:#ffd,stroke:#333,stroke-width:2px
+    style H fill:#bdf,stroke:#333,stroke-width:2px
+    style Header fill:#ffe,stroke:#333
+    style S1 fill:#dfd,stroke:#333
+    style S2 fill:#dfd,stroke:#333
+    style S3 fill:#dfd,stroke:#333
+    style R1 fill:#fcf,stroke:#333
+    style R2 fill:#fcf,stroke:#333
+    style R3 fill:#fcf,stroke:#333
+    style K1 fill:#efe,stroke:#333
+    style K2 fill:#efe,stroke:#333
+    style K3 fill:#efe,stroke:#333
+    style V1 fill:#efe,stroke:#333
+    style V2 fill:#efe,stroke:#333
+    style V3 fill:#efe,stroke:#333
+```
+*Nota: Espinha dorsal em verde; registros (chave|valor) em rosa*
+
 Para extrair informações de uma tabela, usamos a função `lookup`, que recebe uma chave como argumento e retorna o valor associado (ou `undefined` se não houver valor armazenado sob aquela chave). A função `lookup` é definida em termos da operação `assoc`, que espera uma chave e uma lista de registros como argumentos. Note que `assoc` nunca vê o registro fictício. A função `assoc` retorna o registro que tem a chave dada como seu `head`. A função `lookup` então verifica se o registro resultante retornado por `assoc` não é `undefined`, e retorna o valor (o `tail`) do registro.
 
 ```javascript
@@ -73,6 +113,60 @@ Em uma tabela bidimensional, cada valor é indexado por duas chaves. Podemos con
     "a":  97
     "b":  98
 ```
+
+**Figura 3.22:** Tabela bidimensional com subtabelas
+
+```mermaid
+graph TB
+    Table["table"] --> TH["●|●"]
+    TH --> Header["*table*"]
+    TH --> TS1["●|●"]
+
+    TS1 --> SubM["●|●"]
+    SubM --> KeyM["math"]
+    SubM --> MathTable["●|●"]
+
+    MathTable --> MS1["●|●"]
+    MS1 --> MR1["●|●"]
+    MR1 --> MK1["+"]
+    MR1 --> MV1["43"]
+
+    MS1 --> MS2["●|●"]
+    MS2 --> MR2["●|●"]
+    MR2 --> MK2["-"]
+    MR2 --> MV2["45"]
+
+    MS2 --> MS3["●|null"]
+    MS3 --> MR3["●|●"]
+    MR3 --> MK3["*"]
+    MR3 --> MV3["42"]
+
+    TS1 --> TS2["●|null"]
+    TS2 --> SubL["●|●"]
+    SubL --> KeyL["letters"]
+    SubL --> LetterTable["●|●"]
+
+    LetterTable --> LS1["●|●"]
+    LS1 --> LR1["●|●"]
+    LR1 --> LK1["a"]
+    LR1 --> LV1["97"]
+
+    LS1 --> LS2["●|null"]
+    LS2 --> LR2["●|●"]
+    LR2 --> LK2["b"]
+    LR2 --> LV2["98"]
+
+    style Table fill:#ffd,stroke:#333,stroke-width:2px
+    style TH fill:#bdf,stroke:#333,stroke-width:2px
+    style Header fill:#ffe,stroke:#333
+    style SubM fill:#fcf,stroke:#333,stroke-width:2px
+    style SubL fill:#fcf,stroke:#333,stroke-width:2px
+    style MathTable fill:#cef,stroke:#333,stroke-width:2px
+    style LetterTable fill:#cef,stroke:#333,stroke-width:2px
+    style KeyM fill:#ffc,stroke:#333
+    style KeyL fill:#ffc,stroke:#333
+```
+*Nota: Tabela principal em azul; subtabelas em cyan; chaves principais em amarelo*
 
 que tem duas subtabelas. (As subtabelas não precisam de uma string de cabeçalho especial, já que a chave que identifica a subtabela serve a esse propósito.)
 

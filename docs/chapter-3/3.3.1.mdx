@@ -10,7 +10,77 @@ As operações básicas em pares—`pair`, `head` e `tail`—podem ser usadas pa
 
 Os mutadores primitivos para pares são `set_head` e `set_tail`. A função `set_head` recebe dois argumentos, o primeiro dos quais deve ser um par. Ela modifica esse par, substituindo o ponteiro `head` por um ponteiro para o segundo argumento de `set_head`. As funções `set_head` e `set_tail` retornam o valor `undefined`. Elas devem ser usadas apenas por seu efeito.
 
-Como exemplo, suponha que `x` esteja vinculado a `list(list("a", "b"), "c", "d")` e `y` a `list("e", "f")` conforme ilustrado na Figura 3.12. Avaliar a expressão `set_head(x, y)` modifica o par ao qual `x` está vinculado, substituindo seu `head` pelo valor de `y`. O resultado da operação é mostrado na Figura 3.13. A estrutura `x` foi modificada e agora é equivalente a `list(list("e", "f"), "c", "d")`. Os pares que representam a lista `list("a", "b")`, identificados pelo ponteiro que foi substituído, agora estão destacados da estrutura original. Vemos a partir disso que operações de mutação em listas podem criar "lixo" que não faz parte de nenhuma estrutura acessível. Veremos na seção 5.3.2 que os sistemas de gerenciamento de memória JavaScript incluem um *coletor de lixo*, que identifica e recicla o espaço de memória usado por pares desnecessários.
+Como exemplo, suponha que `x` esteja vinculado a `list(list("a", "b"), "c", "d")` e `y` a `list("e", "f")` conforme ilustrado na Figura 3.12.
+
+**Figura 3.12:** Listas `x` e `y`
+
+```mermaid
+graph LR
+    X["x"] --> X1["●|●"]
+    Y["y"] --> Y1["●|●"]
+
+    X1 --> X1a["●|●"]
+    X1a --> A["a"]
+    X1a --> X1b["●|null"]
+    X1b --> B["b"]
+
+    X1 --> X2["●|●"]
+    X2 --> C["c"]
+    X2 --> X3["●|null"]
+    X3 --> D["d"]
+
+    Y1 --> E["e"]
+    Y1 --> Y2["●|null"]
+    Y2 --> F["f"]
+
+    style X fill:#ffd,stroke:#333,stroke-width:2px
+    style Y fill:#ffd,stroke:#333,stroke-width:2px
+    style A fill:#dfd,stroke:#333
+    style B fill:#dfd,stroke:#333
+    style C fill:#dfd,stroke:#333
+    style D fill:#dfd,stroke:#333
+    style E fill:#dfd,stroke:#333
+    style F fill:#dfd,stroke:#333
+```
+
+Avaliar a expressão `set_head(x, y)` modifica o par ao qual `x` está vinculado, substituindo seu `head` pelo valor de `y`. O resultado da operação é mostrado na Figura 3.13.
+
+**Figura 3.13:** Efeito de `set_head(x, y)` sobre as listas
+
+```mermaid
+graph LR
+    X["x"] --> X1["●|●"]
+    Y["y"] --> Y1["●|●"]
+
+    X1 -.-> X1a["●|●"]
+    X1a -.-> A["a"]
+    X1a -.-> X1b["●|null"]
+    X1b -.-> B["b"]
+
+    X1 ==> Y1
+    Y1 --> E["e"]
+    Y1 --> Y2["●|null"]
+    Y2 --> F["f"]
+
+    X1 --> X2["●|●"]
+    X2 --> C["c"]
+    X2 --> X3["●|null"]
+    X3 --> D["d"]
+
+    style X fill:#ffd,stroke:#333,stroke-width:2px
+    style Y fill:#ffd,stroke:#333,stroke-width:2px
+    style A fill:#eee,stroke:#999
+    style B fill:#eee,stroke:#999
+    style X1a fill:#eee,stroke:#999
+    style X1b fill:#eee,stroke:#999
+    style C fill:#dfd,stroke:#333
+    style D fill:#dfd,stroke:#333
+    style E fill:#dfd,stroke:#333
+    style F fill:#dfd,stroke:#333
+```
+*Nota: As setas pontilhadas indicam pares "lixo" desconectados*
+
+A estrutura `x` foi modificada e agora é equivalente a `list(list("e", "f"), "c", "d")`. Os pares que representam a lista `list("a", "b")`, identificados pelo ponteiro que foi substituído, agora estão destacados da estrutura original. Vemos a partir disso que operações de mutação em listas podem criar "lixo" que não faz parte de nenhuma estrutura acessível. Veremos na seção 5.3.2 que os sistemas de gerenciamento de memória JavaScript incluem um *coletor de lixo*, que identifica e recicla o espaço de memória usado por pares desnecessários.
 
 Compare a Figura 3.13 com a Figura 3.14, que ilustra o resultado da execução de
 
@@ -18,9 +88,86 @@ Compare a Figura 3.13 com a Figura 3.14, que ilustra o resultado da execução d
 const z = pair(y, tail(x));
 ```
 
-com `x` e `y` vinculados às listas originais da Figura 3.12. O nome `z` agora está vinculado a um novo par criado pela operação `pair`; a lista à qual `x` está vinculado permanece inalterada.
+com `x` e `y` vinculados às listas originais da Figura 3.12.
 
-A operação `set_tail` é semelhante a `set_head`. A única diferença é que o ponteiro `tail` do par, ao invés do ponteiro `head`, é substituído. O efeito de executar `set_tail(x, y)` nas listas da Figura 3.12 é mostrado na Figura 3.15. Aqui o ponteiro `tail` de `x` foi substituído pelo ponteiro para `list("e", "f")`. Além disso, a lista `list("c", "d")`, que costumava ser o `tail` de `x`, agora está destacada da estrutura.
+**Figura 3.14:** Efeito de `const z = pair(y, tail(x))`
+
+```mermaid
+graph LR
+    X["x"] --> X1["●|●"]
+    Y["y"] --> Y1["●|●"]
+    Z["z"] --> Z1["●|●"]
+
+    X1 --> X1a["●|●"]
+    X1a --> A["a"]
+    X1a --> X1b["●|null"]
+    X1b --> B["b"]
+
+    X1 --> X2["●|●"]
+    X2 --> C["c"]
+    X2 --> X3["●|null"]
+    X3 --> D["d"]
+
+    Y1 --> E["e"]
+    Y1 --> Y2["●|null"]
+    Y2 --> F["f"]
+
+    Z1 --> Y1
+    Z1 --> X2
+
+    style X fill:#ffd,stroke:#333,stroke-width:2px
+    style Y fill:#ffd,stroke:#333,stroke-width:2px
+    style Z fill:#ffd,stroke:#333,stroke-width:2px
+    style A fill:#dfd,stroke:#333
+    style B fill:#dfd,stroke:#333
+    style C fill:#dfd,stroke:#333
+    style D fill:#dfd,stroke:#333
+    style E fill:#dfd,stroke:#333
+    style F fill:#dfd,stroke:#333
+    style Z1 fill:#fbb,stroke:#333,stroke-width:2px
+```
+*Nota: O novo par criado está destacado em vermelho*
+
+O nome `z` agora está vinculado a um novo par criado pela operação `pair`; a lista à qual `x` está vinculado permanece inalterada.
+
+A operação `set_tail` é semelhante a `set_head`. A única diferença é que o ponteiro `tail` do par, ao invés do ponteiro `head`, é substituído. O efeito de executar `set_tail(x, y)` nas listas da Figura 3.12 é mostrado na Figura 3.15.
+
+**Figura 3.15:** Efeito de `set_tail(x, y)` sobre as listas
+
+```mermaid
+graph LR
+    X["x"] --> X1["●|●"]
+    Y["y"] --> Y1["●|●"]
+
+    X1 --> X1a["●|●"]
+    X1a --> A["a"]
+    X1a --> X1b["●|null"]
+    X1b --> B["b"]
+
+    X1 -.-> X2["●|●"]
+    X2 -.-> C["c"]
+    X2 -.-> X3["●|null"]
+    X3 -.-> D["d"]
+
+    X1 ==> Y1
+    Y1 --> E["e"]
+    Y1 --> Y2["●|null"]
+    Y2 --> F["f"]
+
+    style X fill:#ffd,stroke:#333,stroke-width:2px
+    style Y fill:#ffd,stroke:#333,stroke-width:2px
+    style A fill:#dfd,stroke:#333
+    style B fill:#dfd,stroke:#333
+    style C fill:#eee,stroke:#999
+    style D fill:#eee,stroke:#999
+    style X2 fill:#eee,stroke:#999
+    style X3 fill:#eee,stroke:#999
+    style E fill:#dfd,stroke:#333
+    style F fill:#dfd,stroke:#333
+```
+*Nota: As setas pontilhadas indicam pares "lixo" desconectados*
+
+Aqui o ponteiro `tail` de `x` foi substituído pelo ponteiro para `list("e", "f")`. Além disso, a lista `list("c", "d")`, que costumava ser o `tail` de `x`, agora está destacada da estrutura.
 
 A função `pair` constrói novas estruturas de lista criando novos pares, enquanto `set_head` e `set_tail` modificam pares existentes. Na verdade, poderíamos implementar `pair` em termos dos dois mutadores, juntamente com uma função `get_new_pair`, que retorna um novo par que não faz parte de nenhuma estrutura de lista existente. Obtemos o novo par, definimos seus ponteiros `head` e `tail` para os objetos designados e retornamos o novo par como o resultado da função `pair`. A seção 5.3.1 mostrará como um sistema de gerenciamento de memória pode implementar `get_new_pair`.
 
@@ -161,13 +308,66 @@ const x = list("a", "b");
 const z1 = pair(x, x);
 ```
 
-Como mostrado na Figura 3.16, `z1` é um par cujo `head` e `tail` apontam para o mesmo par `x`. Esse compartilhamento de `x` pelo `head` e `tail` de `z1` é uma consequência da maneira direta como `pair` é implementado. Em geral, usar `pair` para construir listas resultará em uma estrutura entrelaçada de pares na qual muitos pares individuais são compartilhados por muitas estruturas diferentes.
+Como mostrado na Figura 3.16, `z1` é um par cujo `head` e `tail` apontam para o mesmo par `x`.
+
+**Figura 3.16:** Estrutura com compartilhamento - `const z1 = pair(x, x)`
+
+```mermaid
+graph TB
+    X["x"] --> X1["●|●"]
+    Z1["z1"] --> Z1P["●|●"]
+
+    Z1P -->|head| X1
+    Z1P -->|tail| X1
+
+    X1 --> A["a"]
+    X1 --> X2["●|null"]
+    X2 --> B["b"]
+
+    style X fill:#ffd,stroke:#333,stroke-width:2px
+    style Z1 fill:#ffd,stroke:#333,stroke-width:2px
+    style Z1P fill:#bdf,stroke:#333,stroke-width:2px
+    style X1 fill:#fbf,stroke:#333,stroke-width:3px
+    style A fill:#dfd,stroke:#333
+    style B fill:#dfd,stroke:#333
+```
+*Nota: O par `x` é compartilhado pelo head e tail de `z1` (destacado em rosa)*
+
+Esse compartilhamento de `x` pelo `head` e `tail` de `z1` é uma consequência da maneira direta como `pair` é implementado. Em geral, usar `pair` para construir listas resultará em uma estrutura entrelaçada de pares na qual muitos pares individuais são compartilhados por muitas estruturas diferentes.
 
 Em contraste com a Figura 3.16, a Figura 3.17 mostra a estrutura criada por
 
 ```javascript
 const z2 = pair(list("a", "b"), list("a", "b"));
 ```
+
+**Figura 3.17:** Estrutura sem compartilhamento - `const z2 = pair(list("a", "b"), list("a", "b"))`
+
+```mermaid
+graph TB
+    Z2["z2"] --> Z2P["●|●"]
+
+    Z2P -->|head| L1["●|●"]
+    Z2P -->|tail| L2["●|●"]
+
+    L1 --> A1["a"]
+    L1 --> L1T["●|null"]
+    L1T --> B1["b"]
+
+    L2 --> A2["a"]
+    L2 --> L2T["●|null"]
+    L2T --> B2["b"]
+
+    style Z2 fill:#ffd,stroke:#333,stroke-width:2px
+    style Z2P fill:#bdf,stroke:#333,stroke-width:2px
+    style L1 fill:#dfd,stroke:#333
+    style L2 fill:#dfd,stroke:#333
+    style A1 fill:#dfd,stroke:#333
+    style B1 fill:#dfd,stroke:#333
+    style A2 fill:#dfd,stroke:#333
+    style B2 fill:#dfd,stroke:#333
+```
+*Nota: Duas listas `list("a", "b")` distintas sem compartilhamento*
 
 Nesta estrutura, os pares nas duas listas `list("a", "b")` são distintos, embora contenham as mesmas strings. Os dois pares são distintos porque cada chamada a `pair` retorna um novo par. As strings são "as mesmas" no sentido de que são dados primitivos (assim como números) compostos pelos mesmos caracteres na mesma ordem. Como JavaScript não fornece uma maneira de mutar uma string, qualquer compartilhamento que os projetistas de um interpretador JavaScript possam decidir implementar para strings é indetectável. Consideramos dados primitivos como números, booleanos e strings como *idênticos* se e somente se forem *indistinguíveis*.
 

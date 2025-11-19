@@ -1,0 +1,53 @@
+---
+title: 5.5.6 Endereçamento Léxico
+---
+
+# 5.5.6 Endereçamento Léxico
+
+:::info Em Tradução
+Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+
+Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
+:::
+
+## Visão Geral
+
+Esta seção importante introduz uma otimização crucial para compiladores:
+
+- Conceito de endereçamento léxico (lexical addressing)
+- Determinação estática de localização de variáveis
+- Acesso direto a variáveis sem busca
+- Eliminação de overhead de ambiente
+
+## Tópicos Principais
+
+- Limitações de busca de símbolos em tempo de execução
+- Endereços léxicos: `(frame, offset)`
+- Análise léxica em tempo de compilação
+- Operações `lexical_address_lookup` e `lexical_address_set`
+- Compilação com endereçamento léxico
+
+## Vantagens
+
+- Acesso a variáveis em tempo constante O(1)
+- Eliminação de busca por símbolos
+- Código mais eficiente
+- Melhor previsibilidade de desempenho
+
+## Implementação
+
+- Modificação do compilador para usar endereços léxicos
+- Ambiente de compilação (compile-time environment)
+- Tradução de nomes para endereços léxicos
+- Operações otimizadas de ambiente
+
+## Exercícios
+
+Exercícios sobre:
+- Implementação de endereçamento léxico
+- Cálculo de endereços léxicos
+- Comparação de desempenho
+
+---
+
+**Nota**: Esta é uma das otimizações mais importantes em compiladores reais.
