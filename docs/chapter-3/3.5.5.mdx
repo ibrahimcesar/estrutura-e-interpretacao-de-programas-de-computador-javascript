@@ -2,7 +2,8 @@
 title: 3.5.5 Modularidade de Programas Funcionais e Modularidade de Objetos
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.5.5 Modularidade de Programas Funcionais e Modularidade de Objetos
 
@@ -122,3 +123,5 @@ Começamos este capítulo com o objetivo de construir modelos computacionais cuj
 [^3]: Observe que, para quaisquer dois streams, há em geral mais de uma ordem aceitável de entrelaçamento. Assim, tecnicamente, "mesclar" é uma relação em vez de uma função—a resposta não é uma função determinística das entradas. Já mencionamos (nota de rodapé na seção 3.4.1) que o não-determinismo é essencial ao lidar com concorrência. A relação de mesclagem ilustra o mesmo não-determinismo essencial, da perspectiva funcional. Na seção 4.3, olharemos para o não-determinismo de ainda outro ponto de vista.
 
 [^4]: O modelo de objetos aproxima o mundo dividindo-o em partes separadas. O modelo funcional não modulariza ao longo de limites de objetos. O modelo de objetos é útil quando o estado não compartilhado dos "objetos" é muito maior que o estado que eles compartilham. Um exemplo de um lugar onde o ponto de vista de objetos falha é a mecânica quântica, onde pensar em coisas como partículas individuais leva a paradoxos e confusões. Unificar a visão de objetos com a visão funcional pode ter pouco a ver com programação, mas sim com questões epistemológicas fundamentais.
+
+<HelpFooter />

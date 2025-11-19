@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 # 4.1.2 Representando Componentes
 
 Os programadores escrevem programas como texto, ou seja, sequências de caracteres, inseridas em um ambiente de programação ou um editor de texto. Para executar nosso avaliador, precisamos começar com uma representação desse texto do programa como um valor JavaScript. Na seção 1.1.4 introduzimos strings para representar texto. Gostaríamos de avaliar programas como `"const size = 2; 5 * size;"` da seção 1.1.2. Infelizmente, esse texto do programa não fornece estrutura suficiente para o avaliador. Neste exemplo, as partes do programa `"size = 2"` e `"5 * size"` parecem semelhantes, mas carregam significados muito diferentes. Funções de sintaxe abstrata como `declaration_value_expression` seriam difíceis e propensas a erros para implementar examinando o texto do programa. Nesta seção, portanto, introduzimos uma função `parse` que traduz o texto do programa para uma *representação de lista rotulada*, reminiscente dos dados rotulados da seção 2.4.2.
@@ -632,3 +634,5 @@ Para tal programa, JavaScript distingue estaticamente entre declarações *value
 ```
 
 2. Modifique o avaliador para aderir a esta especificação.
+
+<HelpFooter />

@@ -2,7 +2,8 @@
 title: 3.5.4 Streams e Avaliação Atrasada
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.5.4 Streams e Avaliação Atrasada
 
@@ -133,3 +134,5 @@ Uma maneira de evitar a necessidade de duas classes diferentes de funções é f
 [^1]: Para completar em tempo razoável, este cálculo requer o uso da otimização de memoização da seção 3.5.1 em `integral` e na função `add_streams` usada em `integral` (usando a função `stream_map_2_optimized` como sugerido no exercício 3.50).
 
 [^2]: Este é um pequeno reflexo, em JavaScript, das dificuldades que linguagens estaticamente tipadas convencionais como Pascal tiveram ao lidar com funções de ordem superior. Nestas linguagens, o programador tinha que especificar os tipos de dados dos argumentos e o resultado de cada função: número, valor lógico, sequência, e assim por diante. Consequentemente, não poderíamos expressar uma abstração como "mapear uma dada função sobre todos os elementos em uma sequência" por uma única função de ordem superior como `stream_map`. Em vez disso, precisaríamos de uma função de mapeamento diferente para cada combinação diferente de tipos de dados de argumento e resultado que possam ser especificados para uma função. Manter uma noção prática de "tipo de dados" na presença de funções de ordem superior levanta muitas questões difíceis. Uma maneira de lidar com este problema é ilustrada pela linguagem ML (Gordon, Milner e Wadsworth 1979), cujos "tipos de dados parametricamente polimórficos" incluem modelos para transformações de ordem superior entre tipos de dados. Além disso, os tipos de dados para a maioria das funções em ML nunca são explicitamente declarados pelo programador. Em vez disso, ML inclui um mecanismo de inferência de tipos que usa informação no ambiente para deduzir os tipos de dados para funções recém-definidas. Hoje, linguagens de programação estaticamente tipadas evoluíram para tipicamente suportar alguma forma de inferência de tipos assim como polimorfismo paramétrico, com graus variados de poder. Haskell acopla um sistema de tipos expressivo com poderosa inferência de tipos.
+
+<HelpFooter />

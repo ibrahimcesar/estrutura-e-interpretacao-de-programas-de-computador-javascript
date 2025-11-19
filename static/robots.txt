@@ -1,0 +1,48 @@
+# robots.txt for SICP.js PT-BR
+# Structure and Interpretation of Computer Programs - JavaScript Edition
+# Estrutura e Interpretação de Programas de Computador - Edição JavaScript
+
+# Allow all robots
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://sicpjs.com/pt_BR/sitemap.xml
+
+# Crawl-delay for respectful indexing (optional)
+Crawl-delay: 1
+
+# Specific rules for common bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Sogou
+Allow: /
+
+# Block bad bots (optional - uncomment if needed)
+# User-agent: AhrefsBot
+# Disallow: /
+#
+# User-agent: SemrushBot
+# Disallow: /
+#
+# User-agent: MJ12bot
+# Disallow: /
+#
+# User-agent: DotBot
+# Disallow: /

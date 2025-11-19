@@ -1,0 +1,147 @@
+name: 📚 Generate eBooks (PDF & EPUB)
+
+on:
+  # Runs on pushes to main
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**/*.md'
+      - 'docs/**/*.mdx'
+      - 'scripts/generate-ebook.sh'
+      - '.github/workflows/generate-ebooks.yml'
+
+  # Allows manual triggering
+  workflow_dispatch:
+
+  # Weekly schedule (every Monday at 00:00 UTC)
+  schedule:
+    - cron: '0 0 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-ebooks:
+    name: Generate PDF and EPUB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Install Pandoc
+        run: |
+          echo "📦 Installing Pandoc and XeLaTeX..."
+          sudo apt-get update
+          sudo apt-get install -y \
+            pandoc \
+            texlive-xetex \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-latex-extra
+
+      - name: ✅ Verify Pandoc installation
+        run: |
+          echo "Pandoc version:"
+          pandoc --version
+          echo ""
+          echo "XeLaTeX version:"
+          xelatex --version
+
+      - name: 📚 Generate eBooks
+        run: |
+          chmod +x scripts/generate-ebook.sh
+          bash scripts/generate-ebook.sh
+
+      - name: 📊 List generated files
+        run: |
+          echo "Generated eBooks:"
+          ls -lh ebooks/
+
+      - name: 📤 Upload PDF (Reading Version) as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SICP-JS-PT-BR-PDF-Reading
+          path: ebooks/SICP-JS-PT-BR.pdf
+          retention-days: 90
+
+      - name: 📤 Upload PDF (Print Version) as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SICP-JS-PT-BR-PDF-Print
+          path: ebooks/SICP-JS-PT-BR-Print.pdf
+          retention-days: 90
+
+      - name: 📤 Upload EPUB as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SICP-JS-PT-BR-EPUB
+          path: ebooks/SICP-JS-PT-BR.epub
+          retention-days: 90
+
+      - name: 🏷️ Get current date for release tag
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: 📦 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ebook-${{ steps.date.outputs.date }}
+          name: 📚 eBooks - ${{ steps.date.outputs.date }}
+          body: |
+            ## 📚 eBook Release - SICP.js PT-BR
+
+            **Data de geração**: ${{ steps.date.outputs.date }}
+
+            ### 📥 Downloads Disponíveis
+
+            - **PDF (Leitura)**: Versão otimizada para leitura em tela com cores e links clicáveis
+            - **PDF (Impressão)**: Versão otimizada para impressão em preto e branco
+            - **EPUB**: Compatível com e-readers (Kindle, Kobo, Apple Books, etc.)
+
+            ### 📊 Informações
+
+            - Gerado automaticamente a partir dos arquivos markdown
+            - Inclui todos os capítulos traduzidos até o momento
+            - Tabela de conteúdos interativa
+            - Numeração de seções
+            - Código com syntax highlighting
+
+            ### 🤝 Como Contribuir
+
+            Encontrou algum erro ou quer contribuir com a tradução? Acesse:
+            - [Repositório no GitHub](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript)
+            - [Guia de Contribuição](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/CONTRIBUTING.md)
+
+            ---
+
+            📖 **Leia online**: https://sicpjs.com/pt_BR/
+
+            🤖 Gerado automaticamente via GitHub Actions
+          files: |
+            ebooks/SICP-JS-PT-BR.pdf
+            ebooks/SICP-JS-PT-BR-Print.pdf
+            ebooks/SICP-JS-PT-BR.epub
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 💬 Add comment to commit (on push)
+        if: github.event_name == 'push'
+        uses: peter-evans/commit-comment@v3
+        with:
+          body: |
+            ## 📚 eBooks Gerados com Sucesso!
+
+            Os eBooks foram gerados e estão disponíveis nos artefatos desta execução:
+
+            - 📄 [PDF (Leitura)](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - 🖨️ [PDF (Impressão)](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - 📖 [EPUB](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            Os arquivos também foram incluídos em uma release no GitHub.

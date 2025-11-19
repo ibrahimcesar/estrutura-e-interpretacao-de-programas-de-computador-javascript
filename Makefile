@@ -2,7 +2,7 @@
 # Structure and Interpretation of Computer Programs - JavaScript Adaptation
 # Estrutura e Interpretação de Programas de Computador - Adaptação em JavaScript
 
-.PHONY: help lint spell-check link-check check format clean install test colaborar translation-status docker-check wordlist-stats ci-local reorder-wordlist pr build serve dev
+.PHONY: help lint spell-check link-check check format clean install test colaborar translation-status docker-check wordlist-stats ci-local reorder-wordlist pr build serve dev build-and-serve ebook
 
 # Default target
 .DEFAULT_GOAL := help
@@ -92,6 +92,19 @@ serve: ## 🌐 Serve o build local para testes (localhost:3000)
 		echo ""; \
 		exit 1; \
 	fi
+
+build-and-serve: ## 🚀 Compila e serve o build local (build + serve em sequência)
+	@echo "$(BOLD)$(MAGENTA)╔═══════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BOLD)$(MAGENTA)║  🚀 Build e Serve - Pipeline Completo                            ║$(NC)"
+	@echo "$(BOLD)$(MAGENTA)╚═══════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(BOLD)$(CYAN)🏗️  ETAPA 1/2: Compilando site para produção...$(NC)"
+	@echo ""
+	@$(MAKE) build
+	@echo ""
+	@echo "$(BOLD)$(CYAN)🌐 ETAPA 2/2: Servindo build local...$(NC)"
+	@echo ""
+	@$(MAKE) serve
 
 install: ## 📦 Instala todas as dependências necessárias (Node.js, Python, aspell)
 	@echo "$(BOLD)$(CYAN)🚀 Instalando dependências...$(NC)"
@@ -712,3 +725,38 @@ pr: ## 🚀 Workflow completo: criar branch, add, commit, push e preparar PR
 		echo "$(YELLOW)➜ Execute manualmente: $(CYAN)git checkout main$(NC)"; \
 	fi; \
 	echo ""
+
+ebook: ## 📚 Gera versões PDF e EPUB do livro (requer pandoc e xelatex)
+	@echo "$(BOLD)$(CYAN)📚 Gerando eBooks (PDF e EPUB)...$(NC)"
+	@echo ""
+	@if command -v pandoc >/dev/null 2>&1; then \
+		echo "$(GREEN)✓ Pandoc encontrado!$(NC)"; \
+		echo ""; \
+		if bash scripts/generate-ebook.sh; then \
+			echo ""; \
+			echo "$(BOLD)$(GREEN)✅ eBooks gerados com sucesso!$(NC)"; \
+			echo ""; \
+			echo "$(MAGENTA)📌 Arquivos gerados em:$(NC) $(CYAN)./ebooks/$(NC)"; \
+			echo ""; \
+			echo "$(CYAN)Arquivos disponíveis:$(NC)"; \
+			echo "  • $(GREEN)SICP-JS-PT-BR.pdf$(NC) (versão de leitura com cores)"; \
+			echo "  • $(GREEN)SICP-JS-PT-BR-Print.pdf$(NC) (versão para impressão em P&B)"; \
+			echo "  • $(GREEN)SICP-JS-PT-BR.epub$(NC) (e-readers: Kindle, Kobo, etc.)"; \
+			echo ""; \
+		else \
+			echo ""; \
+			echo "$(BOLD)$(RED)✗ Erro ao gerar eBooks!$(NC)"; \
+			echo "$(YELLOW)➜ Verifique os erros acima$(NC)"; \
+			echo ""; \
+			exit 1; \
+		fi \
+	else \
+		echo "$(BOLD)$(RED)✗ Erro: pandoc não está instalado!$(NC)"; \
+		echo "$(YELLOW)➜ Instale o pandoc:$(NC)"; \
+		echo "  $(CYAN)• macOS:$(NC) brew install pandoc basictex"; \
+		echo "  $(CYAN)• Ubuntu/Debian:$(NC) sudo apt-get install pandoc texlive-xetex"; \
+		echo "  $(CYAN)• Windows:$(NC) https://pandoc.org/installing.html"; \
+		echo ""; \
+		exit 1; \
+	fi
+

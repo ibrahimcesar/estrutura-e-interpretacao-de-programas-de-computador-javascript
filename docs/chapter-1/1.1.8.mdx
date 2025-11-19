@@ -1,6 +1,7 @@
 # 1.1.8 Funções como Abstrações de Caixa Preta
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 A função `sqrt` é nosso primeiro exemplo de um processo definido por um conjunto de funções definidas mutuamente. Observe que a declaração de `sqrt_iter` é recursiva; ou seja, a função é definida em termos de si mesma. A ideia de ser capaz de definir uma função em termos de si mesma pode ser perturbadora; pode parecer pouco claro como tal definição "circular" poderia fazer sentido, muito menos especificar um processo bem definido a ser executado por um computador. Isso será tratado com mais cuidado na seção [1.2](1.2.md). Mas primeiro vamos considerar alguns outros pontos importantes ilustrados pelo exemplo `sqrt`.
 
@@ -162,3 +163,5 @@ Usaremos a estrutura de blocos extensivamente para nos ajudar a quebrar grandes 
 <a name="footnote-3"></a> [[3]](#footnote-link-3) O escopo léxico dita que nomes livres em uma função são considerados como referências a associações feitas por declarações de função inclusas; ou seja, eles são pesquisados no ambiente em que a função foi declarada. Veremos como isso funciona em detalhes no capítulo 3, quando estudarmos os ambientes e o comportamento detalhado do interpretador.
 
 <a name="footnote-4"></a> [[4]](#footnote-link-4) As declarações incorporadas devem vir primeiro em um corpo de função. A gerência não se responsabiliza pelas consequências da execução de programas que entrelaçam declaração e uso; ver também notas de rodapé [2] e [4] na seção [1.3.2](1.3.2.md).
+
+<HelpFooter />

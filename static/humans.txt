@@ -1,0 +1,60 @@
+/* TEAM */
+
+Lead Translator & Project Maintainer: Ibrahim Cesar
+Site: https://ibrahimcesar.com
+Social: @ibrahimcesar
+Location: Brasil
+
+/* ORIGINAL AUTHORS */
+
+Authors: Harold Abelson, Gerald Jay Sussman, Julie Sussman
+JavaScript Adaptation: Martin Henz, Tobias Wrigstad, and contributors
+Original Site: https://sourceacademy.org/sicpjs
+
+/* THANKS */
+
+Community contributors on GitHub
+Source Academy team at National University of Singapore
+MIT Press for the original SICP book
+All translators and reviewers who contributed
+Portuguese-speaking programming community
+
+/* SITE */
+
+Last update: 2025/11/19
+Language: Português Brasileiro / Brazilian Portuguese
+Doctype: HTML5
+IDE: VSCode, Vim, Emacs, and others
+Components: React, Docusaurus, Sandpack
+Standards: HTML5, CSS3, ECMAScript 2024
+Software: Node.js, Python, aspell
+
+/* TECHNOLOGIES */
+
+Framework: Docusaurus 3.9.2
+Frontend: React 18.3.1
+Code Playground: Sandpack React 2.20.0
+Math Rendering: KaTeX 0.16.25
+Markdown: MDX 3.1.1
+Search: @easyops-cn/docusaurus-search-local 0.52.1
+Hosting: GitHub Pages
+CI/CD: GitHub Actions
+Version Control: Git
+
+/* CONTRIBUTING */
+
+Want to help translate this amazing book?
+Repository: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript
+Issues: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/issues
+Discussions: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/discussions
+Contributing Guide: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/blob/main/CONTRIBUTING.md
+
+/* LICENSE */
+
+Translation: CC BY-SA 4.0
+Code Examples: MIT License (unless otherwise specified)
+Original Content: CC BY-SA 4.0
+
+
+Built with ❤️ by the Brazilian programming community
+Para a comunidade brasileira de programação

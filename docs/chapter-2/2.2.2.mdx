@@ -2,7 +2,8 @@
 title: 2.2.2 Estruturas Hierárquicas
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 2.2.2  Estruturas Hierárquicas
 
@@ -95,3 +96,5 @@ square_tree(list(1, list(2, list(3, 4), 5), list(6, 7)));`}
 **Exercício 2.31**: Abstraia sua resposta ao exercício 2.30 para produzir uma função `tree_map` com a propriedade de que `square_tree` poderia ser definida como: `function square_tree(tree) { return tree_map(square, tree); }`.
 
 **Exercício 2.32**: Complete a definição da função que gera o conjunto de subconjuntos de um conjunto.
+
+<HelpFooter />

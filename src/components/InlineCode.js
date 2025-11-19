@@ -1,5 +1,5 @@
 import React from 'react';
-import CodePlayground from './CodePlayground';
+import CodePlayground from './CodePlaygroundLazy';
 
 /**
  * Componente para código inline executável

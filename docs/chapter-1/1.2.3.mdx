@@ -1,6 +1,7 @@
 # 1.2.3 Ordens de Crescimento
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 Os exemplos anteriores ilustram que processos podem diferir consideravelmente nas taxas em que consomem recursos computacionais. Uma maneira conveniente de descrever essa diferença é usar a noção de *ordem de crescimento* para obter uma medida grosseira dos recursos exigidos por um processo à medida que as entradas se tornam maiores.
 
@@ -64,3 +65,5 @@ function sine(angle) {
 
 <a name="footnote-1"></a>
 **[1](#footnote-link-1)** Estas afirmações mascaram uma grande quantidade de simplificação excessiva. Por exemplo, se contarmos passos do processo como "operações de máquina", estamos fazendo a suposição de que o número de operações de máquina necessárias para realizar, digamos, uma multiplicação é independente do tamanho dos números a serem multiplicados, o que é falso se os números forem suficientemente grandes. Observações similares valem para as estimativas de espaço. Como o design e a descrição de um processo, a análise de um processo pode ser realizada em vários níveis de abstração.
+
+<HelpFooter />

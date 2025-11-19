@@ -1,6 +1,7 @@
 # 1.1.6 Expressões Condicionais e Predicados
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 O poder expressivo da classe de funções que podemos definir neste ponto é muito limitado, porque não temos como fazer testes e realizar diferentes operações dependendo do resultado de um teste. Por exemplo, não podemos declarar uma função que calcula o valor absoluto de um número testando se o número é não-negativo e tomando diferentes ações em cada caso de acordo com a regra:
 
@@ -261,3 +262,5 @@ Que comportamento Ben observará com um interpretador que usa avaliação de ord
 <a name="footnote-1"></a> [[1]](#footnote-link-1) Condicionais em JavaScript completo aceitam qualquer valor, não apenas um booleano, como resultado da avaliação da expressão do _predicado_. Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
 
 <a name="footnote-2"></a> [[2]](#footnote-link-2) "Interpretado como verdadeiro ou falso" significa isto: Em JavaScript completo, condicionais podem aceitar qualquer valor como resultado da avaliação da expressão predicado (veja a nota de rodapé na seção 4.1.2 para detalhes). Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
+
+<HelpFooter />

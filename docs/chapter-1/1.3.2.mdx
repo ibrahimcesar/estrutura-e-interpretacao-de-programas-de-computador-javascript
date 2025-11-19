@@ -1,6 +1,7 @@
 # 1.3.2 Construindo Funções Usando Expressões Lambda
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 Ao usar `sum` como na seção 1.3.1, parece terrivelmente inconveniente ter que declarar funções triviais como `pi_term` e `pi_next` apenas para poder usá-las como argumentos para nossa função de ordem superior. Em vez de declarar `pi_next` e `pi_term`, seria mais conveniente ter uma forma de especificar diretamente "a função que retorna sua entrada incrementada em 4" e "a função que retorna o recíproco de sua entrada vezes sua entrada mais 2". Podemos fazer isso introduzindo a *expressão lambda* como uma forma sintática para criar funções. Usando expressões lambda, podemos descrever o que queremos como
 
@@ -282,3 +283,5 @@ O programa leva a um erro, porque o `a` em `a + x` é usado antes que sua declar
 
 <a name="footnote-6"></a>
 **[6](#footnote-link-6)** O nome "lambda" é usado porque a notação de expressão lambda tem suas raízes no *lambda calculus*, uma linguagem formal matemática introduzida pelo lógico matemático Alonzo Church (1941). Church desenvolveu o lambda calculus para fornecer uma base matemática rigorosa para estudar as noções de função e aplicação de função. O lambda calculus se tornou uma ferramenta básica para pesquisa matemática em semântica de linguagens de programação.
+
+<HelpFooter />

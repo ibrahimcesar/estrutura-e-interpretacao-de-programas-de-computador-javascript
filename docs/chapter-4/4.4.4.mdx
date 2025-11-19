@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 # Implementando o Sistema de Consultas
 
 A Seção 4.4.3 descreveu como o sistema de consultas funciona. Agora preencheremos os detalhes apresentando uma implementação completa do sistema.
@@ -841,3 +843,5 @@ function extend(variable, value, frame) {
 ```
 
 Observe que `extend` retorna um novo frame que contém a vinculação adicional mas compartilha estrutura de cauda com o frame original. Esta técnica de compartilhamento de estrutura é crucial para a eficiência do sistema de consultas; sem ela, toda aplicação de regra exigiria copiar toda a estrutura de vinculações no frame.
+
+<HelpFooter />

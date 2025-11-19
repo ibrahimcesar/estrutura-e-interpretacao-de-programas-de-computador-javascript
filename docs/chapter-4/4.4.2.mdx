@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 ## Como o Sistema de Consultas Funciona
 
 <a id="sec:how-query-works"></a>
@@ -185,3 +187,5 @@ O tipo de consulta mais geral é a consulta simples, que consulta o banco de dad
 ### O Loop do Driver de Consultas e Instanciação
 
 A forma final de nosso sistema de consultas é determinada pela maneira como o loop do driver interage com o avaliador de consultas. O loop do driver lê consultas do terminal do usuário. Para cada consulta, o driver passa a consulta para o avaliador de consultas junto com uma stream consistindo de um único frame vazio. Isso irá produzir uma stream de frames. Para cada frame no stream resultante, o loop do driver usa o frame para instanciar o padrão de consulta original (isto é, encontra os valores para as variáveis na consulta que são especificadas pelo frame) e imprime o resultado. O loop do driver também verifica a presença da forma especial `assert`, que sinaliza que uma entrada deve ser adicionada ao banco de dados, e da palavra-chave `try-again` que solicita mais respostas para a consulta anterior.
+
+<HelpFooter />

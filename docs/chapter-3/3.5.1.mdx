@@ -2,7 +2,8 @@
 title: 3.5.1 Streams São Listas Atrasadas
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.5.1 Streams São Listas Atrasadas
 
@@ -287,3 +288,5 @@ Qual é o valor de `sum` após cada uma das instruções acima ser avaliada? Qua
 [^4]: Há muitas implementações possíveis de streams além da descrita nesta seção. Avaliação atrasada, que é a chave para tornar streams práticos, era inerente ao método de passagem de parâmetros *call-by-name* do Algol 60. O uso desse mecanismo para implementar streams foi descrito pela primeira vez por Landin (1965). Avaliação atrasada para streams foi introduzida no Lisp por Friedman e Wise (1976). Em sua implementação, `cons` (o equivalente em Lisp de nossa função `pair`) sempre atrasa a avaliação de seus argumentos, de modo que listas automaticamente se comportam como streams. A otimização de memoização também é conhecida como *call-by-need*. A comunidade Algol se referiria aos nossos objetos atrasados originais como *call-by-name thunks* e às versões otimizadas como *call-by-need thunks*.
 
 [^5]: Exercícios como 3.51 e 3.52 são valiosos para testar nossa compreensão de como a avaliação atrasada funciona. Por outro lado, misturar avaliação atrasada com impressão—e, pior ainda, com atribuição—é extremamente confuso, e instrutores de cursos sobre linguagens de computador tradicionalmente atormentam seus alunos com questões de exame como as desta seção. Desnecessário dizer, escrever programas que dependem de tais sutilezas é um estilo de programação odioso. Parte do poder do processamento de streams é que nos permite ignorar a ordem em que eventos realmente acontecem em nossos programas. Infelizmente, isso é precisamente o que não podemos nos dar ao luxo de fazer na presença de atribuição, que nos força a nos preocupar com tempo e mudança.
+
+<HelpFooter />

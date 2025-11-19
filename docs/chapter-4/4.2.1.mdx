@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 # 4.2.1 Ordem Normal e Ordem Aplicativa
 
 Na seção 1.1, onde começamos nossa discussão sobre modelos de avaliação, observamos que JavaScript é uma linguagem de **ordem aplicativa**, ou seja, todos os argumentos para funções JavaScript são avaliados quando a função é aplicada. Em contraste, linguagens de **ordem normal** atrasam a avaliação de argumentos de funções até que os valores reais dos argumentos sejam necessários. Atrasar a avaliação de argumentos de funções até o último momento possível (por exemplo, até que sejam exigidos por uma operação primitiva) é chamado de **avaliação preguiçosa** (_lazy evaluation_)[^1].
@@ -75,3 +77,5 @@ Quando avaliado em modo preguiçoso, o código passa por redução de ordem norm
 Ben Bitdiddle e Alyssa P. Hacker discordam sobre a importância da avaliação preguiçosa para implementar coisas como `unless`. Ben aponta que é possível implementar `unless` em ordem aplicativa como uma forma sintática. Alyssa contra-argumenta que, se fizéssemos isso, `unless` seria meramente sintaxe, não uma função que poderia ser usada em conjunto com funções de ordem superior.
 
 Preencha os detalhes de ambos os lados do argumento. Mostre como implementar `unless` como um componente derivado (como combinação de operadores), capturando em `evaluate` aplicações cuja expressão de função é o nome `unless`. Dê um exemplo de uma situação onde pode ser útil ter `unless` disponível como uma função, ao invés de uma forma sintática.
+
+<HelpFooter />
