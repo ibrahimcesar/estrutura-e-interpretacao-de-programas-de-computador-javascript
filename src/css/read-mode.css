@@ -1,0 +1,50 @@
+/**
+ * Estilos para Modo de Leitura (Distraction-Free)
+ *
+ * Quando data-read-mode="true" está presente no HTML,
+ * a sidebar é escondida para proporcionar uma experiência
+ * de leitura sem distrações.
+ */
+
+/* Esconder sidebar no modo leitura */
+html[data-read-mode='true'] aside.theme-doc-sidebar-container {
+  display: none !important;
+}
+
+/* Expandir conteúdo principal quando sidebar está escondida */
+html[data-read-mode='true'] .main-wrapper {
+  max-width: 100% !important;
+}
+
+html[data-read-mode='true'] .container {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+}
+
+html[data-read-mode='true'] .col--9 {
+  --ifm-col-width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Transição suave */
+aside.theme-doc-sidebar-container,
+.main-wrapper,
+.container {
+  transition: all 0.3s ease;
+}
+
+/* Ajustar padding do conteúdo no modo leitura */
+html[data-read-mode='true'] article {
+  max-width: 900px;
+  margin: 0 auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+/* Mobile: já está sem sidebar, então não precisa de ajustes especiais */
+@media (max-width: 996px) {
+  html[data-read-mode='true'] aside.theme-doc-sidebar-container {
+    /* Em mobile a sidebar já é um menu hambúrguer, então mantemos funcionamento normal */
+    display: block !important;
+  }
+}
