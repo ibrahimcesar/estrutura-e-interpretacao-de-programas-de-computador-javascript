@@ -315,6 +315,41 @@ const sidebars = {
       ],
     },
     {
+      type: 'category',
+      label: 'Capítulo 5: Computação com Máquinas de Registradores',
+      link: {
+        type: 'doc',
+        id: 'chapter-5/5.0',
+      },
+      items: [
+        {
+          type: 'doc',
+          id: 'chapter-5/5.1',
+          label: '5.1 Projetando Máquinas de Registradores',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.2',
+          label: '5.2 Um Simulador de Máquina de Registradores',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.3',
+          label: '5.3 Alocação de Armazenamento e Coleta de Lixo',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.4',
+          label: '5.4 O Avaliador de Controle Explícito',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.5',
+          label: '5.5 Compilação',
+        },
+      ],
+    },
+    {
       type: 'doc',
       id: 'referencias',
       label: 'Referências',
