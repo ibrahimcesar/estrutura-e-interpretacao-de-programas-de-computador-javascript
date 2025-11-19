@@ -323,29 +323,76 @@ const sidebars = {
       },
       items: [
         {
-          type: 'doc',
-          id: 'chapter-5/5.1',
+          type: 'category',
           label: '5.1 Projetando Máquinas de Registradores',
+          link: {
+            type: 'doc',
+            id: 'chapter-5/5.1',
+          },
+          items: [
+            'chapter-5/5.1.1',
+            'chapter-5/5.1.2',
+            'chapter-5/5.1.3',
+            'chapter-5/5.1.4',
+            'chapter-5/5.1.5',
+          ],
         },
         {
-          type: 'doc',
-          id: 'chapter-5/5.2',
+          type: 'category',
           label: '5.2 Um Simulador de Máquina de Registradores',
+          link: {
+            type: 'doc',
+            id: 'chapter-5/5.2',
+          },
+          items: [
+            'chapter-5/5.2.1',
+            'chapter-5/5.2.2',
+            'chapter-5/5.2.3',
+            'chapter-5/5.2.4',
+          ],
         },
         {
-          type: 'doc',
-          id: 'chapter-5/5.3',
+          type: 'category',
           label: '5.3 Alocação de Armazenamento e Coleta de Lixo',
+          link: {
+            type: 'doc',
+            id: 'chapter-5/5.3',
+          },
+          items: [
+            'chapter-5/5.3.1',
+            'chapter-5/5.3.2',
+          ],
         },
         {
-          type: 'doc',
-          id: 'chapter-5/5.4',
+          type: 'category',
           label: '5.4 O Avaliador de Controle Explícito',
+          link: {
+            type: 'doc',
+            id: 'chapter-5/5.4',
+          },
+          items: [
+            'chapter-5/5.4.1',
+            'chapter-5/5.4.2',
+            'chapter-5/5.4.3',
+            'chapter-5/5.4.4',
+          ],
         },
         {
-          type: 'doc',
-          id: 'chapter-5/5.5',
+          type: 'category',
           label: '5.5 Compilação',
+          link: {
+            type: 'doc',
+            id: 'chapter-5/5.5',
+          },
+          items: [
+            'chapter-5/5.5.1',
+            'chapter-5/5.5.2',
+            'chapter-5/5.5.3',
+            'chapter-5/5.5.4',
+            'chapter-5/5.5.5',
+            'chapter-5/5.5.6',
+            'chapter-5/5.5.7',
+          ],
         },
       ],
     },

@@ -1,0 +1,46 @@
+---
+title: 5.2.3 Gerando Funções de Execução para Instruções
+---
+
+# 5.2.3 Gerando Funções de Execução para Instruções
+
+:::info Em Tradução
+Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+
+Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
+:::
+
+## Visão Geral
+
+Esta seção detalha como cada tipo de instrução é convertido em uma função de execução:
+
+- Geração de código para cada tipo de instrução
+- Implementação de `assign`, `test`, `branch`, `go_to`, `save`, `restore`
+- Avaliação de expressões de registrador
+- Aplicação de operações
+
+## Tópicos Principais
+
+- Funções de execução para cada tipo de instrução
+- Tratamento de diferentes formas de `assign`
+- Implementação de testes e ramificações
+- Manipulação de pilha (`save`/`restore`)
+- Avaliação de expressões
+- Aplicação de operações primitivas
+
+## Detalhes de Implementação
+
+- `make_assign` - Gerar função para atribuições
+- `make_test` - Gerar função para testes
+- `make_branch` - Gerar função para ramificações
+- `make_go_to` - Gerar função para saltos
+- `make_save`/`make_restore` - Gerar funções para pilha
+- `make_operation_exp` - Avaliar expressões de operação
+
+## Exercícios
+
+Exercícios sobre modificação e extensão do gerador de código de instruções.
+
+---
+
+**Nota**: Esta seção mostra os detalhes de como instruções abstratas se tornam código executável.

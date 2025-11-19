@@ -1,0 +1,45 @@
+---
+title: 5.4.1 O Núcleo do Avaliador de Controle Explícito
+---
+
+# 5.4.1 O Núcleo do Avaliador de Controle Explícito
+
+:::info Em Tradução
+Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+
+Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
+:::
+
+## Visão Geral
+
+Esta seção central implementa o ciclo eval-apply como uma máquina de registradores:
+
+- Tradução do avaliador metacircular para linguagem de máquina
+- Ciclo eval-apply em controle explícito
+- Registradores: `comp`, `env`, `val`, `continue`, `fun`, `argl`, `unev`
+- Controle explícito de fluxo de execução
+
+## Tópicos Principais
+
+- Estrutura do avaliador de controle explícito
+- Registradores principais e suas funções
+- Ciclo eval-apply
+- Avaliação de expressões simples
+- Aplicação de funções
+- Mecanismo de continuação
+
+## Controlador do Avaliador
+
+- Loop principal `eval_dispatch`
+- Classificação de componentes
+- Avaliação de expressões primitivas
+- Preparação para aplicação de função
+- Retorno de valores
+
+## Exercícios
+
+Exercícios sobre modificação e extensão do avaliador de controle explícito.
+
+---
+
+**Nota**: Esta seção conecta os modelos de avaliação dos Capítulos 3 e 4 com a implementação em máquina.
