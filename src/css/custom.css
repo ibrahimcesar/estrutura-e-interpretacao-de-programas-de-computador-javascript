@@ -4,6 +4,9 @@
  * Este arquivo contém estilos customizados para o tema do Docusaurus.
  */
 
+/* Importar estilos do modo leitura */
+@import './read-mode.css';
+
 :root {
   /* Cores primárias */
   --ifm-color-primary: #f7df1e;
