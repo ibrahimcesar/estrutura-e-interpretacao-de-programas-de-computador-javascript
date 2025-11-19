@@ -2,7 +2,7 @@
 # Structure and Interpretation of Computer Programs - JavaScript Adaptation
 # Estrutura e Interpretação de Programas de Computador - Adaptação em JavaScript
 
-.PHONY: help lint spell-check link-check check format clean install test colaborar translation-status docker-check wordlist-stats ci-local reorder-wordlist pr
+.PHONY: help lint spell-check link-check check format clean install test colaborar translation-status docker-check wordlist-stats ci-local reorder-wordlist pr build serve dev
 
 # Default target
 .DEFAULT_GOAL := help
@@ -32,6 +32,66 @@ help: ## 📖 Mostra esta mensagem de ajuda com todos os comandos disponíveis
 	@echo ""
 
 ##@ 🛠️  Desenvolvimento
+
+dev: ## 🚀 Inicia servidor de desenvolvimento com hot-reload (localhost:3000)
+	@echo "$(BOLD)$(CYAN)🚀 Iniciando servidor de desenvolvimento...$(NC)"
+	@echo ""
+	@if [ -f node_modules/.bin/docusaurus ]; then \
+		echo "$(GREEN)✓ Docusaurus encontrado!$(NC)"; \
+		echo ""; \
+		echo "$(BOLD)$(YELLOW)📌 O servidor será iniciado em:$(NC) $(CYAN)http://localhost:3000$(NC)"; \
+		echo "$(YELLOW)⏱️  Aguarde alguns segundos enquanto compilamos...$(NC)"; \
+		echo ""; \
+		npm start; \
+	else \
+		echo "$(BOLD)$(RED)✗ Erro: Docusaurus não está instalado!$(NC)"; \
+		echo "$(YELLOW)➜ Execute primeiro:$(NC) $(CYAN)make install$(NC)"; \
+		echo ""; \
+		exit 1; \
+	fi
+
+build: ## 🏗️  Compila o site estático para produção (pasta build/)
+	@echo "$(BOLD)$(CYAN)🏗️  Compilando site para produção...$(NC)"
+	@echo ""
+	@if [ -f node_modules/.bin/docusaurus ]; then \
+		if npm run build; then \
+			echo ""; \
+			echo "$(BOLD)$(GREEN)✅ Build concluído com sucesso!$(NC)"; \
+			echo ""; \
+			echo "$(BOLD)$(YELLOW)📁 Arquivos gerados em:$(NC) $(CYAN)./build/$(NC)"; \
+			echo ""; \
+			echo "$(MAGENTA)📌 Próximo passo:$(NC) Execute $(CYAN)make serve$(NC) para visualizar o build localmente"; \
+			echo ""; \
+		else \
+			echo ""; \
+			echo "$(BOLD)$(RED)✗ Erro durante o build!$(NC)"; \
+			echo "$(YELLOW)➜ Verifique os erros acima e corrija$(NC)"; \
+			echo ""; \
+			exit 1; \
+		fi \
+	else \
+		echo "$(BOLD)$(RED)✗ Erro: Docusaurus não está instalado!$(NC)"; \
+		echo "$(YELLOW)➜ Execute primeiro:$(NC) $(CYAN)make install$(NC)"; \
+		echo ""; \
+		exit 1; \
+	fi
+
+serve: ## 🌐 Serve o build local para testes (localhost:3000)
+	@echo "$(BOLD)$(CYAN)🌐 Servindo build local...$(NC)"
+	@echo ""
+	@if [ -d build ]; then \
+		echo "$(GREEN)✓ Diretório build/ encontrado!$(NC)"; \
+		echo ""; \
+		echo "$(BOLD)$(YELLOW)📌 O site será servido em:$(NC) $(CYAN)http://localhost:3000$(NC)"; \
+		echo "$(YELLOW)⏱️  Servidor iniciando...$(NC)"; \
+		echo ""; \
+		npm run serve; \
+	else \
+		echo "$(BOLD)$(RED)✗ Erro: Diretório build/ não encontrado!$(NC)"; \
+		echo "$(YELLOW)➜ Execute primeiro:$(NC) $(CYAN)make build$(NC)"; \
+		echo ""; \
+		exit 1; \
+	fi
 
 install: ## 📦 Instala todas as dependências necessárias (Node.js, Python, aspell)
 	@echo "$(BOLD)$(CYAN)🚀 Instalando dependências...$(NC)"
