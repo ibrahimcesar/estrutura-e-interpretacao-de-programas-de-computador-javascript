@@ -1,15 +1,547 @@
-# 4.3.3 Implementando o Avaliador amb
+# 4.3.3 Implementando o Avaliador `amb`
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo original está sendo convertido do formato fonte para o formato Docusaurus/MDX.
+A avaliação de um programa JavaScript comum pode retornar um valor, pode nunca terminar, ou pode sinalizar um erro. Em JavaScript não determinístico, a avaliação de um programa pode adicionalmente resultar na descoberta de um beco sem saída, caso em que a avaliação deve retroceder para um ponto de escolha anterior. A interpretação de JavaScript não determinístico é complicada por este caso extra.
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+Construiremos o avaliador `amb` para JavaScript não determinístico modificando o avaliador analisador da seção 4.1.7.[^1] Como no avaliador analisador, a avaliação de um componente é realizada chamando uma função de execução produzida pela análise daquele componente. A diferença entre a interpretação de JavaScript comum e a interpretação de JavaScript não determinístico estará inteiramente nas funções de execução.
 
-## Próximos Passos
+[^1]: Escolhemos implementar o avaliador preguiçoso na seção 4.2 como uma modificação do avaliador metacircular comum da seção 4.1.1. Em contraste, basearemos o avaliador `amb` no avaliador analisador da seção 4.1.7, porque as funções de execução naquele avaliador fornecem uma estrutura conveniente para implementar backtracking.
 
-Esta seção abordará:
-- Implementação do avaliador `amb`
-- Mecanismos de backtracking
-- Detalhes técnicos da avaliação não-determinística
+## Funções de execução e continuações
 
+Lembre-se de que as funções de execução para o avaliador comum recebem um argumento: o ambiente de execução. Em contraste, as funções de execução no avaliador `amb` recebem três argumentos: o ambiente e duas funções chamadas _funções de continuação_. A avaliação de um componente terminará chamando uma destas duas continuações: Se a avaliação resulta em um valor, a _continuação de sucesso_ é chamada com aquele valor; se a avaliação resulta na descoberta de um beco sem saída, a _continuação de falha_ é chamada. Construir e chamar continuações apropriadas é o mecanismo pelo qual o avaliador não determinístico implementa backtracking.
+
+É trabalho da continuação de sucesso receber um valor e prosseguir com a computação. Junto com aquele valor, a continuação de sucesso recebe outra continuação de falha, que deve ser chamada subsequentemente se o uso daquele valor levar a um beco sem saída.
+
+É trabalho da continuação de falha tentar outro ramo do processo não determinístico. A essência da linguagem não determinística está no fato de que componentes podem representar escolhas entre alternativas. A avaliação de tal componente deve prosseguir com uma das escolhas alternativas indicadas, mesmo que não se saiba de antemão quais escolhas levarão a resultados aceitáveis. Para lidar com isso, o avaliador escolhe uma das alternativas e passa este valor para a continuação de sucesso. Junto com este valor, o avaliador constrói e passa adiante uma continuação de falha que pode ser chamada depois para escolher uma alternativa diferente.
+
+Uma falha é disparada durante a avaliação (isto é, uma continuação de falha é chamada) quando um programa de usuário explicitamente rejeita a linha de ataque atual (por exemplo, uma chamada a `require` pode resultar na execução de `amb()`, uma expressão que sempre falha—veja seção 4.3.1). A continuação de falha em mãos naquele ponto fará com que o ponto de escolha mais recente escolha outra alternativa. Se não houver mais alternativas a serem consideradas naquele ponto de escolha, uma falha em um ponto de escolha anterior é disparada, e assim por diante. Continuações de falha também são invocadas pelo loop de driver em resposta a um pedido de `retry`, para encontrar outro valor do programa.
+
+Além disso, se uma operação de efeito colateral (como atribuição a uma variável) ocorrer em um ramo do processo resultante de uma escolha, pode ser necessário, quando o processo encontrar um beco sem saída, desfazer o efeito colateral antes de fazer uma nova escolha. Isso é realizado fazendo com que a operação de efeito colateral produza uma continuação de falha que desfaça o efeito colateral e propague a falha.
+
+Em resumo, continuações de falha são construídas por
+
+- expressões `amb`—para fornecer um mecanismo para fazer escolhas alternativas se a escolha atual feita pela expressão `amb` levar a um beco sem saída;
+- o driver de nível superior—para fornecer um mecanismo para relatar falha quando as escolhas se esgotam;
+- atribuições—para interceptar falhas e desfazer atribuições durante o backtracking.
+
+Falhas são iniciadas apenas quando um beco sem saída é encontrado. Isso ocorre
+
+- se o programa de usuário executar `amb()`;
+- se o usuário digitar `retry` no driver de nível superior.
+
+Continuações de falha também são chamadas durante o processamento de uma falha:
+
+- Quando a continuação de falha criada por uma atribuição termina de desfazer um efeito colateral, ela chama a continuação de falha que interceptou, para propagar a falha de volta ao ponto de escolha que levou a esta atribuição ou ao nível superior.
+- Quando a continuação de falha para um `amb` esgota as escolhas, ela chama a continuação de falha que foi originalmente dada ao `amb`, para propagar a falha de volta ao ponto de escolha anterior ou ao nível superior.
+
+## Estrutura do avaliador
+
+As funções de sintaxe e representação de dados para o avaliador `amb`, e também a função básica `analyze` são idênticas às do avaliador da seção 4.1.7, exceto pelo fato de que precisamos de funções de sintaxe adicionais para reconhecer a forma sintática `amb`:
+
+```javascript
+function is_amb(component) {
+    return is_tagged_list(component, "application") &&
+           is_name(function_expression(component)) &&
+           symbol_of_name(function_expression(component)) === "amb";
+}
+function amb_choices(component) {
+    return arg_expressions(component);
+}
+```
+
+Continuamos a usar a função parse da seção 4.1.2, que não suporta `amb` como uma forma sintática e em vez disso trata `amb(`...`)` como uma aplicação de função. A função `is_amb` garante que sempre que o nome `amb` aparecer como a expressão de função de uma aplicação, o avaliador trate a "aplicação" como um ponto de escolha não determinístico.[^2]
+
+[^2]: Com este tratamento, `amb` não é mais um nome com escopo adequado. Para evitar confusão, devemos nos abster de declarar `amb` como um nome em nossos programas não determinísticos.
+
+Também devemos adicionar ao despacho em `analyze` uma cláusula que reconhecerá tais expressões e gerará uma função de execução apropriada:
+
+```javascript
+...
+: is_amb(component)
+? analyze_amb(component)
+: is_application(component)
+...
+```
+
+A função de nível superior `ambeval` (similar à versão de `evaluate` dada na seção 4.1.7) analisa o componente dado e aplica a função de execução resultante ao ambiente dado, junto com duas continuações dadas:
+
+```javascript
+function ambeval(component, env, succeed, fail) {
+    return analyze(component)(env, succeed, fail);
+}
+```
+
+Uma continuação de sucesso é uma função de dois argumentos: o valor recém-obtido e outra continuação de falha para ser usada se aquele valor levar a uma falha subsequente. Uma continuação de falha é uma função sem argumentos. Então a forma geral de uma função de execução é
+
+```javascript
+(env, succeed, fail) => {
+    // succeed is (value, fail) => ...
+    // fail is () => ...
+    ...
+}
+```
+
+Por exemplo, executar
+
+```javascript
+ambeval(component,
+        the_global_environment,
+        (value, fail) => value,
+        () => "failed");
+```
+
+tentará avaliar o componente dado e retornará ou o valor do componente (se a avaliação tiver sucesso) ou o string `"failed"` (se a avaliação falhar). A chamada a `ambeval` no loop de driver mostrado abaixo usa funções de continuação muito mais complicadas, que continuam o loop e suportam o pedido de `retry`.
+
+A maior parte da complexidade do avaliador `amb` resulta das maquinações de passar as continuações à medida que as funções de execução chamam umas às outras. Ao percorrer o código a seguir, você deve comparar cada uma das funções de execução com a função correspondente para o avaliador comum dada na seção 4.1.7.
+
+## Expressões simples
+
+As funções de execução para os tipos mais simples de expressões são essencialmente as mesmas que para o avaliador comum, exceto pela necessidade de gerenciar as continuações. As funções de execução simplesmente têm sucesso com o valor da expressão, passando adiante a continuação de falha que foi passada para elas.
+
+```javascript
+function analyze_literal(component) {
+    return (env, succeed, fail) =>
+             succeed(literal_value(component), fail);
+}
+```
+
+```javascript
+function analyze_name(component) {
+    return (env, succeed, fail) =>
+             succeed(lookup_symbol_value(symbol_of_name(component),
+                                         env),
+                     fail);
+}
+```
+
+```javascript
+function analyze_lambda_expression(component) {
+    const params = lambda_parameter_symbols(component);
+    const bfun = analyze(lambda_body(component));
+    return (env, succeed, fail) =>
+             succeed(make_function(params, bfun, env),
+                     fail);
+}
+```
+
+Note que procurar um nome sempre "tem sucesso." Se `lookup_symbol_value` falhar ao encontrar o nome, ele sinaliza um erro, como de costume. Tal "falha" indica um bug de programa—uma referência a um nome não vinculado; não é uma indicação de que devemos tentar outra escolha não determinística em vez da que está sendo tentada atualmente.
+
+## Condicionais e sequências
+
+Condicionais também são tratados de maneira similar ao avaliador comum. A função de execução gerada por `analyze_conditional` invoca a função `pfun` de execução do predicado com uma continuação de sucesso que verifica se o valor do predicado é verdadeiro e prossegue para executar ou o consequente ou a alternativa. Se a execução de `pfun` falhar, a continuação de falha original para a expressão condicional é chamada.
+
+```javascript
+function analyze_conditional(component) {
+    const pfun = analyze(conditional_predicate(component));
+    const cfun = analyze(conditional_consequent(component));
+    const afun = analyze(conditional_alternative(component));
+    return (env, succeed, fail) =>
+             pfun(env,
+                  // continuação de sucesso para avaliar o predicado
+                  // para obter pred_value
+                  (pred_value, fail2) =>
+                    is_truthy(pred_value)
+                    ? cfun(env, succeed, fail2)
+                    : afun(env, succeed, fail2),
+                  // continuação de falha para avaliar o predicado
+                  fail);
+}
+```
+
+Sequências também são tratadas da mesma maneira que no avaliador anterior, exceto pelas maquinações na subfunção `sequentially` que são necessárias para passar as continuações. Isto é, para executar sequencialmente `a` e então `b`, chamamos `a` com uma continuação de sucesso que chama `b`.
+
+```javascript
+function analyze_sequence(stmts) {
+    function sequentially(a, b) {
+        return (env, succeed, fail) =>
+                 a(env,
+                   // continuação de sucesso para chamar a
+                   (a_value, fail2) =>
+                     is_return_value(a_value)
+                     ? succeed(a_value, fail2)
+                     : b(env, succeed, fail2),
+                   // continuação de falha para chamar a
+                   fail);
+    }
+    function loop(first_fun, rest_funs) {
+        return is_null(rest_funs)
+               ? first_fun
+               : loop(sequentially(first_fun, head(rest_funs)),
+                      tail(rest_funs));
+    }
+    const funs = map(analyze, stmts);
+    return is_null(funs)
+           ? env => undefined
+           : loop(head(funs), tail(funs));
+}
+```
+
+## Declarações e atribuições
+
+Declarações são outro caso onde devemos fazer algum esforço para gerenciar as continuações, porque é necessário avaliar a expressão declaration-value antes de realmente declarar o novo nome. Para realizar isso, a função `vfun` de execução do declaration-value é chamada com o ambiente, uma continuação de sucesso e a continuação de falha. Se a execução de `vfun` tiver sucesso, obtendo um valor `val` para a nome declarado, o nome é declarado e o sucesso é propagado:
+
+```javascript
+function analyze_declaration(component) {
+    const symbol = declaration_symbol(component);
+    const vfun = analyze(declaration_value_expression(component));
+    return (env, succeed, fail) =>
+             vfun(env,
+                  (val, fail2) => {
+                      assign_symbol_value(symbol, val, env);
+                      return succeed(undefined, fail2);
+                  },
+                  fail);
+}
+```
+
+Atribuições são mais interessantes. Este é o primeiro lugar onde realmente usamos as continuações, em vez de apenas passá-las adiante. A função de execução para atribuições começa como a para declarações. Ela primeira tenta obter o novo valor a ser atribuído ao nome. Se esta avaliação de `vfun` falhar, a atribuição falha.
+
+Se `vfun` tiver sucesso, no entanto, e prosseguirmos para fazer a atribuição, devemos considerar a possibilidade de que este ramo da computação possa falhar mais tarde, o que exigirá que retrocedamos para fora da atribuição. Assim, devemos providenciar para desfazer a atribuição como parte do processo de backtracking.[^3]
+
+[^3]: Não nos preocupamos em desfazer declarações, já que assumimos que um nome não pode ser usado antes da avaliação de sua declaração, então seu valor anterior não importa.
+
+Isso é realizado dando a `vfun` uma continuação de sucesso (marcada com o comentário `*1*` abaixo) que salva o valor antigo da variável antes de atribuir o novo valor à variável e prosseguir a partir da atribuição. A continuação de falha que é passada junto com o valor da atribuição (marcada com o comentário `*2*` abaixo) restaura o valor antigo da variável antes de continuar a falha. Isto é, uma atribuição bem-sucedida fornece uma continuação de falha que interceptará uma falha subsequente; qualquer falha que de outra forma teria chamado `fail2` chama esta função em vez disso, para desfazer a atribuição antes de realmente chamar `fail2`.
+
+```javascript
+function analyze_assignment(component) {
+    const symbol = assignment_symbol(component);
+    const vfun = analyze(assignment_value_expression(component));
+    return (env, succeed, fail) =>
+             vfun(env,
+                  (val, fail2) => {              // *1*
+                      const old_value = lookup_symbol_value(symbol,
+                                                            env);
+                      assign_symbol_value(symbol, val, env);
+                      return succeed(val,
+                                     () => {     // *2*
+                                         assign_symbol_value(symbol,
+                                                             old_value,
+                                                             env);
+                                         return fail2();
+                                     });
+                  },
+                  fail);
+}
+```
+
+## Instruções return e blocos
+
+Analisar instruções return é direto. A expressão return é analisada para produzir uma função de execução. A função de execução para a instrução return chama aquela função de execução com uma continuação de sucesso que envolve o valor de retorno em um objeto de valor de retorno e o passa para a continuação de sucesso original.
+
+```javascript
+function analyze_return_statement(component) {
+    const rfun = analyze(return_expression(component));
+    return (env, succeed, fail) =>
+             rfun(env,
+                  (val, fail2) =>
+                    succeed(make_return_value(val), fail2),
+                  fail);
+}
+```
+
+A função de execução para blocos chama a função de execução do corpo em um ambiente estendido, sem alterar as continuações de sucesso ou falha.
+
+```javascript
+function analyze_block(component) {
+    const body = block_body(component);
+    const locals = scan_out_declarations(body);
+    const unassigneds = list_of_unassigned(locals);
+    const bfun = analyze(body);
+    return (env, succeed, fail) =>
+             bfun(extend_environment(locals, unassigneds, env),
+                  succeed,
+                  fail);
+}
+```
+
+## Aplicações de função
+
+A função de execução para aplicações não contém novas ideias exceto pela complexidade técnica de gerenciar as continuações. Esta complexidade surge em `analyze_application`, devido à necessidade de acompanhar as continuações de sucesso e falha à medida que avaliamos as expressões de argumento. Usamos uma função `get_args` para avaliar a lista de expressões de argumento, em vez de um simples `map` como no avaliador comum.
+
+```javascript
+function analyze_application(component) {
+    const ffun = analyze(function_expression(component));
+    const afuns = map(analyze, arg_expressions(component));
+    return (env, succeed, fail) =>
+             ffun(env,
+                  (fun, fail2) =>
+                    get_args(afuns,
+                             env,
+                             (args, fail3) =>
+                               execute_application(fun,
+                                                   args,
+                                                   succeed,
+                                                   fail3),
+                             fail2),
+                  fail);
+}
+```
+
+Em `get_args`, note como percorrer a lista de funções `afun` de execução e construir a lista resultante de `args` é realizado chamando cada `afun` na lista com uma continuação de sucesso que chama recursivamente `get_args`. Cada uma dessas chamadas recursivas a `get_args` tem uma continuação de sucesso cujo valor é a nova lista resultante do uso de `pair` para adicionar o argumento recém-obtido à lista de argumentos acumulados:
+
+```javascript
+function get_args(afuns, env, succeed, fail) {
+    return is_null(afuns)
+           ? succeed(null, fail)
+           : head(afuns)(env,
+                         // continuação de sucesso para este afun
+                         (arg, fail2) =>
+                           get_args(tail(afuns),
+                                    env,
+                                    // continuação de sucesso para
+                                    // chamada recursiva a get_args
+                                    (args, fail3) =>
+                                      succeed(pair(arg, args),
+                                              fail3),
+                                    fail2),
+                         fail);
+}
+```
+
+A aplicação função real, que é executada por `execute_application`, é realizada da mesma maneira que para o avaliador comum, exceto pela necessidade de gerenciar as continuações.
+
+```javascript
+function execute_application(fun, args, succeed, fail) {
+    return is_primitive_function(fun)
+           ? succeed(apply_primitive_function(fun, args),
+                     fail)
+           : is_compound_function(fun)
+           ? function_body(fun)(
+                 extend_environment(function_parameters(fun),
+                                    args,
+                                    function_environment(fun)),
+                 (body_result, fail2) =>
+                   succeed(is_return_value(body_result)
+                           ? return_value_content(body_result)
+                           : undefined,
+                           fail2),
+                 fail)
+           : error(fun, "unknown function type - execute_application");
+}
+```
+
+## Avaliando expressões `amb`
+
+A forma sintática `amb` é o elemento chave na linguagem não determinística. Aqui vemos a essência do processo de interpretação e a razão para acompanhar as continuações. A função de execução para `amb` define um loop `try_next` que percorre as funções de execução para todos os valores possíveis da expressão `amb`. Cada função de execução é chamada com uma continuação de falha que tentará a próxima. Quando não houver mais alternativas a tentar, toda a expressão `amb` falha.
+
+```javascript
+function analyze_amb(component) {
+    const cfuns = map(analyze, amb_choices(component));
+    return (env, succeed, fail) => {
+               function try_next(choices) {
+                   return is_null(choices)
+                          ? fail()
+                          : head(choices)(env,
+                                          succeed,
+                                          () =>
+                                            try_next(tail(choices)));
+               }
+               return try_next(cfuns);
+           };
+}
+```
+
+## Driver loop
+
+O loop de driver para o avaliador `amb` é complexo, devido ao mecanismo que permite ao usuário tentar novamente avaliar um programa. O driver usa uma função chamada `internal_loop`, que recebe como argumento uma função `retry`. A intenção é que chamar `retry` deva prosseguir para a próxima alternativa não tentada na avaliação não determinística. A função `internal_loop` ou chama `retry` em resposta ao usuário digitar `retry` no loop de driver, ou então inicia uma nova avaliação chamando `ambeval`.
+
+A continuação de falha para esta chamada a `ambeval` informa ao usuário que não há mais valores e reinvoca o loop de driver.
+
+A continuação de sucesso para a chamada a `ambeval` é mais sutil. Imprimimos o valor obtido e então reinvocamos o loop interno com uma função `retry` que será capaz de tentar a próxima alternativa. Esta função `next_alternative` é o segundo argumento que foi passado para a continuação de sucesso. Ordinariamente, pensamos neste segundo argumento como uma continuação de falha a ser usada se a ramificação de avaliação atual falhar mais tarde. Neste caso, no entanto, completamos uma avaliação bem-sucedida, então podemos invocar a ramificação alternativa de "falha" para buscar avaliações bem-sucedidas adicionais.
+
+```javascript
+const input_prompt = "amb-evaluate input:";
+const output_prompt =  "amb-evaluate value:";
+
+function driver_loop(env) {
+    function internal_loop(retry) {
+        const input = user_read(input_prompt);
+        if (is_null(input)) {
+            display("evaluator terminated");
+        } else if (input === "retry") {
+            return retry();
+        } else {
+            display("Starting a new problem");
+            const program = parse(input);
+            const locals = scan_out_declarations(program);
+            const unassigneds = list_of_unassigned(locals);
+            const program_env = extend_environment(
+                                    locals, unassigneds, env);
+            return ambeval(
+                       program,
+                       program_env,
+                       // ambeval sucesso
+                       (val, next_alternative) => {
+                           user_print(output_prompt, val);
+                           return internal_loop(next_alternative);
+                       },
+                       // ambeval falha
+                       () => {
+                           display("There are no more values of");
+                           display(input);
+                           return driver_loop(program_env);
+                       });
+        }
+    }
+    return internal_loop(() => {
+                             display("There is no current problem");
+                             return driver_loop(env);
+                         });
+}
+```
+
+A chamada inicial a `internal_loop` usa uma função `retry` que reclama que não há problema atual e reinicia o loop de driver. Este é o comportamento que acontecerá se o usuário digitar `retry` quando não houver avaliação em andamento.
+
+Iniciamos o loop de driver como de usual, configurando o ambiente global e passando-o como o ambiente envolvente para a primeira iteração de `driver_loop`.
+
+```javascript
+const the_global_environment = setup_environment();
+driver_loop(the_global_environment);
+```
+
+<Exercise id="4.50">
+
+Implemente uma nova forma sintática `ramb` que é como `amb` exceto que ela pesquisa alternativas em uma ordem aleatória, em vez de da esquerda para a direita. Mostre como isso pode ajudar com o problema de Alyssa no exercício 4.42.
+
+</Exercise>
+
+<Exercise id="4.51">
+
+Altere a implementação de atribuição para que ela não seja desfeita após falha. Por exemplo, podemos escolher dois elementos distintos de uma lista e contar o número de tentativas necessárias para fazer uma escolha bem-sucedida da seguinte forma:
+
+```javascript
+let count = 0;
+
+let x = an_element_of("a", "b", "c");
+let y = an_element_of("a", "b", "c");
+count = count + 1;
+require(x !== y);
+list(x, y, count);
+```
+
+Saída:
+```
+Iniciando um novo problema
+amb-evaluate value:
+["a", ["b", [2, null]]]
+```
+
+```javascript
+retry
+```
+
+Saída:
+```
+amb-evaluate value:
+["a", ["c", [3, null]]]
+```
+
+Quais valores teriam sido exibidos se tivéssemos usado o significado original de atribuição em vez de atribuição permanente?
+
+</Exercise>
+
+<Exercise id="4.52">
+
+Abusaremos horrivelmente da sintaxe para instruções condicionais, implementando uma construção da seguinte forma:
+
+```javascript
+if (evaluation_succeeds_take) { statement } else { alternative }
+```
+
+A construção permite ao usuário capturar a falha de uma instrução. Ela avalia a instrução normalmente e retorna normalmente se a avaliação tiver sucesso. Se a avaliação falhar, no entanto, a instrução alternativa dada é avaliada, como no seguinte exemplo:
+
+```javascript
+if (evaluation_succeeds_take) {
+    const x = an_element_of(list(1, 3, 5));
+    require(is_even(x));
+    x;
+} else {
+    "all odd";
+}
+```
+
+Saída:
+```
+Iniciando um novo problema
+amb-evaluate value:
+"all odd"
+```
+
+```javascript
+if (evaluation_succeeds_take) {
+    const x = an_element_of(list(1, 3, 5, 8));
+    require(is_even(x));
+    x;
+} else {
+    "all odd";
+}
+```
+
+Saída:
+```
+Iniciando um novo problema
+amb-evaluate value:
+8
+```
+
+Implemente esta construção estendendo o avaliador `amb`. Dica: A função `is_amb` mostra como abusar da sintaxe JavaScript existente para implementar uma nova forma sintática.
+
+</Exercise>
+
+<Exercise id="4.53">
+
+Com o novo tipo de atribuição como descrito no exercício 4.51 e a construção
+
+```javascript
+if (evaluation_succeeds_take) { ... } else { ... }
+```
+
+como no exercício 4.52, qual será o resultado de avaliar
+
+```javascript
+let pairs = null;
+if (evaluation_succeeds_take) {
+    const p = prime_sum_pair(list(1, 3, 5, 8), list(20, 35, 110));
+    pairs = pair(p, pairs); // usando atribuição permanente
+    amb();
+} else {
+    pairs;
+}
+```
+
+</Exercise>
+
+<Exercise id="4.54">
+
+Se não tivéssemos percebido que `require` poderia ser implementada como uma função comum que usa `amb`, a ser definida pelo usuário como parte de um programa não determinístico, teríamos que implementá-la como uma forma sintática. Isso exigiria funções de sintaxe
+
+```javascript
+function is_require(component) {
+    return is_tagged_list(component, "require");
+}
+function require_predicate(component) { return head(tail(component)); }
+```
+
+e uma nova cláusula no despacho em `analyze`
+
+```javascript
+: is_require(component)
+? analyze_require(component)
+```
+
+assim como a função `analyze_require` que lida com expressões `require`. Complete a seguinte definição de `analyze_require`.
+
+```javascript
+function analyze_require(component) {
+    const pfun = analyze(require_predicate(component));
+    return (env, succeed, fail) =>
+             pfun(env,
+                  (pred_value, fail2) =>
+                    ??
+                    ? ??
+                    : succeed("ok", fail2),
+                  fail);
+}
+```
+
+</Exercise>

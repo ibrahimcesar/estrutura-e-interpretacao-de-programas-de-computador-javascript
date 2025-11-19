@@ -1,15 +1,173 @@
-# 4.3.1 Busca e amb
+# 4.3.1 Busca e `amb`
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo original está sendo convertido do formato fonte para o formato Docusaurus/MDX.
+Para estender o JavaScript para suportar não determinismo, introduzimos uma nova forma sintática chamada `amb`.[^1] A expressão `amb(`$e_1,\ e_2,\ldots, e_n$`)` retorna o valor de uma das $n$ expressões $e_i$ "ambiguamente." Por exemplo, a expressão
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+```javascript
+list(amb(1, 2, 3), amb("a", "b"));
+// Pressione "Run" para a primeira solução. Digite
+// retry
+// no REPL à direita, para mais soluções
+```
 
-## Próximos Passos
+pode ter seis valores possíveis:
 
-Esta seção abordará:
-- A forma sintática `amb` para programação não-determinística
-- Como o `amb` permite especificar escolhas não-determinísticas
-- Implementação de busca com backtracking
+```javascript
+list(1, "a") list(1, "b") list(2, "a")
+list(2, "b") list(3, "a") list(3, "b")
+```
 
+Uma expressão `amb` com uma única escolha produz um valor comum (único).
+
+Uma expressão `amb` sem escolhas—a expressão `amb()`—é uma expressão sem valores aceitáveis. Operacionalmente, podemos pensar em `amb()` como uma expressão que quando avaliada faz a computação "falhar": A computação é abortada e nenhum valor é produzido. Usando esta ideia, podemos expressar o requisito de que uma expressão predicado particular `p` deve ser verdadeira da seguinte forma:
+
+```javascript
+function require(p) {
+    if (! p) {
+        amb();
+    } else {}
+}
+```
+
+Com `amb` e `require`, podemos implementar a função `an_element_of` usada acima:
+
+```javascript
+function an_element_of(items) {
+    require(! is_null(items));
+    return amb(head(items), an_element_of(tail(items)));
+}
+```
+
+Uma aplicação de `an_element_of` falha se a lista está vazia. Caso contrário, ela retorna ambiguamente ou o primeiro elemento da lista ou um elemento escolhido do resto da lista.
+
+Também podemos expressar intervalos infinitos de escolhas. A seguinte função potencialmente retorna qualquer inteiro maior ou igual a algum $n$ dado:
+
+```javascript
+function an_integer_starting_from(n) {
+    return amb(n, an_integer_starting_from(n + 1));
+}
+```
+
+Isto é como a função `integers_starting_from` de streams descrita na seção 3.5.2, mas com uma diferença importante: A função de stream retorna um objeto que representa a sequência de todos os inteiros começando com $n$, enquanto a função `amb` retorna um único inteiro.[^2]
+
+Abstratamente, podemos imaginar que avaliar uma expressão `amb` faz com que o tempo se divida em ramificações, onde a computação continua em cada ramificação com um dos valores possíveis da expressão. Dizemos que `amb` representa um _ponto de escolha não determinístico_. Se tivéssemos uma máquina com um número suficiente de processadores que pudessem ser alocados dinamicamente, poderíamos implementar a busca de uma maneira direta. A execução prosseguiria como em uma máquina sequencial, até que uma expressão `amb` fosse encontrada. Neste ponto, mais processadores seriam alocados e inicializados para continuar todas as execuções paralelas implicadas pela escolha. Cada processador prosseguiria sequencialmente como se fosse a única escolha, até que ou terminasse encontrando uma falha, ou subdividisse ainda mais, ou terminasse.[^3]
+
+Por outro lado, se tivermos uma máquina que pode executar apenas um processo (ou poucos processos concorrentes), devemos considerar as alternativas sequencialmente. Pode-se imaginar modificar um avaliador para escolher aleatoriamente uma ramificação para seguir sempre que encontrar um ponto de escolha. A escolha aleatória, no entanto, pode facilmente levar a valores que falham. Poderíamos tentar executar o avaliador repetidamente, fazendo escolhas aleatórias e esperando encontrar um valor sem falha, mas é melhor _buscar sistematicamente_ todos os caminhos de execução possíveis. O avaliador `amb` que desenvolveremos e trabalharemos com nesta seção implementa uma busca sistemática da seguinte forma: Quando o avaliador encontra uma aplicação de `amb`, ele inicialmente seleciona a primeira alternativa. Esta seleção pode em si levar a uma escolha adicional. O avaliador sempre escolherá inicialmente a primeira alternativa em cada ponto de escolha. Se uma escolha resultar em uma falha, então o avaliador automagicamente[^4] _retrocede (backtrack)_ ao ponto de escolha mais recente e tenta a próxima alternativa. Se ele esgotar as alternativas em qualquer ponto de escolha, o avaliador voltará ao ponto de escolha anterior e retomará de lá. Este processo leva a uma estratégia de busca conhecida como _busca em profundidade_ ou _backtracking cronológico_.[^5]
+
+## Driver loop
+
+O loop de driver para o avaliador `amb` tem algumas propriedades incomuns. Ele lê um programa e imprime o valor da primeira execução sem falha, como no exemplo `prime_sum_pair` mostrado acima. Se quisermos ver o valor da próxima execução bem-sucedida, podemos pedir ao interpretador para retroceder e tentar gerar uma segunda execução sem falha. Isso é sinalizado digitando `retry`. Se qualquer outra entrada exceto `retry` for fornecida, o interpretador iniciará um novo problema, descartando as alternativas não exploradas no problema anterior. Aqui está um exemplo de interação:
+
+```javascript
+prime_sum_pair(list(1, 3, 5, 8), list(20, 35, 110));
+// Pressione "Run" para a primeira solução. Digite
+// retry
+// no REPL à direita, para mais soluções
+```
+
+```
+Iniciando um novo problema
+amb-evaluate value:
+[3, [20, null]]
+```
+
+```javascript
+retry
+```
+
+```
+amb-evaluate value:
+[3, [110, null]]
+```
+
+```javascript
+retry
+```
+
+```
+amb-evaluate value:
+[8, [35, null]]
+```
+
+```javascript
+retry
+```
+
+```
+Não há mais valores de
+prime_sum_pair([1, [3, [5, [8, null]]]], [20, [35, [110, null]]])
+```
+
+```javascript
+prime_sum_pair(list(19, 27, 30), list(11, 36, 58));
+// Pressione "Run" para a primeira solução. Digite
+// retry
+// no REPL à direita, para mais soluções
+```
+
+```
+Iniciando um novo problema
+amb-evaluate value:
+[30, [11, null]]
+```
+
+<Exercise id="4.35">
+
+Escreva uma função `an_integer_between` que retorna um inteiro entre dois limites dados. Isso pode ser usado para implementar uma função que encontra triplas pitagóricas, isto é, triplas de inteiros $(i,j,k)$ entre os limites dados tal que $i \leq j$ e $i^2 + j^2 =k^2$, da seguinte forma:
+
+```javascript
+function a_pythogorean_triple_between(low, high) {
+    const i = an_integer_between(low, high);
+    const j = an_integer_between(i, high);
+    const k = an_integer_between(j, high);
+    require(i * i + j * j === k * k);
+    return list(i, j, k);
+}
+```
+
+**Solução:**
+
+```javascript
+// solução do usuário do GitHub jonathantorres
+
+function an_integer_between(low, high) {
+    require(low <= high);
+    return amb(low, an_integer_between(low+1, high));
+}
+```
+
+</Exercise>
+
+<Exercise id="4.36">
+
+O exercício 3.69 discutiu como gerar o stream de _todas_ as triplas pitagóricas, sem limite superior no tamanho dos inteiros a serem pesquisados. Explique por que simplesmente substituir `an_integer_between` por `an_integer_starting_from` na função do exercício 4.35 não é uma maneira adequada de gerar triplas pitagóricas arbitrárias. Escreva uma função que realmente conseguirá isso. (Isto é, escreva uma função para a qual digitar repetidamente `retry` em princípio eventualmente geraria todas as triplas pitagóricas.)
+
+</Exercise>
+
+<Exercise id="4.37">
+
+Ben Bitdiddle afirma que o seguinte método para gerar triplas pitagóricas é mais eficiente que o do exercício 4.35. Ele está correto? (Dica: Considere o número de possibilidades que devem ser exploradas.)
+
+```javascript
+function a_pythagorean_triple_between(low, high) {
+    const i = an_integer_between(low, high);
+    const hsq = high * high;
+    const j = an_integer_between(i, high);
+    const ksq = i * i + j * j;
+    require(hsq >= ksq);
+    const k = math_sqrt(ksq);
+    require(is_integer(k));
+    return list(i, j, k);
+}
+```
+
+</Exercise>
+
+[^1]: A ideia de `amb` para programação não determinística foi descrita pela primeira vez em 1961 por John McCarthy (veja McCarthy 1967).
+
+[^2]: Na realidade, a distinção entre retornar não deterministicamente uma única escolha e retornar todas as escolhas depende um pouco do nosso ponto de vista. Da perspectiva do código que usa o valor, a escolha não determinística retorna um valor único. Da perspectiva do programador projetando o código, a escolha não determinística potencialmente retorna todos os valores possíveis, e a computação se ramifica de modo que cada valor seja investigado separadamente.
+
+[^3]: Pode-se objetar que este é um mecanismo absurdamente ineficiente. Poderia exigir milhões de processadores para resolver algum problema facilmente formulado desta forma, e na maior parte do tempo a maioria desses processadores estaria ociosa. Esta objeção deve ser tomada no contexto da história. A memória costumava ser considerada justamente uma mercadoria cara. Em 1965, um megabyte de RAM custava cerca de $400.000. Agora todo computador pessoal tem muitos gigabytes de RAM, e na maior parte do tempo a maior parte dessa RAM está sem uso. É difícil subestimar o custo da eletrônica produzida em massa.
+
+[^4]: Automagicamente: "Automaticamente, mas de uma maneira que, por alguma razão (tipicamente porque é muito complicado, ou muito feio, ou talvez até muito trivial), o falante não se sente à vontade para explicar." (Steele 1983, Raymond 1996)
+
+[^5]: A integração de estratégias de busca automática em linguagens de programação tem uma longa e acidentada história. As primeiras sugestões de que algoritmos não determinísticos poderiam ser elegantemente codificados em uma linguagem de programação com busca e backtracking automático vieram de Robert Floyd (1967). Carl Hewitt (1969) inventou uma linguagem de programação chamada Planner que explicitamente suportava backtracking cronológico automático, fornecendo uma estratégia de busca em profundidade integrada. Sussman, Winograd e Charniak (1971) implementaram um subconjunto desta linguagem, chamado MicroPlanner, que foi usado para suportar trabalho em resolução de problemas e planejamento de robôs. Ideias similares, surgindo da lógica e prova de teoremas, levaram à gênese em Edimburgo e Marselha da elegante linguagem Prolog (que discutiremos na seção 4.4). Após suficiente frustração com busca automática, McDermott e Sussman (1972) desenvolveram uma linguagem chamada Conniver, que incluía mecanismos para colocar a estratégia de busca sob controle do programador. Isso se provou difícil de manejar, no entanto, e Sussman e Stallman (1975) encontraram uma abordagem mais tratável enquanto investigavam métodos de análise simbólica para circuitos elétricos. Eles desenvolveram um esquema de backtracking não cronológico que era baseado em rastrear as dependências lógicas conectando fatos, uma técnica que veio a ser conhecida como _backtracking direcionado por dependências_. Embora seu método fosse complexo, ele produzia programas razoavelmente eficientes porque fazia pouca busca redundante. Doyle (1979) e McAllester (1978, 1980) generalizaram e esclareceram os métodos de Stallman e Sussman, desenvolvendo um novo paradigma para formular busca que agora é chamado _manutenção de verdade_. Muitos sistemas de resolução de problemas usam alguma forma de sistema de manutenção de verdade como substrato. Veja Forbus and de Kleer 1993 para uma discussão de maneiras elegantes de construir sistemas de manutenção de verdade e aplicações usando manutenção de verdade. Zabih, McAllester, and Chapman 1987 descreve uma extensão não determinística do Scheme que é baseada em `amb`; ela é similar ao interpretador descrito nesta seção, mas mais sofisticada, porque usa backtracking direcionado por dependências em vez de backtracking cronológico. Winston 1992 dá uma introdução a ambos os tipos de backtracking.

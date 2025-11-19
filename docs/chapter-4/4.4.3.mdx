@@ -1,15 +1,184 @@
-# 4.4.3 A Programação Lógica é Unificação Matemática?
+# 4.4.3 Programação Lógica é Lógica Matemática?
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo original está sendo convertido do formato fonte para o formato Docusaurus/MDX.
+Os meios de combinação usados na linguagem de consulta podem, à primeira vista, parecer idênticos às operações `and`, `or` e `not` da lógica matemática, e a aplicação de regras da linguagem de consulta é de fato realizada através de um método legítimo de inferência.[^1] Esta identificação da linguagem de consulta com a lógica matemática não é realmente válida, no entanto, porque a linguagem de consulta fornece uma _estrutura de controle_ que interpreta as declarações lógicas procedimentalmente. Podemos frequentemente tirar proveito dessa estrutura de controle. Por exemplo, para encontrar todos os supervisores de programadores, poderíamos formular uma consulta em qualquer uma de duas formas logicamente equivalentes:
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+```javascript
+and(job($x, list("computer", "programmer")),
+    supervisor($x, $y))
+```
 
-## Próximos Passos
+ou
 
-Esta seção abordará:
-- Relação entre programação lógica e unificação matemática
-- Fundamentos teóricos da programação lógica
-- Limitações e capacidades dos sistemas lógicos
+```javascript
+and(supervisor($x, $y),
+    job($x, list("computer", "programmer")))
+```
 
+Se uma empresa tem muito mais supervisores do que programadores, é melhor usar a primeira forma em vez da segunda, porque a base de dados deve ser escaneada para cada resultado intermediário (frame) produzido pela primeira cláusula do `and`.
+
+[^1]: Que um método particular de inferência seja legítimo não é uma afirmação trivial. É preciso provar que, se começarmos com premissas verdadeiras, apenas conclusões verdadeiras podem ser derivadas. O método de inferência representado por aplicações de regras é _modus ponens_, o familiar método de inferência que diz que se _A_ é verdadeiro e _A implica B_ é verdadeiro, então podemos concluir que _B_ é verdadeiro.
+
+O objetivo da programação lógica é fornecer ao programador técnicas para decompor um problema computacional em dois problemas separados: "o que" deve ser computado, e "como" isso deve ser computado. Isso é realizado selecionando um subconjunto das declarações da lógica matemática que seja poderoso o suficiente para ser capaz de descrever qualquer coisa que se possa querer computar, mas fraco o suficiente para ter uma interpretação procedimental controlável. A intenção aqui é que, por um lado, um programa especificado em uma linguagem de programação lógica deve ser um programa efetivo que pode ser executado por um computador. Controle ("como" computar) é efetivado usando a ordem de avaliação da linguagem. Devemos ser capazes de organizar a ordem das cláusulas e a ordem dos subobjetivos dentro de cada cláusula de modo que a computação seja feita em uma ordem considerada efetiva e eficiente. Ao mesmo tempo, devemos ser capazes de visualizar o resultado da computação ("o que" computar) como uma simples consequência das leis da lógica.
+
+Nossa linguagem de consulta pode ser considerada como apenas tal subconjunto procedimentalmente interpretável da lógica matemática. Uma asserção representa um fato simples (uma proposição atômica). Uma regra representa a implicação de que a conclusão da regra vale para aqueles casos em que o corpo da regra vale. Uma regra tem uma interpretação procedimental natural: Para estabelecer a conclusão da regra, estabeleça o corpo da regra. Regras, portanto, especificam computações. No entanto, como as regras também podem ser consideradas declarações da lógica matemática, podemos justificar qualquer "inferência" realizada por um programa lógico afirmando que o mesmo resultado poderia ser obtido trabalhando inteiramente dentro da lógica matemática.[^2]
+
+[^2]: Devemos qualificar esta afirmação concordando que, ao falar da "inferência" realizada por um programa lógico, assumimos que a computação termina. Infelizmente, até mesmo esta afirmação qualificada é falsa para nossa implementação da linguagem de consulta (e também falsa para programas em Prolog e na maioria das outras linguagens de programação lógica atuais) por causa de nosso uso de `not` e `javascript_predicate`. Como descreveremos abaixo, o `not` implementado na linguagem de consulta nem sempre é consistente com o `not` da lógica matemática, e `javascript_predicate` introduz complicações adicionais. Poderíamos implementar uma linguagem consistente com a lógica matemática simplesmente removendo `not` e `javascript_predicate` da linguagem e concordando em escrever programas usando apenas consultas simples, `and` e `or`. No entanto, isso restringiria muito o poder expressivo da linguagem. Uma das principais preocupações da pesquisa em programação lógica era encontrar maneiras de alcançar mais consistência com a lógica matemática sem sacrificar indevidamente o poder expressivo.
+
+## Loops infinitos
+
+Uma consequência da interpretação procedimental de programas lógicos é que é possível construir programas desesperadamente ineficientes para resolver certos problemas. Um caso extremo de ineficiência ocorre quando o sistema cai em loops infinitos ao fazer deduções. Como um exemplo simples, suponha que estamos configurando uma base de dados de casamentos famosos, incluindo
+
+```javascript
+assert(married("Minnie", "Mickey"))
+```
+
+Se agora perguntarmos
+
+```javascript
+married("Mickey", $who)
+```
+
+não obteremos resposta, porque o sistema não sabe que se $A$ é casado com $B$, então $B$ é casado com $A$. Então afirmamos a regra
+
+```javascript
+assert(rule(married($x, $y),
+            married($y, $x)))
+```
+
+e consultamos novamente
+
+```javascript
+married("Mickey", $who)
+```
+
+Infelizmente, isso levará o sistema a um loop infinito, da seguinte forma:
+
+- O sistema descobre que a regra `married` é aplicável; ou seja, a conclusão da regra `married($x, $y)` unifica com o padrão de consulta `married("Mickey", $who)` para produzir um frame no qual `$x` está vinculado a `"Mickey"` e `$y` está vinculado a `$who`. Então o interpretador prossegue para avaliar o corpo da regra `married($y, $x)` neste frame—com efeito, para processar a consulta `married($who, "Mickey")`.
+- Uma resposta, `married("Minnie", "Mickey")`, aparece diretamente como uma asserção na base de dados.
+- A regra `married` também é aplicável, então o interpretador novamente avalia o corpo da regra, que desta vez é equivalente a `married("Mickey", $who)`.
+
+O sistema está agora em um loop infinito. De fato, se o sistema encontrará a resposta simples `married("Minnie", "Mickey")` antes de entrar no loop depende de detalhes de implementação referentes à ordem na qual o sistema verifica os itens na base de dados. Este é um exemplo muito simples dos tipos de loops que podem ocorrer. Coleções de regras inter-relacionadas podem levar a loops muito mais difíceis de antecipar, e o aparecimento de um loop pode depender da ordem das cláusulas em um `and` (veja exercício 4.61) ou em detalhes de baixo nível referentes à ordem na qual o sistema processa consultas.[^3]
+
+[^3]: Este não é um problema da lógica, mas da interpretação procedimental da lógica fornecida por nosso interpretador. Poderíamos escrever um interpretador que não cairia em um loop aqui. Por exemplo, poderíamos enumerar todas as provas deriváveis de nossas asserções e nossas regras em uma ordem de busca em largura em vez de uma ordem de busca em profundidade. No entanto, tal sistema torna mais difícil tirar proveito da ordem das deduções em nossos programas. Uma tentativa de construir controle sofisticado em tal programa é descrita em de Kleer et al. 1977. Outra técnica, que não leva a problemas de controle tão sérios, é colocar conhecimento especial, como detectores para tipos particulares de loops (exercício 4.67). No entanto, não pode haver um esquema geral para prevenir confiavelmente um sistema de entrar em caminhos infinitos ao realizar deduções. Imagine uma regra diabólica da forma "Para mostrar que $P(x)$ é verdadeiro, mostre que $P(f(x))$ é verdadeiro," para alguma função $f$ adequadamente escolhida.
+
+## Problemas com `not`
+
+Outra peculiaridade no sistema de consulta diz respeito a `not`. Dada a base de dados da seção 4.4.1, considere as seguintes duas consultas:
+
+```javascript
+and(supervisor($x, $y),
+    not(job($x, list("computer", "programmer"))))
+
+and(not(job($x, list("computer", "programmer"))),
+    supervisor($x, $y))
+```
+
+Estas duas consultas não produzem o mesmo resultado. A primeira consulta começa encontrando todas as entradas na base de dados que correspondem a `supervisor($x, $y)`, e então filtra os frames resultantes removendo aqueles nos quais o valor de `$x` satisfaz `job($x, list("computer", "programmer"))`. A segunda consulta começa filtrando os frames de entrada para remover aqueles que podem satisfazer `job($x, list("computer", "programmer"))`. Como o único frame de entrada é vazio, ele verifica a base de dados em busca de padrões que satisfaçam `job($x, list("computer", "programmer"))`. Como geralmente há entradas dessa forma, a cláusula `not` filtra o frame vazio e retorna um stream vazio de frames. Consequentemente, toda a consulta composta retorna um stream vazio.
+
+O problema é que nossa implementação de `not` realmente se destina a servir como um filtro em valores para as variáveis. Se uma cláusula `not` é processada com um frame no qual algumas das variáveis permanecem não vinculadas (como ocorre com `$x` no exemplo acima), o sistema produzirá resultados inesperados. Problemas similares ocorrem com o uso de `javascript_predicate`—o predicado JavaScript não pode funcionar se algumas de suas variáveis não estão vinculadas. Veja exercício 4.65.
+
+Há também uma maneira muito mais séria pela qual o `not` da linguagem de consulta difere do `not` da lógica matemática. Na lógica, interpretamos a declaração "not $P$" como significando que $P$ não é verdadeiro. No sistema de consulta, no entanto, "not $P$" significa que $P$ não é dedutível do conhecimento na base de dados. Por exemplo, dada a base de dados de pessoal da seção 4.4.1, o sistema deduziria alegremente todos os tipos de declarações `not`, como que Ben Bitdiddle não é fã de beisebol, que não está chovendo lá fora, e que $2 + 2$ não é 4.[^4] Em outras palavras, o `not` das linguagens de programação lógica reflete a chamada _suposição de mundo fechado_ de que toda a informação relevante foi incluída na base de dados.[^5]
+
+[^4]: Considere a consulta `not(baseball_fan(list("Bitdiddle", "Ben")))`. O sistema descobre que `baseball_fan(list("Bitdiddle", "Ben"))` não está na base de dados, então o frame vazio não satisfaz o padrão e não é filtrado do stream inicial de frames. O resultado da consulta é, portanto, o frame vazio, que é usado para instanciar a consulta de entrada para produzir `not(baseball_fan(list("Bitdiddle", "Ben")))`.
+
+[^5]: Uma discussão e justificativa deste tratamento de `not` pode ser encontrada no artigo "Negation as Failure" de Clark (1978).
+
+<Exercise id="4.61">
+
+Louis Reasoner apaga por engano a regra `outranked_by` (seção 4.4.1) da base de dados. Quando percebe isso, rapidamente a reinstala. Infelizmente, ele faz uma pequena mudança na regra e a digita como
+
+```javascript
+rule(outranked_by($staff_person, $boss),
+     or(supervisor($staff_person, $boss),
+        and(outranked_by($middle_manager, $boss),
+            supervisor($staff_person, $middle_manager))))
+```
+
+Logo após Louis digitar essa informação no sistema, DeWitt Aull vem descobrir quem está acima de Ben Bitdiddle. Ele emite a consulta
+
+```javascript
+outranked_by(list("Bitdiddle", "Ben"), $who)
+```
+
+Após responder, o sistema entra em um loop infinito. Explique por quê.
+
+</Exercise>
+
+<Exercise id="4.62">
+
+Cy D. Fect, ansioso pelo dia em que subirá na organização, faz uma consulta para encontrar todos os mandachuvas (usando a regra `wheel` da seção 4.4.1):
+
+```javascript
+wheel($who)
+```
+
+Para sua surpresa, o sistema responde
+
+```
+Query results:
+wheel(list("Warbucks", "Oliver"))
+wheel(list("Bitdiddle", "Ben"))
+wheel(list("Warbucks", "Oliver"))
+wheel(list("Warbucks", "Oliver"))
+wheel(list("Warbucks", "Oliver"))
+```
+
+Por que Oliver Warbucks está listado quatro vezes?
+
+</Exercise>
+
+<Exercise id="4.63">
+
+Ben tem generalizado o sistema de consulta para fornecer estatísticas sobre a empresa. Por exemplo, para encontrar os salários totais de todos os programadores de computador, será possível dizer
+
+```javascript
+sum($amount,
+    and(job($x, list("computer", "programmer")),
+        salary($x, $amount)))
+```
+
+Em geral, o novo sistema de Ben permite expressões da forma
+
+```javascript
+accumulation_function($variable,
+                      query-pattern)
+```
+
+onde `accumulation_function` podem ser coisas como `sum`, `average` ou `maximum`. Ben raciocina que deve ser moleza implementar isso. Ele simplesmente alimentará o padrão de consulta para `evaluate_query`. Isso produzirá um stream de frames. Ele então passará esse stream através de uma função de mapeamento que extrai o valor da variável designada de cada frame no stream e alimentará o stream resultante de valores para a função de acumulação. Assim que Ben completa a implementação e está prestes a testá-la, Cy passa por ali, ainda intrigado com o resultado da consulta `wheel` no exercício 4.62. Quando Cy mostra a Ben a resposta do sistema, Ben geme, "Oh, não, meu esquema simples de acumulação não vai funcionar!"
+
+O que Ben acabou de perceber? Delineie um método que ele pode usar para salvar a situação.
+
+</Exercise>
+
+<Exercise id="4.64">
+
+Invente uma maneira de instalar um detector de loop no sistema de consulta para evitar os tipos de loops simples ilustrados no texto e no exercício 4.61. A ideia geral é que o sistema deve manter algum tipo de histórico de sua cadeia atual de deduções e não deve começar a processar uma consulta na qual já está trabalhando. Descreva que tipo de informação (padrões e frames) está incluída neste histórico, e como a verificação deve ser feita. (Depois de estudar os detalhes da implementação do sistema de consulta na seção 4.4.4, você pode querer modificar o sistema para incluir seu detector de loop.)
+
+</Exercise>
+
+<Exercise id="4.65">
+
+Defina regras para implementar a operação `reverse` do exercício 2.18, que retorna uma lista contendo os mesmos elementos que uma dada lista em ordem reversa. (Dica: Use `append_to_form`.) Suas regras podem responder a consulta `reverse(list(1, 2, 3), $x)` quanto a consulta `reverse($x, list(1, 2, 3))`?
+
+</Exercise>
+
+<Exercise id="4.66">
+
+Vamos modificar a base de dados e as regras do exercício 2.29 para adicionar "great" a uma relação de neto. Isso deve permitir que o sistema deduza que Irad é o bisneto de Adão, ou que Jabal e Jubal são os tataratataranetos de Adão.
+
+1. Altere as asserções na base de dados de modo que haja apenas um tipo de informação de relacionamento, ou seja, `related`. O primeiro item então descreve o relacionamento. Assim, em vez de `son("Adam", "Cain")`, você escreveria `related("son", "Adam", "Cain")`. Represente o fato sobre Irad, por exemplo, como
+   ```javascript
+   related(list("great", "grandson"), "Adam", "Irad")
+   ```
+
+2. Escreva regras que determinem se uma lista termina com a palavra `"grandson"`.
+
+3. Use isso para expressar uma regra que permita derivar o relacionamento
+   ```javascript
+   list(pair("great", $rel), $x, $y)
+   ```
+   onde `$rel` é uma lista que termina em `"grandson"`.
+
+4. Verifique suas regras nas consultas `related(list("great", "grandson"), $g, $ggs)` e `related($relationship, "Adam", "Irad")`.
+
+</Exercise>
