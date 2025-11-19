@@ -1,0 +1,250 @@
+# 4.1.1 O Núcleo do Avaliador
+
+<Figure
+  src="/img/chapter-4/ch4-Z-G-1.svg"
+  alt="O ciclo evaluate-apply expõe a essência de uma linguagem de computador"
+  caption="O ciclo evaluate-apply expõe a essência de uma linguagem de computador."
+/>
+
+O processo de avaliação pode ser descrito como a interação entre duas funções: `evaluate` e `apply`.
+
+## A função `evaluate`
+
+> **Nota**: No modo estrito do JavaScript — nossa maneira preferida de executar programas JavaScript — o nome `eval` não pode ser declarado em programas do usuário. Ele é reservado para uma função pré-declarada relacionada, mas bastante diferente. Optamos pela palavra completa `evaluate` como substituto.
+
+A função `evaluate` recebe como argumentos um _componente_ de programa — uma declaração ou expressão[^1] — e um ambiente. Ela classifica o componente e dirige sua avaliação. A função `evaluate` é estruturada como uma análise de casos do tipo sintático do componente a ser avaliado. Para manter a função geral, expressamos a determinação do tipo de um componente de forma abstrata, sem fazer nenhum compromisso com qualquer representação particular para os vários tipos de componentes. Cada tipo de componente tem um _predicado de sintaxe_ que testa por ele e um meio abstrato para selecionar suas partes. Esta _sintaxe abstrata_ facilita ver como podemos mudar a sintaxe da linguagem usando o mesmo avaliador, mas com uma coleção diferente de funções de sintaxe.
+
+[^1]: Não há necessidade de distinguir entre declarações e expressões em nosso avaliador. Por exemplo, não diferenciamos entre expressões e declarações de expressão; as representamos de forma idêntica e consequentemente elas são tratadas da mesma forma pela função `evaluate`. Da mesma forma, nosso avaliador não impõe a restrição sintática do JavaScript de que declarações não podem aparecer dentro de expressões além de expressões lambda.
+
+### Expressões primitivas
+
+- Para expressões literais, como números, `evaluate` retorna seu valor.
+- A função `evaluate` deve procurar nomes no ambiente para encontrar seus valores.
+
+### Combinações
+
+- Para uma aplicação de função, `evaluate` deve avaliar recursivamente a expressão de função e as expressões de argumento da aplicação. A função e os argumentos resultantes são passados para `apply`, que trata da aplicação de função real.
+- Uma combinação de operadores é transformada em uma aplicação de função e então avaliada.
+
+### Formas sintáticas
+
+- Uma expressão ou declaração condicional requer processamento especial de suas partes, de modo a avaliar o consequente se o predicado for verdadeiro, e caso contrário avaliar a alternativa.
+- Uma expressão lambda deve ser transformada em uma função aplicável empacotando juntos os parâmetros e o corpo especificados pela expressão lambda com o ambiente da avaliação.
+- Uma sequência de declarações requer avaliar seus componentes na ordem em que aparecem.
+- Um bloco requer avaliar seu corpo em um novo ambiente que reflete todos os nomes declarados dentro do bloco.
+- Uma declaração de retorno deve produzir um valor que se torna o resultado da chamada de função que deu origem à avaliação da declaração de retorno.
+- Uma declaração de função é transformada em uma declaração de constante e então avaliada.
+- Uma declaração de constante ou variável ou uma atribuição deve chamar `evaluate` recursivamente para computar o novo valor a ser associado ao nome sendo declarado ou atribuído. O ambiente deve ser modificado para refletir o novo valor do nome.
+
+Aqui está a declaração de `evaluate`:
+
+```javascript
+function evaluate(component, env) {
+    return is_literal(component)
+           ? literal_value(component)
+           : is_name(component)
+           ? lookup_symbol_value(symbol_of_name(component), env)
+           : is_application(component)
+           ? apply(evaluate(function_expression(component), env),
+                   list_of_values(arg_expressions(component), env))
+           : is_operator_combination(component)
+           ? evaluate(operator_combination_to_application(component),
+                      env)
+           : is_conditional(component)
+           ? eval_conditional(component, env)
+           : is_lambda_expression(component)
+           ? make_function(lambda_parameter_symbols(component),
+                           lambda_body(component), env)
+           : is_sequence(component)
+           ? eval_sequence(sequence_statements(component), env)
+           : is_block(component)
+           ? eval_block(component, env)
+           : is_return_statement(component)
+           ? eval_return_statement(component, env)
+           : is_function_declaration(component)
+           ? evaluate(function_decl_to_constant_decl(component), env)
+           : is_declaration(component)
+           ? eval_declaration(component, env)
+           : is_assignment(component)
+           ? eval_assignment(component, env)
+           : error(component, "unknown syntax -- evaluate");
+}
+```
+
+Para clareza, `evaluate` foi implementada como uma análise de casos usando expressões condicionais. A desvantagem disso é que nossa função trata apenas alguns tipos distinguíveis de declarações e expressões, e nenhum novo pode ser definido sem editar a declaração de `evaluate`. Na maioria das implementações de interpretadores, o despacho no tipo de um componente é feito de forma orientada a dados. Isso permite que um usuário adicione novos tipos de componentes que `evaluate` pode distinguir, sem modificar a declaração de `evaluate` em si. (Veja o exercício 4.3.)
+
+A representação de nomes é tratada pelas abstrações de sintaxe. Internamente, o avaliador usa strings para representar nomes, e nos referimos a tais strings como _símbolos_. A função `symbol_of_name` usada em `evaluate` extrai de um nome o símbolo pelo qual ele é representado.
+
+## Apply
+
+A função `apply` recebe dois argumentos, uma função e uma lista de argumentos aos quais a função deve ser aplicada. A função `apply` classifica funções em dois tipos: Ela chama `apply_primitive_function` para aplicar primitivos; ela aplica funções compostas avaliando o bloco que compõe o corpo da função. O ambiente para a avaliação do corpo de uma função composta é construído estendendo o ambiente base carregado pela função para incluir um frame que vincula os parâmetros da função aos argumentos aos quais a função deve ser aplicada. Aqui está a declaração de `apply`:
+
+```javascript
+function apply(fun, args) {
+    if (is_primitive_function(fun)) {
+        return apply_primitive_function(fun, args);
+    } else if (is_compound_function(fun)) {
+        const result = evaluate(function_body(fun),
+                                extend_environment(
+                                    function_parameters(fun),
+                                    args,
+                                    function_environment(fun)));
+        return is_return_value(result)
+               ? return_value_content(result)
+               : undefined;
+    } else {
+        error(fun, "unknown function type -- apply");
+    }
+}
+```
+
+> **Nota**: O nome `arguments` é reservado no modo estrito do JavaScript. Escolhemos `args` em vez disso.
+
+Para retornar um valor, uma função JavaScript precisa avaliar uma declaração de retorno. Se uma função termina sem avaliar uma declaração de retorno, o valor `undefined` é retornado. Para distinguir os dois casos, a avaliação de uma declaração de retorno envolverá o resultado da avaliação de sua expressão de retorno em um _valor de retorno_. Se a avaliação do corpo da função produzir tal valor de retorno, o conteúdo do valor de retorno é recuperado; caso contrário, o valor `undefined` é retornado.[^2]
+
+[^2]: Este teste é uma operação adiada, e portanto nosso avaliador dará origem a um processo recursivo mesmo se o programa interpretado deveria dar origem a um processo iterativo de acordo com a descrição na seção 1.2.1. Em outras palavras, nossa implementação metacircular de avaliador de JavaScript não é recursiva em cauda. As seções 5.4.2 e 5.5.3 mostram como alcançar recursão em cauda usando uma máquina de registradores.
+
+## Argumentos de função
+
+Quando `evaluate` processa uma aplicação de função, ela usa `list_of_values` para produzir a lista de argumentos aos quais a função deve ser aplicada. A função `list_of_values` recebe como argumento as expressões de argumento da aplicação. Ela avalia cada expressão de argumento e retorna uma lista dos valores correspondentes:[^3]
+
+```javascript
+function list_of_values(exps, env) {
+    return map(arg => evaluate(arg, env), exps);
+}
+```
+
+[^3]: Escolhemos implementar `list_of_values` usando a função de ordem superior `map`, e usaremos `map` em outros lugares também. No entanto, o avaliador pode ser implementado sem qualquer uso de funções de ordem superior (e portanto poderia ser escrito em uma linguagem que não tem funções de ordem superior), mesmo que a linguagem que ele suporta inclua funções de ordem superior. Por exemplo, `list_of_values` pode ser escrito sem `map` da seguinte forma:
+    ```javascript
+    function list_of_values(exps, env) {
+        return is_null(exps)
+               ? null
+               : pair(evaluate(head(exps), env),
+                      list_of_values(tail(exps), env));
+    }
+    ```
+
+## Condicionais
+
+A função `eval_conditional` avalia a parte do predicado de um componente condicional no ambiente dado. Se o resultado for verdadeiro, o consequente é avaliado, caso contrário a alternativa é avaliada:
+
+```javascript
+function eval_conditional(component, env) {
+    return is_truthy(evaluate(conditional_predicate(component), env))
+           ? evaluate(conditional_consequent(component), env)
+           : evaluate(conditional_alternative(component), env);
+}
+```
+
+Note que o avaliador não precisa distinguir entre expressões condicionais e declarações condicionais.
+
+O uso de `is_truthy` em `eval_conditional` destaca a questão da conexão entre uma linguagem implementada e uma linguagem de implementação. O `conditional_predicate` é avaliado na linguagem sendo implementada e portanto produz um valor naquela linguagem. O predicado do interpretador `is_truthy` traduz esse valor em um valor que pode ser testado pela expressão condicional na linguagem de implementação: A representação metacircular da verdade pode não ser a mesma que a do JavaScript subjacente.[^4]
+
+[^4]: Neste caso, a linguagem sendo implementada e a linguagem de implementação são a mesma. A contemplação do significado de `is_truthy` aqui produz expansão da consciência sem o abuso de substâncias.
+
+## Sequências
+
+A função `eval_sequence` é usada por `evaluate` para avaliar uma sequência de declarações no nível superior ou em um bloco. Ela recebe como argumentos uma sequência de declarações e um ambiente, e avalia as declarações na ordem em que ocorrem. O valor retornado é o valor da declaração final, exceto que se a avaliação de qualquer declaração na sequência produzir um valor de retorno, esse valor é retornado e as declarações subsequentes são ignoradas.[^5]
+
+```javascript
+function eval_sequence(stmts, env) {
+    if (is_empty_sequence(stmts)) {
+        return undefined;
+    } else if (is_last_statement(stmts)) {
+        return evaluate(first_statement(stmts), env);
+    } else {
+        const first_stmt_value =
+            evaluate(first_statement(stmts), env);
+        if (is_return_value(first_stmt_value)) {
+            return first_stmt_value;
+        } else {
+            return eval_sequence(rest_statements(stmts), env);
+        }
+    }
+}
+```
+
+[^5]: O tratamento de declarações de retorno em `eval_sequence` reflete o resultado adequado de avaliar aplicações de funções em JavaScript, mas o avaliador apresentado aqui não está em conformidade com a especificação ECMAScript para o valor de um programa que consiste em uma sequência de declarações _fora de_ qualquer corpo de função. O exercício 4.8 aborda esta questão.
+
+## Blocos
+
+A função `eval_block` trata blocos. As variáveis e constantes (incluindo funções) declaradas no bloco têm todo o bloco como seu escopo e portanto são "extraídas" antes que o corpo do bloco seja avaliado. O corpo do bloco é avaliado com respeito a um ambiente que estende o ambiente atual por um frame que vincula cada nome local a um valor especial, `"*unassigned*"`. Esta string serve como um placeholder, antes que a avaliação da declaração atribua ao nome seu valor adequado. Uma tentativa de acessar o valor do nome antes que sua declaração seja avaliada leva a um erro em tempo de execução (veja exercício 4.16), conforme declarado na nota de rodapé 17 no capítulo 1.
+
+```javascript
+function eval_block(component, env) {
+    const body = block_body(component);
+    const locals = scan_out_declarations(body);
+    const unassigneds = list_of_unassigned(locals);
+    return evaluate(body, extend_environment(locals,
+                                             unassigneds,
+                                             env));
+}
+function list_of_unassigned(symbols) {
+    return map(symbol => "*unassigned*", symbols);
+}
+```
+
+A função `scan_out_declarations` coleta uma lista de todos os símbolos representando nomes declarados no corpo. Ela usa `declaration_symbol` para recuperar o símbolo que representa o nome das declarações que encontra.
+
+```javascript
+function scan_out_declarations(component) {
+    return is_sequence(component)
+           ? accumulate(append,
+                        null,
+                        map(scan_out_declarations,
+                            sequence_statements(component)))
+           : is_declaration(component)
+           ? list(declaration_symbol(component))
+           : null;
+}
+```
+
+Ignoramos declarações que estão aninhadas em outro bloco, porque a avaliação desse bloco cuidará delas. A função `scan_out_declarations` procura por declarações apenas em sequências porque declarações em declarações condicionais, declarações de função e expressões lambda estão sempre em um bloco aninhado.
+
+## Declarações de retorno
+
+A função `eval_return_statement` é usada para avaliar declarações de retorno. Como visto em `apply` e na avaliação de sequências, o resultado da avaliação de uma declaração de retorno precisa ser identificável para que a avaliação de um corpo de função possa retornar imediatamente, mesmo se houver declarações após a declaração de retorno. Para este propósito, a avaliação de uma declaração de retorno envolve o resultado da avaliação da expressão de retorno em um objeto de valor de retorno.[^6]
+
+```javascript
+function eval_return_statement(component, env) {
+    return make_return_value(evaluate(return_expression(component),
+                                      env));
+}
+```
+
+[^6]: A aplicação da função `make_return_value` ao resultado da avaliação da expressão de retorno cria uma operação adiada, além da operação adiada criada por `apply`. Veja nota de rodapé 2 para detalhes.
+
+## Atribuições e declarações
+
+A função `eval_assignment` trata atribuições a nomes. (Para simplificar a apresentação de nosso avaliador, estamos permitindo atribuição não apenas a variáveis mas também — erroneamente — a constantes. O exercício 4.11 explica como poderíamos distinguir constantes de variáveis e prevenir atribuição a constantes.) A função `eval_assignment` chama `evaluate` na expressão de valor para encontrar o valor a ser atribuído e chama `assignment_symbol` para recuperar o símbolo que representa o nome da atribuição. A função `eval_assignment` transmite o símbolo e o valor para `assign_symbol_value` para ser instalado no ambiente designado. A avaliação de uma atribuição retorna o valor que foi atribuído.
+
+```javascript
+function eval_assignment(component, env) {
+    const value = evaluate(assignment_value_expression(component),
+                           env);
+    assign_symbol_value(assignment_symbol(component), value, env);
+    return value;
+}
+```
+
+Declarações de constante e variável são ambas reconhecidas pelo predicado de sintaxe `is_declaration`. Elas são tratadas de maneira similar a atribuições, porque `eval_block` já vinculou seus símbolos a `"*unassigned*"` no ambiente atual. Sua avaliação substitui `"*unassigned*"` pelo resultado da avaliação da expressão de valor.
+
+```javascript
+function eval_declaration(component, env) {
+    assign_symbol_value(
+        declaration_symbol(component),
+        evaluate(declaration_value_expression(component), env),
+        env);
+    return undefined;
+}
+```
+
+O resultado da avaliação do corpo de uma função é determinado por declarações de retorno, e portanto o valor de retorno `undefined` em `eval_declaration` só importa quando a declaração ocorre no nível superior, fora de qualquer corpo de função. Aqui usamos o valor de retorno `undefined` para simplificar a apresentação; o exercício 4.8 descreve o resultado real da avaliação de componentes de nível superior em JavaScript.
+
+<Exercise id="4.1">
+
+Note que não podemos dizer se o avaliador metacircular avalia expressões de argumento da esquerda para a direita ou da direita para a esquerda. Sua ordem de avaliação é herdada do JavaScript subjacente: Se os argumentos para `pair` em `map` são avaliados da esquerda para a direita, então `list_of_values` avaliará expressões de argumento da esquerda para a direita; e se os argumentos para `pair` são avaliados da direita para a esquerda, então `list_of_values` avaliará expressões de argumento da direita para a esquerda.
+
+Escreva uma versão de `list_of_values` que avalie expressões de argumento da esquerda para a direita independentemente da ordem de avaliação no JavaScript subjacente. Escreva também uma versão de `list_of_values` que avalie expressões de argumento da direita para a esquerda.
+
+</Exercise>

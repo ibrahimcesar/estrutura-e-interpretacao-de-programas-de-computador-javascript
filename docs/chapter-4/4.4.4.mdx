@@ -1,0 +1,843 @@
+# Implementando o Sistema de Consultas
+
+A Seção 4.4.3 descreveu como o sistema de consultas funciona. Agora preencheremos os detalhes apresentando uma implementação completa do sistema.
+
+## O Loop de Driver e Instanciação {#sec:query-driver}
+
+O loop de driver para o sistema de consultas lê repetidamente expressões de entrada. Se a expressão for uma regra ou asserção a ser adicionada ao banco de dados, então a informação é adicionada. Caso contrário, a expressão é assumida como uma consulta. O driver passa esta consulta para `evaluate_query` junto com um fluxo inicial de frames consistindo de um único frame vazio. O resultado da avaliação é um fluxo de frames gerado ao satisfazer a consulta com valores de variáveis encontrados no banco de dados. Esses frames são usados para formar um novo fluxo consistindo de cópias da consulta original nas quais as variáveis são instanciadas com valores fornecidos pelo fluxo de frames, e este fluxo final é exibido:
+
+```javascript
+// functions from SICP JS 4.4.4
+```
+
+```javascript
+const input_prompt = "Query input:";
+const output_prompt = "Query results:";
+
+function query_driver_loop() {
+    const input = user_read(input_prompt) + ";";
+    if (is_null(input)) {
+        display("evaluator terminated");
+    } else {
+        const expression = parse(input);
+        const query = convert_to_query_syntax(expression);
+        if (is_assertion(query)) {
+            add_rule_or_assertion(assertion_body(query));
+            display("Assertion added to data base.");
+        } else {
+            display(output_prompt);
+            display_stream(
+              stream_map(
+                 frame =>
+                   unparse(instantiate_expression(expression, frame)),
+                 evaluate_query(query, singleton_stream(null))));
+        }
+        return query_driver_loop();
+    }
+}
+```
+
+```javascript
+const input_prompt = "Query input:";
+
+function query_driver_loop() {
+    const input = user_read(input_prompt);
+    if (is_null(input)) {
+        display("--- evaluator terminated ---");
+    } else {
+        const exp = parse(input + ";");
+        const q = convert_to_query_syntax(exp);
+        display("---- driver loop input -----");
+        display(unparse(exp));
+        if (is_assertion(q)) {
+            add_rule_or_assertion(assertion_body(q));
+            display("Assertion added to data base.");
+        } else {
+            display("------ query results -------", "");
+            display_stream(
+              stream_map(
+                frame => unparse(instantiate_expression(exp, frame)),
+                evaluate_query(q, singleton_stream(null))));
+        }
+        return query_driver_loop();
+    }
+}
+```
+
+```javascript
+query_driver_loop();
+// enter: append_to_form($x, $y, list("a", "b", "c", "d"))
+```
+
+```javascript
+parse_query_verbose('assert(son("Adam", "Cain"))');
+parse_query_verbose('son("Adam", x)');
+```
+
+```javascript
+function process_query(input) {
+    if (is_null(input)) {
+        display("--- evaluator terminated ---");
+    } else {
+        const exp = parse(input + ";");
+        const q = convert_to_query_syntax(exp);
+        display("---- driver loop input -----");
+        display(unparse(exp));
+        if (is_assertion(q)) {
+            add_rule_or_assertion(assertion_body(q));
+            display("Assertion added to data base.");
+        } else {
+            display("------ query results -------", "");
+            display_stream(
+              stream_map(
+                frame => unparse(instantiate_expression(exp, frame)),
+                evaluate_query(q, singleton_stream(null))));
+        }
+    }
+}
+
+function first_answer(input) {
+    const exp = parse(input + ";");
+    const q = convert_to_query_syntax(exp);
+    const frames = evaluate_query(q, singleton_stream(null));
+    return is_null(frames)
+           ? "no matching data"
+           : unparse(instantiate_expression(exp, head(frames)));
+}
+```
+
+```javascript
+function process_query(input) {
+    if (is_null(input)) {
+        display("--- evaluator terminated ---");
+    } else {
+        const exp = parse(input + ";");
+        const q = convert_to_query_syntax(exp);
+        if (is_assertion(q)) {
+            add_rule_or_assertion(assertion_body(q));
+        } else {
+            display("------ query results -------", "");
+            display_stream(
+              stream_map(
+                frame => unparse(instantiate_expression(exp, frame)),
+                evaluate_query(q, singleton_stream(null))));
+        }
+    }
+}
+
+function first_answer(input) {
+    const exp = parse(input + ";");
+    const q = convert_to_query_syntax(exp);
+    const frames = evaluate_query(q, singleton_stream(null));
+    return is_null(frames)
+           ? "no matching data"
+           : unparse(instantiate_expression(exp, head(frames)));
+}
+```
+
+Aqui, como nos outros avaliadores neste capítulo, usamos `parse` para transformar um componente da linguagem de consulta dado como uma string em uma representação sintática JavaScript. (Anexamos um ponto-e-vírgula à string de expressão de entrada porque `parse` espera uma declaração.) Então transformamos ainda mais a representação sintática para um nível conceitual apropriado para o sistema de consultas usando `convert_to_query_syntax`, que é declarada na seção 4.4.4.7 junto com o predicado `is_assertion` e o seletor `assertion_body`. A função `add_rule_or_assertion` é declarada na seção 4.4.4.5. Os frames resultantes da avaliação da consulta são usados para instanciar a representação sintática, e o resultado é convertido de volta para uma string para exibição. As funções `instantiate_expression` e `unparse` são declaradas na seção 4.4.4.7.
+
+## O Avaliador {#sec:query-eval}
+
+A função `evaluate_query`, chamada pelo `query_driver_loop`, é o avaliador básico do sistema de consultas. Ela recebe como entradas uma consulta e um fluxo de frames, e retorna um fluxo de frames estendidos. Ela identifica formas sintáticas por um despacho dirigido por dados usando `get` e `put`, assim como fizemos ao implementar operações genéricas no capítulo 2. Qualquer consulta que não seja identificada como uma forma sintática é assumida como uma consulta simples, a ser processada por `simple_query`.
+
+```javascript
+function evaluate_query(query, frame_stream) {
+   const qfun = get(type(query), "evaluate_query");
+   return is_undefined(qfun)
+          ? simple_query(query, frame_stream)
+          : qfun(contents(query), frame_stream);
+}
+```
+
+As funções `type` e `contents`, definidas na seção 4.4.4.7, implementam a sintaxe abstrata das formas sintáticas.
+
+### Consultas simples
+
+A função `simple_query` manipula consultas simples. Ela recebe como argumentos uma consulta simples (um padrão) junto com um fluxo de frames, e retorna o fluxo formado ao estender cada frame por todas as correspondências do banco de dados da consulta.
+
+```javascript
+function simple_query(query_pattern, frame_stream) {
+   return stream_flatmap(
+              frame =>
+                stream_append_delayed(
+                    find_assertions(query_pattern, frame),
+                    () => apply_rules(query_pattern, frame)),
+              frame_stream);
+}
+```
+
+Para cada frame no fluxo de entrada, usamos `find_assertions` (seção 4.4.4.3) para corresponder o padrão contra todas as asserções no banco de dados, produzindo um fluxo de frames estendidos, e usamos `apply_rules` (seção 4.4.4.4) para aplicar todas as regras possíveis, produzindo outro fluxo de frames estendidos. Esses dois fluxos são combinados (usando `stream_append_delayed`, seção 4.4.4.6) para fazer um fluxo de todas as maneiras pelas quais o padrão dado pode ser satisfeito consistentemente com o frame original (veja o exercício 4.71). Os fluxos para os frames de entrada individuais são combinados usando `stream_flatmap` (seção 4.4.4.6) para formar um grande fluxo de todas as maneiras pelas quais qualquer um dos frames no fluxo de entrada original pode ser estendido para produzir uma correspondência com o padrão dado.
+
+### Consultas compostas
+
+Manipulamos consultas `and` conforme ilustrado na figura 4.5 com a função `conjoin`, que recebe como entradas os conjuntos e o fluxo de frames e retorna o fluxo de frames estendidos. Primeiro, `conjoin` processa o fluxo de frames para encontrar o fluxo de todas as extensões de frames possíveis que satisfazem a primeira consulta na conjunção. Então, usando isso como o novo fluxo de frames, ela aplica recursivamente `conjoin` ao resto das consultas.
+
+```javascript
+function conjoin(conjuncts, frame_stream) {
+   return is_empty_conjunction(conjuncts)
+          ? frame_stream
+          : conjoin(rest_conjuncts(conjuncts),
+                    evaluate_query(first_conjunct(conjuncts),
+                                   frame_stream));
+}
+```
+
+A declaração
+
+```javascript
+put("and", "evaluate_query", conjoin);
+```
+
+configura `evaluate_query` para despachar para `conjoin` quando uma forma `and` é encontrada.
+
+Manipulamos consultas `or` de forma similar, como mostrado na figura 4.6. Os fluxos de saída para os vários disjuntos do `or` são computados separadamente e mesclados usando a função `interleave_delayed` da seção 4.4.4.6. (Veja os exercícios 4.71 e 4.72.)
+
+```javascript
+function disjoin(disjuncts, frame_stream) {
+   return is_empty_disjunction(disjuncts)
+          ? null
+          : interleave_delayed(
+               evaluate_query(first_disjunct(disjuncts), frame_stream),
+               () => disjoin(rest_disjuncts(disjuncts), frame_stream));
+}
+put("or", "evaluate_query", disjoin);
+```
+
+Os predicados e seletores para a representação de conjuntos e disjuntos são dados na seção 4.4.4.7.
+
+### Filtros
+
+A forma sintática `not` é manipulada pelo método descrito na seção 4.4.3. Tentamos estender cada frame no fluxo de entrada para satisfazer a consulta sendo negada, e incluímos um dado frame no fluxo de saída apenas se ele não puder ser estendido.
+
+```javascript
+function negate(exps, frame_stream) {
+   return stream_flatmap(
+              frame =>
+                is_null(evaluate_query(negated_query(exps),
+                                       singleton_stream(frame)))
+                ? singleton_stream(frame)
+                : null,
+              frame_stream);
+}
+put("not", "evaluate_query", negate);
+```
+
+A forma sintática `javascript_predicate` é um filtro similar a `not`. Cada frame no fluxo é usado para instanciar as variáveis no predicado, o predicado instanciado é avaliado, e os frames para os quais o predicado avalia como falso são filtrados do fluxo de entrada. O predicado instanciado é avaliado usando `evaluate` da seção 4.1.1 com `the_global_environment` e assim pode manipular qualquer expressão JavaScript, desde que todas as variáveis de padrão sejam instanciadas antes da avaliação.
+
+```javascript
+function javascript_predicate(exps, frame_stream) {
+   return stream_flatmap(
+              frame =>
+                evaluate(instantiate_expression(
+                             javascript_predicate_expression(exps),
+                             frame),
+                         the_global_environment)
+                ? singleton_stream(frame)
+                : null,
+              frame_stream);
+}
+put("javascript_predicate", "evaluate_query", javascript_predicate);
+```
+
+A função `javascript_predicate_expression` é uma sintaxe abstrata para acessar o predicado (como uma representação sintática de uma expressão JavaScript) em uma forma `javascript_predicate`, e `instantiate_expression` é declarada em 4.4.4.7.
+
+## Encontrando Asserções por Correspondência de Padrões {#sec:query-match}
+
+A função `find_assertions`, chamada por `simple_query` (seção 4.4.4.2), recebe como entrada um padrão e um frame. Ela retorna um fluxo de frames, cada um estendendo o dado com uma vinculação de dados que casa com o padrão de maneira consistente com as vinculações originais do frame. Ela usa `fetch_assertions` (seção 4.4.4.5) para obter um fluxo de todas as asserções no banco de dados que devem ser verificadas quanto à correspondência. A razão pela qual `fetch_assertions` precisa ser uma operação separada é que podemos frequentemente aplicar regras e heurísticas simples para eliminar muitas das entradas no banco de dados de consideração. As rotinas de indexação do sistema (seção 4.4.4.5) implementam isso para nós.
+
+```javascript
+function find_assertions(pattern, frame) {
+    return stream_flatmap(
+               datum => check_an_assertion(datum, pattern, frame),
+               fetch_assertions(pattern, frame));
+}
+```
+
+A função `check_an_assertion` recebe como argumentos um dado de dados (uma asserção no banco de dados), um padrão e um frame e retorna um fluxo de um frame ou o fluxo vazio dependendo se o dado casa com o padrão em uma maneira que seja consistente com o frame dado.
+
+```javascript
+function check_an_assertion(assertion, query_pat, query_frame) {
+    const match_result = pattern_match(query_pat, assertion, query_frame);
+    return match_result === "failed"
+           ? null
+           : singleton_stream(match_result);
+}
+```
+
+A lógica básica de correspondência de padrões é realizada pela função `pattern_match`, que recebe como argumentos um padrão, um dado e um frame e retorna um frame estendido ou o símbolo `"failed"`. A estrutura básica de `pattern_match` é uma estrutura de casos baseada na estrutura do padrão, analisada em termos de sintaxe abstrata implementada em 4.4.4.7.
+
+- Se o padrão for apenas uma variável, ela casa com qualquer coisa, e a vinculação resultante é adicionada ao frame (ou verificamos se a vinculação no frame já é a vinculação correta, usando `extend_if_possible`).
+
+- Caso contrário, se o padrão e o dado forem componentes `"equal"`, o casamento é bem-sucedido, e retornamos o frame inalterado.
+
+- Caso contrário, se o padrão for uma lista (indicada na sintaxe abstrata por `is_pair`), e o dado também for uma lista, casamos a `head` do padrão contra a `head` do dado para produzir um frame; neste frame tentamos casar a `tail` do padrão contra a `tail` do dado. Se uma dessas correspondências falhar, todo o casamento falha. (Observe como esta descrição recursiva incorpora a correspondência elemento-a-elemento de listas.)
+
+- Caso contrário, o casamento falha.
+
+```javascript
+function pattern_match(pattern, data, frame) {
+    return frame === "failed"
+           ? "failed"
+           : is_variable(pattern)
+           ? extend_if_possible(
+                 variable_name(pattern), data, frame)
+           : is_pair(pattern) && is_pair(data)
+           ? pattern_match(
+                 tail(pattern), tail(data),
+                 pattern_match(head(pattern), head(data), frame))
+           : equal(pattern, data)
+           ? frame
+           : "failed";
+}
+```
+
+Aqui está a função `extend_if_possible` usada por `pattern_match` acima:
+
+```javascript
+function extend_if_possible(variable, dat, frame) {
+    const binding = binding_in_frame(variable, frame);
+    if (is_undefined(binding)) {
+        return extend(variable, dat, frame);
+    } else {
+        return pattern_match(binding_value(binding), dat, frame);
+    }
+}
+```
+
+Se nenhuma vinculação para a variável existe, simplesmente adicionamos uma ao frame. Caso contrário, casamos, no frame, o dado contra o valor da variável no frame. Se a vinculação armazenada for ela mesma um padrão (como seria se uma variável de padrão casasse com outro padrão que contém variáveis), então o padrão será correspondido ao dado neste mesmo quadro, adicionando ou verificando vinculações conforme necessário. Este último recurso nos permite tratar padrões que têm variáveis que são compartilhadas por mais de um subpadrão. Por exemplo, considere a seguinte consulta para adicionar `a` a `b` para obter `ab1ab2ab3ab4`:
+
+```javascript
+append_to_form($x, $x, list("a", "b", 1, "a", "b", 2, "a", "b", 3, "a", "b", 4))
+```
+
+Isso funciona porque a variável `$x` na segunda posição do padrão `append_to_form` é casada contra uma lista começando com `a` (neste caso, a lista `list("a", "b", 1, "a", "b", 2, "a", "b", 3, "a", "b", 4)`), produzindo um frame onde `$x` está vinculado ao padrão `pair("a", $z)`. Quando isso é casado (por `extend_if_possible`) contra a lista começando com `a` na primeira posição do padrão `append_to_form`, o valor de `$z` (que não tem vinculação) é definido como `list("b", 1, "a", "b", 2, "a", "b", 3, "a", "b", 4)`. Uma consulta com `$x` em ambas as posições falharia, porque `$x` seria vinculado ao padrão `pair("a", $z)` na primeira posição, e isso não poderia casar com a lista `list("b", 2, "a", "b", 3, "a", "b", 4)` na segunda posição sem obter duas vinculações diferentes de `$z`.
+
+## Regras e Unificação {#sec:query-unify}
+
+A função `apply_rules` é o complemento de `find_assertions` (seção 4.4.4.3). Ela recebe como entrada um padrão e um frame, e forma um fluxo de frames de extensão ao aplicar regras do banco de dados. Ela usa `fetch_rules` para obter o fluxo de regras. A função `stream_flatmap` mapeia `apply_a_rule` sobre o fluxo de regras possíveis e combina os fluxos de frames resultantes.
+
+```javascript
+function apply_rules(pattern, frame) {
+    return stream_flatmap(rule => apply_a_rule(rule, pattern, frame),
+                          fetch_rules(pattern, frame));
+}
+```
+
+A função `apply_a_rule` aplica regras usando o método delineado na seção 4.4.2. Primeiro ela aumenta o ambiente de aplicação pela renomeação de variáveis na regra de forma que as variáveis da regra sejam distintas daquelas no padrão de consulta e frame (seção 4.4.4.8). Isso evita confusão entre as variáveis do padrão de consulta e as variáveis da regra. Tendo renomeado as variáveis na regra, unificamos a conclusão da regra com o padrão no frame dado. Se isso for bem-sucedido, retornamos um fluxo consistindo do frame estendido; caso contrário, retornamos o fluxo vazio. Antes de passar o frame bem-sucedido para avaliar o corpo da regra, aumentamos ainda mais o frame para incluir vinculações para quaisquer variáveis que foram deixadas não vinculadas pela unificação, como indicado pelos pontos de interrogação na consulta original (seção 4.4.4.8).
+
+```javascript
+function apply_a_rule(rule, query_pattern, query_frame) {
+    const clean_rule = rename_variables_in(rule);
+    const unify_result = unify_match(query_pattern,
+                                     conclusion(clean_rule),
+                                     query_frame);
+    return unify_result === "failed"
+           ? null
+           : evaluate_query(rule_body(clean_rule),
+                           singleton_stream(unify_result));
+}
+```
+
+Os seletores `rule_body` e `conclusion` que decompõem uma regra são definidos na seção 4.4.4.7.
+
+Realizamos a unificação, assim como a correspondência de padrões, usando um algoritmo que tenta casar recursivamente o padrão contra o dado. Quando uma variável de padrão casa com um valor de dados, a variável é vinculada ao valor de dados. A diferença entre unificação e correspondência de padrões é que em unificação o "dado" pode conter variáveis de padrão, caso em que essas variáveis também obtêm vinculações. Além disso, a estrutura sendo casada (o padrão de consulta) e a estrutura sendo casada contra (a conclusão de uma regra) desempenham papéis essencialmente idênticos, em contraste com a correspondência de padrões, na qual o padrão de dados desempenha um papel diferente do padrão de consulta.
+
+A implementação de unificação é relativamente simples, mas merece algum estudo. O resultado básico é quase idêntico ao de `pattern_match`, com a seguinte diferença fundamental: na cláusula onde o padrão é uma variável, bem como no procedimento `extend_if_possible_to_unify` que substitui `extend_if_possible`, há uma verificação extra em cada lado antes que a vinculação seja feita para ver se a variável que estamos tentando vincular já está vinculada a algum valor. Se isso acontecer, tentamos casar o valor contra o outro.
+
+```javascript
+function unify_match(p1, p2, frame) {
+    return frame === "failed"
+           ? "failed"
+           : equal(p1, p2)
+           ? frame
+           : is_variable(p1)
+           ? extend_if_possible_to_unify(
+                 variable_name(p1), p2, frame)
+           : is_variable(p2)
+           ? extend_if_possible_to_unify(
+                 variable_name(p2), p1, frame)
+           : is_pair(p1) && is_pair(p2)
+           ? unify_match(
+                 tail(p1), tail(p2),
+                 unify_match(head(p1), head(p2), frame))
+           : "failed";
+}
+```
+
+```javascript
+function extend_if_possible_to_unify(variable, val, frame) {
+    const binding = binding_in_frame(variable, frame);
+    if (!is_undefined(binding)) {
+        return unify_match(binding_value(binding), val, frame);
+    } else if (is_variable(val)) {
+        const binding = binding_in_frame(variable_name(val), frame);
+        return ! is_undefined(binding)
+               ? unify_match(variable, binding_value(binding), frame)
+               : extend(variable, val, frame);
+    } else if (depends_on(val, variable, frame)) {
+        return "failed";
+    } else {
+        return extend(variable, val, frame);
+    }
+}
+```
+
+A verificação mais importante em `extend_if_possible_to_unify` é a chamada para `depends_on`. Sem essa verificação, o unificador poderia vincular uma variável de padrão a uma expressão que contém ela mesma, o que levaria a uma estrutura circular infinita. Tal estrutura pode nunca ser impressa porque o processo de impressão cairia em um loop infinito. Uma estrutura simples como `pair($x, $x)` é inócua, mas considere o resultado de unificar `pair($x, $y)` com `pair($y, $x)`. Isso tentaria vincular `$y` a `pair($x, $y)`, que refere-se novamente a `$y`. Vincular `$x` a `pair($y, $x)` também cria tal estrutura circular. Executar o verificador `depends_on` evita tais estruturas; o verificador também é conhecido na literatura de unificação como teste de ocorrência.
+
+```javascript
+function depends_on(expression, variable, frame) {
+    function tree_walk(e) {
+        if (is_variable(e)) {
+            if (variable_name(e) === variable) {
+                return true;
+            } else {
+                const b = binding_in_frame(variable_name(e), frame);
+                return is_undefined(b)
+                       ? false
+                       : tree_walk(binding_value(b));
+            }
+        } else {
+            return is_pair(e)
+                   ? tree_walk(head(e)) || tree_walk(tail(e))
+                   : false;
+        }
+    }
+    return tree_walk(expression);
+}
+```
+
+## Mantendo o Banco de Dados {#sec:query-db}
+
+Uma das motivações para a arquitetura de fluxo do sistema de consultas é que podemos enfileirar incrementalmente as operações para consultar o banco de dados. Em particular, `find_assertions` e `apply_rules` (em 4.4.4.3 e 4.4.4.4) tratam o banco de dados como um fluxo, e procuram gradualmente através das entradas do fluxo. Infelizmente, nosso atual sistema de fluxo não é poderoso o suficiente para manipular as consultas completas de maneira incremental.
+
+A dificuldade é que, embora o sistema faça um bom trabalho ao processar frames incrementalmente, ele é menos eficiente ao processar consultas incrementalmente. Em nosso sistema, consultas são processadas colocando todas as asserções e regras no banco de dados em um único grande fluxo e então filtrando esse fluxo para extrair as entradas que casam com uma dada consulta. Esta é uma abordagem ineficiente quando há um grande banco de dados, e deve ser melhorada antes do sistema ser prático. Há várias técnicas possíveis para melhorar o sistema.
+
+Uma das mais diretas é armazenar as asserções em um banco de dados indexado por predicados e constantes, assim como fizemos com o intérprete orientado a dados no capítulo 3. Em vez de ter apenas um grande fluxo de asserções no banco de dados, teremos fluxos separados de asserções para cada combinação de predicado e constante. Identificação e recuperação de informação a partir destes fluxos é a essência da tecnologia de banco de dados. Além da rapidez básica de armazenamento e recuperação, podemos obter ganhos adicionais de eficiência através da escolha cuidadosa de estratégias de indexação e através da exploração de propriedades especiais dos dados sendo armazenados. Deixamos isso para um curso em tecnologia de banco de dados. Aqui apenas delineamos a simples estrutura adotada pelo nosso sistema.
+
+Representamos o banco de dados como um par de fluxos, um de asserções e um de regras. (Mais adiante combinaremos regras e asserções em um único tipo.) As funções para adicionar regras ou asserções ao banco de dados simplesmente anexam o novo item ao stream apropriado.
+
+```javascript
+function add_rule_or_assertion(assertion) {
+    return is_rule(assertion)
+           ? add_rule(assertion)
+           : add_assertion(assertion);
+}
+function add_assertion(assertion) {
+    store_assertion_in_index(assertion);
+    THE_ASSERTIONS = pair(assertion, THE_ASSERTIONS);
+    return "ok";
+}
+function add_rule(rule) {
+    store_rule_in_index(rule);
+    THE_RULES = pair(rule, THE_RULES);
+    return "ok";
+}
+```
+
+Para obter asserções que podem casar com um dado padrão, primeiro verificamos se o padrão especifica um predicado específico (por exemplo, `append_to_form` em vez de `$x`). Se sim, obtemos o fluxo de asserções que têm esse predicado como sua `head` do índice, em vez de escanear todas as asserções. Se o padrão não especificar um predicado específico (por exemplo, `pair($x, $y)`), precisamos escanear todas as asserções.
+
+```javascript
+function fetch_assertions(pattern, frame) {
+    return get_indexed_assertions(pattern);
+}
+function get_indexed_assertions(pattern) {
+    return get_stream(index_key_of(pattern), "assertion-stream");
+}
+```
+
+A função `get_stream` procura um fluxo no índice, sob uma dada chave. (Fornecemos um segundo argumento ao `get_stream` apenas para fins de documentação; ele não afeta o comportamento de `get_stream`.)
+
+```javascript
+function get_stream(key1, key2) {
+    const s = get(key1, key2);
+    return is_undefined(s) ? null : s;
+}
+```
+
+Regras são armazenadas de maneira similar, usando a constante ou predicado da conclusão da regra. As regras com conclusões variáveis (tais como `pair($x, $y)`) são armazenadas sob a chave `"?"`, de modo que tais regras sempre serão escaneadas quando tentamos adicionar uma regra a um padrão.
+
+```javascript
+function fetch_rules(pattern, frame) {
+    return get_indexed_rules(pattern);
+}
+function get_indexed_rules(pattern) {
+    return stream_append_delayed(
+               get_stream(index_key_of(pattern), "rule-stream"),
+               () => get_stream("?", "rule-stream"));
+}
+```
+
+A função `add_rule_or_assertion` usa as seguintes funções para guardar asserções e regras no índice:
+
+```javascript
+function store_assertion_in_index(assertion) {
+    const key = index_key_of(assertion);
+    const current_assertion_stream =
+        get_stream(key, "assertion-stream");
+    put(key, "assertion-stream",
+        pair(assertion, current_assertion_stream));
+}
+function store_rule_in_index(rule) {
+    const pattern = conclusion(rule);
+    const key = index_key_of(pattern);
+    const current_rule_stream =
+        get_stream(key, "rule-stream");
+    put(key, "rule-stream",
+        pair(rule, current_rule_stream));
+}
+```
+
+A função `index_key_of` extrai uma chave de uma asserção ou padrão sob o qual ele deve ser indexado. Ela retorna uma lista cujo primeiro elemento é o símbolo de nome da função da asserção ou padrão (ou seja, o `head` de `head` se o padrão for uma lista) e cujos elementos restantes consistem de quaisquer constantes adicionais que aparecem na asserção ou padrão (ou seja, qualquer componente de `tail` de `head` que não seja uma variável). Assim `index_key_of` retorna uma lista de símbolos e valores que caracteriza a asserção ou padrão sendo indexado. Para uma consulta como `append_to_form("a", $x, $y)` a chave seria `list("append_to_form", "a")`; para a consulta `append_to_form($u, $v, $w)` a chave seria `list("append_to_form")`.
+
+A função `use_index` testa se um padrão começa com uma variável, caso em que ele não pode ser indexado e a chave é `"?"`. Caso contrário, `make_index_key` seleciona o predicado (o `head` do padrão) e percorre os argumentos para coletar símbolos e valores de constantes que aparecem na posição do argumento do padrão.
+
+```javascript
+function index_key_of(pattern) {
+    function use_index(pat) {
+        const name = head(pat);
+        return is_variable(name)
+               ? "?"
+               : make_index_key(name, tail(pat));
+    }
+    return is_pair(pattern)
+           ? use_index(head(pattern))
+           : "?";
+}
+function make_index_key(name, args) {
+    function accumulate_constant_args(args, result) {
+        return is_null(args)
+               ? reverse(result)
+               : is_constant_symbol(head(args))
+               ? accumulate_constant_args(tail(args),
+                                          pair(head(args), result))
+               : reverse(result);
+    }
+    return pair(name, accumulate_constant_args(args, null));
+}
+```
+
+O processo de armazenar asserções no índice pode ser melhorado ainda mais. Atualmente, inserimos apenas a `head` do padrão e quaisquer constantes que aparecem nos argumentos. É possível ser ainda mais específico indexando em todas as constantes e em todas as variáveis também. Isso permitiria recuperação mais eficiente de padrões que casam com padrões altamente específicos.
+
+A função `THE_ASSERTIONS` e `THE_RULES` usadas por `add_assertion` e `add_rule` são inicializadas para o fluxo vazio.
+
+```javascript
+let THE_ASSERTIONS = null;
+```
+
+```javascript
+let THE_RULES = null;
+```
+
+As afirmações também podem ser manipuladas usando comandos imperativos, como em 4.4.4.1.
+
+## Operações de Fluxo {#sec:query-streams}
+
+O sistema de consultas usa alguns operadores de fluxo simples, além daqueles que já vimos.
+
+A função `stream_append_delayed` e `interleave_delayed` são exatamente como `stream_append` e `interleave` (seção 3.5.3), exceto que tomam um argumento de fluxo atrasado (como uma função sem parâmetros). Este atraso é crucial para produzir o comportamento correto no caso de regras recursivas ou iterações infinitas, como discutido na seção 4.4.3.
+
+```javascript
+function stream_append_delayed(s1, delayed_s2) {
+    return is_null(s1)
+           ? delayed_s2()
+           : pair(head(s1),
+                  () => stream_append_delayed(stream_tail(s1),
+                                              delayed_s2));
+}
+function interleave_delayed(s1, delayed_s2) {
+    return is_null(s1)
+           ? delayed_s2()
+           : pair(head(s1),
+                  () => interleave_delayed(delayed_s2(),
+                                          () => stream_tail(s1)));
+}
+```
+
+A função `stream_flatmap`, que é usada em todo o avaliador de consultas para mapear um procedimento sobre um fluxo de frames e combinar os fluxos resultantes de frames, é a operação de fluxo análoga à operação ordinária `flatmap` introduzida para listas no capítulo 2. (Veja a nota de rodapé 12 da seção 3.5.3.) Ao contrário das operações de combinação ordinárias, no entanto, construímos nosso fluxo combinado usando uma versão atrasada de `interleave`, em vez de `append` (veja os exercícios 4.71 e 4.72).
+
+```javascript
+function stream_flatmap(fun, s) {
+    return flatten_stream(stream_map(fun, s));
+}
+function flatten_stream(stream) {
+    return is_null(stream)
+           ? null
+           : interleave_delayed(
+                 head(stream),
+                 () => flatten_stream(stream_tail(stream)));
+}
+```
+
+As instalações de indexação que descrevemos requerem que possamos testar se um padrão ou dado especifica um predicado (em vez de ser uma variável no lugar do predicado) e extrair o predicado. Isso é alcançado pela seguinte função, usando a sintaxe abstrata de padrões e dados da seção 4.4.4.7.
+
+```javascript
+function singleton_stream(x) {
+    return pair(x, () => null);
+}
+```
+
+## Sintaxe de Consulta {#sec:query-syntax}
+
+A função `convert_to_query_syntax` e os diversos predicados e seletores que implementam a sintaxe abstrata da linguagem de consultas formam a interface entre a representação sintática produzida pelo analisador e a representação interna usada pelo avaliador de consultas. As funções nesta seção assumem que as representações sintáticas já foram preparadas pelo analisador, que forneceu sinais sintáticos adequados para distinguir entre strings JavaScript e expressões JavaScript (para `assert` e `javascript_predicate`) e nomes de variáveis de padrão e aplicações de funções (por exemplo, `$x` e `append_to_form($x, $y, $z)`). Esta seção, portanto, concentra-se em fornecer os detalhes de como transformar expressões sintáticas em representações internas para consultas.
+
+A transformação `convert_to_query_syntax` percorre a representação sintática usando recursão sobre a estrutura, transformando aplicações de função em listas e substituindo variáveis de padrão (marcadas com cifrão) por pares cujo `head` é a string `"?"` e cujo `tail` é o nome da variável como uma string.
+
+```javascript
+function convert_to_query_syntax(exp) {
+    if (is_application(exp)) {
+        return pair(
+                 map(convert_to_query_syntax,
+                     pair(function_expression(exp),
+                          arg_expressions(exp))));
+    } else if (is_name(exp)) {
+        const s = symbol_of_name(exp);
+        return (string_length(s) > 0 &&
+                char_at(s, 0) === "$")
+               ? pair("?", substring(s, 1, string_length(s)))
+               : s;
+    } else if (is_literal(exp)) {
+        return literal_value(exp);
+    } else if (is_array_expression(exp)) {
+        const elements = map(convert_to_query_syntax,
+                             array_expression_elements(exp));
+        return accumulate((curr, acc) => pair(curr, acc),
+                          null,
+                          elements);
+    } else {
+        return exp;
+    }
+}
+```
+
+Representamos regras como pares de conclusão e corpo. Para uma afirmação, o corpo é dado como a string `"always_true"`.
+
+```javascript
+function is_rule(assertion) {
+    return is_tagged_list(assertion, "rule");
+}
+function conclusion(rule) {
+    return head(tail(rule));
+}
+function rule_body(rule) {
+    const body = tail(tail(rule));
+    return is_null(body)
+           ? list("always_true")
+           : head(body);
+}
+```
+
+Para tratar afirmações e regras uniformemente no processo de adição ao banco de dados, declaramos uma regra sem corpo (representado como `list("rule", conclusion)`) como equivalente à mesma conclusão e um corpo incondicional (representado como `list("rule", conclusion, "always_true")`).
+
+```javascript
+function is_assertion(exp) {
+    return is_tagged_list(exp, "assert");
+}
+function assertion_body(exp) {
+    return head(tail(exp));
+}
+```
+
+Para acessar a entrada do usuário de asserções e consultas, usamos funções auxiliares que transformam a representação sintática produzida pelo analisador.
+
+```javascript
+function is_empty_conjunction(exps) {
+    return is_null(exps);
+}
+function first_conjunct(exps) {
+    return head(exps);
+}
+function rest_conjuncts(exps) {
+    return tail(exps);
+}
+function is_empty_disjunction(exps) {
+    return is_null(exps);
+}
+function first_disjunct(exps) {
+    return head(exps);
+}
+function rest_disjuncts(exps) {
+    return tail(exps);
+}
+function negated_query(exps) {
+    return head(exps);
+}
+function javascript_predicate_expression(exps) {
+    return head(exps);
+}
+```
+
+As seguintes três funções definem a sintaxe de regras:
+
+```javascript
+function is_tagged_list(exp, tag) {
+    return is_pair(exp) && head(exp) === tag;
+}
+```
+
+A função `contents` usada pela função `evaluate_query` (seção 4.4.4.2) extrai os conteúdos de uma consulta de uma forma sintática retornando a cauda. A implementação de `contents` assume que a sintaxe usa tags como nos exemplos acima: `list("and", ...)`, `list("or", ...)`, `list("not", ...)`, e `list("javascript_predicate", ...)`.
+
+```javascript
+function contents(exp) {
+    return tail(exp);
+}
+```
+
+A função `type` usada por `evaluate_query` extrai o tipo de uma consulta. A implementação de `type` precisa retornar um símbolo distintivo único para cada tipo de consulta, de forma que a tabela de operações possa usar esses símbolos como chaves de busca. Com a representação da sintaxe das consultas descrita acima, isso é simplesmente `head`, mas isso mudaria se escolhêssemos representar a sintaxe de uma forma diferente.
+
+```javascript
+function type(exp) {
+    return is_pair(exp)
+           ? head(exp)
+           : error(exp, "unknown expression type");
+}
+```
+
+### Instanciação
+
+A função `instantiate_expression` é usada pelo driver de consulta (seção 4.4.4.1) para instanciar o resultado de uma consulta com os valores de suas variáveis. Ela navega pela estrutura da expressão e instancia todos os nomes JavaScript que começam com um cifrão como variáveis de padrão.
+
+```javascript
+function instantiate_expression(exp, frame) {
+    if (is_application(exp)) {
+        return make_application(
+                   instantiate_expression(function_expression(exp),
+                                         frame),
+                   map(e => instantiate_expression(e, frame),
+                       arg_expressions(exp)));
+    } else if (is_name(exp)) {
+        const s = symbol_of_name(exp);
+        if (string_length(s) > 0 && char_at(s, 0) === "$") {
+            const variable = pair("?",
+                                  substring(s, 1, string_length(s)));
+            return instantiate(variable, frame,
+                              () => make_name(s));
+        } else {
+            return exp;
+        }
+    } else if (is_literal(exp)) {
+        return exp;
+    } else if (is_array_expression(exp)) {
+        const elements = map(e => instantiate_expression(e, frame),
+                             array_expression_elements(exp));
+        return make_array_expression(elements);
+    } else {
+        return exp;
+    }
+}
+```
+
+A função `instantiate` instancia valores de variáveis de padrão (que podem conter outras variáveis de padrão). Ela pega três argumentos: uma variável de padrão, um frame, e uma função de não vinculado que especifica o que fazer com uma variável não vinculada. A função `instantiate` substitui recursivamente vinculações de variáveis pelo valor vinculado na estrutura de dados dada, até que nenhuma mais possa ser encontrada.
+
+```javascript
+function instantiate(exp, frame, unbound_var_handler) {
+    function copy(exp) {
+        if (is_variable(exp)) {
+            const binding = binding_in_frame(variable_name(exp), frame);
+            return is_undefined(binding)
+                   ? unbound_var_handler(exp, frame)
+                   : copy(binding_value(binding));
+        } else if (is_pair(exp)) {
+            return pair(copy(head(exp)), copy(tail(exp)));
+        } else {
+            return exp;
+        }
+    }
+    return copy(exp);
+}
+```
+
+Para variáveis de padrão na expressão instanciada que permanecem sem vinculação, mantemos o cifrão na frente do nome. Isso é conseguido fornecendo uma função `unbound_var_handler` apropriada ao `instantiate`.
+
+### Representação de variáveis de padrão
+
+Variáveis em consultas são representadas como pares cuja `head` é a string `"?"` e cuja `tail` é a string nomeando a variável, como gerado pela sintaxe abstrata. Assim, a consulta do usuário `list($x, $y)` será analisada e convertida para `pair(pair("?", "x"), pair(pair("?", "y"), null))`, e o frame resultante (se bem-sucedido) conterá vinculações para `"x"` e `"y"`.
+
+```javascript
+function is_variable(exp) {
+    return is_tagged_list(exp, "?");
+}
+function variable_name(exp) {
+    return tail(exp);
+}
+```
+
+Variáveis adicionais são geradas durante a aplicação de regras (pela renomeação de variáveis em regras). Essas variáveis são representadas como pares cuja `head` é a string `"?"` e cuja `tail` é um número (o identificador único da variável). Portanto, cada procedimento que gera nomes de variáveis precisa ser modificado para gerar nomes únicos. Fazemos isso concatenando um identificador numérico único ao símbolo de variável.
+
+```javascript
+function is_constant_symbol(exp) {
+    return is_string(exp) && ! is_variable(pair("?", exp));
+}
+```
+
+Identificadores únicos são construídos usando um contador global.
+
+```javascript
+let identifier = 0;
+function new_rule_application_id() {
+    identifier = identifier + 1;
+    return identifier;
+}
+```
+
+### Renomeando variáveis em regras {#sec:renaming-variables-in-rules}
+
+Quando uma regra é aplicada, a consulta é unificada com a conclusão da regra. Para uma dada aplicação de regra, devemos renomear as variáveis de regra com nomes únicos. A razão é que de outra forma as variáveis na consulta poderiam ter os mesmos nomes que as variáveis de regra, o que levaria a confusão.
+
+Uma maneira de gerar nomes únicos é associar um identificador único (tal como um número) com cada aplicação de uma regra e combinar esse identificador com o nome de variável original. A função `new_rule_application_id` retorna um identificador único cada vez que é chamada. (Implementamos isso usando um contador que é incrementado a cada vez que a função é chamada.)
+
+```javascript
+function make_new_variable(variable, rule_application_id) {
+    return pair("?", pair(rule_application_id, variable_name(variable)));
+}
+```
+
+Quando `apply_a_rule` (seção 4.4.4.4) renomeia as variáveis em uma regra, ela usa a seguinte função, que marca todas as ocorrências de variáveis na estrutura de regra com um novo identificador usando `tree_walk`:
+
+```javascript
+function rename_variables_in(rule) {
+    const rule_application_id = new_rule_application_id();
+    function tree_walk(exp) {
+        return is_variable(exp)
+               ? make_new_variable(exp, rule_application_id)
+               : is_pair(exp)
+               ? pair(tree_walk(head(exp)), tree_walk(tail(exp)))
+               : exp;
+    }
+    return tree_walk(rule);
+}
+```
+
+### Marca de interrogação para saída
+
+Quando a consulta resulta de uma aplicação de regra, as variáveis têm a forma de pares cujo `tail` é um par de um identificador de aplicação de regra e o símbolo de variável original. Para fins de saída, precisamos converter de volta para o formato original de consulta de entrada.
+
+```javascript
+function query_syntax_process(exp) {
+    return convert_to_query_syntax(parse(exp));
+}
+```
+
+## Frames e Vinculações {#sec:query-bindings}
+
+Frames são representados como listas de vinculações, que são pares de variável-valor:
+
+```javascript
+function make_binding(variable, value) {
+    return pair(variable, value);
+}
+function binding_variable(binding) {
+    return head(binding);
+}
+function binding_value(binding) {
+    return tail(binding);
+}
+function binding_in_frame(variable, frame) {
+    return assoc(variable, frame);
+}
+function extend(variable, value, frame) {
+    return pair(make_binding(variable, value), frame);
+}
+```
+
+Observe que `extend` retorna um novo frame que contém a vinculação adicional mas compartilha estrutura de cauda com o frame original. Esta técnica de compartilhamento de estrutura é crucial para a eficiência do sistema de consultas; sem ela, toda aplicação de regra exigiria copiar toda a estrutura de vinculações no frame.

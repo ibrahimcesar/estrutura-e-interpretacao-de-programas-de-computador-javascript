@@ -1,0 +1,205 @@
+# 4.2.3 Streams como Listas Preguiçosas
+
+Na seção 3.5.1, mostramos como implementar streams como listas atrasadas. Usamos uma expressão lambda para construir uma "promessa" de computar a cauda de um stream, sem realmente cumprir essa promessa até mais tarde. Fomos forçados a criar streams como um novo tipo de objeto de dados similar, mas não idêntico, a listas, e isso nos exigiu reimplementar muitas operações de lista ordinárias (`map`, `append`, etc.) para uso com streams.
+
+## Unificando streams e listas
+
+Com avaliação preguiçosa, streams e listas podem ser idênticos, então não há necessidade de formas sintáticas separadas ou operações separadas de lista e stream. Tudo o que precisamos fazer é organizar as coisas de modo que `pair` seja não estrito. Uma maneira de fazer isso é estender o avaliador preguiçoso para permitir primitivas não estritas, e implementar `pair` como uma dessas. Uma maneira mais fácil é lembrar (seção 2.1.3) que não há necessidade fundamental de implementar `pair` como uma primitiva. Em vez disso, podemos representar pares como funções[^1]:
+
+[^1]: Esta é a representação funcional descrita no exercício 2.4. Essencialmente qualquer representação funcional (por exemplo, uma implementação de passagem de mensagens) serviria tão bem. Note que podemos instalar essas definições no avaliador preguiçoso simplesmente digitando-as no loop do driver. Se tivéssemos originalmente incluído `pair`, `head` e `tail` como primitivas no ambiente global, elas seriam redefinidas. (Veja também os exercícios 4.33 e 4.34.)
+
+```javascript
+function pair(x, y) {
+    return m => m(x, y);
+}
+function head(z) {
+    return z((p, q) => p);
+}
+function tail(z) {
+    return z((p, q) => q);
+}
+```
+
+## Operações sobre listas preguiçosas
+
+Em termos dessas operações básicas, as definições padrão das operações de lista funcionarão com listas infinitas (streams) assim como com listas finitas, e as operações de stream podem ser implementadas como operações de lista. Aqui estão alguns exemplos:
+
+```javascript
+function list_ref(items, n) {
+    return n === 0
+           ? head(items)
+           : list_ref(tail(items), n - 1);
+}
+function map(fun, items) {
+    return is_null(items)
+           ? null
+           : pair(fun(head(items)),
+                  map(fun, tail(items)));
+}
+function scale_list(items, factor) {
+    return map(x => x * factor, items);
+}
+function add_lists(list1, list2) {
+    return is_null(list1)
+           ? list2
+           : is_null(list2)
+           ? list1
+           : pair(head(list1) + head(list2),
+                  add_lists(tail(list1), tail(list2)));
+}
+const ones = pair(1, ones);
+const integers = pair(1, add_lists(ones, integers));
+```
+
+Podemos então testar:
+
+```
+L-evaluate input:
+list_ref(integers, 17);
+L-evaluate value:
+18
+```
+
+## Listas ainda mais preguiçosas
+
+Note que essas listas preguiçosas são ainda mais preguiçosas do que os streams do capítulo 3: O `head` da lista, assim como a `tail`, é atrasado[^2]. De fato, até mesmo acessar o `head` ou `tail` de um par preguiçoso não precisa forçar o valor de um elemento da lista. O valor será forçado apenas quando realmente necessário — por exemplo, para uso como argumento de uma primitiva, ou para ser impresso como uma resposta.
+
+[^2]: Isso nos permite criar versões atrasadas de tipos mais gerais de estruturas de lista, não apenas sequências. Hughes (1990) discute algumas aplicações de "árvores preguiçosas".
+
+## Resolvendo equações diferenciais
+
+Pares preguiçosos também ajudam com o problema que surgiu com streams na seção 3.5.4, onde descobrimos que formular modelos de stream de sistemas com loops pode exigir que salpiquemos nossos programas com expressões lambda adicionais para atrasos, além das necessárias para construir um par de stream. Com avaliação preguiçosa, todos os argumentos para funções são atrasados uniformemente. Por exemplo, podemos implementar funções para integrar listas e resolver equações diferenciais como originalmente pretendíamos na seção 3.5.4:
+
+```javascript
+function integral(integrand, initial_value, dt) {
+    const int = pair(initial_value,
+                     add_lists(scale_list(integrand, dt),
+                               int));
+    return int;
+}
+function solve(f, y0, dt) {
+    const y = integral(dy, y0, dt);
+    const dy = map(f, y);
+    return y;
+}
+```
+
+Podemos testar:
+
+```
+L-evaluate input:
+list_ref(solve(x => x, 1, 0.001), 1000);
+L-evaluate value:
+2.716924
+```
+
+## Exercícios
+
+### Exercício 4.32
+
+Dê alguns exemplos que ilustrem a diferença entre os streams do capítulo 3 e as listas preguiçosas "ainda mais preguiçosas" descritas nesta seção. Como você pode tirar vantagem dessa preguiça extra?
+
+<details>
+<summary>Exemplos</summary>
+
+**Diferença 1: Head atrasado**
+
+Nos streams do capítulo 3, o `head` (primeiro elemento) era sempre avaliado imediatamente. Nas listas preguiçosas, até mesmo o `head` pode ser atrasado.
+
+```javascript
+// Stream tradicional: head é avaliado imediatamente
+const s = stream_cons(expensive_computation(), tail);
+// expensive_computation() é executado aqui
+
+// Lista preguiçosa: head também é atrasado
+const l = pair(expensive_computation(), tail);
+// expensive_computation() só será executado se head(l) for forçado
+```
+
+**Diferença 2: Estruturas de dados mais complexas**
+
+Podemos criar árvores preguiçosas onde tanto os nós quanto os filhos são atrasados:
+
+```javascript
+// Árvore binária preguiçosa
+function make_tree(value, left, right) {
+    return pair(value, pair(left, right));
+}
+
+// Árvore infinita de números naturais em pré-ordem
+function tree_of_naturals(n) {
+    return make_tree(n,
+                     tree_of_naturals(2 * n),
+                     tree_of_naturals(2 * n + 1));
+}
+
+const nat_tree = tree_of_naturals(1);
+// Podemos navegar pela árvore sem avaliar ramos desnecessários
+```
+
+**Vantagem 3: Computações que podem não ser necessárias**
+
+```javascript
+function first_non_null(list1, list2) {
+    return is_null(list1)
+           ? list2
+           : pair(head(list1), tail(list1));
+}
+
+// list2 nunca é avaliado se list1 não for null
+// Nas listas preguiçosas, até mesmo head(list1) não é avaliado
+// até que seja realmente necessário
+```
+</details>
+
+### Exercício 4.33
+
+Ben Bitdiddle testa a implementação de lista preguiçosa dada acima avaliando a expressão:
+
+```javascript
+head(list("a", "b", "c"));
+```
+
+Para sua surpresa, isso produz um erro. Após algum pensamento, ele percebe que as "listas" obtidas da função primitiva `list` são diferentes das listas manipuladas pelas novas definições de `pair`, `head` e `tail`.
+
+Modifique o avaliador de modo que aplicações da função primitiva `list` produzam listas preguiçosas verdadeiras.
+
+<details>
+<summary>Dica</summary>
+
+Você precisará modificar como a função primitiva `list` é implementada. Uma abordagem é fazê-la construir a lista usando a nova função `pair` preguiçosa em vez do construtor de lista primitivo.
+
+Alternativamente, você poderia modificar o avaliador para detectar aplicações de `list` e tratá-las especialmente, construindo a lista resultante usando `pair` preguiçoso.
+</details>
+
+### Exercício 4.34
+
+Modifique o loop do driver para o avaliador de modo que pares preguiçosos e listas sejam impressos de alguma forma razoável. (O que você vai fazer sobre listas infinitas?) Você também pode precisar modificar a representação de pares preguiçosos para que o avaliador possa identificá-los a fim de imprimi-los.
+
+<details>
+<summary>Sugestão</summary>
+
+Considere estas abordagens:
+
+1. **Limite de impressão**: Imprima apenas os primeiros N elementos de uma lista, seguido de "..." se houver mais elementos.
+
+2. **Detecção de ciclos**: Detecte quando uma lista é circular ou infinita (por exemplo, rastreando pares já visitados durante a impressão).
+
+3. **Impressão lazy**: Imprima elementos conforme eles são forçados, mas pare após um certo número.
+
+Exemplo de saída:
+
+```
+L-evaluate input:
+integers;
+L-evaluate value:
+(1 2 3 4 5 6 7 8 9 10 ...)
+
+L-evaluate input:
+ones;
+L-evaluate value:
+(1 1 1 1 1 1 1 1 1 1 ...)
+```
+
+Você precisará modificar `user_print` e possivelmente adicionar funções auxiliares para detectar e imprimir listas preguiçosas de forma inteligente.
+</details>

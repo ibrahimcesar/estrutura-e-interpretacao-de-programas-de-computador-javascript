@@ -1,0 +1,182 @@
+# 4.1.4 Executando o Avaliador como um Programa
+
+Dado o avaliador, temos em mãos uma descrição (expressa em JavaScript) do processo pelo qual declarações e expressões JavaScript são avaliadas. Uma vantagem de expressar o avaliador como um programa é que podemos executar o programa. Isso nos dá, executando dentro do JavaScript, um modelo funcional de como o próprio JavaScript avalia expressões. Isso pode servir como um framework para experimentar regras de avaliação, como faremos mais adiante neste capítulo.
+
+Nosso programa avaliador reduz expressões finalmente à aplicação de funções primitivas. Portanto, tudo o que precisamos para executar o avaliador é criar um mecanismo que chame o sistema JavaScript subjacente para modelar a aplicação de funções primitivas.
+
+Deve haver uma vinculação para cada nome de função primitiva e operador, de modo que quando `evaluate` avalia a expressão de função de uma aplicação de uma primitiva, ela encontrará um objeto para passar para `apply`. Assim, configuramos um ambiente global que associa objetos únicos com os nomes das funções e operadores primitivos que podem aparecer nas expressões que estaremos avaliando. O ambiente global também inclui vinculações para `undefined` e outros nomes, para que possam ser usados como constantes em expressões a serem avaliadas.
+
+```javascript
+function setup_environment() {
+    return extend_environment(append(primitive_function_symbols,
+                                     primitive_constant_symbols),
+                              append(primitive_function_objects,
+                                     primitive_constant_values),
+                              the_empty_environment);
+}
+```
+
+```javascript
+const the_global_environment = setup_environment();
+```
+
+Não importa como representamos objetos de função primitiva, contanto que `apply` possa identificá-los e aplicá-los usando as funções `is_primitive_function` e `apply_primitive_function`. Escolhemos representar uma função primitiva como uma lista começando com a string `"primitive"` e contendo uma função no JavaScript subjacente que implementa essa primitiva.
+
+```javascript
+function is_primitive_function(fun) {
+    return is_tagged_list(fun, "primitive");
+}
+
+function primitive_implementation(fun) { return head(tail(fun)); }
+```
+
+A função `setup_environment` obterá os nomes primitivos e as funções de implementação de uma lista:[^1]
+
+[^1]: Qualquer função definida no JavaScript subjacente pode ser usada como uma primitiva para o avaliador metacircular. O nome de uma primitiva instalada no avaliador não precisa ser o mesmo que o nome de sua implementação no JavaScript subjacente; os nomes são os mesmos aqui porque o avaliador metacircular implementa o próprio JavaScript. Assim, por exemplo, poderíamos colocar `list("first", head)` ou `list("square", x => x * x)` na lista de `primitive_functions`.
+
+```javascript
+const primitive_functions = list(list("head",    head             ),
+                                 list("tail",    tail             ),
+                                 list("pair",    pair             ),
+                                 list("is_null", is_null          ),
+                                 list("+",       (x, y) => x + y  ),
+                                 // mais funções primitivas
+                                );
+
+const primitive_function_symbols =
+    map(f => head(f), primitive_functions);
+
+const primitive_function_objects =
+    map(f => list("primitive", head(tail(f))),
+        primitive_functions);
+```
+
+Semelhante às funções primitivas, definimos outras constantes primitivas que são instaladas no ambiente global pela função `setup_environment`.
+
+```javascript
+const primitive_constants = list(list("undefined", undefined),
+                                 list("math_PI",   math_PI)
+                                 // mais constantes primitivas
+                                );
+
+const primitive_constant_symbols =
+    map(c => head(c), primitive_constants);
+
+const primitive_constant_values =
+    map(c => head(tail(c)), primitive_constants);
+```
+
+Para aplicar uma função primitiva, simplesmente aplicamos a função de implementação aos argumentos, usando o sistema JavaScript subjacente:[^2]
+
+[^2]: O método `apply` do JavaScript espera os argumentos da função em um *vetor*. (Vetores são chamados de "arrays" em JavaScript.) Assim, o `arglist` é transformado em um vetor—aqui usando um loop while (veja o exercício 4.8):
+
+    ```javascript
+    function apply_in_underlying_javascript(prim, arglist) {
+        const arg_vector = [];               // vetor vazio
+        let i = 0;
+        while (!is_null(arglist)) {
+            arg_vector[i] = head(arglist);   // armazena valor no índice i
+            i = i + 1;
+            arglist = tail(arglist);
+        }
+        return prim.apply(prim, arg_vector); // apply é acessado via prim
+    }
+    ```
+
+    Também fizemos uso de `apply_in_underlying_javascript` para declarar a função `apply_generic` na seção 2.4.3.
+
+```javascript
+function apply_primitive_function(fun, arglist) {
+    return apply_in_underlying_javascript(
+               primitive_implementation(fun), arglist);
+}
+```
+
+Para conveniência na execução do avaliador metacircular, fornecemos um *driver loop* que modela o loop read-evaluate-print do sistema JavaScript subjacente. Ele imprime um *prompt* e lê um programa de entrada como uma string. Ele transforma a string do programa em uma representação de lista rotulada da declaração conforme descrito na seção 4.1.2—um processo chamado parsing e realizado pela função primitiva `parse`. Precedemos cada resultado impresso por um *output prompt* para distinguir o valor do programa de outras saídas que podem ser impressas. O driver loop obtém o ambiente do programa do programa anterior como argumento. Conforme descrito no final da seção 4.1.6, o driver loop trata o programa como se estivesse em um bloco: Ele escaneia as declarações, estende o ambiente dado por um frame contendo uma vinculação de cada nome a `"*unassigned*"`, e avalia o programa com respeito ao ambiente estendido, que é então passado como argumento para a próxima iteração do driver loop.
+
+```javascript
+const input_prompt = "M-evaluate input: ";
+const output_prompt = "M-evaluate value: ";
+
+function driver_loop(env) {
+    const input = user_read(input_prompt);
+    if (is_null(input)) {
+       display("evaluator terminated");
+    } else {
+       const program = parse(input);
+       const locals = scan_out_declarations(program);
+       const unassigneds = list_of_unassigned(locals);
+       const program_env = extend_environment(locals, unassigneds, env);
+       const output = evaluate(program, program_env);
+       user_print(output_prompt, output);
+       return driver_loop(program_env);
+    }
+}
+```
+
+Usamos a função `prompt` do JavaScript para solicitar e ler a string de entrada do usuário:
+
+```javascript
+function user_read(prompt_string) {
+    return prompt(prompt_string);
+}
+```
+
+A função `prompt` retorna `null` quando o usuário cancela a entrada. Usamos uma função de impressão especial `user_print`, para evitar imprimir a parte do ambiente de uma função composta, que pode ser uma lista muito longa (ou pode até conter ciclos).
+
+```javascript
+function user_print(string, object) {
+    function prepare(object) {
+        return is_compound_function(object)
+               ? "< compound-function >"
+               : is_primitive_function(object)
+               ? "< primitive-function >"
+               : is_pair(object)
+               ? pair(prepare(head(object)),
+                      prepare(tail(object)))
+               : object;
+    }
+    display(string + " " + stringify(prepare(object)));
+}
+```
+
+Agora tudo o que precisamos fazer para executar o avaliador é inicializar o ambiente global e iniciar o driver loop. Aqui está uma interação de exemplo:
+
+```javascript
+const the_global_environment = setup_environment();
+driver_loop(the_global_environment);
+```
+
+```
+M-evaluate input:
+```
+
+```javascript
+function append(xs, ys) {
+    return is_null(xs)
+           ? ys
+           : pair(head(xs), append(tail(xs), ys));
+}
+```
+
+```
+M-evaluate value:
+undefined
+```
+
+```
+M-evaluate input:
+```
+
+```javascript
+append(list("a", "b", "c"), list("d", "e", "f"));
+```
+
+```
+M-evaluate value:
+["a", ["b", ["c", ["d", ["e", ["f", null]]]]]]
+```
+
+## Exercício 4.14
+
+Eva Lu Ator e Louis Reasoner estão cada um experimentando com o avaliador metacircular. Eva digita a definição de `map` e executa alguns programas de teste que o usam. Eles funcionam bem. Louis, em contraste, instalou a versão do sistema de `map` como uma primitiva para o avaliador metacircular. Quando ele tenta, as coisas dão terrivelmente errado. Explique por que o `map` de Louis falha mesmo que o de Eva funcione.

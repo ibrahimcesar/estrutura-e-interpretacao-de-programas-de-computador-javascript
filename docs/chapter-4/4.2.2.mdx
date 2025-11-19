@@ -1,0 +1,316 @@
+# 4.2.2 Um Interpretador com Avaliação Preguiçosa
+
+Nesta seção, implementaremos uma linguagem de ordem normal que é igual ao JavaScript, exceto que funções compostas são não estritas em cada argumento. Funções primitivas ainda serão estritas. Não é difícil modificar o avaliador da seção 4.1.1 para que a linguagem que ele interpreta se comporte dessa maneira. Quase todas as mudanças necessárias se concentram em torno da aplicação de funções.
+
+## Conceitos básicos
+
+A ideia básica é que, ao aplicar uma função, o interpretador deve determinar quais argumentos devem ser avaliados e quais devem ser atrasados. Os argumentos atrasados não são avaliados; em vez disso, eles são transformados em objetos chamados **thunks** (traduzido às vezes como "suspensão" ou "promessa")[^1].
+
+[^1]: A palavra _thunk_ foi inventada por um grupo de trabalho informal que estava discutindo a implementação de chamada por nome em Algol 60. Eles observaram que a maior parte da análise (do inglês "thinking about") da expressão poderia ser feita em tempo de compilação; assim, em tempo de execução, a expressão já teria sido "thought" sobre (Ingerman et al. 1960).
+
+O thunk deve conter a informação necessária para produzir o valor do argumento quando ele for necessário, como se tivesse sido avaliado no momento da aplicação. Assim, o thunk deve conter a expressão do argumento e o ambiente no qual a aplicação da função está sendo avaliada.
+
+O processo de avaliar a expressão em um thunk é chamado de **forçamento** (_forcing_)[^2]. Em geral, um thunk será forçado apenas quando seu valor for necessário: quando ele for passado para uma função primitiva que usará o valor do thunk; quando ele for o valor de um predicado de uma condicional; e quando ele for o valor de uma expressão de função que está prestes a ser aplicada como uma função.
+
+[^2]: Isso é análogo ao forçamento dos objetos atrasados que foram introduzidos no capítulo 3 para representar streams. A diferença crítica entre o que estamos fazendo aqui e o que fizemos no capítulo 3 é que estamos construindo o atraso e o forçamento no avaliador, e assim tornando isso uniforme e automático em toda a linguagem.
+
+Uma escolha de design que temos disponível é se devemos ou não **memorizar** (_memoize_) thunks, similar à otimização para streams na seção 3.5.1. Com memorização, a primeira vez que um thunk é forçado, ele armazena o valor que é computado. Forçamentos subsequentes simplesmente retornam o valor armazenado sem repetir a computação. Faremos nosso interpretador memorizar, porque isso é mais eficiente para muitas aplicações. No entanto, há considerações delicadas aqui[^3].
+
+[^3]: A avaliação preguiçosa combinada com memorização é às vezes chamada de passagem de argumentos **call-by-need** (chamada por necessidade), em contraste com a passagem de argumentos **call-by-name** (chamada por nome). (Call-by-name, introduzida em Algol 60, é similar à avaliação preguiçosa não memorizada.) Como designers de linguagens, podemos construir nosso avaliador para memorizar, não memorizar, ou deixar isso como uma opção para os programadores (exercício 4.31). Como você pode esperar do capítulo 3, essas escolhas levantam questões que se tornam tanto sutis quanto confusas na presença de atribuições. (Veja os exercícios 4.27 e 4.29.) Um excelente artigo de Clinger (1982) tenta esclarecer as múltiplas dimensões de confusão que surgem aqui.
+
+## Modificando o avaliador
+
+A principal diferença entre o avaliador preguiçoso e o da seção 4.1 está no tratamento de aplicações de funções em `evaluate` e `apply`.
+
+### Modificando `evaluate`
+
+A cláusula `is_application` de `evaluate` torna-se:
+
+```javascript
+: is_application(component)
+? apply(actual_value(function_expression(component), env),
+        arg_expressions(component), env)
+```
+
+Isso é quase o mesmo que a cláusula `is_application` de `evaluate` na seção 4.1.1. Para avaliação preguiçosa, no entanto, chamamos `apply` com as expressões de argumento, ao invés dos argumentos produzidos por avaliá-las. Como precisaremos do ambiente para construir thunks se os argumentos devem ser atrasados, devemos passar isso também. Ainda avaliamos a expressão de função, porque `apply` precisa da função real a ser aplicada para despachar em seu tipo (primitiva versus composta) e aplicá-la.
+
+### A função `actual_value`
+
+Sempre que precisamos do valor real de uma expressão, usamos:
+
+```javascript
+function actual_value(exp, env) {
+    return force_it(evaluate(exp, env));
+}
+```
+
+ao invés de apenas `evaluate`, de modo que se o valor da expressão for um thunk, ele será forçado.
+
+### Modificando `apply`
+
+Nossa nova versão de `apply` também é quase a mesma que a versão na seção 4.1.1. A diferença é que `evaluate` passou expressões de argumento não avaliadas: Para funções primitivas (que são estritas), avaliamos todos os argumentos antes de aplicar a primitiva; para funções compostas (que são não estritas) atrasamos todos os argumentos antes de aplicar a função.
+
+```javascript
+function apply(fun, args, env) {
+    if (is_primitive_function(fun)) {
+        return apply_primitive_function(
+                   fun,
+                   list_of_arg_values(args, env));              // mudado
+    } else if (is_compound_function(fun)) {
+        const result = evaluate(
+                           function_body(fun),
+                           extend_environment(
+                               function_parameters(fun),
+                               list_of_delayed_args(args, env), // mudado
+                           function_environment(fun)));
+        return is_return_value(result)
+               ? return_value_content(result)
+               : undefined;
+    } else {
+        error(fun, "unknown function type -- apply");
+    }
+}
+```
+
+As funções que processam os argumentos são exatamente como `list_of_values` da seção 4.1.1, exceto que `list_of_delayed_args` atrasa os argumentos em vez de avaliá-los, e `list_of_arg_values` usa `actual_value` em vez de `evaluate`:
+
+```javascript
+function list_of_arg_values(exps, env) {
+    return map(exp => actual_value(exp, env), exps);
+}
+function list_of_delayed_args(exps, env) {
+    return map(exp => delay_it(exp, env), exps);
+}
+```
+
+### Modificando condicionais
+
+O outro lugar onde devemos mudar o avaliador é no tratamento de condicionais, onde devemos usar `actual_value` em vez de `evaluate` para obter o valor da expressão predicado antes de testar se é verdadeiro ou falso:
+
+```javascript
+function eval_conditional(component, env) {
+    return is_truthy(actual_value(conditional_predicate(component), env))
+           ? evaluate(conditional_consequent(component), env)
+           : evaluate(conditional_alternative(component), env);
+}
+```
+
+### Modificando o driver loop
+
+Finalmente, devemos mudar a função `driver_loop` (da seção 4.1.4) para usar `actual_value` em vez de `evaluate`, de modo que se um valor atrasado for propagado de volta ao loop de leitura-avaliação-impressão, ele será forçado antes de ser impresso. Também mudamos os prompts para indicar que este é o avaliador preguiçoso:
+
+```javascript
+const input_prompt = "L-evaluate input: ";
+const output_prompt = "L-evaluate value: ";
+
+function driver_loop(env) {
+    const input = user_read(input_prompt);
+    if (is_null(input)) {
+        display("evaluator terminated");
+    } else {
+        const program = parse(input);
+        const locals = scan_out_declarations(program);
+        const unassigneds = list_of_unassigned(locals);
+        const program_env = extend_environment(locals, unassigneds, env);
+        const output = actual_value(program, program_env);
+        user_print(output_prompt, output);
+        return driver_loop(program_env);
+    }
+}
+```
+
+## Testando o avaliador
+
+Com essas mudanças feitas, podemos iniciar o avaliador e testá-lo. A avaliação bem-sucedida da expressão `try_me` discutida na seção 4.2.1 indica que o interpretador está realizando avaliação preguiçosa:
+
+```
+L-evaluate input:
+function try_me(a, b) {
+    return a === 0 ? 1 : b;
+}
+L-evaluate value:
+undefined
+
+L-evaluate input:
+try_me(0, head(null));
+L-evaluate value:
+1
+```
+
+## Representando thunks
+
+Nosso avaliador deve organizar a criação de thunks quando funções são aplicadas a argumentos e forçar esses thunks posteriormente. Um thunk deve empacotar uma expressão junto com o ambiente, de modo que o argumento possa ser produzido posteriormente. Para forçar o thunk, simplesmente extraímos a expressão e o ambiente do thunk e avaliamos a expressão no ambiente. Usamos `actual_value` em vez de `evaluate` para que, no caso de o valor da expressão ser ele próprio um thunk, forçaremos isso, e assim por diante, até alcançarmos algo que não seja um thunk:
+
+```javascript
+function force_it(obj) {
+    return is_thunk(obj)
+           ? actual_value(thunk_exp(obj), thunk_env(obj))
+           : obj;
+}
+```
+
+Uma maneira fácil de empacotar uma expressão com um ambiente é fazer uma lista contendo a expressão e o ambiente. Assim, criamos um thunk da seguinte forma:
+
+```javascript
+function delay_it(exp, env) {
+    return list("thunk", exp, env);
+}
+function is_thunk(obj) {
+    return is_tagged_list(obj, "thunk");
+}
+function thunk_exp(thunk) { return head(tail(thunk)); }
+
+function thunk_env(thunk) { return head(tail(tail(thunk))); }
+```
+
+## Thunks memorizados
+
+Na verdade, o que queremos para nosso interpretador não é exatamente isso, mas sim thunks que foram memorizados. Quando um thunk é forçado, vamos transformá-lo em um thunk avaliado, substituindo a expressão armazenada por seu valor e mudando a tag `thunk` para que possa ser reconhecido como já avaliado[^4].
+
+[^4]: Note que também apagamos o `env` do thunk uma vez que o valor da expressão foi computado. Isso não faz diferença nos valores retornados pelo interpretador. No entanto, ajuda a economizar espaço, porque remover a referência do thunk ao `env` uma vez que não é mais necessário permite que essa estrutura seja coletada pelo coletor de lixo e seu espaço reciclado, como discutiremos na seção 5.3. Da mesma forma, poderíamos ter permitido que ambientes desnecessários nos objetos atrasados memorizados da seção 3.5.1 fossem coletados pelo coletor de lixo, fazendo algo como `fun = null;` para descartar a função `fun` (que inclui o ambiente no qual a expressão lambda que compõe a cauda do stream foi avaliada) depois de armazenar seu valor.
+
+```javascript
+function evaluated_thunk(obj) {
+    return is_tagged_list(obj, "evaluated_thunk");
+}
+function thunk_value(evaluated_thunk) {
+    return head(tail(evaluated_thunk));
+}
+function force_it(obj) {
+    if (is_thunk(obj)) {
+        const result = actual_value(thunk_exp(obj), thunk_env(obj));
+        set_head(obj, "evaluated_thunk");
+        set_head(tail(obj), result);  // substitui exp pelo seu valor
+        set_tail(tail(obj), "*");      // esquece o env desnecessário
+        return result;
+    } else if (evaluated_thunk(obj)) {
+        return thunk_value(obj);
+    } else {
+        return obj;
+    }
+}
+```
+
+Note que o mesmo thunk de atraso pode ser forçado mais de uma vez, embora a computação seja feita apenas uma vez devido à memorização.
+
+## Exercícios
+
+### Exercício 4.27
+
+Suponha que avaliamos a seguinte sequência de declarações no avaliador preguiçoso:
+
+```javascript
+let count = 0;
+function id(x) {
+    count = count + 1;
+    return x;
+}
+const w = id(id(10));
+```
+
+Qual é o valor de `count` após a avaliação de `w`? E após avaliarmos `w` novamente?
+
+<details>
+<summary>Resposta</summary>
+
+Após a avaliação de `const w = id(id(10));`, `count` é 1, porque a aplicação externa de `id` é forçada (para vincular `w` ao resultado), mas a aplicação interna `id(10)` permanece como um thunk.
+
+Após avaliarmos `w`, `count` é 2, porque agora o thunk `id(10)` é forçado para retornar o valor de `w`.
+
+Se avaliarmos `w` novamente, `count` permanece 2, porque o thunk foi memorizado e não será recalculado.
+</details>
+
+### Exercício 4.28
+
+A função `evaluate` usa `actual_value` em vez de `evaluate` para avaliar a expressão de função antes de passá-la para `apply`, a fim de forçar o valor da expressão de função. Dê um exemplo que demonstre a necessidade desse forçamento.
+
+### Exercício 4.29
+
+Exiba um programa que você esperaria que executasse muito mais lentamente sem memorização do que com memorização. Além disso, considere as seguintes interações, onde a função `id` é definida como no exercício 4.27 e `count` começa em 0:
+
+```javascript
+function square(x) {
+    return x * x;
+}
+```
+
+**Com memorização:**
+```
+L-evaluate input:
+square(id(10));
+L-evaluate value:
+100
+L-evaluate input:
+count;
+L-evaluate value:
+1
+```
+
+**Sem memorização:**
+```
+L-evaluate input:
+square(id(10));
+L-evaluate value:
+100
+L-evaluate input:
+count;
+L-evaluate value:
+2
+```
+
+Explique a diferença.
+
+<details>
+<summary>Explicação</summary>
+
+Um exemplo de programa que se beneficia muito da memorização:
+
+```javascript
+function fib(n) {
+    return n < 2 ? n : fib(n - 1) + fib(n - 2);
+}
+
+function compute_expensive(x) {
+    return fib(30) + x;
+}
+
+function use_twice(f, x) {
+    return f(x) + f(x);
+}
+
+use_twice(compute_expensive, 5);
+```
+
+Sem memorização, `compute_expensive(5)` seria calculado duas vezes, cada vez recalculando `fib(30)`, o que é extremamente caro.
+
+Quanto à diferença no `count`: com memorização, `id(10)` é avaliado uma vez e o resultado é armazenado. Quando `square` calcula `x * x`, ambas as referências a `x` usam o valor memorizado, então `count` só é incrementado uma vez.
+
+Sem memorização, cada referência a `x` força a reavaliação de `id(10)`, então `count` é incrementado duas vezes (uma para cada uso de `x` na multiplicação).
+</details>
+
+### Exercício 4.30
+
+Cy D. Fect, um programador reformado, está preocupado que alguns efeitos colaterais nunca possam ocorrer, porque o avaliador preguiçoso não força as expressões em uma sequência. Como ele diz, "se a avaliação de uma sequência retorna o valor de sua expressão final, então não há razão para forçar as outras expressões, já que seus valores não serão usados de qualquer forma." Como você acha que sequências devem ser tratadas no avaliador preguiçoso?
+
+**a.** Cy completa que o avaliador na seção 4.1.1 geralmente força as expressões em uma sequência. Explique por que ele está errado.
+
+**b.** Cy está parcialmente certo. Há exceções onde uma sequência não força todas as suas expressões. Dê alguns exemplos.
+
+**c.** Como você acha que sequências devem ser tratadas no avaliador preguiçoso? Você gosta da abordagem no texto, ou prefere exigir que sequências sejam forçadas, ou deve a avaliação de sequências depender de sintaxe (como em Scheme)?
+
+**d.** Faça as mudanças apropriadas no avaliador para implementar sua escolha em (c).
+
+### Exercício 4.31
+
+A abordagem adotada nesta seção é um tanto sem sutileza, na medida em que trata todos os argumentos de funções da mesma maneira. O autor do programa poderia ter mais controle sobre esse processo. Por exemplo, poderíamos querer que alguns argumentos de uma função fossem avaliados normalmente (modo estrito) e outros fossem atrasados (modo preguiçoso). Modifique o avaliador para permitir que parâmetros de função sejam marcados como preguiçosos ou estritos.
+
+Considere uma sintaxe onde parâmetros preguiçosos são declarados com uma anotação especial:
+
+```javascript
+function f(a, lazy b, c, lazy d) {
+    // a e c são estritos, b e d são preguiçosos
+    ...
+}
+```
+
+Implemente isso modificando as funções `apply`, `function_parameters`, e outras conforme necessário.
