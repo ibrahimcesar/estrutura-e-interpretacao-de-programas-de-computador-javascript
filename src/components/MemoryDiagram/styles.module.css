@@ -1,0 +1,290 @@
+.memoryContainer,
+.gcContainer {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 2px solid var(--ifm-color-primary);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+}
+
+.description {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  color: var(--ifm-font-color-base);
+}
+
+/* Memory Vectors Visualization */
+.vectorsContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.vectorLabel {
+  min-width: 110px;
+  font-weight: 600;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.95rem;
+  color: var(--ifm-color-primary-darker);
+}
+
+.vector {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.cell {
+  flex: 1;
+  max-width: 80px;
+  border: 2px solid var(--ifm-color-emphasis-400);
+  border-radius: 4px;
+  background: white;
+  text-align: center;
+}
+
+html[data-theme='dark'] .cell {
+  background: var(--ifm-background-color);
+  border-color: var(--ifm-color-emphasis-600);
+}
+
+.cellLabel,
+.cellValue {
+  padding: 0.5rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.9rem;
+}
+
+.cellLabel {
+  background: var(--ifm-color-emphasis-200);
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-900);
+}
+
+html[data-theme='dark'] .cellLabel {
+  background: var(--ifm-color-emphasis-300);
+  color: var(--ifm-color-emphasis-100);
+}
+
+.cellValue {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  color: var(--ifm-color-primary-darkest);
+}
+
+html[data-theme='dark'] .cellValue {
+  color: var(--ifm-color-primary-lighter);
+}
+
+.legend {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+html[data-theme='dark'] .legend {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.legendItem {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legendLabel {
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+  padding: 0.2rem 0.5rem;
+  background: var(--ifm-color-emphasis-200);
+  border-radius: 3px;
+}
+
+html[data-theme='dark'] .legendLabel {
+  background: var(--ifm-color-emphasis-400);
+}
+
+.note {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--ifm-alert-background-color);
+  border-left: 4px solid var(--ifm-color-primary);
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.note code {
+  background: var(--ifm-color-emphasis-200);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* Garbage Collection Visualization */
+.gcPhases {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.gcPhase {
+  flex: 1;
+}
+
+.gcPhase h4 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--ifm-color-primary-darker);
+}
+
+.arrow {
+  font-size: 3rem;
+  color: var(--ifm-color-primary);
+  font-weight: bold;
+}
+
+.memorySpace {
+  margin-bottom: 1.5rem;
+}
+
+.memoryLabel {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ifm-font-color-secondary);
+}
+
+.memoryBar {
+  display: flex;
+  height: 60px;
+  border: 2px solid var(--ifm-color-emphasis-400);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.usedMemory,
+.freeMemory,
+.emptyMemory,
+.garbageMemory,
+.compactedMemory {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.usedMemory {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+}
+
+.freeMemory {
+  background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+  color: white;
+}
+
+.emptyMemory {
+  background: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-emphasis-700);
+}
+
+.garbageMemory {
+  background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+  color: var(--ifm-color-emphasis-800);
+}
+
+html[data-theme='dark'] .garbageMemory {
+  background: linear-gradient(135deg, #424242 0%, #303030 100%);
+  color: var(--ifm-color-emphasis-200);
+}
+
+.compactedMemory {
+  background: linear-gradient(135deg, #4dabf7 0%, #339af0 100%);
+  color: white;
+}
+
+.pointers {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 1rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+  color: var(--ifm-color-primary-darker);
+}
+
+.pointer {
+  font-weight: 600;
+}
+
+.gcSteps {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 6px;
+}
+
+html[data-theme='dark'] .gcSteps {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.gcSteps h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--ifm-color-primary-darker);
+}
+
+.gcSteps ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.gcSteps li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .vectorsContainer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vectorLabel {
+    min-width: auto;
+  }
+
+  .vector {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .gcPhases {
+    flex-direction: column;
+  }
+
+  .arrow {
+    transform: rotate(90deg);
+    font-size: 2rem;
+  }
+
+  .legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
