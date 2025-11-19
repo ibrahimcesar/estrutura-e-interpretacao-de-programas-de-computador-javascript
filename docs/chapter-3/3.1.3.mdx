@@ -2,7 +2,8 @@
 title: 3.1.3 Os Custos de Introduzir Atribuição
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.1.3 Os Custos de Introduzir Atribuição
 
@@ -296,3 +297,5 @@ Quando definimos o modelo de avaliação na seção 1.1.3, dissemos que o primei
 <a name="footnote-2"></a>[2] O fenômeno de um único objeto computacional ser acessado por mais de um nome é conhecido como *aliasing*. A situação da conta bancária conjunta ilustra um exemplo muito simples de um alias. Na seção 3.3 veremos exemplos muito mais complexos, como estruturas de dados compostas "distintas" que compartilham partes. Bugs podem ocorrer em nossos programas se esquecermos que uma mudança em um objeto também pode, como um "efeito colateral", mudar um objeto "diferente" porque os dois objetos "diferentes" são na verdade um único objeto aparecendo sob aliases diferentes. Estes chamados *bugs de efeito colateral* são tão difíceis de localizar e analisar que algumas pessoas propuseram que linguagens de programação sejam projetadas de forma a não permitir efeitos colaterais ou aliasing (Lampson et al. 1981; Morris, Schmidt, and Wadler 1980).
 
 <a name="footnote-3"></a>[3] Em vista disso, é irônico que a programação introdutória seja mais frequentemente ensinada em um estilo altamente imperativo. Isso pode ser um vestígio de uma crença, comum ao longo dos anos 1960 e 1970, de que programas que chamam funções devem ser inerentemente menos eficientes do que programas que realizam atribuições. (Steele (1977) desmente este argumento.) Alternativamente, pode refletir uma visão de que atribuição passo a passo é mais fácil para iniciantes visualizarem do que chamadas de função. Qualquer que seja a razão, isso frequentemente sobrecarrega programadores iniciantes com preocupações de "devo definir esta variável antes ou depois daquela" que podem complicar a programação e obscurecer as ideias importantes.
+
+<HelpFooter />

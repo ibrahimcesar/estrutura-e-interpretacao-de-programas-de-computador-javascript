@@ -2,7 +2,8 @@
 title: 3.1.1 Variáveis de Estado Local
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.1.1 Variáveis de Estado Local
 
@@ -382,3 +383,5 @@ Modifique a função `make_account` do exercício 3.3 adicionando outra variáve
 <a name="footnote-5"></a>[5] No jargão de linguagens de programação, diz-se que a variável `balance` está *encapsulada* dentro da função `new_withdraw`. Encapsulamento reflete o princípio geral de design de sistemas conhecido como *princípio de ocultação*: Pode-se tornar um sistema mais modular e robusto protegendo partes do sistema umas das outras; isto é, fornecendo acesso a informações apenas para aquelas partes do sistema que têm "necessidade de saber".
 
 <a name="footnote-6"></a>[6] Ao contrário de `make_withdraw_balance_100` acima, não precisamos usar `let` para tornar `balance` uma variável local, já que parâmetros já são locais. Isso ficará mais claro após a discussão do modelo de ambiente de avaliação na seção 3.2. (Veja também o exercício 3.10.)
+
+<HelpFooter />

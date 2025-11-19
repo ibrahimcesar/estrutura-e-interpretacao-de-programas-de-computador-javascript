@@ -9,7 +9,7 @@ Este diretório contém snippets de Markdown que podem ser incluídos em múltip
 Para incluir um snippet em uma página MDX:
 
 ```mdx
-import HelpFooter from '@site/docs/_snippets/help-footer.md';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # Seu Conteúdo Aqui
 
@@ -24,7 +24,9 @@ Se estiver usando Markdown puro (sem MDX), copie e cole o conteúdo do snippet d
 
 ## 📁 Snippets Disponíveis
 
-### `help-footer.md`
+### `HelpFooter` (Componente React)
+
+**Localização**: `src/components/HelpFooter.js`
 
 Footer padrão para páginas de tradução que orienta usuários sobre como:
 - Reportar erros
@@ -34,11 +36,18 @@ Footer padrão para páginas de tradução que orienta usuários sobre como:
 
 **Quando usar**: No final de cada página/seção traduzida
 
+**Como usar**: Importe o componente no topo do arquivo MDX:
+```javascript
+import HelpFooter from '@site/src/components/HelpFooter';
+```
+
 **Benefícios**:
 - Facilita feedback dos leitores
 - Direciona para templates corretos (Issues vs Discussions)
 - Engaja a comunidade
 - Melhora a qualidade da tradução
+
+**Status**: ✅ Implementado em todos os 74 arquivos `.mdx` dos capítulos
 
 ## ✨ Criando Novos Snippets
 

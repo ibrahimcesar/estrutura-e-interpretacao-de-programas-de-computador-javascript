@@ -2,7 +2,8 @@
 title: 3.4.2 Mecanismos para Controlar Concorrência
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.4.2 Mecanismos para Controlar Concorrência
 
@@ -489,3 +490,5 @@ b. Discuta possíveis problemas de desempenho com sua implementação. Como voc�
 [^6]: O problema geral de como coordenar threads é extremamente difícil e é um tema de pesquisa contínua. Ver Lamport 1978, Schneider 1997, e Herlihy e Shavit 2008 para discussões mais aprofundadas de deadlock. Chandy e Misra 1988 e Dijkstra 1968 descrevem o problema de deadlock no contexto do problema clássico dos "filósofos jantando", onde há cinco filósofos sentados em uma mesa redonda com um garfo entre cada par de filósofos. Cada filósofo precisa de dois garfos para comer. Se cada filósofo pega o garfo à sua direita simultaneamente, todos ficarão esperando para pegar o garfo à sua esquerda, resultando em deadlock.
 
 [^7]: Para discussões mais aprofundadas dos conceitos de tempo e identidade em sistemas concorrentes, ver Lamport 1978 e Schneider 1997. Chandy e Misra 1988 discutem tempo e comunicação no contexto de sistemas distribuídos. Lamport, Shostak e Pease 1982 examinam o problema de sincronização de relógios em sistemas distribuídos. Há também uma literatura substancial sobre modelos alternativos de concorrência. Ver, por exemplo, Hoare 1978, Milner 1980, e Hewitt e Baker 1977. A linguagem Erlang (Armstrong 2007) é baseada em um modelo de passagem de mensagens de concorrência. A biblioteca de concorrência de Java oferece suporte para monitores (Hoare 1974). Trabalho recente em memória transacional de software (Shavit e Touitou 1997, Harris e Fraser 2003) oferece uma alternativa para travas e mutexes para controlar acesso a recursos compartilhados.
+
+<HelpFooter />

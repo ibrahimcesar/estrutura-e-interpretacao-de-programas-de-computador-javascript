@@ -2,7 +2,8 @@
 title: 3.1.2 Os Benefícios de Introduzir Atribuição
 ---
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 # 3.1.2 Os Benefícios de Introduzir Atribuição
 
@@ -113,3 +114,5 @@ Você achará útil ter uma função que retorna um número escolhido aleatoriam
 <a name="footnote-1"></a>[1] Uma maneira comum de implementar `rand_update` é usar a regra de que x é atualizado para ax+b módulo m, onde a, b, e m são inteiros apropriadamente escolhidos. O Capítulo 3 de Knuth (1997b) inclui uma extensa discussão de técnicas para gerar sequências de números aleatórios e estabelecer suas propriedades estatísticas. Note que a função `rand_update` computa uma função matemática: Dada a mesma entrada duas vezes, ela produz a mesma saída. Portanto, a sequência de números produzida por `rand_update` certamente não é "aleatória", se por "aleatória" insistimos que cada número na sequência não está relacionado ao número anterior. A relação entre "aleatoriedade real" e as chamadas sequências *pseudo-aleatórias*, que são produzidas por computações bem determinadas e ainda assim têm propriedades estatísticas adequadas, é uma questão complexa envolvendo questões difíceis em matemática e filosofia. Kolmogorov, Solomonoff e Chaitin fizeram grande progresso em esclarecer essas questões; uma discussão pode ser encontrada em Chaitin (1975).
 
 <a name="footnote-2"></a>[2] Este teorema é devido a G. Lejeune Dirichlet. Veja a seção 4.5.2 de Knuth (1997b) para uma discussão e uma prova.
+
+<HelpFooter />

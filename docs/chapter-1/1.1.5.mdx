@@ -1,6 +1,7 @@
 # 1.1.5 O modelo de substituição para a aplicação de função
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 Para avaliar uma aplicação de função, o interpretador segue o processo descrito na seção [1.1.4](1.1.4.md). Ou seja, o interpretador avalia os elementos da aplicação e aplica a função (que é o valor da expressão da função da aplicação) aos argumentos (que são os valores das expressões de argumento do aplicação).
 
@@ -101,3 +102,5 @@ JavaScript usa avaliação de ordem de aplicação, em parte por causa da efici�
 <a name="footnote-2"></a> [[2]](#footnote-link-2) Apesar da simplicidade da ideia de substituição, é surpreendentemente complicado dar uma definição matemática rigorosa do processo de substituição. O problema surge da possibilidade de confusão entre os nomes usados para os parâmetros de uma função e os nomes (possivelmente idênticos) usados nas expressões às quais a função pode ser aplicada. Na verdade, há uma longa história de definições errôneas de substituição na literatura de lógica e semântica de programação. Veja Stoy 1977 para uma discussão cuidadosa sobre substituição.
 
 <a name="footnote-3"></a> [[3]](#footnote-link-3) No capítulo [3], apresentaremos o processamento de fluxo, que é uma maneira de lidar com estruturas de dados aparentemente "infinitas", incorporando uma forma limitada de avaliação de ordem normal. Na seção [4.2], modificaremos o interpretador JavaScript para produzir uma variante de ordem normal do JavaScript.
+
+<HelpFooter />

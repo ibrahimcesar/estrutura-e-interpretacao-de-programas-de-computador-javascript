@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 # 4.2.2 Um Interpretador com Avaliação Preguiçosa
 
 Nesta seção, implementaremos uma linguagem de ordem normal que é igual ao JavaScript, exceto que funções compostas são não estritas em cada argumento. Funções primitivas ainda serão estritas. Não é difícil modificar o avaliador da seção 4.1.1 para que a linguagem que ele interpreta se comporte dessa maneira. Quase todas as mudanças necessárias se concentram em torno da aplicação de funções.
@@ -314,3 +316,5 @@ function f(a, lazy b, c, lazy d) {
 ```
 
 Implemente isso modificando as funções `apply`, `function_parameters`, e outras conforme necessário.
+
+<HelpFooter />

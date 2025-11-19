@@ -1,6 +1,7 @@
 # 1.1.3 Avaliando Combinações de Operadores
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 Um de nossos objetivos neste capítulo é isolar questões sobre o pensamento processual. Como um caso em questão, consideremos que, ao avaliar combinações de operadores, o próprio interpretador está seguindo um procedimento.
 
@@ -35,3 +36,5 @@ O principal ponto a ser observado é o papel do ambiente na determinação do si
 Observe que a regra de avaliação fornecida acima não trata de declarações. Por exemplo, avaliando `const x = 3;` não aplica um operador de igualdade `=` a dois argumentos, um dos quais é o valor do nome `x` e o outro é `3`, uma vez que o objetivo da declaração é justamente associar `x` a um valor. (Ou seja, `const x = 3;` não é uma combinação.)
 
 As letras em `const` são renderizadas em negrito para indicar que é uma *palavra-chave* em JavaScript. Palavras-chave carregam um significado particular e, portanto, não podem ser usadas como nomes. Uma palavra-chave ou uma combinação de palavras-chave em uma instrução instrui o interpretador JavaScript a tratar a instrução de uma maneira especial. Cada uma dessas *formas sintáticas* tem sua própria regra de avaliação. Os vários tipos de instruções e expressões (cada um com sua regra de avaliação associada) constituem a sintaxe da linguagem de programação.
+
+<HelpFooter />

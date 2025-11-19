@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 # 4.1.7 Separando Análise Sintática da Execução
 
 O avaliador implementado acima é simples, mas é muito ineficiente, porque a análise sintática de componentes é intercalada com sua execução. Assim, se um programa é executado muitas vezes, sua sintaxe é analisada muitas vezes. Considere, por exemplo, avaliar `factorial(4)` usando a seguinte definição de `factorial`:
@@ -237,3 +239,5 @@ Compare as duas versões de `analyze_sequence`. Por exemplo, considere o caso co
 ## Exercício 4.24
 
 Projete e realize alguns experimentos para comparar a velocidade do avaliador metacircular original com a versão nesta seção. Use seus resultados para estimar a fração de tempo que é gasto em análise versus execução para várias funções.
+
+<HelpFooter />

@@ -127,5 +127,5 @@ yarn-error.log*
 .claude/
 .vscode/
 
-# Transient working files (kept locally but not committed)
-PLANO_CAPITULO_1.md
+# Generated eBooks
+ebooks/

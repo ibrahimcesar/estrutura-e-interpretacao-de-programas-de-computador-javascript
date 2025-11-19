@@ -1,3 +1,5 @@
+import HelpFooter from '@site/src/components/HelpFooter';
+
 # 4.2.3 Streams como Listas Preguiçosas
 
 Na seção 3.5.1, mostramos como implementar streams como listas atrasadas. Usamos uma expressão lambda para construir uma "promessa" de computar a cauda de um stream, sem realmente cumprir essa promessa até mais tarde. Fomos forçados a criar streams como um novo tipo de objeto de dados similar, mas não idêntico, a listas, e isso nos exigiu reimplementar muitas operações de lista ordinárias (`map`, `append`, etc.) para uso com streams.
@@ -203,3 +205,5 @@ L-evaluate value:
 
 Você precisará modificar `user_print` e possivelmente adicionar funções auxiliares para detectar e imprimir listas preguiçosas de forma inteligente.
 </details>
+
+<HelpFooter />

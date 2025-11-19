@@ -423,6 +423,15 @@ const sidebars = {
         'como-contribuir',
       ],
     },
+    {
+      type: 'html',
+      value: '<hr style="margin: 1.5rem 0; border: none; border-top: 2px solid var(--ifm-color-primary);">',
+    },
+    {
+      type: 'doc',
+      id: 'recomendacoes',
+      label: '📚 Recomendações',
+    },
   ],
 };
 

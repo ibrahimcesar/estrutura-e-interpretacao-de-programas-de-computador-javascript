@@ -1,6 +1,7 @@
 # 1.2.5 Máximo Divisor Comum
 
-import CodePlayground from '@site/src/components/CodePlayground';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+import HelpFooter from '@site/src/components/HelpFooter';
 
 O máximo divisor comum (MDC, ou GCD em inglês) de dois inteiros $a$ e $b$ é definido como sendo o maior inteiro que divide tanto $a$ quanto $b$ sem resto. Por exemplo, o MDC de 16 e 28 é 4. No capítulo 2, quando investigarmos como implementar aritmética de números racionais, precisaremos ser capazes de calcular MDCs a fim de reduzir números racionais aos menores termos. (Para reduzir um número racional aos menores termos, devemos dividir tanto o numerador quanto o denominador pelo seu MDC. Por exemplo, 16/28 reduz para 4/7.) Uma maneira de encontrar o MDC de dois inteiros é fatorá-los e procurar fatores comuns, mas existe um algoritmo famoso que é muito mais eficiente.
 
@@ -58,3 +59,5 @@ O processo que uma função gera é, claro, dependente das regras usadas pelo in
 
 <a name="footnote-2"></a>
 **[2](#footnote-link-2)** Este teorema foi provado em 1845 por Gabriel Lamé, um matemático e engenheiro francês conhecido principalmente por suas contribuições à física matemática. Para provar o teorema, consideramos pares $(a_k, b_k)$, onde $a_k\geq b_k$, para os quais o Algoritmo de Euclides termina em $k$ passos. A prova é baseada na afirmação de que, se $(a_{k+1}, b_{k+1}) \rightarrow (a_{k}, b_{k}) \rightarrow (a_{k-1}, b_{k-1})$ são três pares sucessivos no processo de redução, então devemos ter $b_{k+1}\geq b_{k} + b_{k-1}$. Para verificar a afirmação, considere que um passo de redução é definido aplicando a transformação $a_{k-1} = b_{k}$, $b_{k-1} = \textrm{resto de}\ a_{k}\ \textrm{dividido por}\ b_{k}$. A segunda equação significa que $a_{k} = qb_{k} + b_{k-1}$ para algum inteiro positivo $q$. E como $q$ deve ser pelo menos 1, temos $a_{k} = qb_{k} + b_{k-1} \geq b_{k} + b_{k-1}$. Mas no passo de redução anterior temos $b_{k+1}= a_{k}$. Portanto, $b_{k+1} = a_{k}\geq b_{k} + b_{k-1}$. Isso verifica a afirmação. Agora podemos provar o teorema por indução em $k$, o número de passos que o algoritmo requer para terminar. O resultado é verdadeiro para $k=1$, pois isso meramente requer que $b$ seja pelo menos tão grande quanto $\text{Fib}(1)=1$. Agora, assuma que o resultado é verdadeiro para todos os inteiros menores ou iguais a $k$ e estabeleça o resultado para $k+1$. Seja $(a_{k+1}, b_{k+1})\rightarrow(a_{k}, b_{k}) \rightarrow(a_{k-1}, b_{k-1})$ pares sucessivos no processo de redução. Por nossas hipóteses de indução, temos $b_{k-1}\geq \textrm{Fib}(k-1)$ e $b_{k}\geq \textrm{Fib}(k)$. Assim, aplicando a afirmação que acabamos de provar junto com a definição dos números de Fibonacci dá $b_{k+1} \geq b_{k} + b_{k-1}\geq \textrm{Fib}(k) + \textrm{Fib}(k-1) = \textrm{Fib}(k+1)$, o que completa a prova do Teorema de Lamé.
+
+<HelpFooter />
