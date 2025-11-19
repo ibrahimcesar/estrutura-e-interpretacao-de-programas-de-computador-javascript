@@ -1,17 +1,37 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from '@docusaurus/router';
 import confetti from 'canvas-confetti';
 import styles from './styles.module.css';
+
+/**
+ * Caminhos onde a barra de progresso NÃO deve ser exibida
+ *
+ * Adicione aqui os paths que são muito curtos ou onde a barra
+ * de progresso não faz sentido (ex: landing pages, índices, etc)
+ */
+const EXCLUDED_PATHS = [
+  '/pt_BR/',
+  '/pt_BR',
+  // Adicione mais paths aqui conforme necessário
+  // Exemplo: '/sobre', '/contato', etc
+];
 
 /**
  * Barra de Progresso de Leitura
  *
  * Mostra o progresso de leitura da página atual e dispara confetti
  * quando o usuário completa a leitura (chega ao final da página).
+ *
+ * A barra não é exibida em páginas definidas em EXCLUDED_PATHS.
  */
 export default function ReadingProgressBar() {
+  const location = useLocation();
   const [progress, setProgress] = useState(0);
   const hasCompletedRef = useRef(false);
   const confettiTimeoutRef = useRef(null);
+
+  // Verificar se a página atual está na lista de exclusão
+  const isExcludedPath = EXCLUDED_PATHS.includes(location.pathname);
 
   const fireConfetti = useCallback(() => {
     const duration = 3000;
@@ -51,6 +71,9 @@ export default function ReadingProgressBar() {
   }, []);
 
   const handleScroll = useCallback(() => {
+    // Não processar scroll em páginas excluídas
+    if (isExcludedPath) return;
+
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
@@ -81,7 +104,7 @@ export default function ReadingProgressBar() {
     if (scrollPercentage < 10) {
       hasCompletedRef.current = false;
     }
-  }, [fireConfetti]);
+  }, [fireConfetti, isExcludedPath]);
 
   useEffect(() => {
     // Adicionar listener de scroll
@@ -103,7 +126,12 @@ export default function ReadingProgressBar() {
   useEffect(() => {
     hasCompletedRef.current = false;
     setProgress(0);
-  }, []);
+  }, [location.pathname]);
+
+  // Não renderizar a barra em páginas excluídas
+  if (isExcludedPath) {
+    return null;
+  }
 
   return (
     <div className={styles.progressBarContainer}>
