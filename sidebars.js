@@ -65,7 +65,12 @@ const sidebars = {
             id: 'chapter-1/1.2',
           },
           items: [
+            'chapter-1/1.2.1',
             'chapter-1/1.2.2',
+            'chapter-1/1.2.3',
+            'chapter-1/1.2.4',
+            'chapter-1/1.2.5',
+            'chapter-1/1.2.6',
           ],
         },
         {
@@ -76,6 +81,9 @@ const sidebars = {
             id: 'chapter-1/1.3',
           },
           items: [
+            'chapter-1/1.3.1',
+            'chapter-1/1.3.2',
+            'chapter-1/1.3.3',
             'chapter-1/1.3.4',
           ],
         },
@@ -238,6 +246,128 @@ const sidebars = {
           ],
         },
       ],
+    },
+    {
+      type: 'category',
+      label: 'Capítulo 4: Avaliadores Metalinguísticos',
+      link: {
+        type: 'doc',
+        id: 'chapter-4/4.0',
+      },
+      items: [
+        {
+          type: 'category',
+          label: '4.1 O Avaliador Metacircular',
+          link: {
+            type: 'doc',
+            id: 'chapter-4/4.1',
+          },
+          items: [
+            'chapter-4/4.1.1',
+            'chapter-4/4.1.2',
+            'chapter-4/4.1.3',
+            'chapter-4/4.1.4',
+            'chapter-4/4.1.5',
+            'chapter-4/4.1.6',
+            'chapter-4/4.1.7',
+          ],
+        },
+        {
+          type: 'category',
+          label: '4.2 Variações sobre um Esquema - Avaliação Lazy',
+          link: {
+            type: 'doc',
+            id: 'chapter-4/4.2',
+          },
+          items: [
+            'chapter-4/4.2.1',
+            'chapter-4/4.2.2',
+            'chapter-4/4.2.3',
+          ],
+        },
+        {
+          type: 'category',
+          label: '4.3 Variações sobre um Esquema - Computação Não-Determinística',
+          link: {
+            type: 'doc',
+            id: 'chapter-4/4.3',
+          },
+          items: [
+            'chapter-4/4.3.1',
+            'chapter-4/4.3.2',
+            'chapter-4/4.3.3',
+          ],
+        },
+        {
+          type: 'category',
+          label: '4.4 Programação Lógica',
+          link: {
+            type: 'doc',
+            id: 'chapter-4/4.4',
+          },
+          items: [
+            'chapter-4/4.4.1',
+            'chapter-4/4.4.2',
+            'chapter-4/4.4.3',
+            'chapter-4/4.4.4',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Capítulo 5: Computação com Máquinas de Registradores',
+      link: {
+        type: 'doc',
+        id: 'chapter-5/5.0',
+      },
+      items: [
+        {
+          type: 'doc',
+          id: 'chapter-5/5.1',
+          label: '5.1 Projetando Máquinas de Registradores',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.2',
+          label: '5.2 Um Simulador de Máquina de Registradores',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.3',
+          label: '5.3 Alocação de Armazenamento e Coleta de Lixo',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.4',
+          label: '5.4 O Avaliador de Controle Explícito',
+        },
+        {
+          type: 'doc',
+          id: 'chapter-5/5.5',
+          label: '5.5 Compilação',
+        },
+      ],
+    },
+    {
+      type: 'doc',
+      id: 'referencias',
+      label: 'Referências',
+    },
+    {
+      type: 'doc',
+      id: 'agradecimentos',
+      label: 'Agradecimentos',
+    },
+    {
+      type: 'doc',
+      id: 'sobre-o-projeto',
+      label: 'Sobre o Projeto SICP JS',
+    },
+    {
+      type: 'doc',
+      id: 'sobre-traducao-brasileira',
+      label: 'Sobre a Tradução Brasileira',
     },
     {
       type: 'doc',
