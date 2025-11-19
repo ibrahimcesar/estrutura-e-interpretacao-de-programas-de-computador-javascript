@@ -157,6 +157,23 @@ const config = {
             ],
           },
           {
+            title: 'Sobre',
+            items: [
+              {
+                label: 'Sobre o Projeto',
+                to: '/sobre-o-projeto',
+              },
+              {
+                label: 'Referências',
+                to: '/referencias',
+              },
+              {
+                label: 'Agradecimentos',
+                to: '/agradecimentos',
+              },
+            ],
+          },
+          {
             title: 'Mais',
             items: [
               {
