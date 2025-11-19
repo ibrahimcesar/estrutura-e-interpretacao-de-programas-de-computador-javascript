@@ -22,11 +22,51 @@ As funções de sintaxe usadas pelo avaliador acessam a representação de lista
 
 O avaliador lembra o programa de diferenciação simbólica discutido na seção 2.3.2. Ambos os programas operam em dados simbólicos. Em ambos os programas, o resultado de operar em um objeto é determinado operando recursivamente nas partes do objeto e combinando os resultados de uma maneira que depende do tipo do objeto. Em ambos os programas usamos abstração de dados para desacoplar as regras gerais de operação dos detalhes de como os objetos são representados. No programa de diferenciação isso significava que a mesma função de diferenciação poderia lidar com expressões algébricas na forma prefixada, na forma infixada ou em alguma outra forma. Para o avaliador, isso significa que a sintaxe da linguagem sendo avaliada é determinada exclusivamente por `parse` e as funções que classificam e extraem partes das listas rotuladas produzidas por `parse`.
 
-<Figure
-  src="/img/chapter-4/ch4-parse-abstraction.svg"
-  alt="Abstração de sintaxe no avaliador"
-  caption="Abstração de sintaxe no avaliador."
-/>
+```mermaid
+flowchart TB
+    subgraph Layer1["AVALIADOR"]
+        direction LR
+        Eval["evaluate()<br/>apply()<br/>outras funções<br/>do avaliador"]
+    end
+
+    subgraph Barrier1["BARREIRA DE ABSTRAÇÃO 1"]
+        direction LR
+        Predicates["Predicados e Seletores de Sintaxe:<br/>is_literal(), literal_value()<br/>is_application(), function_expression()<br/>is_conditional(), conditional_predicate()<br/>..."]
+    end
+
+    subgraph Layer2["REPRESENTAÇÃO DE LISTA ROTULADA"]
+        direction LR
+        Tagged["list('literal', 5)<br/>list('application', ...)<br/>list('conditional_expression', ...)<br/>..."]
+    end
+
+    subgraph Barrier2["BARREIRA DE ABSTRAÇÃO 2"]
+        direction LR
+        Parser["parse()"]
+    end
+
+    subgraph Layer3["REPRESENTAÇÃO DE STRING"]
+        direction LR
+        String["'const size = 2; 5 * size;'<br/>'factorial(5)'<br/>'x === 1 ? 1 : x'"]
+    end
+
+    Layer1 --> Barrier1
+    Barrier1 --> Layer2
+    Layer2 --> Barrier2
+    Barrier2 --> Layer3
+
+    style Layer1 fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px
+    style Layer2 fill:#FFF9C4,stroke:#F57F17,stroke-width:3px
+    style Layer3 fill:#E3F2FD,stroke:#1565C0,stroke-width:3px
+    style Barrier1 fill:#FFE0B2,stroke:#E65100,stroke-width:2px,stroke-dasharray: 5 5
+    style Barrier2 fill:#FFE0B2,stroke:#E65100,stroke-width:2px,stroke-dasharray: 5 5
+    style Eval fill:#C8E6C9,stroke:#388E3C
+    style Predicates fill:#FFCC80,stroke:#EF6C00
+    style Tagged fill:#FFF59D,stroke:#F9A825
+    style Parser fill:#FFCC80,stroke:#EF6C00
+    style String fill:#90CAF9,stroke:#1976D2
+```
+
+**Figura:** Abstração de sintaxe no avaliador. A barreira de abstração 1 (predicados e seletores) separa o avaliador da representação de lista rotulada. A barreira de abstração 2 (`parse`) separa a representação de lista da representação de string.
 
 A figura acima representa a barreira de abstração formada pelos predicados e seletores de sintaxe, que interfaceiam o avaliador à representação de lista rotulada de programas, que por sua vez é separada da representação de string por `parse`. Abaixo descrevemos o parsing de componentes do programa e listamos os predicados e seletores de sintaxe correspondentes, bem como construtores se forem necessários.
 

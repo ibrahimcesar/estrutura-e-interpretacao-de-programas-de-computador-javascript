@@ -2,8 +2,8 @@
 title: 3.5.4 Streams e Avaliação Atrasada
 ---
 
-import CodePlayground from '@site/src/components/CodePlaygroundLazy';
-import HelpFooter from '@site/src/components/HelpFooter';
+import CodePlayground from '@site/src/components/CodePlayground';
+import SignalFlowDiagram from '@site/src/components/SignalFlowDiagram';
 
 # 3.5.4 Streams e Avaliação Atrasada
 
@@ -18,6 +18,10 @@ const integ = pair(initial_value,
 A capacidade do interpretador de lidar com tal definição implícita depende do atraso resultante de embrulhar a chamada para `add_streams` em uma expressão lambda. Sem esse atraso, o interpretador não poderia construir `integ` antes de avaliar a chamada para `add_streams`, o que exigiria que `integ` já estivesse definido. Em geral, tal atraso é crucial para usar streams para modelar sistemas de processamento de sinais que contêm loops. Sem um atraso, nossos modelos teriam que ser formulados de modo que as entradas para qualquer componente de processamento de sinal fossem totalmente avaliadas antes que a saída pudesse ser produzida. Isso proibiria loops.
 
 Infelizmente, modelos de stream de sistemas com loops podem exigir usos de atraso além do padrão de programação de stream visto até agora. Por exemplo, a figura mostra um sistema de processamento de sinais para resolver a equação diferencial $dy/dt = f(y)$ onde $f$ é uma função dada. A figura mostra um componente de mapeamento, que aplica $f$ ao seu sinal de entrada, ligado em um loop de realimentação a um integrador de maneira muito similar à dos circuitos de computador analógico que são realmente usados para resolver tais equações.
+
+<SignalFlowDiagram type="feedback-solver" />
+
+**Figura 3.54:** Sistema de processamento de sinais com loop de realimentação para resolver $dy/dt = f(y)$. O sinal de entrada `dy/dt` é integrado para produzir `y`, que passa por uma função de ganho `f` (representando a função diferencial), e retorna ao somador através de um loop de realimentação tracejado.
 
 Assumindo que nos é dado um valor inicial $y_0$ para $y$, poderíamos tentar modelar este sistema usando a função
 
@@ -91,7 +95,13 @@ Considere o problema de projetar um sistema de processamento de sinais para estu
 
 $$\frac{d^2y}{dt^2} - a\frac{dy}{dt} - by = 0$$
 
-O stream de saída, modelando $y$, é gerado por uma rede que contém um loop. Isso ocorre porque o valor de $d^2y/dt^2$ depende dos valores de $y$ e $dy/dt$ e ambos são determinados integrando $d^2y/dt^2$. O diagrama que gostaríamos de codificar é mostrado na figura. Escreva uma função `solve_2nd` que recebe como argumentos as constantes $a$, $b$ e $dt$ e os valores iniciais $y_0$ e $dy_0$ para $y$ e $dy/dt$ e gera o stream de valores sucessivos de $y$.
+O stream de saída, modelando $y$, é gerado por uma rede que contém um loop. Isso ocorre porque o valor de $d^2y/dt^2$ depende dos valores de $y$ e $dy/dt$ e ambos são determinados integrando $d^2y/dt^2$. O diagrama que gostaríamos de codificar é mostrado na figura.
+
+<SignalFlowDiagram type="differential-system" />
+
+**Figura 3.78:** Sistema de processamento de sinais para resolver sistemas de equações diferenciais acopladas. Dois integradores processam `dy₁` e `dy₂` para produzir `y₁` e `y₂`, com multiplicadores de ganho `a` e `b`. Os loops de realimentação cruzados (tracejados) mostram como cada equação depende da solução da outra.
+
+Escreva uma função `solve_2nd` que recebe como argumentos as constantes $a$, $b$ e $dt$ e os valores iniciais $y_0$ e $dy_0$ para $y$ e $dy/dt$ e gera o stream de valores sucessivos de $y$.
 
 ## Exercício 3.79
 
@@ -123,6 +133,10 @@ $$\begin{align*}
 
 O diagrama de fluxo de sinal representando este sistema de equações diferenciais é mostrado na figura.
 
+<SignalFlowDiagram type="rlc-circuit" />
+
+**Figura 3.80:** Circuito RLC em série mostrando resistor (R), indutor (L) e capacitor (C) conectados em série com uma fonte de tensão V(t). O circuito demonstra a relação entre voltagem e corrente nos três componentes passivos fundamentais da eletrônica.
+
 Escreva uma função `RLC` que recebe como argumentos os parâmetros $R$, $L$ e $C$ do circuito e o incremento de tempo $dt$. De maneira similar à função `RC` do exercício 3.73, `RLC` deve produzir uma função que recebe os valores iniciais das variáveis de estado, $v_{C_0}$ e $i_{L_0}$, e produz um par (usando `pair`) dos streams de estados $v_C$ e $i_L$. Usando `RLC`, gere o par de streams que modela o comportamento de um circuito RLC em série com $R = 1$ ohm, $C = 0.2$ farad, $L = 1$ henry, $dt = 0.1$ segundo, e valores iniciais $i_{L_0} = 0$ amperes e $v_{C_0} = 10$ volts.
 
 ## Avaliação em ordem normal
@@ -134,5 +148,3 @@ Uma maneira de evitar a necessidade de duas classes diferentes de funções é f
 [^1]: Para completar em tempo razoável, este cálculo requer o uso da otimização de memoização da seção 3.5.1 em `integral` e na função `add_streams` usada em `integral` (usando a função `stream_map_2_optimized` como sugerido no exercício 3.50).
 
 [^2]: Este é um pequeno reflexo, em JavaScript, das dificuldades que linguagens estaticamente tipadas convencionais como Pascal tiveram ao lidar com funções de ordem superior. Nestas linguagens, o programador tinha que especificar os tipos de dados dos argumentos e o resultado de cada função: número, valor lógico, sequência, e assim por diante. Consequentemente, não poderíamos expressar uma abstração como "mapear uma dada função sobre todos os elementos em uma sequência" por uma única função de ordem superior como `stream_map`. Em vez disso, precisaríamos de uma função de mapeamento diferente para cada combinação diferente de tipos de dados de argumento e resultado que possam ser especificados para uma função. Manter uma noção prática de "tipo de dados" na presença de funções de ordem superior levanta muitas questões difíceis. Uma maneira de lidar com este problema é ilustrada pela linguagem ML (Gordon, Milner e Wadsworth 1979), cujos "tipos de dados parametricamente polimórficos" incluem modelos para transformações de ordem superior entre tipos de dados. Além disso, os tipos de dados para a maioria das funções em ML nunca são explicitamente declarados pelo programador. Em vez disso, ML inclui um mecanismo de inferência de tipos que usa informação no ambiente para deduzir os tipos de dados para funções recém-definidas. Hoje, linguagens de programação estaticamente tipadas evoluíram para tipicamente suportar alguma forma de inferência de tipos assim como polimorfismo paramétrico, com graus variados de poder. Haskell acopla um sistema de tipos expressivo com poderosa inferência de tipos.
-
-<HelpFooter />

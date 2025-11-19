@@ -1,0 +1,304 @@
+---
+title: 5.5.3 Compilando Combinações
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.5.3 Compilando Aplicações e Declarações de Retorno
+
+A essência do processo de compilação é a compilação de aplicações de função. O código para uma aplicação compilada com um dado alvo e ligação tem a forma
+
+```javascript
+// compilação da expressão de função, alvo fun, ligação "next"
+// avaliar expressões de argumento e construir lista de argumentos em argl
+// compilação da chamada de função com alvo e ligação dados
+```
+
+Os registradores `env`, `fun` e `argl` podem ter que ser salvos e restaurados durante a avaliação das expressões de função e argumentos. Note que este é o único lugar no compilador onde um alvo diferente de `val` é especificado.
+
+O código requerido é gerado por `compile_application`. Isso compila recursivamente a expressão de função para produzir código que coloca a função a ser aplicada em `fun`, e compila as expressões de argumento para produzir código que avalia as expressões de argumento individuais da aplicação. As sequências de instruções para as expressões de argumento são combinadas (por `construct_arglist`) com código que constrói a lista de argumentos em `argl`, e o código da lista de argumentos resultante é combinado com o código da função e o código que realiza a chamada de função (produzido por `compile_function_call`). Ao anexar as sequências de código, o registrador `env` deve ser preservado em torno da avaliação da expressão de função (já que avaliar a expressão de função poderia modificar `env`, que será necessário para avaliar as expressões de argumento), e o registrador `fun` deve ser preservado em torno da construção da lista de argumentos (já que avaliar as expressões de argumento poderia modificar `fun`, que será necessário para a aplicação de função real). O registrador `continue` também deve ser preservado por toda parte, já que é necessário para a ligação na chamada de função.
+
+<CodePlayground
+  code={`function compile_application(exp, target, linkage) {
+    const fun_code = compile(function_expression(exp), "fun", "next");
+    const argument_codes = map(arg => compile(arg, "val", "next"),
+                               arg_expressions(exp));
+    return preserving(list("env", "continue"),
+                      fun_code,
+                      preserving(list("fun", "continue"),
+                          construct_arglist(argument_codes),
+                          compile_function_call(target, linkage)));
+}`}
+  height={250}
+/>
+
+O código para construir a lista de argumentos avaliará cada expressão de argumento em `val` e então combinará esse valor com a lista de argumentos sendo acumulada em `argl` usando `pair`. Como anexamos os argumentos à frente de `argl` em sequência, devemos começar com o último argumento e terminar com o primeiro, de modo que os argumentos apareçam em ordem do primeiro ao último na lista resultante. Em vez de desperdiçar uma instrução inicializando `argl` para a lista vazia para preparar esta sequência de avaliações, fazemos a primeira sequência de código construir o `argl` inicial. A forma geral da construção da lista de argumentos é portanto a seguinte:
+
+```javascript
+// compilação do último argumento, direcionado a val
+assign("argl", list(op("list"), reg("val"))),
+// compilação do próximo argumento, direcionado a val
+assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+...
+// compilação do primeiro argumento, direcionado a val
+assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+```
+
+O registrador `argl` deve ser preservado em torno de cada avaliação de argumento exceto a primeira (para que argumentos acumulados até agora não sejam perdidos), e `env` deve ser preservado em torno de cada avaliação de argumento exceto a última (para uso por avaliações de argumento subsequentes).
+
+Compilar este código de argumento é um pouco complicado, por causa do tratamento especial da primeira expressão de argumento a ser avaliada e da necessidade de preservar `argl` e `env` em lugares diferentes. A função `construct_arglist` recebe como argumentos o código que avalia as expressões de argumento individuais. Se não há expressões de argumento, ela simplesmente emite a instrução
+
+```javascript
+assign(argl, constant(null))
+```
+
+Caso contrário, `construct_arglist` cria código que inicializa `argl` com o último argumento, e anexa código que avalia os argumentos restantes e os junta a `argl` em sucessão. Para processar os argumentos do último ao primeiro, devemos inverter a lista de sequências de código de argumento da ordem fornecida por `compile_application`.
+
+<CodePlayground
+  code={`function construct_arglist(arg_codes) {
+    if (is_null(arg_codes)) {
+        return make_instruction_sequence(null, list("argl"),
+                   list(assign("argl", constant(null))));
+    } else {
+        const rev_arg_codes = reverse(arg_codes);
+        const code_to_get_last_arg =
+            append_instruction_sequences(
+                head(rev_arg_codes),
+                make_instruction_sequence(list("val"), list("argl"),
+                    list(assign("argl",
+                                list(op("list"), reg("val"))))));
+        return is_null(tail(rev_arg_codes))
+               ? code_to_get_last_arg
+               : preserving(list("env"),
+                     code_to_get_last_arg,
+                     code_to_get_rest_args(tail(rev_arg_codes)));
+    }
+}
+function code_to_get_rest_args(arg_codes) {
+    const code_for_next_arg =
+        preserving(list("argl"),
+            head(arg_codes),
+            make_instruction_sequence(list("val", "argl"), list("argl"),
+                list(assign("argl", list(op("pair"),
+                                         reg("val"), reg("argl"))))));
+    return is_null(tail(arg_codes))
+           ? code_for_next_arg
+           : preserving(list("env"),
+                        code_for_next_arg,
+                        code_to_get_rest_args(tail(arg_codes)));
+}`}
+  height={600}
+/>
+
+## Aplicando funções
+
+Após avaliar os elementos de uma aplicação de função, o código compilado deve aplicar a função em `fun` aos argumentos em `argl`. O código realiza essencialmente o mesmo despacho que a função `apply` no avaliador metacircular da seção 4.1.1 ou o ponto de entrada `apply_dispatch` no avaliador de controle explícito da seção 5.4.2. Ele verifica se a função a ser aplicada é uma função primitiva ou uma função compilada. Para uma função primitiva, usa `apply_primitive_function`; veremos em breve como ele trata funções compiladas. O código de aplicação de função tem a seguinte forma:
+
+```javascript
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch")),
+"compiled_branch",
+  // código para aplicar função compilada com alvo dado e ligação apropriada
+"primitive_branch",
+  assign(target,
+         list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+  // ligação
+"after_call"
+```
+
+Observe que o ramo compilado deve pular o ramo primitivo. Portanto, se a ligação para a chamada de função original foi `"next"`, o ramo composto deve usar uma ligação que salta para um rótulo que é inserido após o ramo primitivo. (Isso é similar à ligação usada para o ramo verdadeiro em `compile_conditional`.)
+
+<CodePlayground
+  code={`function compile_function_call(target, linkage) {
+    const primitive_branch = make_label("primitive_branch");
+    const compiled_branch = make_label("compiled_branch");
+    const after_call = make_label("after_call");
+    const compiled_linkage = linkage === "next" ? after_call : linkage;
+    return append_instruction_sequences(
+        make_instruction_sequence(list("fun"), null,
+            list(test(list(op("is_primitive_function"), reg("fun"))),
+                 branch(label(primitive_branch)))),
+        append_instruction_sequences(
+            parallel_instruction_sequences(
+                append_instruction_sequences(
+                    compiled_branch,
+                    compile_fun_appl(target, compiled_linkage)),
+                append_instruction_sequences(
+                    primitive_branch,
+                    end_with_linkage(linkage,
+                        make_instruction_sequence(list("fun", "argl"),
+                                                  list(target),
+                            list(assign(
+                                   target,
+                                   list(op("apply_primitive_function"),
+                                        reg("fun"), reg("argl")))))))),
+            after_call));
+}`}
+  height={500}
+/>
+
+Os ramos primitivo e composto, como os ramos verdadeiro e falso em `compile_conditional`, são anexados usando `parallel_instruction_sequences` em vez do `append_instruction_sequences` ordinário, porque eles não serão executados sequencialmente.
+
+## Aplicando funções compiladas
+
+O tratamento de aplicação de função e retorno é a parte mais sutil do compilador. O código para uma aplicação de função compilada usa a pilha da mesma maneira que o avaliador de controle explícito (seção 5.4.2): antes de saltar para o ponto de entrada da função compilada, salva a continuação da chamada de função na pilha, seguida de um marcador que permite reverter a pilha ao estado logo antes da chamada com a continuação no topo.
+
+```javascript
+  // configurar para retorno da função
+  save("continue"),
+  push_marker_to_stack(),
+  // saltar para o ponto de entrada da função
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+```
+
+Compilar uma declaração de retorno (com `compile_return_statement`) gera código correspondente para reverter a pilha e restaurar e saltar para `continue`.
+
+```javascript
+  revert_stack_to_marker(),
+  restore("continue"),
+  // avaliar a expressão de retorno e armazenar o resultado em val
+  go_to(reg("continue")), // código de ligação "return"
+```
+
+A menos que uma função entre em um loop infinito, ela terminará executando o código de retorno acima, resultando de uma declaração de retorno no programa ou uma inserida por `compile_lambda_body` para retornar `undefined`.[^1]
+
+[^1]: Como a execução de um corpo de função sempre termina com um retorno, não há necessidade aqui de um mecanismo como o ponto de entrada `return_undefined` da seção 5.4.2.
+
+Código direto para uma aplicação de função compilada com um dado alvo e ligação configuraria `continue` para fazer a função retornar a um rótulo local ao invés de à ligação final, para copiar o valor da função de `val` para o registrador alvo se necessário. Pareceria assim se a ligação é um rótulo:
+
+```javascript
+  assign("continue", label("fun_return")), // para onde a função deve retornar
+  save("continue"),       // será restaurado pela função
+  push_marker_to_stack(), // permite à função reverter a pilha para encontrar fun_return
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),    // eventualmente reverte pilha, restaura e salta para continue
+"fun_return",             // a função retorna para aqui
+  assign(target, reg("val")), // incluído se o alvo não é val
+  go_to(label(linkage)),   // código de ligação
+```
+
+ou assim—salvando a continuação do chamador no início para restaurá-la e ir até ela no fim—se a ligação é `"return"` (isto é, se a aplicação está em uma declaração de retorno e seu valor é o resultado a ser retornado):
+
+```javascript
+  save("continue"),       // salvar a continuação do chamador
+  assign("continue", label("fun_return")), // para onde a função deve retornar
+  save("continue"),       // será restaurado pela função
+  push_marker_to_stack(), // permite à função reverter a pilha para encontrar fun_return
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),    // eventualmente reverte pilha, restaura e salta para continue
+"fun_return",             // a função retorna para aqui
+  assign(target, reg("val")), // incluído se o alvo não é val
+  restore("continue"),    // restaurar a continuação do chamador
+  go_to(reg("continue")), // código de ligação
+```
+
+Este código configura `continue` de modo que a função retorne a um rótulo `fun_return` e salte para o ponto de entrada da função. O código em `fun_return` transfere o resultado da função de `val` para o registrador alvo (se necessário) e então salta para o local especificado pela ligação. (A ligação é sempre `"return"` ou um rótulo, porque `compile_function_call` substitui uma ligação `"next"` para o ramo de função composta por um rótulo `after_call`.)
+
+Antes de saltar para o ponto de entrada da função, salvamos `continue` e executamos `push_marker_to_stack()` para permitir que a função retorne ao local pretendido no programa com a pilha esperada. Instruções `revert_stack_to_marker()` e `restore("continue")` correspondentes são geradas por `compile_return_statement` para cada declaração de retorno no corpo da função.[^2]
+
+[^2]: Em outros lugares no compilador, todos os saves e restores de registradores são gerados por `preserving` para preservar o valor de um registrador através de uma sequência de instruções salvando-o antes dessas instruções e restaurando-o depois—por exemplo, sobre a avaliação do predicado de um condicional. Mas este mecanismo não pode gerar instruções para salvar e restaurar `continue` para uma aplicação de função e o retorno correspondente, porque estes são compilados separadamente e não são contíguos. Em vez disso, estes saves e restores devem ser explicitamente gerados por `compile_fun_appl` e `compile_return_statement`.
+
+De fato, se o alvo não é `val`, esse é exatamente o código que nosso compilador gerará.[^3] Geralmente, no entanto, o alvo é `val` (a única vez que o compilador especifica um registrador diferente é ao direcionar a avaliação de uma expressão de função para `fun`), então o resultado da função é colocado diretamente no registrador alvo e não há necessidade de saltar para um local especial que o copia. Em vez disso, simplificamos o código configurando `continue` de modo que a função chamada "retorne" diretamente ao lugar especificado pela ligação do chamador:
+
+[^3]: Na verdade, sinalizamos um erro quando o alvo não é `val` e a ligação é `"return"`, já que o único lugar onde solicitamos uma ligação `"return"` é ao compilar expressões de retorno, e nossa convenção é que funções retornam seus valores em `val`.
+
+```javascript
+// configurar continue para ligação e empurrar o marcador
+assign("val", list(op("compiled_function_entry"), reg("fun"))),
+go_to(reg("val")),
+```
+
+Se a ligação é um rótulo, configuramos `continue` de modo que a função continue nesse rótulo. (Isto é, o `go_to(reg("continue"))` com que a função chamada termina torna-se equivalente ao `go_to(label(linkage))` em `fun_return` acima.)
+
+```javascript
+assign("continue", label(linkage)),
+save("continue"),
+push_marker_to_stack(),
+assign("val", list(op("compiled_function_entry"), reg("fun"))),
+go_to(reg("val")),
+```
+
+Se a ligação é `"return"`, não precisamos atribuir `continue`: Ele já contém o local desejado. (Isto é, o `go_to(reg("continue"))` com que a função chamada termina vai diretamente ao lugar para onde o `go_to(reg("continue"))` em `fun_return` teria ido.)
+
+```javascript
+save("continue"),
+push_marker_to_stack(),
+assign("val", list(op("compiled_function_entry"), reg("fun"))),
+go_to(reg("val")),
+```
+
+Com esta implementação da ligação `"return"`, o compilador gera código tail-recursivo. Uma chamada de função em uma declaração de retorno cujo valor é o resultado a ser retornado faz uma transferência direta, sem salvar informação desnecessária na pilha.
+
+Suponha que, em vez disso, tivéssemos tratado o caso de uma chamada de função com uma ligação de `"return"` e um alvo de `val` da mesma maneira que para um alvo não-`val`. Isso destruiria a recursão de cauda. Nosso sistema ainda retornaria o mesmo valor para qualquer chamada de função. Mas cada vez que chamássemos uma função, salvaríamos `continue` e retornaríamos após a chamada para desfazer o save (inútil). Estes saves extras se acumulariam durante um aninhamento de chamadas de função.[^4]
+
+[^4]: Fazer um compilador gerar código tail-recursivo é desejável, especialmente no paradigma funcional. No entanto, compiladores para linguagens comuns, incluindo C e C++, nem sempre fazem isso, e portanto essas linguagens não podem representar processos iterativos em termos de chamadas de função apenas. A dificuldade com recursão de cauda nestas linguagens é que suas implementações usam a pilha para armazenar argumentos de função e nomes locais assim como endereços de retorno. As implementações JavaScript descritas neste livro armazenam argumentos e nomes na memória para serem coletados por garbage collection. A razão para usar a pilha para nomes e argumentos é que ela evita a necessidade de garbage collection em linguagens que não a requerem de outra forma, e é geralmente considerada mais eficiente. Compiladores sofisticados podem, de fato, usar a pilha para argumentos sem destruir recursão de cauda. (Veja Hanson 1990 para uma descrição.) Há também algum debate sobre se alocação de pilha é realmente mais eficiente que garbage collection em primeiro lugar, mas os detalhes parecem depender de pontos finos da arquitetura de computador. (Veja Appel 1987 e Miller e Rozas 1994 para visões opostas sobre esta questão.)
+
+A função `compile_fun_appl` gera o código de aplicação de função acima considerando quatro casos, dependendo se o alvo para a chamada é `val` e se a ligação é `"return"`. Observe que as sequências de instruções são declaradas para modificar todos os registradores, já que executar o corpo da função pode mudar os registradores de maneiras arbitrárias.[^5]
+
+[^5]: A constante `all_regs` é vinculada à lista de nomes de todos os registradores:
+```javascript
+const all_regs = list("env", "fun", "val", "argl", "continue");
+```
+
+<CodePlayground
+  code={`function compile_fun_appl(target, linkage) {
+    const fun_return = make_label("fun_return");
+    return target === "val" && linkage !== "return"
+           ? make_instruction_sequence(list("fun"), all_regs,
+                 list(assign("continue", label(linkage)),
+                      save("continue"),
+                      push_marker_to_stack(),
+                      assign("val", list(op("compiled_function_entry"),
+                                         reg("fun"))),
+                      go_to(reg("val"))))
+           : target !== "val" && linkage !== "return"
+           ? make_instruction_sequence(list("fun"), all_regs,
+                 list(assign("continue", label(fun_return)),
+                      save("continue"),
+                      push_marker_to_stack(),
+                      assign("val", list(op("compiled_function_entry"),
+                                         reg("fun"))),
+                      go_to(reg("val")),
+                      fun_return,
+                      assign(target, reg("val")),
+                      go_to(label(linkage))))
+           : target === "val" && linkage === "return"
+           ? make_instruction_sequence(list("fun", "continue"),
+                                       all_regs,
+                 list(save("continue"),
+                      push_marker_to_stack(),
+                      assign("val", list(op("compiled_function_entry"),
+                                         reg("fun"))),
+                      go_to(reg("val"))))
+           : // target !== "val" && linkage === "return"
+             error(target, "return linkage, target not val -- compile");
+}`}
+  height={650}
+/>
+
+Mostramos como gerar código de ligação tail-recursivo para uma aplicação de função quando a ligação é `"return"`—isto é, quando a aplicação está em uma declaração de retorno e seu valor é o resultado a ser retornado. Similarmente, como explicado na seção 5.4.2, o mecanismo de marcador de pilha usado aqui (e no avaliador de controle explícito) para a chamada e retorno produz comportamento tail-recursivo apenas nessa situação. Estes dois aspectos do código gerado para aplicação de função se combinam para garantir que quando uma função termina retornando o valor de uma chamada de função, nenhuma pilha se acumula.
+
+## Compilando declarações de retorno
+
+O código para uma declaração de retorno assume a seguinte forma, independentemente da ligação e alvo dados:
+
+```javascript
+revert_stack_to_marker(),
+restore("continue"),   // salvo por compile_fun_appl
+// avaliar a expressão de retorno e armazenar o resultado em val
+go_to(reg("continue")) // código de ligação "return"
+```
+
+As instruções para reverter a pilha usando o marcador e então restaurar `continue` correspondem às instruções geradas por `compile_fun_appl` para salvar `continue` e marcar a pilha. O salto final para `continue` é gerado pelo uso da ligação `"return"` ao compilar a expressão de retorno. A função `compile_return_statement` é diferente de todos os outros geradores de código em que ignora os argumentos alvo e ligação—ela sempre compila a expressão de retorno com alvo `val` e ligação `"return"`.
+
+<CodePlayground
+  code={`function compile_return_statement(stmt, target, linkage) {
+    return append_instruction_sequences(
+               make_instruction_sequence(null, list("continue"),
+                   list(revert_stack_to_marker(),
+                        restore("continue"))),
+               compile(return_expression(stmt), "val", "return"));
+}`}
+  height={200}
+/>

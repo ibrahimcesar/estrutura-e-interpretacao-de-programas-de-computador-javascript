@@ -1,0 +1,89 @@
+---
+title: 5.4.3 Blocos, Atribuições e Declarações
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.4.3 Blocos, Atribuições e Declarações
+
+## Blocos
+
+O corpo de um bloco é avaliado com respeito ao ambiente atual estendido por um frame que vincula todos os nomes locais ao valor `"*unassigned*"`. Temporariamente fazemos uso do registrador `val` para armazenar a lista de todas as variáveis declaradas no bloco, que é obtida por `scan_out_declarations` da seção 4.1.1. As funções `scan_out_declarations` e `list_of_unassigned` são assumidas como estando disponíveis como operações de máquina.[^1]
+
+<CodePlayground
+  code={`"ev_block",
+  assign("comp", list(op("block_body"), reg("comp"))),
+  assign("val", list(op("scan_out_declarations"), reg("comp"))),
+
+  save("comp"), // para que possamos usá-lo temporariamente para valores *unassigned*
+  assign("comp", list(op("list_of_unassigned"), reg("val"))),
+  assign("env", list(op("extend_environment"),
+                     reg("val"), reg("comp"), reg("env"))),
+  restore("comp"), // o corpo do bloco
+  go_to(label("eval_dispatch")),`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+## Atribuições e declarações
+
+Atribuições são tratadas por `ev_assignment`, que é alcançado a partir de `eval_dispatch` com a expressão de atribuição em `comp`. O código em `ev_assignment` primeiro avalia a parte do valor da expressão e então instala o novo valor no ambiente. A função `assign_symbol_value` é assumida como estando disponível como uma operação de máquina.
+
+<CodePlayground
+  code={`"ev_assignment",
+  assign("unev", list(op("assignment_symbol"), reg("comp"))),
+  save("unev"), // salva variável para depois
+  assign("comp", list(op("assignment_value_expression"), reg("comp"))),
+  save("env"),
+  save("continue"),
+  assign("continue", label("ev_assignment_install")),
+  go_to(label("eval_dispatch")), // avalia valor da atribuição
+"ev_assignment_install",
+  restore("continue"),
+  restore("env"),
+  restore("unev"),
+  perform(list(op("assign_symbol_value"),
+               reg("unev"), reg("val"), reg("env"))),
+  go_to(reg("continue")),`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Declarações de variáveis e constantes são tratadas de maneira similar. Note que enquanto o valor de uma atribuição é o valor que foi atribuído, o valor de uma declaração é `undefined`. Isso é tratado configurando `val` como `undefined` antes de continuar. Assim como no avaliador metacircular, transformamos uma declaração de função em uma declaração de constante cuja expressão de valor é uma expressão lambda. Isso acontece em `ev_function_declaration`, que faz a transformação no lugar em `comp` e passa para `ev_declaration`.
+
+<CodePlayground
+  code={`"ev_function_declaration",
+  assign("comp",
+         list(op("function_decl_to_constant_decl"), reg("comp"))),
+"ev_declaration",
+  assign("unev", list(op("declaration_symbol"), reg("comp"))),
+  save("unev"), // salva nome declarado
+  assign("comp",
+         list(op("declaration_value_expression"), reg("comp"))),
+  save("env"),
+  save("continue"),
+  assign("continue", label("ev_declaration_assign")),
+  go_to(label("eval_dispatch")), // avalia valor da declaração
+"ev_declaration_assign",
+  restore("continue"),
+  restore("env"),
+  restore("unev"),
+  perform(list(op("assign_symbol_value"),
+               reg("unev"), reg("val"), reg("env"))),
+  assign("val", constant(undefined)),
+  go_to(reg("continue")),`}
+  height={500}
+  showLineNumbers={true}
+/>
+
+## Exercício 5.28
+
+Estenda o avaliador para tratar laços `while`, traduzindo-os para aplicações de uma função `while_loop`, conforme mostrado no exercício 4.9. Você pode colar a declaração da função `while_loop` na frente dos programas do usuário. Você pode "trapacear" assumindo que o transformador sintático `while_to_application` está disponível como uma operação de máquina. Consulte o exercício 4.9 para discutir se essa abordagem funciona se instruções `return`, `break` e `continue` são permitidas dentro do laço `while`. Se não, como você pode modificar o avaliador de controle explícito para executar programas com laços `while` que incluem essas instruções?
+
+## Exercício 5.29
+
+Modifique o avaliador de modo que ele use avaliação em ordem normal, baseado no avaliador preguiçoso da seção 4.2.
+
+---
+
+[^1]: A nota de rodapé sobre transformadores sintáticos sugere que uma implementação real realizaria transformações sintáticas antes da execução do programa. Da mesma forma, nomes declarados em blocos deveriam ser escaneados em uma etapa de pré-processamento em vez de cada vez que um bloco é avaliado.

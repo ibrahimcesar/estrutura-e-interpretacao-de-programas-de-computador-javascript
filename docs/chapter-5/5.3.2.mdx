@@ -1,0 +1,153 @@
+---
+title: 5.3.2 Mantendo a Ilusão de Memória Infinita
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.3.2 Mantendo a Ilusão de Memória Infinita
+
+O método de representação delineado na seção 5.3.1 resolve o problema de implementar estrutura de lista, desde que tenhamos uma quantidade infinita de memória. Com um computador real, eventualmente ficaremos sem espaço livre no qual construir novos pares.[^1] No entanto, a maioria dos pares gerados em uma computação típica são usados apenas para guardar resultados intermediários. Depois que esses resultados são acessados, os pares não são mais necessários — eles são *lixo*. Por exemplo, a computação
+
+[^1]: Isso pode não ser verdade eventualmente, porque as memórias podem ficar grandes o suficiente para que seria impossível esgotar a memória livre durante o tempo de vida do computador. Por exemplo, há cerca de 3×10¹⁶ nanossegundos em um ano, então se fôssemos criar um `pair` uma vez por nanossegundo, precisaríamos de cerca de 10¹⁸ células de memória para construir uma máquina que pudesse operar por 30 anos sem ficar sem memória. Essa quantidade de memória parece absurdamente grande pelos padrões de hoje, mas não é fisicamente impossível. Por outro lado, processadores estão ficando mais rápidos e computadores modernos têm cada vez mais processadores operando em paralelo em uma única memória, então pode ser possível usar memória muito mais rápido do que postulamos.
+
+<CodePlayground
+  code={`accumulate((x, y) => x + y,
+           0,
+           filter(is_odd, enumerate_interval(0, n)))`}
+  height={120}
+  showLineNumbers={true}
+/>
+
+constrói duas listas: a enumeração e o resultado de filtrar a enumeração. Quando a acumulação está completa, essas listas não são mais necessárias, e a memória alocada pode ser recuperada. Se pudermos arranjar para coletar todo o lixo periodicamente, e se isso acabar reciclando memória aproximadamente na mesma taxa em que construímos novos pares, teremos preservado a ilusão de que há uma quantidade infinita de memória.
+
+Para reciclar pares, devemos ter uma maneira de determinar quais pares alocados não são necessários (no sentido de que seus conteúdos não podem mais influenciar o futuro da computação). O método que examinaremos para realizar isso é conhecido como *coleta de lixo*. A coleta de lixo é baseada na observação de que, em qualquer momento em uma interpretação baseada em memória estruturada em lista, os únicos objetos que podem afetar o futuro da computação são aqueles que podem ser alcançados por alguma sucessão de operações `head` e `tail` começando dos ponteiros que estão atualmente nos registradores da máquina.[^2] Qualquer célula de memória que não seja assim acessível pode ser reciclada.
+
+[^2]: Assumimos aqui que a pilha é representada como uma lista conforme descrito na seção 5.3.1, de modo que itens na pilha são acessíveis através do ponteiro no registrador de pilha.
+
+Existem muitas maneiras de realizar a coleta de lixo. O método que examinaremos aqui é chamado *stop-and-copy*. A ideia básica é dividir a memória em duas metades: "memória de trabalho" e "memória livre". Quando `pair` constrói pares, ele aloca estes na memória de trabalho. Quando a memória de trabalho está cheia, realizamos a coleta de lixo localizando todos os pares úteis na memória de trabalho e copiando-os para localizações consecutivas na memória livre. (Os pares úteis são localizados traçando todos os ponteiros `head` e `tail`, começando com os registradores da máquina.) Como não copiamos o lixo, presumivelmente haverá memória livre adicional que podemos usar para alocar novos pares. Além disso, nada na memória de trabalho é necessário, já que todos os pares úteis nela foram copiados. Assim, se intercambiarmos os papéis da memória de trabalho e da memória livre, podemos continuar processando; novos pares serão alocados na nova memória de trabalho (que era a antiga memória livre). Quando esta estiver cheia, podemos copiar os pares úteis para a nova memória livre (que era a antiga memória de trabalho).[^3]
+
+[^3]: Esta ideia foi inventada e primeiramente implementada por Minsky, como parte da implementação de Lisp para o PDP-1 no Laboratório de Eletrônica de Pesquisa do MIT. Foi posteriormente desenvolvida por Fenichel e Yochelson (1969) para uso na implementação de Lisp para o sistema de tempo compartilhado Multics. Mais tarde, Baker (1978) desenvolveu uma versão de "tempo real" do método, que não requer que a computação pare durante a coleta de lixo. A ideia de Baker foi estendida por Hewitt, Lieberman e Moon (veja Lieberman e Hewitt 1983) para tirar proveito do fato de que alguma estrutura é mais volátil e outra estrutura é mais permanente. Uma técnica de coleta de lixo alternativa comumente usada é o método *mark-sweep*. Este consiste em traçar toda a estrutura acessível a partir dos registradores da máquina e marcar cada par que alcançamos. Então varremos toda a memória, e qualquer localização que não esteja marcada é "varrida" como lixo e tornada disponível para reutilização. Uma discussão completa do método mark-sweep pode ser encontrada em Allen 1978. O algoritmo Minsky-Fenichel-Yochelson é o algoritmo dominante em uso para sistemas de memória grande porque ele examina apenas a parte útil da memória. Isto está em contraste com mark-sweep, no qual a fase de varredura deve verificar toda a memória. Uma segunda vantagem do stop-and-copy é que é um coletor de lixo *compactador*. Ou seja, no final da fase de coleta de lixo os dados úteis terão sido movidos para localizações de memória consecutivas, com todos os pares de lixo comprimidos. Isso pode ser uma consideração de desempenho extremamente importante em máquinas com memória virtual, nas quais acessos a endereços de memória amplamente separados podem exigir operações de paginação extras.
+
+## Implementação de um coletor de lixo stop-and-copy
+
+Agora usamos nossa linguagem de máquina de registradores para descrever o algoritmo stop-and-copy com mais detalhes. Assumiremos que há um registrador chamado `root` que contém um ponteiro para uma estrutura que eventualmente aponta para todos os dados acessíveis. Isso pode ser arranjado armazenando os conteúdos de todos os registradores da máquina em uma lista pré-alocada apontada por `root` logo antes de iniciar a coleta de lixo.[^4] Também assumimos que, além da memória de trabalho atual, há memória livre disponível para a qual podemos copiar os dados úteis. A memória de trabalho atual consiste de vetores cujos endereços base estão nos registradores chamados `the_heads` e `the_tails`, e a memória livre está nos registradores chamados `new_heads` e `new_tails`.
+
+[^4]: Esta lista de registradores não inclui os registradores usados pelo sistema de alocação de armazenamento: `root`, `the_heads`, `the_tails`, e os outros registradores que serão introduzidos nesta seção.
+
+A coleta de lixo é disparada quando esgotamos as células livres na memória de trabalho atual, ou seja, quando uma operação `pair` tenta incrementar o ponteiro `free` além do fim do vetor de memória. Quando o processo de coleta de lixo estiver completo, o ponteiro `root` apontará para a nova memória, todos os objetos acessíveis a partir da `root` terão sido movidos para a nova memória, e o ponteiro `free` indicará o próximo lugar na nova memória onde um novo par pode ser alocado. Além disso, os papéis da memória de trabalho e da nova memória terão sido intercambiados — novos pares serão construídos na nova memória, começando no lugar indicado por `free`, e a memória de trabalho (anterior) estará disponível como a nova memória para a próxima coleta de lixo. A Figura 5.15 mostra a disposição da memória logo antes e logo depois da coleta de lixo.
+
+<MemoryDiagram type="garbage-collection" />
+
+**Figura 5.15:** Reconfiguração da memória pelo processo de coleta de lixo.
+
+O estado do processo de coleta de lixo é controlado mantendo dois ponteiros: `free` e `scan`. Estes são inicializados para apontar para o início da nova memória. O algoritmo começa relocando o par apontado por `root` para o início da nova memória. O par é copiado, o ponteiro `root` é ajustado para apontar para a nova localização, e o ponteiro `free` é incrementado. Além disso, a localização antiga do par é marcada para mostrar que seus conteúdos foram movidos. Esta marcação é feita da seguinte forma: na posição `head`, colocamos uma tag especial que sinaliza que este é um objeto já movido. (Tal objeto é tradicionalmente chamado de *coração partido*.)[^5] Na posição `tail` colocamos um *endereço de encaminhamento* que aponta para a localização para a qual o objeto foi movido.
+
+[^5]: O termo *coração partido* foi cunhado por David Cressey, que escreveu um coletor de lixo para MDL, um dialeto de Lisp desenvolvido no MIT durante o início dos anos 1970.
+
+Depois de realocar a raiz, o coletor de lixo entra em seu ciclo básico. A cada passo no algoritmo, o ponteiro `scan` (inicialmente apontando para a raiz realocada) aponta para um par que foi movido para a nova memória mas cujos ponteiros `head` e `tail` ainda se referem a objetos na memória antiga. Esses objetos são cada um realocados, e o ponteiro `scan` é incrementado. Para realocar um objeto (por exemplo, o objeto indicado pelo ponteiro `head` do par que estamos escaneando), verificamos se o objeto já foi movido (conforme indicado pela presença de uma tag de coração partido na posição `head` do objeto). Se o objeto ainda não foi movido, nós o copiamos para o lugar indicado por `free`, atualizamos `free`, configuramos um coração partido na localização antiga do objeto, e atualizamos o ponteiro para o objeto (neste exemplo, o ponteiro `head` do par que estamos escaneando) para apontar para a nova localização. Se o objeto já foi movido, seu endereço de encaminhamento (encontrado na posição `tail` do coração partido) é substituído pelo ponteiro no par sendo escaneado. Eventualmente, todos os objetos acessíveis terão sido movidos e escaneados, momento no qual o ponteiro `scan` ultrapassará o ponteiro `free` e o processo terminará.
+
+Podemos especificar o algoritmo stop-and-copy como uma sequência de instruções para uma máquina de registradores. O passo básico de realocar um objeto é realizado por uma sub-rotina chamada `relocate_old_result_in_new`. Esta sub-rotina obtém seu argumento, um ponteiro para o objeto a ser realocado, de um registrador chamado `old`. Ela realoca o objeto designado (incrementando `free` no processo), coloca um ponteiro para o objeto realocado em um registrador chamado `new`, e retorna ramificando para o ponto de entrada armazenado no registrador `relocate_continue`. Para começar a coleta de lixo, invocamos esta sub-rotina para realocar o ponteiro `root`, após inicializar `free` e `scan`. Quando a realocação de `root` foi realizada, instalamos o novo ponteiro como o novo `root` e entramos no loop principal do coletor de lixo.
+
+<CodePlayground
+  code={`"begin_garbage_collection",
+  assign("free", constant(0)),
+  assign("scan", constant(0)),
+  assign("old", reg("root")),
+  assign("relocate_continue", label("reassign_root")),
+  go_to(label("relocate_old_result_in_new")),
+"reassign_root",
+  assign("root", reg("new")),
+  go_to(label("gc_loop")),`}
+  height={280}
+  showLineNumbers={true}
+/>
+
+No loop principal do coletor de lixo devemos determinar se há mais objetos para serem escaneados. Fazemos isso testando se o ponteiro `scan` é coincidente com o ponteiro `free`. Se os ponteiros são iguais, então todos os objetos acessíveis foram realocados, e ramificamos para `gc_flip`, que limpa as coisas para que possamos continuar a computação interrompida. Se ainda há pares para serem escaneados, chamamos a sub-rotina de realocação para realocar o `head` do próximo par (colocando o ponteiro `head` em `old`). O registrador `relocate_continue` é configurado para que a sub-rotina retorne para atualizar o ponteiro `head`.
+
+<CodePlayground
+  code={`"gc_loop",
+  test(list(op("==="), reg("scan"), reg("free"))),
+  branch(label("gc_flip")),
+  assign("old", list(op("vector_ref"), reg("new_heads"), reg("scan"))),
+  assign("relocate_continue", label("update_head")),
+  go_to(label("relocate_old_result_in_new")),`}
+  height={220}
+  showLineNumbers={true}
+/>
+
+Em `update_head`, modificamos o ponteiro `head` do par sendo escaneado, então procedemos para realocar o `tail` do par. Retornamos para `update_tail` quando essa realocação foi realizada. Depois de realocar e atualizar o `tail`, terminamos de escanear aquele par, então continuamos com o loop principal.
+
+<CodePlayground
+  code={`"update_head",
+  perform(list(op("vector_set"),
+               reg("new_heads"), reg("scan"), reg("new"))),
+  assign("old", list(op("vector_ref"),
+                     reg("new_tails"), reg("scan"))),
+  assign("relocate_continue", label("update_tail")),
+  go_to(label("relocate_old_result_in_new")),
+
+"update_tail",
+  perform(list(op("vector_set"),
+               reg("new_tails"), reg("scan"), reg("new"))),
+  assign("scan", list(op("+"), reg("scan"), constant(1))),
+  go_to(label("gc_loop")),`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+A sub-rotina `relocate_old_result_in_new` realoca objetos da seguinte forma: se o objeto a ser realocado (apontado por `old`) não é um par, então retornamos o mesmo ponteiro para o objeto inalterado (em `new`). (Por exemplo, podemos estar escaneando um par cujo `head` é o número 4. Se representarmos o `head` por `n4`, conforme descrito na seção 5.3.1, então queremos que o ponteiro `head` "realocado" ainda seja `n4`.) Caso contrário, devemos realizar a realocação. Se a posição `head` do par a ser realocado contém uma tag de coração partido, então o par de fato já foi movido, então recuperamos o endereço de encaminhamento (da posição `tail` do coração partido) e retornamos isto em `new`. Se o ponteiro em `old` aponta para um par ainda não movido, então movemos o par para a primeira célula livre na nova memória (apontada por `free`) e configuramos o coração partido armazenando uma tag de coração partido e endereço de encaminhamento na localização antiga. A sub-rotina `relocate_old_result_in_new` usa um registrador `oldht` para guardar o `head` ou o `tail` do objeto apontado por `old`.[^6]
+
+[^6]: O coletor de lixo usa o predicado de baixo nível `is_pointer_to_pair` em vez da operação de estrutura de lista `is_pair` porque em um sistema real pode haver várias coisas que são tratadas como pares para propósitos de coleta de lixo. Por exemplo, em um sistema que está em conformidade com o padrão IEEE, um objeto de função pode ser implementado como um tipo especial de "par" que não satisfaz o predicado `is_pair`. Para propósitos de simulação, `is_pointer_to_pair` pode ser implementado como `is_pair`.
+
+<CodePlayground
+  code={`"relocate_old_result_in_new",
+  test(list(op("is_pointer_to_pair"), reg("old"))),
+  branch(label("pair")),
+  assign("new", reg("old")),
+  go_to(reg("relocate_continue")),
+"pair",
+  assign("oldht", list(op("vector_ref"),
+                       reg("the_heads"), reg("old"))),
+  test(list(op("is_broken_heart"), reg("oldht"))),
+  branch(label("already_moved")),
+  assign("new", reg("free")),     // nova localização para o par
+  // Atualizar ponteiro free
+  assign("free", list(op("+"), reg("free"), constant(1))),
+  // Copiar o head e tail para a nova memória
+  perform(list(op("vector_set"),
+               reg("new_heads"), reg("new"),
+               reg("oldht"))),
+  assign("oldht", list(op("vector_ref"),
+                       reg("the_tails"), reg("old"))),
+  perform(list(op("vector_set"),
+               reg("new_tails"), reg("new"),
+               reg("oldht"))),
+  // Construir o coração partido
+  perform(list(op("vector_set"),
+               reg("the_heads"), reg("old"),
+               constant("broken_heart"))),
+  perform(list(op("vector_set"),
+               reg("the_tails"), reg("old"),
+               reg("new"))),
+  go_to(reg("relocate_continue")),
+"already_moved",
+  assign("new", list(op("vector_ref"),
+                     reg("the_tails"), reg("old"))),
+  go_to(reg("relocate_continue")),`}
+  height={700}
+  showLineNumbers={true}
+/>
+
+No final do processo de coleta de lixo, intercambiamos o papel das memórias antiga e nova intercambiando ponteiros: intercambiando `the_heads` com `new_heads`, e `the_tails` com `new_tails`. Estaremos então prontos para realizar outra coleta de lixo na próxima vez que a memória acabar.
+
+<CodePlayground
+  code={`"gc_flip",
+  assign("temp", reg("the_tails")),
+  assign("the_tails", reg("new_tails")),
+  assign("new_tails", reg("temp")),
+  assign("temp", reg("the_heads")),
+  assign("the_heads", reg("new_heads")),
+  assign("new_heads", reg("temp"))`}
+  height={220}
+  showLineNumbers={true}
+/>

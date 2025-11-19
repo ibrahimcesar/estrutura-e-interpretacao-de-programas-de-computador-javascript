@@ -1,0 +1,43 @@
+---
+title: 5.1.5 Resumo de Instruções
+---
+
+# 5.1.5 Resumo de Instruções
+
+Uma instrução do controlador em nossa linguagem de máquina de registradores tem uma das seguintes formas, onde cada *input*<sub>i</sub> é `reg(`*register-name*`)` ou `constant(`*constant-value*`)`.
+
+Estas instruções foram introduzidas na seção 5.1.1:
+
+```javascript
+assign(register-name, reg(register-name))
+
+assign(register-name, constant(constant-value))
+
+assign(register-name, list(op(operation-name), input₁, ..., inputₙ))
+
+perform(list(op(operation-name), input₁, ..., inputₙ))
+
+test(list(op(operation-name), input₁, ..., inputₙ))
+
+branch(label(label-name))
+
+go_to(label(label-name))
+```
+
+O uso de registradores para conter rótulos foi introduzido na seção 5.1.3:
+
+```javascript
+assign(register-name, label(label-name))
+
+go_to(reg(register-name))
+```
+
+Instruções para usar a pilha foram introduzidas na seção 5.1.4:
+
+```javascript
+save(register-name)
+
+restore(register-name)
+```
+
+O único tipo de *constant-value* que vimos até agora é um número, mas mais tarde também usaremos strings e listas. Por exemplo, `constant("abc")` é a string `"abc"`, `constant(null)` é a lista vazia, e `constant(list("a", "b", "c"))` é a lista `list("a", "b", "c")`.

@@ -1,0 +1,335 @@
+---
+title: 5.5.2 Compilando Expressões
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.5.2 Compilando Expressões
+
+Nesta seção e na próxima, implementamos os geradores de código para os quais a função `compile` despacha.
+
+## Compilando código de ligação
+
+Em geral, a saída de cada gerador de código terminará com instruções—geradas pela função `compile_linkage`—que implementam a ligação requerida. Se a ligação é `"return"`, então devemos gerar a instrução `go_to(reg("continue"))`. Isso precisa do registrador `continue` e não modifica nenhum registrador. Se a ligação é `"next"`, então não precisamos incluir nenhuma instrução adicional. Caso contrário, a ligação é um rótulo, e geramos um `go_to` para esse rótulo, uma instrução que não precisa ou modifica nenhum registrador.
+
+<CodePlayground
+  code={`function compile_linkage(linkage) {
+    return linkage === "return"
+           ? make_instruction_sequence(list("continue"), null,
+                                       list(go_to(reg("continue"))))
+           : linkage === "next"
+           ? make_instruction_sequence(null, null, null)
+           : make_instruction_sequence(null, null,
+                                       list(go_to(label(linkage))));
+}`}
+  height={200}
+/>
+
+O código de ligação é anexado a uma sequência de instruções por `preserving` o registrador `continue`, já que uma ligação `"return"` exigirá o registrador `continue`: Se a sequência de instruções dada modifica `continue` e o código de ligação precisa dele, `continue` será salvo e restaurado.
+
+<CodePlayground
+  code={`function end_with_linkage(linkage, instruction_sequence) {
+    return preserving(list("continue"),
+                      instruction_sequence,
+                      compile_linkage(linkage));
+}`}
+  height={150}
+/>
+
+## Compilando componentes simples
+
+Os geradores de código para expressões literais e nomes constroem sequências de instruções que atribuem o valor requerido ao registrador alvo e então prosseguem conforme especificado pelo descritor de ligação.
+
+O valor literal é extraído em tempo de compilação do componente sendo compilado e colocado na parte constante da instrução `assign`. Para um nome, uma instrução é gerada para usar a operação `lookup_symbol_value` quando o programa compilado for executado, para procurar o valor associado a um símbolo no ambiente atual. Como um valor literal, o símbolo é extraído em tempo de compilação do componente sendo compilado. Assim, `symbol_of_name(component)` é executado apenas uma vez, quando o programa está sendo compilado, e o símbolo aparece como uma constante na instrução `assign`.
+
+<CodePlayground
+  code={`function compile_literal(component, target, linkage) {
+    const literal = literal_value(component);
+    return end_with_linkage(linkage,
+               make_instruction_sequence(null, list(target),
+                   list(assign(target, constant(literal)))));
+}
+function compile_name(component, target, linkage) {
+    const symbol = symbol_of_name(component);
+    return end_with_linkage(linkage,
+               make_instruction_sequence(list("env"), list(target),
+                   list(assign(target,
+                               list(op("lookup_symbol_value"),
+                                    constant(symbol),
+                                    reg("env"))))));
+}`}
+  height={350}
+/>
+
+Essas instruções de atribuição modificam o registrador alvo, e a que procura um símbolo precisa do registrador `env`.
+
+Atribuições e declarações são tratadas de modo muito parecido com como são no interpretador. A função `compile_assignment_declaration` gera recursivamente código que calcula o valor a ser associado ao símbolo e anexa a ele uma sequência de duas instruções que atualiza o valor associado ao símbolo no ambiente e atribui o valor de todo o componente (o valor atribuído para uma atribuição ou `undefined` para uma declaração) ao registrador alvo.
+
+A compilação recursiva tem alvo `val` e ligação `"next"` de modo que o código colocará seu resultado em `val` e continuará com o código que é anexado depois dele. A anexação é feita preservando `env`, já que o ambiente é necessário para atualizar a associação símbolo-valor e o código para calcular o valor poderia ser a compilação de uma expressão complexa que poderia modificar os registradores de maneiras arbitrárias.
+
+<CodePlayground
+  code={`function compile_assignment(component, target, linkage) {
+    return compile_assignment_declaration(
+               assignment_symbol(component),
+               assignment_value_expression(component),
+               reg("val"),
+               target, linkage);
+}
+
+function compile_declaration(component, target, linkage) {
+    return compile_assignment_declaration(
+               declaration_symbol(component),
+               declaration_value_expression(component),
+               constant(undefined),
+               target, linkage);
+}
+function compile_assignment_declaration(
+             symbol, value_expression, final_value,
+             target, linkage) {
+    const get_value_code = compile(value_expression, "val", "next");
+    return end_with_linkage(linkage,
+               preserving(list("env"),
+                   get_value_code,
+                   make_instruction_sequence(list("env", "val"),
+                                             list(target),
+                       list(perform(list(op("assign_symbol_value"),
+                                         constant(symbol),
+                                         reg("val"),
+                                         reg("env"))),
+                            assign(target, final_value)))));
+}`}
+  height={550}
+/>
+
+A sequência de duas instruções anexada requer `env` e `val` e modifica o alvo. Note que embora preservemos `env` para esta sequência, não preservamos `val`, porque o `get_value_code` é projetado para colocar explicitamente seu resultado em `val` para uso por esta sequência. (De fato, se preservássemos `val`, teríamos um bug, porque isso faria com que o conteúdo anterior de `val` fosse restaurado logo após o `get_value_code` ser executado.)
+
+## Compilando condicionais
+
+O código para um condicional compilado com um dado alvo e ligação tem a forma
+
+```javascript
+// compilação do predicado, alvo val, ligação "next"
+  test(list(op("is_falsy"), reg("val"))),
+  branch(label("false_branch")),
+"true_branch",
+  // compilação do consequente com alvo dado e ligação dada ou after_cond
+"false_branch",
+  // compilação da alternativa com alvo e ligação dados
+"after_cond"
+```
+
+Para gerar este código, compilamos o predicado, o consequente e a alternativa, e combinamos o código resultante com instruções para testar o resultado do predicado e com rótulos recém-gerados para marcar os ramos verdadeiro e falso e o fim do condicional.[^1] Neste arranjo de código, devemos desviar do ramo verdadeiro se o teste for falso. A única complicação leve é em como a ligação para o ramo verdadeiro deve ser tratada. Se a ligação para o condicional é `"return"` ou um rótulo, então os ramos verdadeiro e falso usarão ambos essa mesma ligação. Se a ligação é `"next"`, o ramo verdadeiro termina com um salto em torno do código para o ramo falso até o rótulo no fim do condicional.
+
+[^1]: Não podemos simplesmente usar os rótulos `true_branch`, `false_branch` e `after_cond` como mostrados acima, porque pode haver mais de um condicional no programa. O compilador usa a função `make_label` para gerar rótulos. A função `make_label` recebe uma string como argumento e retorna uma nova string que começa com a string dada. Por exemplo, chamadas sucessivas a `make_label("a")` retornariam `"a1"`, `"a2"`, e assim por diante. A função `make_label` pode ser implementada de modo similar à geração de nomes de variáveis únicos na linguagem de consulta, da seguinte forma:
+```javascript
+let label_counter = 0;
+
+function new_label_number() {
+    label_counter = label_counter + 1;
+    return label_counter;
+}
+function make_label(string) {
+    return string + stringify(new_label_number());
+}
+```
+
+<CodePlayground
+  code={`function compile_conditional(component, target, linkage) {
+    const t_branch = make_label("true_branch");
+    const f_branch = make_label("false_branch");
+    const after_cond = make_label("after_cond");
+    const consequent_linkage =
+            linkage === "next" ? after_cond : linkage;
+    const p_code = compile(conditional_predicate(component),
+                           "val", "next");
+    const c_code = compile(conditional_consequent(component),
+                           target, consequent_linkage);
+    const a_code = compile(conditional_alternative(component),
+                           target, linkage);
+    return preserving(list("env", "continue"),
+             p_code,
+             append_instruction_sequences(
+               make_instruction_sequence(list("val"), null,
+                 list(test(list(op("is_falsy"), reg("val"))),
+                      branch(label(f_branch)))),
+               append_instruction_sequences(
+                 parallel_instruction_sequences(
+                   append_instruction_sequences(t_branch, c_code),
+                   append_instruction_sequences(f_branch, a_code)),
+                 after_cond)));
+}`}
+  height={500}
+/>
+
+O registrador `env` é preservado em torno do código do predicado porque ele poderia ser necessário pelos ramos verdadeiro e falso, e `continue` é preservado porque ele poderia ser necessário pelo código de ligação nesses ramos. O código para os ramos verdadeiro e falso (que não são executados sequencialmente) é anexado usando um combinador especial `parallel_instruction_sequences` descrito na seção 5.5.4.
+
+## Compilando sequências
+
+A compilação de sequências de declarações espelha sua avaliação no avaliador de controle explícito com uma exceção: Se uma declaração de retorno aparece em qualquer lugar em uma sequência, nós a tratamos como se fosse a última declaração. Cada declaração da sequência é compilada—a última declaração (ou uma declaração de retorno) com a ligação especificada para a sequência, e as outras declarações com ligação `"next"` (para executar o resto da sequência). As sequências de instruções para as declarações individuais são anexadas para formar uma única sequência de instruções, de tal modo que `env` (necessário para o resto da sequência) e `continue` (possivelmente necessário para a ligação no fim da sequência) sejam preservados.[^2]
+
+[^2]: O registrador `continue` seria necessário para uma ligação `"return"`, que pode resultar de uma compilação por `compile_and_go` (seção 5.5.7).
+
+<CodePlayground
+  code={`function compile_sequence(seq, target, linkage) {
+    return is_empty_sequence(seq)
+           ? compile_literal(make_literal(undefined), target, linkage)
+           : is_last_statement(seq) ||
+                 is_return_statement(first_statement(seq))
+           ? compile(first_statement(seq), target, linkage)
+           : preserving(list("env", "continue"),
+                 compile(first_statement(seq), target, "next"),
+                 compile_sequence(rest_statements(seq),
+                                  target, linkage));
+}`}
+  height={250}
+/>
+
+Tratar uma declaração de retorno como se fosse a última declaração em uma sequência evita compilar qualquer "código morto" após a declaração de retorno que nunca pode ser executado. Remover a verificação `is_return_statement` não muda o comportamento do programa objeto; no entanto, há muitas razões para não compilar código morto, que estão além do escopo deste livro (segurança, tempo de compilação, tamanho do código objeto, etc.), e muitos compiladores dão avisos para código morto.[^3]
+
+[^3]: Nosso compilador não detecta todo código morto. Por exemplo, uma declaração condicional cujos ramos consequente e alternativo ambos terminam em uma declaração de retorno não impedirá declarações subsequentes de serem compiladas. Veja os exercícios 5.36 e 5.37.
+
+## Compilando blocos
+
+Um bloco é compilado prefixando uma instrução `assign` ao corpo compilado do bloco. A atribuição estende o ambiente atual por um quadro que vincula os nomes declarados no bloco ao valor `"*unassigned*"`. Esta operação tanto precisa quanto modifica o registrador `env`.
+
+<CodePlayground
+  code={`function compile_block(stmt, target, linkage) {
+    const body = block_body(stmt);
+    const locals = scan_out_declarations(body);
+    const unassigneds = list_of_unassigned(locals);
+    return append_instruction_sequences(
+               make_instruction_sequence(list("env"), list("env"),
+                   list(assign("env", list(op("extend_environment"),
+                                           constant(locals),
+                                           constant(unassigneds),
+                                           reg("env"))))),
+               compile(body, target, linkage));
+}`}
+  height={300}
+/>
+
+## Compilando expressões lambda
+
+Expressões lambda constroem funções. O código objeto para uma expressão lambda deve ter a forma
+
+```javascript
+// construir objeto de função e atribuí-lo ao registrador alvo
+// ligação
+```
+
+Quando compilamos a expressão lambda, também geramos o código para o corpo da função. Embora o corpo não seja executado no momento da construção da função, é conveniente inseri-lo no código objeto logo após o código para a expressão lambda. Se a ligação para a expressão lambda é um rótulo ou `"return"`, isso está bem. Mas se a ligação é `"next"`, precisaremos pular o código para o corpo da função usando uma ligação que salta para um rótulo que é inserido após o corpo. O código objeto, portanto, tem a forma
+
+```javascript
+// construir objeto de função e atribuí-lo ao registrador alvo
+// código para ligação dada ou go_to(label("after_lambda"))
+// compilação do corpo da função
+"after_lambda"
+```
+
+A função `compile_lambda_expression` gera o código para construir o objeto de função seguido pelo código para o corpo da função. O objeto de função será construído em tempo de execução combinando o ambiente atual (o ambiente no ponto de declaração) com o ponto de entrada ao corpo da função compilada (um rótulo recém-gerado).[^4]
+
+[^4]: Precisamos de operações de máquina para implementar uma estrutura de dados para representar funções compiladas, análoga à estrutura para funções compostas descrita na seção 4.1.3:
+```javascript
+function make_compiled_function(entry, env) {
+    return list("compiled_function", entry, env);
+}
+function is_compiled_function(fun) {
+    return is_tagged_list(fun, "compiled_function");
+}
+function compiled_function_entry(c_fun) {
+    return head(tail(c_fun));
+}
+function compiled_function_env(c_fun) {
+    return head(tail(tail(c_fun)));
+}
+```
+
+<CodePlayground
+  code={`function compile_lambda_expression(exp, target, linkage) {
+    const fun_entry = make_label("entry");
+    const after_lambda = make_label("after_lambda");
+    const lambda_linkage =
+            linkage === "next" ? after_lambda : linkage;
+    return append_instruction_sequences(
+               tack_on_instruction_sequence(
+                   end_with_linkage(lambda_linkage,
+                       make_instruction_sequence(list("env"),
+                                                 list(target),
+                           list(assign(target,
+                                    list(op("make_compiled_function"),
+                                         label(fun_entry),
+                                         reg("env")))))),
+                   compile_lambda_body(exp, fun_entry)),
+               after_lambda);
+}`}
+  height={350}
+/>
+
+A função `compile_lambda_expression` usa o combinador especial `tack_on_instruction_sequence` (da seção 5.5.4) em vez de `append_instruction_sequences` para anexar o corpo da função ao código da expressão lambda, porque o corpo não faz parte da sequência de instruções que será executada quando a sequência combinada for inserida; em vez disso, está na sequência apenas porque esse era um lugar conveniente para colocá-lo.
+
+A função `compile_lambda_body` constrói o código para o corpo da função. Este código começa com um rótulo para o ponto de entrada. Em seguida, vêm instruções que farão com que o ambiente de avaliação em tempo de execução mude para o ambiente correto para avaliar o corpo da função—a saber, o ambiente de definição da função, estendido para incluir as vinculações dos parâmetros aos argumentos com os quais a função é chamada. Depois disso vem o código para o corpo da função, aumentado para garantir que ele termine com uma declaração de retorno.
+
+O corpo aumentado é compilado com alvo `val` de modo que seu valor de retorno será colocado em `val`. O descritor de ligação passado para esta compilação é irrelevante, pois será ignorado.[^5] Como um argumento de ligação é requerido, arbitrariamente escolhemos `"next"`.
+
+[^5]: O corpo de função aumentado é uma sequência terminando com uma declaração de retorno. A compilação de uma sequência de declarações usa a ligação `"next"` para todas as suas declarações componentes exceto a última, para a qual usa a ligação dada. Neste caso, a última declaração é uma declaração de retorno, e como veremos na seção 5.5.3, uma declaração de retorno sempre usa o descritor de ligação `"return"` para sua expressão de retorno. Assim, todos os corpos de função terminarão com uma ligação `"return"`, não a `"next"` que passamos como argumento de ligação para `compile` em `compile_lambda_body`.
+
+<CodePlayground
+  code={`function compile_lambda_body(exp, fun_entry) {
+    const params  = lambda_parameter_symbols(exp);
+    return append_instruction_sequences(
+        make_instruction_sequence(list("env", "fun", "argl"),
+                                  list("env"),
+            list(fun_entry,
+                 assign("env",
+                        list(op("compiled_function_env"),
+                             reg("fun"))),
+                 assign("env",
+                        list(op("extend_environment"),
+                             constant(params),
+                             reg("argl"),
+                             reg("env"))))),
+        compile(append_return_undefined(lambda_body(exp)),
+                "val", "next"));
+}`}
+  height={350}
+/>
+
+Para garantir que todas as funções terminem executando uma declaração de retorno, `compile_lambda_body` anexa ao corpo lambda uma declaração de retorno cuja expressão de retorno é o literal `undefined`. Para fazer isso, usa a função `append_return_undefined`, que constrói a representação de lista marcada do analisador sintático (da seção 4.1.2) de uma sequência consistindo do corpo e uma declaração `return undefined;`.
+
+<CodePlayground
+  code={`function append_return_undefined(body) {
+    return list("sequence", list(body,
+                                 list("return_statement",
+                                      list("literal", undefined))));
+}`}
+  height={150}
+/>
+
+Esta transformação simples de corpos lambda é uma terceira maneira de garantir que uma função que não retorna explicitamente tenha o valor de retorno `undefined`. No avaliador metacircular, usamos um objeto de valor de retorno, que também desempenhava um papel em parar a avaliação de uma sequência. No avaliador de controle explícito, funções que não retornavam explicitamente continuavam para um ponto de entrada que armazenava `undefined` em `val`. Veja o exercício 5.37 para uma maneira mais elegante de tratar a inserção de declarações de retorno.
+
+## Exercício 5.36
+
+A nota de rodapé 3 apontou que o compilador não identifica todas as instâncias de código morto. O que seria necessário de um compilador para detectar todas as instâncias de código morto?
+
+Dica: A resposta depende de como definimos código morto. Uma definição possível (e útil) é "código seguindo uma declaração de retorno em uma sequência"—mas e quanto ao código no ramo consequente de `if (false) ...` ou código seguindo uma chamada a `run_forever()` do exercício 3.26?
+
+## Exercício 5.37
+
+O design atual de `append_return_undefined` é um pouco bruto: Ele sempre anexa um `return undefined;` a um corpo lambda, mesmo que já exista uma declaração de retorno em cada caminho de execução do corpo. Reescreva `append_return_undefined` de modo que insira `return undefined;` no fim de apenas aqueles caminhos que não contêm uma declaração de retorno. Teste sua solução nas funções abaixo, substituindo quaisquer expressões por e₁ e e₂ e quaisquer declarações (não-retorno) por s₁ e s₂. Em `t`, uma declaração de retorno deve ser adicionada ou em ambos os `(*)` ou apenas em `(**)`. Em `w` e `h`, uma declaração de retorno deve ser adicionada em um dos `(*)`. Em `m`, nenhuma declaração de retorno deve ser adicionada.
+
+```javascript
+function t(b) {   function w(b) {    function m(b) {    function h(b1, b2) {
+   if (b) {          if (b) {           if (b) {           if (b1) {
+      s₁              return e₁;             return e₁;             return e₁;
+      (*)                                                   } else {
+   } else {          } else {           } else {              if (b2) {
+      s₂                 s₁                     return e₂;             s₁
+      (*)               (*)                                      (*)
+   }                 }                  }                     } else {
+   (**)              (*)                                         return e₂;
+}                 }                  }                        }
+                                                              (*)
+                                                           }
+                                                           (*)
+                                                        }
+```

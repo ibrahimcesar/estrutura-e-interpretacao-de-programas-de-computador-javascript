@@ -175,6 +175,12 @@ Para cada frame no fluxo de entrada, usamos `find_assertions` (seção 4.4.4.3) 
 
 Manipulamos consultas `and` conforme ilustrado na figura 4.5 com a função `conjoin`, que recebe como entradas os conjuntos e o fluxo de frames e retorna o fluxo de frames estendidos. Primeiro, `conjoin` processa o fluxo de frames para encontrar o fluxo de todas as extensões de frames possíveis que satisfazem a primeira consulta na conjunção. Então, usando isso como o novo fluxo de frames, ela aplica recursivamente `conjoin` ao resto das consultas.
 
+<Figure
+  src="/img/chapter-4/Fig4.5.svg"
+  alt="Processamento de consultas AND com fluxos de frames"
+  caption="Figura 4.5: Processamento de consultas AND. O fluxo de frames é processado sequencialmente através de cada conjuncto."
+/>
+
 ```javascript
 function conjoin(conjuncts, frame_stream) {
    return is_empty_conjunction(conjuncts)
@@ -194,6 +200,12 @@ put("and", "evaluate_query", conjoin);
 configura `evaluate_query` para despachar para `conjoin` quando uma forma `and` é encontrada.
 
 Manipulamos consultas `or` de forma similar, como mostrado na figura 4.6. Os fluxos de saída para os vários disjuntos do `or` são computados separadamente e mesclados usando a função `interleave_delayed` da seção 4.4.4.6. (Veja os exercícios 4.71 e 4.72.)
+
+<Figure
+  src="/img/chapter-4/Fig4.6.svg"
+  alt="Processamento de consultas OR com fluxos de frames"
+  caption="Figura 4.6: Processamento de consultas OR. Os fluxos de frames dos disjuntos são intercalados para formar o resultado final."
+/>
 
 ```javascript
 function disjoin(disjuncts, frame_stream) {

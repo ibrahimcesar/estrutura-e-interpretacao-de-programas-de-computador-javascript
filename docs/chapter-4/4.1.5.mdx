@@ -14,19 +14,68 @@ function factorial(n) {
 
 Podemos considerar este programa como a descrição de uma máquina contendo partes que decrementam, multiplicam e testam igualdade, juntamente com um switch de duas posições e outra máquina de fatorial. (A máquina de fatorial é infinita porque contém outra máquina de fatorial dentro dela.) A figura 4.2 é um diagrama de fluxo para a máquina de fatorial, mostrando como as partes são conectadas.
 
-<Figure
-  src="/img/chapter-4/ch4-Z-G-2.svg"
-  alt="O programa fatorial, visto como uma máquina abstrata"
-  caption="O programa fatorial, visto como uma máquina abstrata."
-/>
+```mermaid
+flowchart TB
+    Start([entrada: n]) --> Test{teste<br/>igualdade<br/>n === 1?}
+
+    Test -->|sim| Return1[saída: 1]
+    Test -->|não| Dec[decremento<br/>n - 1]
+
+    Dec --> Factorial[factorial<br/>máquina de fatorial<br/><i>recursiva</i>]
+
+    Factorial --> Mult[multiplicação<br/>resultado × n]
+    Mult --> ReturnResult([saída: resultado])
+
+    style Test fill:#FFE6E6,stroke:#FF6B6B,stroke-width:2px
+    style Dec fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+    style Mult fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+    style Factorial fill:#FFF9C4,stroke:#FFA000,stroke-width:3px,stroke-dasharray: 5 5
+    style Return1 fill:#C8E6C9,stroke:#4CAF50,stroke-width:2px
+    style ReturnResult fill:#C8E6C9,stroke:#4CAF50,stroke-width:2px
+    style Start fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+```
+
+**Figura 4.2:** O programa fatorial, visto como uma máquina abstrata. A máquina contém um teste de igualdade (vermelho), operações de decremento e multiplicação (azul), e recursivamente contém outra máquina de fatorial (amarelo tracejado).
 
 De maneira similar, podemos considerar o avaliador como uma máquina muito especial que recebe como entrada uma descrição de uma máquina. Dada esta entrada, o avaliador se configura para emular a máquina descrita. Por exemplo, se alimentarmos nosso avaliador com a definição de `factorial`, como mostrado na figura 4.3, o avaliador será capaz de computar fatoriais.
 
-<Figure
-  src="/img/chapter-4/ch4-Z-G-3.svg"
-  alt="O avaliador emulando uma máquina de fatorial"
-  caption="O avaliador emulando uma máquina de fatorial."
-/>
+```mermaid
+flowchart TB
+    subgraph Evaluator["AVALIADOR (Máquina Universal)"]
+        direction TB
+        Input[["entrada:<br/>definição de factorial"]] --> Parse[analisador<br/>sintático]
+        Parse --> EvalCycle[ciclo<br/>evaluate-apply]
+
+        subgraph EmulatedMachine["Máquina Emulada"]
+            direction TB
+            ETest{teste<br/>n === 1?}
+            EDec[decremento<br/>n - 1]
+            EFact[chamada<br/>recursiva]
+            EMult[multiplicação<br/>× n]
+            ETest -->|sim| EReturn1[retorna 1]
+            ETest -->|não| EDec --> EFact --> EMult --> EReturnResult[retorna resultado]
+
+            style ETest fill:#FFE6E6,stroke:#FF6B6B,stroke-width:1px
+            style EDec fill:#E3F2FD,stroke:#2196F3,stroke-width:1px
+            style EMult fill:#E3F2FD,stroke:#2196F3,stroke-width:1px
+            style EFact fill:#FFF9C4,stroke:#FFA000,stroke-width:2px,stroke-dasharray: 3 3
+            style EReturn1 fill:#C8E6C9,stroke:#4CAF50,stroke-width:1px
+            style EReturnResult fill:#C8E6C9,stroke:#4CAF50,stroke-width:1px
+        end
+
+        EvalCycle --> EmulatedMachine
+        EmulatedMachine --> Output[["saída:<br/>factorial(n)"]]
+    end
+
+    style Evaluator fill:#F5F5F5,stroke:#424242,stroke-width:4px
+    style Input fill:#E1BEE7,stroke:#7B1FA2,stroke-width:2px
+    style Output fill:#C8E6C9,stroke:#2E7D32,stroke-width:2px
+    style Parse fill:#BBDEFB,stroke:#1976D2,stroke-width:2px
+    style EvalCycle fill:#BBDEFB,stroke:#1976D2,stroke-width:2px
+    style EmulatedMachine fill:#FFFDE7,stroke:#F57F17,stroke-width:2px,stroke-dasharray: 5 5
+```
+
+**Figura 4.3:** O avaliador emulando uma máquina de fatorial. O avaliador atua como uma máquina universal que recebe a definição da função `factorial` como entrada, analisa-a sintaticamente, e através do ciclo evaluate-apply, emula internamente a máquina de fatorial descrita na Figura 4.2.
 
 Desta perspectiva, nosso avaliador é visto como uma _máquina universal_. Ele imita outras máquinas quando estas são descritas como programas JavaScript.[^1]
 

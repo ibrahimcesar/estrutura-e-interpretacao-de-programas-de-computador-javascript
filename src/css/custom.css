@@ -4,6 +4,9 @@
  * Este arquivo contém estilos customizados para o tema do Docusaurus.
  */
 
+/* Importar estilos do modo leitura */
+@import './read-mode.css';
+
 :root {
   /* Cores primárias */
   --ifm-color-primary: #f7df1e;
@@ -31,24 +34,6 @@
   /* Espaçamento */
   --ifm-spacing-horizontal: 1.5rem;
   --ifm-spacing-vertical: 1.5rem;
-
-  /* Performance & Legibilidade */
-  --ifm-font-size-base: 17px; /* Aumentado de 16px para melhor leitura */
-}
-
-/* Melhorar legibilidade do conteúdo */
-.markdown {
-  line-height: 1.7; /* Aumentado de 1.6 */
-  font-size: 1.05rem;
-  max-width: 75ch; /* Limita largura para ~75 caracteres por linha */
-}
-
-.markdown p {
-  margin-bottom: 1.25rem; /* Mais espaço entre parágrafos */
-}
-
-.markdown pre {
-  margin: 2rem 0; /* Mais respiro ao redor de blocos de código */
 }
 
 /* Modo escuro */
@@ -178,17 +163,6 @@
   text-decoration: none;
 }
 
-/* Modo escuro - garantir contraste no hover */
-[data-theme='dark'] .pagination-nav__link:hover {
-  background-color: var(--ifm-color-primary);
-  color: #000 !important;
-}
-
-[data-theme='dark'] .pagination-nav__link:hover .pagination-nav__label,
-[data-theme='dark'] .pagination-nav__link:hover .pagination-nav__sublabel {
-  color: #000 !important;
-}
-
 /* Sidebar */
 .theme-doc-sidebar-container {
   border-right: 1px solid var(--ifm-toc-border-color);
@@ -284,7 +258,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Animações - Respeitar preferência de movimento reduzido */
+/* Animações */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -296,18 +270,8 @@ html {
   }
 }
 
-/* Apenas animar se o usuário não preferir movimento reduzido */
-@media (prefers-reduced-motion: no-preference) {
-  .markdown > * {
-    animation: fadeIn 0.3s ease-in;
-  }
-}
-
-/* Para usuários com preferência de movimento reduzido, sem animação */
-@media (prefers-reduced-motion: reduce) {
-  .markdown > * {
-    animation: none;
-  }
+.markdown > * {
+  animation: fadeIn 0.3s ease-in;
 }
 
 /* Banner de anúncio */
@@ -334,6 +298,25 @@ div[class*='announcementBar'] a:hover {
 .footer__title {
   font-weight: 600;
   margin-bottom: 1rem;
+}
+
+/* Sandpack CodePlayground - Garantir visibilidade */
+.sp-wrapper,
+.sp-stack {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 400px !important;
+}
+
+.sp-layout {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 400px !important;
+  width: 100% !important;
 }
 
 /* Sandpack CodePlayground - Aumentar tamanho da fonte do output */
@@ -379,202 +362,4 @@ button[aria-label="Run code"]::after {
 .sp-console-item .sp-console-error,
 .sp-console-item .sp-console-warning {
   display: block !important;
-}
-
-/* Reorganizar layout do painel lateral - dar mais espaço ao output */
-.sp-layout {
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Console com mais espaço */
-.sp-console {
-  flex: 1 1 auto !important;
-  min-height: 200px !important;
-  order: 1 !important;
-}
-
-/* Botões de ação (reload, open sandbox) na parte inferior */
-.sp-button-group,
-.sp-preview-actions {
-  order: 2 !important;
-  margin-top: auto !important;
-  padding-top: 8px !important;
-  border-top: 1px solid var(--sp-colors-surface2, #e4e4e7);
-}
-
-/* === Busca Local === */
-
-/* Container da busca */
-.DocSearch-Button {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.DocSearch-Button:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Placeholder da busca */
-.DocSearch-Button-Placeholder {
-  font-size: 0.95rem;
-}
-
-/* Modal de busca */
-.DocSearch-Modal {
-  border-radius: 12px;
-}
-
-/* Resultados da busca */
-.DocSearch-Hit {
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-}
-
-/* Destaque dos termos encontrados */
-.DocSearch-Hit mark {
-  background-color: var(--ifm-color-primary-lightest);
-  color: #000;
-  font-weight: 600;
-  padding: 0 2px;
-}
-
-[data-theme='dark'] .DocSearch-Hit mark {
-  background-color: var(--ifm-color-primary);
-  color: #000;
-}
-
-/* Ícone de busca na navbar */
-.navbar__search {
-  margin-right: 1rem;
-}
-
-/* Container de busca no mobile */
-@media (max-width: 996px) {
-  .navbar__search {
-    margin-right: 0.5rem;
-  }
-}
-
-/* === Acessibilidade === */
-
-/* Indicadores de foco melhorados */
-*:focus-visible {
-  outline: 3px solid var(--ifm-color-primary);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-[data-theme='dark'] *:focus-visible {
-  outline-color: var(--ifm-color-primary-light);
-}
-
-/* Links com foco mais visível */
-a:focus-visible {
-  outline: 3px solid var(--ifm-color-primary);
-  outline-offset: 3px;
-}
-
-/* Botões com foco */
-button:focus-visible {
-  outline: 3px solid var(--ifm-color-primary);
-  outline-offset: 2px;
-}
-
-/* === Modo de Leitura Focado === */
-
-/* Botão de toggle do modo de leitura - compacto no navbar */
-.reading-mode-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  margin-right: 0.5rem;
-  background-color: var(--ifm-color-primary-lightest);
-  border: 1px solid var(--ifm-color-primary);
-  border-radius: 4px;
-  color: var(--ifm-font-color-base);
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.reading-mode-toggle .reading-mode-text {
-  line-height: 1;
-}
-
-.reading-mode-toggle:hover {
-  background-color: var(--ifm-color-primary);
-  color: #000;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-}
-
-[data-theme='dark'] .reading-mode-toggle {
-  background-color: var(--ifm-color-primary);
-  color: #000;
-  border-color: var(--ifm-color-primary-light);
-}
-
-[data-theme='dark'] .reading-mode-toggle:hover {
-  background-color: var(--ifm-color-primary-light);
-}
-
-/* Modo de leitura ativo - esconde sidebars */
-body.reading-mode .theme-doc-sidebar-container,
-body.reading-mode .theme-doc-toc-desktop {
-  display: none !important;
-}
-
-/* Expande o conteúdo principal quando em modo de leitura */
-body.reading-mode .main-wrapper {
-  display: flex;
-  justify-content: center;
-}
-
-body.reading-mode .docMainContainer_node_modules-\@docusaurus-theme-classic-lib-theme-DocRoot-Layout-Main-styles-module,
-body.reading-mode .container {
-  max-width: 900px !important;
-  margin: 0 auto;
-}
-
-/* Centraliza o conteúdo */
-body.reading-mode article {
-  max-width: 75ch;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-/* Ajusta breadcrumbs no modo de leitura */
-body.reading-mode .breadcrumbs {
-  max-width: 75ch;
-  margin: 0 auto 1rem;
-  padding: 0 2rem;
-}
-
-/* Ajusta paginação no modo de leitura */
-body.reading-mode .pagination-nav {
-  max-width: 75ch;
-  margin: 3rem auto 0;
-  padding: 0 2rem;
-}
-
-/* Responsividade do botão */
-@media (max-width: 996px) {
-  .reading-mode-toggle {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-  }
-
-  .reading-mode-toggle .reading-mode-text {
-    display: none;
-  }
-
-  .reading-mode-toggle svg {
-    width: 12px;
-    height: 12px;
-  }
 }

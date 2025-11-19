@@ -1,0 +1,77 @@
+---
+title: 5.1.2 Abstração no Projeto de Máquinas
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.1.2 Abstração no Projeto de Máquinas
+
+Frequentemente definiremos uma máquina para incluir operações "primitivas" que são na verdade muito complexas. Por exemplo, nas seções 5.4 e 5.5 trataremos as manipulações de ambientes do JavaScript como primitivas. Tal abstração é valiosa porque nos permite ignorar os detalhes de partes de uma máquina para que possamos nos concentrar em outros aspectos do projeto. O fato de termos varrido muita complexidade para debaixo do tapete, no entanto, não significa que um projeto de máquina seja irrealista. Podemos sempre substituir as "primitivas" complexas por operações primitivas mais simples.
+
+Considere a máquina MDC. A máquina tem uma instrução que calcula o resto dos conteúdos dos registradores `a` e `b` e atribui o resultado ao registrador `t`. Se quisermos construir a máquina MDC sem usar uma operação de resto primitiva, devemos especificar como calcular restos em termos de operações mais simples, como subtração. De fato, podemos escrever uma função JavaScript que encontra restos desta forma:
+
+<CodePlayground
+  code={`function remainder(n, d) {
+    return n < d
+           ? n
+           : remainder(n - d, d);
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+Assim, podemos substituir a operação de resto nos caminhos de dados da máquina MDC por uma operação de subtração e um teste de comparação. A Figura 5.5 mostra os caminhos de dados e o controlador para a máquina elaborada. A instrução
+
+```javascript
+assign("t", list(op("rem"), reg("a"), reg("b")))
+```
+
+na definição do controlador MDC é substituída por uma sequência de instruções que contém um laço, como mostrado na Figura 5.6.
+
+<CodePlayground
+  code={`controller(
+  list(
+    "test_b",
+      test(list(op("="), reg("b"), constant(0))),
+      branch(label("gcd_done")),
+      assign("t", reg("a")),
+    "rem_loop",
+      test(list(op("<"), reg("t"), reg("b"))),
+      branch(label("rem_done")),
+      assign("t", list(op("-"), reg("t"), reg("b"))),
+      go_to(label("rem_loop")),
+    "rem_done",
+      assign("a", reg("b")),
+      assign("b", reg("t")),
+      go_to(label("test_b")),
+    "gcd_done"))`}
+  height={450}
+  showLineNumbers={true}
+/>
+
+**Figura 5.6:** Sequência de instruções do controlador para a máquina MDC na Figura 5.5.
+
+## Exercício 5.6
+
+Projete uma máquina para calcular raízes quadradas usando o método de Newton, conforme descrito na seção 1.1.7 e implementado com o seguinte código na seção 1.1.8:
+
+<CodePlayground
+  code={`function sqrt(x) {
+    function is_good_enough(guess) {
+        return math_abs(square(guess) - x) < 0.001;
+    }
+    function improve(guess) {
+        return average(guess, x / guess);
+    }
+    function sqrt_iter(guess) {
+        return is_good_enough(guess)
+               ? guess
+               : sqrt_iter(improve(guess));
+    }
+    return  sqrt_iter(1);
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+Comece assumindo que as operações `is_good_enough` e `improve` estão disponíveis como primitivas. Em seguida, mostre como expandir essas operações em termos de operações aritméticas. Descreva cada versão do projeto da máquina `sqrt` desenhando um diagrama de caminho de dados e escrevendo uma definição do controlador na linguagem de máquina de registradores.

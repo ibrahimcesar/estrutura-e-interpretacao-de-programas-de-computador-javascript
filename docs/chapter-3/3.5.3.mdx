@@ -2,8 +2,8 @@
 title: 3.5.3 Explorando o Paradigma de Streams
 ---
 
-import CodePlayground from '@site/src/components/CodePlaygroundLazy';
-import HelpFooter from '@site/src/components/HelpFooter';
+import CodePlayground from '@site/src/components/CodePlayground';
+import SignalFlowDiagram from '@site/src/components/SignalFlowDiagram';
 
 # 3.5.3 Explorando o Paradigma de Streams
 
@@ -152,6 +152,10 @@ function integral(integrand, initial_value, dt) {
 }
 ```
 
+<SignalFlowDiagram type="rc-integrator" />
+
+**Figura 3.53:** Diagrama de fluxo de sinal para um integrador RC. O sinal de entrada `v` é multiplicado por `1/R`, integrado ao longo do tempo (∫dt), e então o resultado é multiplicado por `1/C` para produzir a corrente `i`. O loop de realimentação mostra como a saída do integrador influencia o estado do sistema.
+
 A figura mostra um diagrama de processamento de sinal para o integrador. O diagrama mostra claramente como as operações de stream são combinadas para processar sinais. Este ponto de vista nos permite trabalhar com sistemas altamente complexos de uma maneira modular.
 
 ## Exercício 3.63
@@ -230,5 +234,3 @@ Números que podem ser expressos como a soma de dois cubos de mais de uma maneir
 De maneira similar ao exercício 3.71, gere um stream de todos os números que podem ser escritos como a soma de dois quadrados de três maneiras diferentes (mostrando como eles podem ser escritos assim).
 
 [^1]: Ramanujan era um matemático autodidata indiano que trabalhou no início do século 20. Ele é famoso por suas contribuições profundas à teoria dos números, apesar de não ter educação formal. A história de 1729 é famosa: Quando Hardy veio visitá-lo no hospital, ele comentou que havia chegado em um táxi numerado 1729 e que isso parecia um número bastante sem interesse. Ao que Ramanujan replicou: "Não, é um número muito interessante. É o menor número expresso como a soma de dois cubos de duas maneiras diferentes."
-
-<HelpFooter />

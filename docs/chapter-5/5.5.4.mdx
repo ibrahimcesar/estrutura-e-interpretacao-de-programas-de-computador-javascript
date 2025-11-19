@@ -1,0 +1,125 @@
+---
+title: 5.5.4 Combinando Sequências de Instruções
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.5.4 Combinando Sequências de Instruções
+
+Esta seção descreve os detalhes de como sequências de instruções são representadas e combinadas. Lembre-se da seção 5.5.1 que uma sequência de instruções é representada como uma lista dos registradores necessários, dos registradores modificados, e das instruções reais. Também consideraremos um rótulo (string) como um caso degenerado de uma sequência de instruções, que não precisa ou modifica nenhum registrador. Assim, para determinar os registradores necessários e modificados por sequências de instruções, usamos os seletores
+
+<CodePlayground
+  code={`function registers_needed(s) {
+    return is_string(s) ? null : head(s);
+}
+function registers_modified(s) {
+    return is_string(s) ? null : head(tail(s));
+}
+function instructions(s) {
+    return is_string(s) ? list(s) : head(tail(tail(s)));
+}`}
+  height={250}
+/>
+
+e para determinar se uma dada sequência precisa ou modifica um dado registrador, usamos os predicados
+
+<CodePlayground
+  code={`function needs_register(seq, reg) {
+    return ! is_null(member(reg, registers_needed(seq)));
+}
+function modifies_register(seq, reg) {
+    return ! is_null(member(reg, registers_modified(seq)));
+}`}
+  height={150}
+/>
+
+Em termos desses predicados e seletores, podemos implementar os vários combinadores de sequência de instruções usados ao longo do compilador.
+
+O combinador básico é `append_instruction_sequences`. Ele recebe como argumentos duas sequências de instruções que devem ser executadas sequencialmente e retorna uma sequência de instruções cujas instruções são as instruções das duas sequências anexadas. O ponto sutil é determinar os registradores que são necessários e modificados pela sequência resultante. Ela modifica aqueles registradores que são modificados por qualquer sequência; ela precisa daqueles registradores que devem ser inicializados antes que a primeira sequência possa ser executada (os registradores necessários pela primeira sequência), juntamente com aqueles registradores necessários pela segunda sequência que não são inicializados (modificados) pela primeira sequência.
+
+A função `append_instruction_sequences` recebe duas sequências de instruções `seq1` e `seq2` e retorna a sequência de instruções cujas instruções são as instruções de `seq1` seguidas pelas instruções de `seq2`, cujos registradores modificados são aqueles registradores que são modificados por `seq1` ou `seq2`, e cujos registradores necessários são os registradores necessários por `seq1` juntamente com aqueles registradores necessários por `seq2` que não são modificados por `seq1`. (Em termos de operações de conjunto, o novo conjunto de registradores necessários é a união do conjunto de registradores necessários por `seq1` com a diferença de conjunto dos registradores necessários por `seq2` e os registradores modificados por `seq1`.) Assim, `append_instruction_sequences` é implementada como segue:
+
+<CodePlayground
+  code={`function append_instruction_sequences(seq1, seq2) {
+    return make_instruction_sequence(
+               list_union(registers_needed(seq1),
+                          list_difference(registers_needed(seq2),
+                                          registers_modified(seq1))),
+               list_union(registers_modified(seq1),
+                          registers_modified(seq2)),
+               append(instructions(seq1), instructions(seq2)));
+}`}
+  height={200}
+/>
+
+Esta função usa algumas operações simples para manipular conjuntos representados como listas, similares à representação de conjunto (não ordenado) descrita na seção 2.3.3:
+
+<CodePlayground
+  code={`function list_union(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : is_null(member(head(s1), s2))
+           ? pair(head(s1), list_union(tail(s1), s2))
+           : list_union(tail(s1), s2);
+}
+function list_difference(s1, s2) {
+    return is_null(s1)
+           ? null
+           : is_null(member(head(s1), s2))
+           ? pair(head(s1), list_difference(tail(s1), s2))
+           : list_difference(tail(s1), s2);
+}`}
+  height={300}
+/>
+
+A função `preserving`, o segundo combinador principal de sequência de instruções, recebe uma lista de registradores `regs` e duas sequências de instruções `seq1` e `seq2` que devem ser executadas sequencialmente. Ela retorna uma sequência de instruções cujas instruções são as instruções de `seq1` seguidas pelas instruções de `seq2`, com instruções apropriadas `save` e `restore` em torno de `seq1` para proteger os registradores em `regs` que são modificados por `seq1` mas necessários por `seq2`. Para realizar isso, `preserving` primeiro cria uma sequência que tem os `save`s requeridos seguidos pelas instruções de `seq1` seguidas pelos `restore`s requeridos. Esta sequência precisa dos registradores sendo salvos e restaurados além dos registradores necessários por `seq1`, e modifica os registradores modificados por `seq1` exceto para aqueles sendo salvos e restaurados. Esta sequência aumentada e `seq2` são então anexadas da maneira usual. A seguinte função implementa esta estratégia recursivamente, percorrendo a lista de registradores a serem preservados:
+
+<CodePlayground
+  code={`function preserving(regs, seq1, seq2) {
+    if (is_null(regs)) {
+        return append_instruction_sequences(seq1, seq2);
+    } else {
+        const first_reg = head(regs);
+        return needs_register(seq2, first_reg) &&
+               modifies_register(seq1, first_reg)
+               ? preserving(tail(regs),
+                     make_instruction_sequence(
+                         list_union(list(first_reg),
+                                    registers_needed(seq1)),
+                         list_difference(registers_modified(seq1),
+                                         list(first_reg)),
+                         append(list(save(first_reg)),
+                                append(instructions(seq1),
+                                       list(restore(first_reg))))),
+                     seq2)
+               : preserving(tail(regs), seq1, seq2);
+    }
+}`}
+  height={400}
+/>
+
+Outro combinador de sequências, `tack_on_instruction_sequence`, é usado por `compile_lambda_expression` para anexar um corpo de função a outra sequência. Como o corpo da função não está "em linha" para ser executado como parte da sequência combinada, seu uso de registradores não tem impacto no uso de registradores da sequência na qual está embutido. Assim, ignoramos os conjuntos de registradores necessários e modificados do corpo da função quando o anexamos à outra sequência.
+
+<CodePlayground
+  code={`function tack_on_instruction_sequence(seq, body_seq) {
+    return make_instruction_sequence(
+               registers_needed(seq),
+               registers_modified(seq),
+               append(instructions(seq), instructions(body_seq)));
+}`}
+  height={150}
+/>
+
+As funções `compile_conditional` e `compile_function_call` usam um combinador especial chamado `parallel_instruction_sequences` para anexar os dois ramos alternativos que seguem um teste. Os dois ramos nunca serão executados sequencialmente; para qualquer avaliação particular do teste, um ramo ou o outro será inserido. Por causa disso, os registradores necessários pelo segundo ramo ainda são necessários pela sequência combinada, mesmo que esses sejam modificados pelo primeiro ramo.
+
+<CodePlayground
+  code={`function parallel_instruction_sequences(seq1, seq2) {
+    return make_instruction_sequence(
+               list_union(registers_needed(seq1),
+                          registers_needed(seq2)),
+               list_union(registers_modified(seq1),
+                          registers_modified(seq2)),
+               append(instructions(seq1), instructions(seq2)));
+}`}
+  height={200}
+/>

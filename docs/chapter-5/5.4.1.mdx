@@ -1,0 +1,150 @@
+---
+title: 5.4.1 O Despachador e Avaliação Básica
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.4.1 O Despachador e Avaliação Básica
+
+O elemento central no avaliador é a sequência de instruções começando em `eval_dispatch`. Isso corresponde à função `evaluate` do avaliador metacircular descrito na seção 4.1.1. Quando o controlador inicia em `eval_dispatch`, ele avalia o componente especificado por `comp` no ambiente especificado por `env`. Quando a avaliação está completa, o controlador irá para o ponto de entrada armazenado em `continue`, e o registrador `val` irá conter o valor do componente. Assim como no `evaluate` metacircular, a estrutura de `eval_dispatch` é uma análise de casos sobre o tipo sintático do componente a ser avaliado.[^1]
+
+<CodePlayground
+  code={`"eval_dispatch",
+  test(list(op("is_literal"), reg("comp"))),
+  branch(label("ev_literal")),
+  test(list(op("is_name"), reg("comp"))),
+  branch(label("ev_name")),
+  test(list(op("is_application"), reg("comp"))),
+  branch(label("ev_application")),
+  test(list(op("is_operator_combination"), reg("comp"))),
+  branch(label("ev_operator_combination")),
+  test(list(op("is_conditional"), reg("comp"))),
+  branch(label("ev_conditional")),
+  test(list(op("is_lambda_expression"), reg("comp"))),
+  branch(label("ev_lambda")),
+  test(list(op("is_sequence"), reg("comp"))),
+  branch(label("ev_sequence")),
+  test(list(op("is_block"), reg("comp"))),
+  branch(label("ev_block")),
+  test(list(op("is_return_statement"), reg("comp"))),
+  branch(label("ev_return")),
+  test(list(op("is_function_declaration"), reg("comp"))),
+  branch(label("ev_function_declaration")),
+  test(list(op("is_declaration"), reg("comp"))),
+  branch(label("ev_declaration")),
+  test(list(op("is_assignment"), reg("comp"))),
+  branch(label("ev_assignment")),
+  go_to(label("unknown_component_type")),`}
+  height={500}
+  showLineNumbers={true}
+/>
+
+## Avaliando expressões simples
+
+Números e strings, nomes, e expressões lambda não têm subexpressões a serem avaliadas. Para estes, o avaliador simplesmente coloca o valor correto no registrador `val` e continua a execução no ponto de entrada especificado por `continue`. A avaliação de expressões simples é realizada pelo seguinte código do controlador:
+
+<CodePlayground
+  code={`"ev_literal",
+  assign("val", list(op("literal_value"), reg("comp"))),
+  go_to(reg("continue")),
+
+"ev_name",
+  assign("val", list(op("symbol_of_name"), reg("comp"), reg("env"))),
+  assign("val", list(op("lookup_symbol_value"),
+                     reg("val"), reg("env"))),
+  go_to(reg("continue")),
+
+"ev_lambda",
+  assign("unev", list(op("lambda_parameter_symbols"), reg("comp"))),
+  assign("comp", list(op("lambda_body"), reg("comp"))),
+  assign("val", list(op("make_function"),
+                     reg("unev"), reg("comp"), reg("env"))),
+  go_to(reg("continue")),`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Observe como `ev_lambda` usa os registradores `unev` e `comp` para armazenar os parâmetros e o corpo da expressão lambda para que possam ser passados para a operação `make_function`, junto com o ambiente em `env`.
+
+## Condicionais
+
+Assim como no avaliador metacircular, formas sintáticas são tratadas avaliando seletivamente fragmentos do componente. Para um condicional, devemos avaliar o predicado e decidir, com base no valor do predicado, se devemos avaliar a consequente ou a alternativa.
+
+Antes de avaliar o predicado, salvamos o próprio condicional, que está em `comp`, para que possamos extrair a consequente ou alternativa posteriormente. Para avaliar a expressão do predicado, movemos ela para o registrador `comp` e vamos para `eval_dispatch`. O ambiente no registrador `env` já é o correto no qual avaliar o predicado. No entanto, salvamos `env` porque vamos precisar dele depois para avaliar a consequente ou a alternativa. Configuramos `continue` de modo que a avaliação retome em `ev_conditional_decide` após o predicado ter sido avaliado. Primeiro, no entanto, salvamos o valor antigo de `continue`, que precisaremos depois para retornar à avaliação da instrução que está aguardando o valor do condicional.
+
+<CodePlayground
+  code={`"ev_conditional",
+  save("comp"), // salva condicional para depois
+  save("env"),
+  save("continue"),
+  assign("continue", label("ev_conditional_decide")),
+  assign("comp", list(op("conditional_predicate"), reg("comp"))),
+  go_to(label("eval_dispatch")), // avalia o predicado`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+Quando retomamos em `ev_conditional_decide` após avaliar o predicado, testamos se ele era verdadeiro ou falso e, dependendo do resultado, colocamos a consequente ou a alternativa em `comp` antes de ir para `eval_dispatch`.[^2] Note que restaurar `env` e `continue` aqui configura `eval_dispatch` para ter o ambiente correto e para continuar no lugar certo para receber o valor do condicional.
+
+<CodePlayground
+  code={`"ev_conditional_decide",
+  restore("continue"),
+  restore("env"),
+  restore("comp"),
+  test(list(op("is_falsy"), reg("val"))),
+  branch(label("ev_conditional_alternative")),
+"ev_conditional_consequent",
+  assign("comp", list(op("conditional_consequent"), reg("comp"))),
+  go_to(label("eval_dispatch")),
+"ev_conditional_alternative",
+  assign("comp", list(op("conditional_alternative"), reg("comp"))),
+  go_to(label("eval_dispatch")),`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+## Avaliação de Sequências
+
+A porção do avaliador de controle explícito começando em `ev_sequence`, que trata sequências de instruções, é análoga à função `eval_sequence` do avaliador metacircular.
+
+As entradas em `ev_sequence_next` e `ev_sequence_continue` formam um laço que avalia sucessivamente cada instrução em uma sequência. A lista de instruções não avaliadas é mantida em `unev`. Em `ev_sequence` colocamos a sequência de instruções a ser avaliada em `unev`. Se a sequência está vazia, definimos `val` como `undefined` e pulamos para `continue` via `ev_sequence_empty`. Caso contrário, iniciamos o laço de avaliação de sequência, primeiro salvando o valor de `continue` na pilha, porque o registrador `continue` será usado para fluxo de controle local no laço, e o valor original é necessário para continuar após a sequência de instruções. Antes de avaliar cada instrução, verificamos se há instruções adicionais a serem avaliadas na sequência. Se houver, salvamos o resto das instruções não avaliadas (mantidas em `unev`) e o ambiente no qual estas devem ser avaliadas (mantido em `env`) e chamamos `eval_dispatch` para avaliar a instrução, que foi colocada em `comp`. Os dois registradores salvos são restaurados após esta avaliação, em `ev_sequence_continue`.
+
+A instrução final na sequência é tratada de forma diferente, no ponto de entrada `ev_sequence_last_statement`. Como não há mais instruções a serem avaliadas após esta, não precisamos salvar `unev` ou `env` antes de ir para `eval_dispatch`. O valor da sequência inteira é o valor da última instrução, então após a avaliação da última instrução não há nada mais a fazer exceto continuar no ponto de entrada que foi salvo em `ev_sequence`. Em vez de configurar `continue` para fazer `eval_dispatch` retornar aqui e então restaurar `continue` da pilha e continuar naquele ponto de entrada, restauramos `continue` da pilha antes de ir para `eval_dispatch`, de modo que `eval_dispatch` continuará naquele ponto de entrada após avaliar a instrução.
+
+<CodePlayground
+  code={`"ev_sequence",
+  assign("unev", list(op("sequence_statements"), reg("comp"))),
+  test(list(op("is_empty_sequence"), reg("unev"))),
+  branch(label("ev_sequence_empty")),
+  save("continue"),
+"ev_sequence_next",
+  assign("comp", list(op("first_statement"), reg("unev"))),
+  test(list(op("is_last_statement"), reg("unev"))),
+  branch(label("ev_sequence_last_statement")),
+  save("unev"),
+  save("env"),
+  assign("continue", label("ev_sequence_continue")),
+  go_to(label("eval_dispatch")),
+"ev_sequence_continue",
+  restore("env"),
+  restore("unev"),
+  assign("unev", list(op("rest_statements"), reg("unev"))),
+  go_to(label("ev_sequence_next")),
+"ev_sequence_last_statement",
+  restore("continue"),
+  go_to(label("eval_dispatch")),
+
+"ev_sequence_empty",
+  assign("val", constant(undefined)),
+  go_to(reg("continue")),`}
+  height={600}
+  showLineNumbers={true}
+/>
+
+Ao contrário de `eval_sequence` no avaliador metacircular, `ev_sequence` não precisa verificar se uma instrução return foi avaliada de modo a terminar a avaliação da sequência. O "controle explícito" neste avaliador permite que uma instrução return salte diretamente para a continuação da aplicação de função atual sem retomar a avaliação da sequência. Assim, a avaliação de sequência não precisa se preocupar com returns, ou mesmo estar ciente da existência de instruções return na linguagem. Como uma instrução return salta para fora do código de avaliação de sequência, os restores de registradores salvos em `ev_sequence_continue` não serão executados. Veremos mais tarde como a instrução return remove esses valores da pilha.
+
+---
+
+[^1]: Em nosso controlador, o despacho é escrito como uma sequência de instruções `test` e `branch`. Alternativamente, poderia ter sido escrito em um estilo orientado a dados, o que evita a necessidade de realizar testes sequenciais e facilita a definição de novos tipos de componentes.
+
+[^2]: Neste capítulo, usaremos a função `is_falsy` para testar o valor do predicado. Isso nos permite escrever os ramos consequente e alternativo na mesma ordem que em um condicional, e simplesmente passar para o ramo consequente quando o predicado é verdadeiro. A função `is_falsy` é declarada como o oposto da função `is_truthy` usada para testar predicados de condicionais na seção 4.1.1.

@@ -1,0 +1,394 @@
+---
+title: 5.2.3 Instruções e Suas Funções de Execução
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.2.3 Instruções e Suas Funções de Execução
+
+O montador chama `make_execution_function` para gerar a função de execução para uma instrução do controlador. Como a função `analyze` no avaliador da seção 4.1.7, esta despacha no tipo da instrução para gerar a função de execução apropriada. Os detalhes dessas funções de execução determinam o significado das instruções individuais na linguagem de máquina de registradores.
+
+<CodePlayground
+  code={`function make_execution_function(inst, labels, machine,
+                                 pc, flag, stack, ops) {
+    const inst_type = type(inst);
+    return inst_type === "assign"
+           ? make_assign_ef(inst, machine, labels, ops, pc)
+           : inst_type === "test"
+           ? make_test_ef(inst, machine, labels, ops, flag, pc)
+           : inst_type === "branch"
+           ? make_branch_ef(inst, machine, labels, flag, pc)
+           : inst_type === "go_to"
+           ? make_go_to_ef(inst, machine, labels, pc)
+           : inst_type === "save"
+           ? make_save_ef(inst, machine, stack, pc)
+           : inst_type === "restore"
+           ? make_restore_ef(inst, machine, stack, pc)
+           : inst_type === "perform"
+           ? make_perform_ef(inst, machine, labels, ops, pc)
+           : error(inst, "unknown instruction type -- assemble");
+}`}
+  height={400}
+  showLineNumbers={true}
+/>
+
+Os elementos da sequência `controller` recebida por `make_machine` e passada para `assemble` são strings (para rótulos) e listas marcadas (para instruções). A marca em uma instrução é uma string que identifica o tipo de instrução, como `"go_to"`, e os elementos restantes da lista contêm os argumentos, como o destino do `go_to`. O despacho em `make_execution_function` usa:
+
+<CodePlayground
+  code={`function type(instruction) { return head(instruction); }`}
+  height={80}
+  showLineNumbers={true}
+/>
+
+As listas marcadas são construídas quando a expressão `list` que é o terceiro argumento para `make_machine` é avaliada. Cada argumento para essa `list` é ou uma string (que avalia para si mesma) ou uma chamada para um construtor para uma lista marcada de instrução. Por exemplo, `assign("b", reg("t"))` chama o construtor `assign` com argumentos `"b"` e o resultado de chamar o construtor `reg` com o argumento `"t"`. Os construtores e seus argumentos determinam a sintaxe das instruções individuais na linguagem de máquina de registradores. Os construtores de instrução e seletores são mostrados abaixo, juntamente com os geradores de função de execução que usam os seletores.
+
+## A instrução `assign`
+
+A função `make_assign_ef` cria funções de execução para instruções `assign`:
+
+<CodePlayground
+  code={`function make_assign_ef(inst, machine, labels, operations, pc) {
+    const target = get_register(machine, assign_reg_name(inst));
+    const value_exp = assign_value_exp(inst);
+    const value_fun =
+        is_operation_exp(value_exp)
+        ? make_operation_exp_ef(value_exp, machine, labels, operations)
+        : make_primitive_exp_ef(value_exp, machine, labels);
+    return () => {
+               set_contents(target, value_fun());
+               advance_pc(pc);
+           };
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+A função `assign` constrói instruções `assign`. Os seletores `assign_reg_name` e `assign_value_exp` extraem o nome do registrador e a expressão de valor de uma instrução `assign`.
+
+<CodePlayground
+  code={`function assign(register_name, source) {
+    return list("assign", register_name, source);
+}
+function assign_reg_name(assign_instruction) {
+    return head(tail(assign_instruction));
+}
+function assign_value_exp(assign_instruction) {
+    return head(tail(tail(assign_instruction)));
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+A função `make_assign_ef` procura o nome do registrador com `get_register` para produzir o objeto de registrador alvo. A expressão de valor é passada para `make_operation_exp_ef` se o valor é o resultado de uma operação, e é passada para `make_primitive_exp_ef` caso contrário. Essas funções (mostradas abaixo) analisam a expressão de valor e produzem uma função de execução para o valor. Esta é uma função sem argumentos, chamada `value_fun`, que será avaliada durante a simulação para produzir o valor real a ser atribuído ao registrador. Observe que o trabalho de procurar o nome do registrador e analisar a expressão de valor é realizado apenas uma vez, no momento da montagem, não toda vez que a instrução é simulada. Esta economia de trabalho é a razão pela qual usamos funções de execução, e corresponde diretamente à economia de trabalho que obtivemos separando a análise do programa da execução no avaliador da seção 4.1.7.
+
+O resultado retornado por `make_assign_ef` é a função de execução para a instrução `assign`. Quando esta função é chamada (pela função `execute` do modelo de máquina), ela define o conteúdo do registrador alvo para o resultado obtido executando `value_fun`. Então ela avança o `pc` para a próxima instrução executando a função:
+
+<CodePlayground
+  code={`function advance_pc(pc) {
+    set_contents(pc, tail(get_contents(pc)));
+}`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+A função `advance_pc` é a terminação normal para todas as instruções exceto `branch` e `go_to`.
+
+## As instruções `test`, `branch` e `go_to`
+
+A função `make_test_ef` trata instruções `test` de maneira semelhante. Ela extrai a expressão que especifica a condição a ser testada e gera uma função de execução para ela. No tempo de simulação, a função para a condição é chamada, o resultado é atribuído ao registrador `flag`, e o `pc` é avançado:
+
+<CodePlayground
+  code={`function make_test_ef(inst, machine, labels, operations, flag, pc) {
+    const condition = test_condition(inst);
+    if (is_operation_exp(condition)) {
+        const condition_fun = make_operation_exp_ef(
+                                  condition, machine,
+                                  labels, operations);
+        return () => {
+                   set_contents(flag, condition_fun());
+                   advance_pc(pc);
+               };
+    } else {
+        error(inst, "bad test instruction -- assemble");
+    }
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+A função `test` constrói instruções `test`. O seletor `test_condition` extrai a condição de um teste.
+
+<CodePlayground
+  code={`function test(condition) { return list("test", condition); }
+
+function test_condition(test_instruction) {
+    return head(tail(test_instruction));
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+A função de execução para uma instrução `branch` verifica o conteúdo do registrador `flag` e ou define o conteúdo do `pc` para o destino do ramo (se o ramo for tomado) ou apenas avança o `pc` (se o ramo não for tomado). Observe que o destino indicado em uma instrução `branch` deve ser um rótulo, e a função `make_branch_ef` impõe isso. Observe também que o rótulo é procurado no momento da montagem, não cada vez que a instrução `branch` é simulada.
+
+<CodePlayground
+  code={`function make_branch_ef(inst, machine, labels, flag, pc) {
+    const dest = branch_dest(inst);
+    if (is_label_exp(dest)) {
+        const insts = lookup_label(labels, label_exp_label(dest));
+        return () => {
+                   if (get_contents(flag)) {
+                       set_contents(pc, insts);
+                   } else {
+                       advance_pc(pc);
+                   }
+               };
+    } else {
+        error(inst, "bad branch instruction -- assemble");
+    }
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+A função `branch` constrói instruções `branch`. O seletor `branch_dest` extrai o destino de um ramo.
+
+<CodePlayground
+  code={`function branch(label) { return list("branch", label); }
+
+function branch_dest(branch_instruction) {
+    return head(tail(branch_instruction));
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+Uma instrução `go_to` é semelhante a um ramo, exceto que o destino pode ser especificado como um rótulo ou como um registrador, e não há condição a verificar—o `pc` é sempre definido para o novo destino.
+
+<CodePlayground
+  code={`function make_go_to_ef(inst, machine, labels, pc) {
+    const dest = go_to_dest(inst);
+    if (is_label_exp(dest)) {
+        const insts = lookup_label(labels, label_exp_label(dest));
+        return () => set_contents(pc, insts);
+    } else if (is_register_exp(dest)) {
+        const reg = get_register(machine, register_exp_reg(dest));
+        return () => set_contents(pc, get_contents(reg));
+    } else {
+        error(inst, "bad go_to instruction -- assemble");
+    }
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+A função `go_to` constrói instruções `go_to`. O seletor `go_to_dest` extrai o destino de um `go_to`.
+
+<CodePlayground
+  code={`function go_to(label) { return list("go_to", label); }
+
+function go_to_dest(go_to_instruction) {
+    return head(tail(go_to_instruction));
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+## Outras instruções
+
+As instruções de pilha `save` e `restore` simplesmente usam a pilha com o registrador designado e avançam o `pc`:
+
+<CodePlayground
+  code={`function make_save_ef(inst, machine, stack, pc) {
+    const reg = get_register(machine, stack_inst_reg_name(inst));
+    return () => {
+               push(stack, get_contents(reg));
+               advance_pc(pc);
+           };
+}
+function make_restore_ef(inst, machine, stack, pc) {
+    const reg = get_register(machine, stack_inst_reg_name(inst));
+    return () => {
+               set_contents(reg, pop(stack));
+               advance_pc(pc);
+           };
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+As funções `save` e `restore` constroem instruções `save` e `restore`. O seletor `stack_inst_reg_name` extrai o nome do registrador de tais instruções.
+
+<CodePlayground
+  code={`function save(reg) { return list("save", reg); }
+
+function restore(reg) { return list("restore", reg); }
+
+function stack_inst_reg_name(stack_instruction) {
+    return head(tail(stack_instruction));
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+O tipo de instrução final, tratado por `make_perform_ef`, gera uma função de execução para a ação a ser realizada. No tempo de simulação, a função de ação é executada e o `pc` é avançado.
+
+<CodePlayground
+  code={`function make_perform_ef(inst, machine, labels, operations, pc) {
+    const action = perform_action(inst);
+    if (is_operation_exp(action)) {
+        const action_fun = make_operation_exp_ef(action, machine,
+                                                 labels, operations);
+        return () => {
+                   action_fun();
+                   advance_pc(pc);
+               };
+    } else {
+        error(inst, "bad perform instruction -- assemble");
+    }
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+A função `perform` constrói instruções `perform`. O seletor `perform_action` extrai a ação de um `perform`.
+
+<CodePlayground
+  code={`function perform(action) { return list("perform", action); }
+
+function perform_action(perform_instruction) {
+    return head(tail(perform_instruction));
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+## Funções de execução para subexpressões
+
+O valor de uma expressão `reg`, `label` ou `constant` pode ser necessário para atribuição a um registrador (`make_assign_ef`, acima) ou para entrada em uma operação (`make_operation_exp_ef`, abaixo). A função seguinte gera funções de execução para produzir valores para essas expressões durante a simulação:
+
+<CodePlayground
+  code={`function make_primitive_exp_ef(exp, machine, labels) {
+    if (is_constant_exp(exp)) {
+        const c = constant_exp_value(exp);
+        return () => c;
+    } else if (is_label_exp(exp)) {
+        const insts = lookup_label(labels, label_exp_label(exp));
+        return () => insts;
+    } else if (is_register_exp(exp)) {
+        const r = get_register(machine, register_exp_reg(exp));
+        return () => get_contents(r);
+    } else {
+        error(exp, "unknown expression type -- assemble");
+    }
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+A sintaxe de expressões `reg`, `label` e `constant` é determinada pelas seguintes funções construtoras, juntamente com predicados e seletores correspondentes.
+
+<CodePlayground
+  code={`function reg(name) { return list("reg", name); }
+
+function is_register_exp(exp) { return is_tagged_list(exp, "reg"); }
+
+function register_exp_reg(exp) { return head(tail(exp)); }
+
+function constant(value) { return list("constant", value); }
+
+function is_constant_exp(exp) {
+    return is_tagged_list(exp, "constant");
+}
+
+function constant_exp_value(exp) { return head(tail(exp)); }
+
+function label(name) { return list("label", name); }
+
+function is_label_exp(exp) { return is_tagged_list(exp, "label"); }
+
+function label_exp_label(exp) { return head(tail(exp)); }`}
+  height={450}
+  showLineNumbers={true}
+/>
+
+As instruções `assign`, `perform` e `test` podem incluir a aplicação de uma operação de máquina (especificada por uma expressão `op`) a alguns operandos (especificados por expressões `reg` e `constant`). A função seguinte produz uma função de execução para uma "expressão de operação"—uma lista contendo a operação e as expressões de operando da instrução:
+
+<CodePlayground
+  code={`function make_operation_exp_ef(exp, machine, labels, operations) {
+    const op = lookup_prim(operation_exp_op(exp), operations);
+    const afuns = map(e => make_primitive_exp_ef(e, machine, labels),
+                      operation_exp_operands(exp));
+    return () => apply_in_underlying_javascript(
+                     op, map(f => f(), afuns));
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+A sintaxe de expressões de operação é determinada por:
+
+<CodePlayground
+  code={`function op(name) { return list("op", name); }
+
+function is_operation_exp(exp) {
+    return is_pair(exp) && is_tagged_list(head(exp), "op");
+}
+
+function operation_exp_op(op_exp) { return head(tail(head(op_exp))); }
+
+function operation_exp_operands(op_exp) { return tail(op_exp); }`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+Observe que o tratamento de expressões de operação é muito parecido com o tratamento de aplicações de função pela função `analyze_application` no avaliador da seção 4.1.7 em que geramos uma função de execução para cada operando. No tempo de simulação, chamamos as funções de operando e aplicamos a função JavaScript que simula a operação aos valores resultantes. Fazemos uso da função `apply_in_underlying_javascript`, como fizemos em `apply_primitive_function` na seção 4.1.4. Isso é necessário para aplicar `op` a todos os elementos da lista de argumentos `afuns` produzida pelo primeiro `map`, como se fossem argumentos separados para `op`. Sem isso, `op` teria sido restrito a ser uma função unária.
+
+A função de simulação é encontrada procurando o nome da operação na tabela de operações para a máquina:
+
+<CodePlayground
+  code={`function lookup_prim(symbol, operations) {
+    const val = assoc(symbol, operations);
+    return is_undefined(val)
+           ? error(symbol, "unknown operation -- assemble")
+           : head(tail(val));
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+## Exercício 5.9
+
+O tratamento de operações de máquina acima permite que elas operem em rótulos bem como em constantes e conteúdo de registradores. Modifique as funções de processamento de expressão para impor a condição de que operações só podem ser usadas com registradores e constantes.
+
+## Exercício 5.10
+
+Quando introduzimos `save` e `restore` na seção 5.1.4, não especificamos o que aconteceria se você tentasse restaurar um registrador que não era o último salvo, como na sequência:
+
+```javascript
+save(y);
+save(x);
+restore(y);
+```
+
+Há várias possibilidades razoáveis para o significado de `restore`:
+
+1. `restore(y)` coloca em `y` o último valor salvo na pilha, independentemente de qual registrador esse valor veio. Esta é a maneira como nosso simulador se comporta. Mostre como tirar vantagem deste comportamento para eliminar uma instrução da máquina de Fibonacci da seção 5.1.4 (figura 5.12).
+
+2. `restore(y)` coloca em `y` o último valor salvo na pilha, mas apenas se esse valor foi salvo de `y`; caso contrário, ele sinaliza um erro. Modifique o simulador para se comportar desta maneira. Você terá que mudar `save` para colocar o nome do registrador na pilha junto com o valor.
+
+3. `restore(y)` coloca em `y` o último valor salvo de `y` independentemente de quais outros registradores foram salvos depois de `y` e não restaurados. Modifique o simulador para se comportar desta maneira. Você terá que associar uma pilha separada com cada registrador. Você deve fazer a operação `initialize_stack` inicializar todas as pilhas de registradores.
+
+## Exercício 5.11
+
+O simulador pode ser usado para ajudar a determinar os caminhos de dados necessários para implementar uma máquina com um dado controlador. Estenda o montador para armazenar a seguinte informação no modelo de máquina:
+
+- uma lista de todas as instruções, com duplicatas removidas, ordenada por tipo de instrução (`assign`, `go_to`, e assim por diante);
+- uma lista (sem duplicatas) dos registradores usados para manter pontos de entrada (estes são os registradores referenciados por instruções `go_to`);
+- uma lista (sem duplicatas) dos registradores que são salvos (`save`) ou restaurados (`restore`);
+- para cada registrador, uma lista (sem duplicatas) das fontes das quais ele é atribuído (por exemplo, as fontes para o registrador `val` na máquina fatorial da figura 5.11 são `constant(1)` e `list(op("*"), reg("n"), reg("val"))`).
+
+Estenda a interface de passagem de mensagens para a máquina para fornecer acesso a esta nova informação. Para testar seu analisador, defina a máquina de Fibonacci da figura 5.12 e examine as listas que você construiu.
+
+## Exercício 5.12
+
+Modifique o simulador de modo que ele use a sequência do controlador para determinar quais registradores a máquina tem em vez de exigir uma lista de registradores como argumento para `make_machine`. Em vez de pré-alocar os registradores em `make_machine`, você pode alocá-los um de cada vez quando eles são vistos pela primeira vez durante a montagem das instruções.

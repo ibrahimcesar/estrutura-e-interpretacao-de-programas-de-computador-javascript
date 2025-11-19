@@ -1,0 +1,265 @@
+---
+title: 5.4.4 Executando o Avaliador
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.4.4 Executando o Avaliador
+
+Com a implementação do avaliador de controle explícito chegamos ao fim de um desenvolvimento, iniciado no capítulo 1, no qual exploramos modelos cada vez mais precisos do processo de avaliação. Começamos com o modelo de substituição relativamente informal, depois estendemos isso no capítulo 3 para o modelo de ambiente, que nos permitiu lidar com estado e mudança. No avaliador metacircular do capítulo 4, usamos o próprio JavaScript como uma linguagem para tornar mais explícita a estrutura de ambiente construída durante a avaliação de um componente. Agora, com máquinas de registradores, examinamos de perto os mecanismos do avaliador para gerenciamento de armazenamento, passagem de argumentos e controle. Em cada novo nível de descrição, tivemos que levantar questões e resolver ambiguidades que não eram aparentes no tratamento anterior, menos preciso, da avaliação. Para entender o comportamento do avaliador de controle explícito, podemos simulá-lo e monitorar seu desempenho.
+
+Instalaremos um laço de driver em nossa máquina avaliadora. Isso desempenha o papel da função `driver_loop` da seção 4.1.4. O avaliador irá repetidamente imprimir um prompt, ler um programa, avaliar o programa indo para `eval_dispatch`, e imprimir o resultado. Quando nada é inserido no prompt, pulamos para o rótulo `evaluator_done`, que é o último ponto de entrada no controlador. O seguinte forma o início da sequência do controlador do avaliador de controle explícito:[^1]
+
+<CodePlayground
+  code={`"read_evaluate_print_loop",
+  perform(list(op("initialize_stack"))),
+  assign("comp", list(op("user_read"),
+                      constant("EC-evaluate input:"))),
+  assign("comp", list(op("parse"), reg("comp"))),
+  test(list(op("is_null"), reg("comp"))),
+  branch(label("evaluator_done")),
+  assign("env", list(op("get_current_environment"))),
+  assign("val", list(op("scan_out_declarations"), reg("comp"))),
+  save("comp"), // para que possamos usá-lo temporariamente para valores *unassigned*
+  assign("comp", list(op("list_of_unassigned"), reg("val"))),
+  assign("env", list(op("extend_environment"),
+                     reg("val"), reg("comp"), reg("env"))),
+  perform(list(op("set_current_environment"), reg("env"))),
+  restore("comp"), // o programa
+  assign("continue", label("print_result")),
+  go_to(label("eval_dispatch")),
+"print_result",
+  perform(list(op("user_print"),
+               constant("EC-evaluate value:"), reg("val"))),
+  go_to(label("read_evaluate_print_loop")),`}
+  height={550}
+  showLineNumbers={true}
+/>
+
+Armazenamos o ambiente atual, inicialmente o ambiente global, na variável `current_environment` e atualizamos ela a cada volta do laço para lembrar declarações passadas. As operações `get_current_environment` e `set_current_environment` simplesmente obtêm e definem essa variável.
+
+```javascript
+let current_environment = the_global_environment;
+
+function get_current_environment() {
+    return current_environment;
+}
+
+function set_current_environment(env) {
+    current_environment = env;
+}
+```
+
+Quando encontramos um erro em uma função (tal como o erro "tipo de função desconhecido" indicado em `apply_dispatch`), imprimimos uma mensagem de erro e retornamos ao laço de driver.[^2]
+
+<CodePlayground
+  code={`"unknown_component_type",
+  assign("val", constant("unknown syntax")),
+  go_to(label("signal_error")),
+
+"unknown_function_type",
+  restore("continue"), // limpa pilha (de apply_dispatch)
+  assign("val", constant("unknown function type")),
+  go_to(label("signal_error")),
+
+"signal_error",
+  perform(list(op("user_print"),
+               constant("EC-evaluator error:"), reg("val"))),
+  go_to(label("read_evaluate_print_loop")),`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+Para os propósitos da simulação, inicializamos a pilha a cada volta do laço de driver, já que ela pode não estar vazia após um erro (tal como um nome não declarado) interromper uma avaliação.[^3]
+
+Se combinarmos todos os fragmentos de código apresentados nas seções 5.4.1–5.4.4, podemos criar um modelo de máquina avaliadora que podemos executar usando o simulador de máquina de registradores da seção 5.2.
+
+```javascript
+const eceval = make_machine(list("comp", "env", "val", "fun",
+                                 "argl", "continue", "unev"),
+                            eceval_operations,
+                            list("read_evaluate_print_loop",
+                                 // controlador completo da máquina conforme dado acima
+                                 "evaluator_done"));
+```
+
+Devemos definir funções JavaScript para simular as operações usadas como primitivas pelo avaliador. Estas são as mesmas funções que usamos para o avaliador metacircular na seção 4.1, juntamente com as poucas adicionais definidas em notas de rodapé ao longo da seção 5.4.
+
+```javascript
+const eceval_operations = list(list("is_literal", is_literal),
+                               // lista completa de operações para a máquina eceval
+                               );
+```
+
+Finalmente, podemos inicializar o ambiente global e executar o avaliador:
+
+<CodePlayground
+  code={`const the_global_environment = setup_environment();
+start(eceval);`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+```
+EC-evaluate input:
+```
+
+```javascript
+function append(x, y) {
+    return is_null(x)
+           ? y
+           : pair(head(x), append(tail(x), y));
+}
+```
+
+```
+EC-evaluate value:
+undefined
+```
+
+```
+EC-evaluate input:
+```
+
+```javascript
+append(list("a", "b", "c"), list("d", "e", "f"));
+```
+
+```
+EC-evaluate value:
+["a", ["b", ["c", ["d", ["e", ["f", null]]]]]]
+```
+
+Claro, avaliar programas desta maneira levará muito mais tempo do que se os tivéssemos digitado diretamente em JavaScript, por causa dos múltiplos níveis de simulação envolvidos. Nossos programas são avaliados pela máquina avaliadora de controle explícito, que está sendo simulada por um programa JavaScript, que por sua vez está sendo avaliado pelo interpretador JavaScript.
+
+## Monitorando o desempenho do avaliador
+
+A simulação pode ser uma ferramenta poderosa para guiar a implementação de avaliadores. As simulações facilitam não apenas explorar variações do projeto da máquina de registradores, mas também monitorar o desempenho do avaliador simulado. Por exemplo, um fator importante no desempenho é quão eficientemente o avaliador usa a pilha. Podemos observar o número de operações de pilha necessárias para avaliar vários programas definindo a máquina de registradores do avaliador com a versão do simulador que coleta estatísticas sobre uso de pilha (seção 5.2.4), e adicionando uma instrução no ponto de entrada `print_result` do avaliador para imprimir as estatísticas:
+
+<CodePlayground
+  code={`"print_result",
+  perform(list(op("print_stack_statistics"))), // instrução adicionada
+  // o resto é o mesmo de antes
+  perform(list(op("user_print"),
+               constant("EC-evaluate value:"), reg("val"))),
+  go_to(label("read_evaluate_print_loop")),`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+Interações com o avaliador agora ficam assim:
+
+```
+EC-evaluate input:
+```
+
+```javascript
+function factorial (n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+```
+
+```
+total pushes = 4
+maximum depth = 3
+EC-evaluate value:
+undefined
+```
+
+```
+EC-evaluate input:
+```
+
+```javascript
+factorial(5);
+```
+
+```
+total pushes = 151
+maximum depth = 28
+EC-evaluate value:
+120
+```
+
+Note que o laço de driver do avaliador reinicializa a pilha no início de cada interação, de modo que as estatísticas impressas referirão apenas às operações de pilha usadas para avaliar o programa anterior.
+
+### Exercício 5.30
+
+Use a pilha monitorada para explorar a propriedade recursiva em cauda do avaliador (seção 5.4.2). Inicie o avaliador e defina a função `factorial` iterativa da seção 1.2.1:
+
+```javascript
+function factorial(n) {
+    function iter(product, counter) {
+        return counter > n
+               ? product
+               : iter(counter * product,
+                      counter + 1);
+    }
+    return iter(1, 1);
+}
+```
+
+Execute a função com alguns valores pequenos de n. Registre a profundidade máxima da pilha e o número de pushes necessários para computar n! para cada um desses valores.
+
+a. Você descobrirá que a profundidade máxima necessária para avaliar n! é independente de n. Qual é essa profundidade?
+
+b. Determine de seus dados uma fórmula em termos de n para o número total de operações push usadas na avaliação de n! para qualquer n ≥ 1. Note que o número de operações usadas é uma função linear de n e assim é determinado por duas constantes.
+
+### Exercício 5.31
+
+Para comparação com o exercício 5.30, explore o comportamento da seguinte função para computar fatoriais recursivamente:
+
+```javascript
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+```
+
+Ao executar esta função com a pilha monitorada, determine, como uma função de n, a profundidade máxima da pilha e o número total de pushes usados na avaliação de n! para n ≥ 1. (Novamente, essas funções serão lineares.) Resuma seus experimentos preenchendo a seguinte tabela com as expressões apropriadas em termos de n:
+
+| | Profundidade máxima | Número de pushes |
+|---|---|---|
+| Factorial recursivo | | |
+| Factorial iterativo | | |
+
+A profundidade máxima é uma medida da quantidade de espaço usada pelo avaliador ao realizar o cálculo, e o número de pushes correlaciona bem com o tempo necessário.
+
+### Exercício 5.32
+
+Modifique a definição do avaliador mudando `ev_return` conforme descrito na seção 5.4.2 de modo que o avaliador não seja mais recursivo em cauda. Execute novamente seus experimentos dos exercícios 5.30 e 5.31 para demonstrar que ambas as versões da função `factorial` agora requerem espaço que cresce linearmente com sua entrada.
+
+### Exercício 5.33
+
+Monitore as operações de pilha no cálculo de Fibonacci em árvore recursiva:
+
+```javascript
+function fib(n) {
+    return n < 2 ? n : fib(n - 1) + fib(n - 2);
+}
+```
+
+a. Dê uma fórmula em termos de n para a profundidade máxima da pilha necessária para computar Fib(n) para n ≥ 2. Dica: Na seção 1.2.2 argumentamos que o espaço usado por este processo cresce linearmente com n.
+
+b. Dê uma fórmula para o número total de pushes usados para computar Fib(n) para n ≥ 2. Você deve descobrir que o número de pushes (que correlaciona bem com o tempo usado) cresce exponencialmente com n. Dica: Seja S(n) o número de pushes usados ao computar Fib(n). Você deve ser capaz de argumentar que há uma fórmula que expressa S(n) em termos de S(n-1), S(n-2), e alguma constante de "sobrecarga" k que é independente de n. Dê a fórmula, e diga qual é k. Então mostre que S(n) pode ser expresso como a Fib(n+1) + b e dê os valores de a e b.
+
+### Exercício 5.34
+
+Nosso avaliador atualmente captura e sinaliza apenas dois tipos de erros—tipos de componente desconhecidos e tipos de função desconhecidos. Outros erros nos tirarão do laço de avaliação-leitura-impressão do avaliador. Quando executamos o avaliador usando o simulador de máquina de registradores, esses erros são capturados pelo sistema JavaScript subjacente. Isso é análogo ao computador travando quando um programa de usuário comete um erro.[^4] É um grande projeto fazer um sistema de erro real funcionar, mas vale a pena o esforço para entender o que está envolvido aqui.
+
+a. Erros que ocorrem no processo de avaliação, tais como uma tentativa de acessar um nome não vinculado, poderiam ser capturados mudando a operação de busca para fazê-la retornar um código de condição distinto, que não pode ser um valor possível de qualquer nome de usuário. O avaliador pode testar esse código de condição e então fazer o que for necessário para ir para `signal_error`. Encontre todos os lugares no avaliador onde tal mudança é necessária e corrija-os. Isso é muito trabalho.
+
+b. Muito pior é o problema de tratar erros que são sinalizados ao aplicar funções primitivas tais como uma tentativa de dividir por zero ou uma tentativa de extrair o `head` de uma string. Em um sistema profissional de alta qualidade, cada aplicação primitiva é verificada quanto à segurança como parte da primitiva. Por exemplo, cada chamada para `head` poderia primeiro verificar que o argumento é um par. Se o argumento não é um par, a aplicação retornaria um código de condição distinto para o avaliador, que então reportaria a falha. Poderíamos arranjar isso em nosso simulador de máquina de registradores fazendo cada função primitiva verificar aplicabilidade e retornar um código de condição distinto apropriado em caso de falha. Então o código `primitive_apply` no avaliador pode verificar o código de condição e ir para `signal_error` se necessário. Construa essa estrutura e faça funcionar. Este é um projeto importante.
+
+---
+
+[^1]: Assumimos aqui que `user_read`, `parse`, e as várias operações de impressão estão disponíveis como operações primitivas de máquina, o que é útil para nossa simulação, mas completamente irrealista na prática. Estas são na verdade operações extremamente complexas. Na prática, elas seriam implementadas usando operações de entrada-saída de baixo nível tais como transferir caracteres individuais de e para um dispositivo.
+
+[^2]: Há outros erros que gostaríamos que o interpretador tratasse, mas estes não são tão simples. Veja exercício 5.34.
+
+[^3]: Poderíamos realizar a inicialização da pilha apenas após erros, mas fazê-la no laço de driver será conveniente para monitorar o desempenho do avaliador, conforme descrito abaixo.
+
+[^4]: Isso se manifesta como, por exemplo, um "pânico de kernel" ou uma "tela azul da morte" ou mesmo uma reinicialização. Reinicialização automática é uma abordagem tipicamente usada em telefones e tablets. A maioria dos sistemas operacionais modernos faz um trabalho decente para prevenir que programas de usuário causem travamento de toda a máquina.

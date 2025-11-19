@@ -42,6 +42,31 @@ A dificuldade com a representação em lista surge da necessidade de percorrer p
 
 Uma fila é representada, então, como um par de ponteiros, `front_ptr` e `rear_ptr`, que indicam, respectivamente, o primeiro e o último pares em uma lista comum. Como gostaríamos que a fila fosse um objeto identificável, podemos usar `pair` para combinar os dois ponteiros. Assim, a própria fila será o `pair` dos dois ponteiros. A Figura 3.18 ilustra essa representação.
 
+**Figura 3.18:** Representação de fila com ponteiros front_ptr e rear_ptr
+
+```mermaid
+graph TB
+    Q["queue"] --> QP["●|●"]
+    QP -->|"front_ptr<br/>(head)"| F1["●|●"]
+    QP -->|"rear_ptr<br/>(tail)"| F3["●|null"]
+
+    F1 --> A["a"]
+    F1 --> F2["●|●"]
+    F2 --> B["b"]
+    F2 --> F3
+    F3 --> C["c"]
+
+    style Q fill:#ffd,stroke:#333,stroke-width:2px
+    style QP fill:#bdf,stroke:#333,stroke-width:2px
+    style F1 fill:#dfd,stroke:#333
+    style F2 fill:#dfd,stroke:#333
+    style F3 fill:#dfd,stroke:#333
+    style A fill:#efe,stroke:#333
+    style B fill:#efe,stroke:#333
+    style C fill:#efe,stroke:#333
+```
+*Nota: Fila contendo os elementos `a`, `b`, `c`*
+
 Para definir as operações de fila, usamos as seguintes funções, que nos permitem selecionar e modificar os ponteiros frontal e traseiro de uma fila:
 
 ```javascript
@@ -76,7 +101,36 @@ function front_queue(queue) {
 }
 ```
 
-Para inserir um item em uma fila, seguimos o método cujo resultado é indicado na Figura 3.19. Primeiro criamos um novo par cujo `head` é o item a ser inserido e cujo `tail` é a lista vazia. Se a fila estava inicialmente vazia, definimos os ponteiros frontal e traseiro da fila para esse novo par. Caso contrário, modificamos o par final na fila para apontar para o novo par e também definimos o ponteiro traseiro para o novo par.
+Para inserir um item em uma fila, seguimos o método cujo resultado é indicado na Figura 3.19.
+
+**Figura 3.19:** Resultado de `insert_queue` - inserindo `d` na fila `(a b c)`
+
+```mermaid
+graph TB
+    Q["queue"] --> QP["●|●"]
+    QP -->|"front_ptr"| F1["●|●"]
+    QP -.->|"rear_ptr<br/>(antigo)"| F3["●|●"]
+    QP ==>|"rear_ptr<br/>(novo)"| F4["●|null"]
+
+    F1 --> A["a"]
+    F1 --> F2["●|●"]
+    F2 --> B["b"]
+    F2 --> F3
+    F3 --> C["c"]
+    F3 ==> F4
+    F4 --> D["d"]
+
+    style Q fill:#ffd,stroke:#333,stroke-width:2px
+    style QP fill:#bdf,stroke:#333,stroke-width:2px
+    style F4 fill:#fbb,stroke:#333,stroke-width:2px
+    style D fill:#fbb,stroke:#333,stroke-width:2px
+    style A fill:#efe,stroke:#333
+    style B fill:#efe,stroke:#333
+    style C fill:#efe,stroke:#333
+```
+*Nota: Novo par destacado em vermelho; seta grossa mostra o novo rear_ptr*
+
+Primeiro criamos um novo par cujo `head` é o item a ser inserido e cujo `tail` é a lista vazia. Se a fila estava inicialmente vazia, definimos os ponteiros frontal e traseiro da fila para esse novo par. Caso contrário, modificamos o par final na fila para apontar para o novo par e também definimos o ponteiro traseiro para o novo par.
 
 ```javascript
 function insert_queue(queue, item) {
@@ -93,6 +147,32 @@ function insert_queue(queue, item) {
 ```
 
 Para remover o item na frente da fila, simplesmente modificamos o ponteiro frontal para que agora aponte para o segundo item na fila, que pode ser encontrado seguindo o ponteiro `tail` do primeiro item (veja a Figura 3.20):
+
+**Figura 3.20:** Resultado de `delete_queue` - removendo da fila `(a b c)`
+
+```mermaid
+graph TB
+    Q["queue"] --> QP["●|●"]
+    QP -.->|"front_ptr<br/>(antigo)"| F1["●|●"]
+    QP ==>|"front_ptr<br/>(novo)"| F2["●|●"]
+    QP -->|"rear_ptr"| F3["●|null"]
+
+    F1 -.-> A["a"]
+    F1 -.-> F2
+    F2 --> B["b"]
+    F2 --> F3
+    F3 --> C["c"]
+
+    style Q fill:#ffd,stroke:#333,stroke-width:2px
+    style QP fill:#bdf,stroke:#333,stroke-width:2px
+    style F1 fill:#eee,stroke:#999
+    style A fill:#eee,stroke:#999
+    style F2 fill:#dfd,stroke:#333
+    style F3 fill:#dfd,stroke:#333
+    style B fill:#efe,stroke:#333
+    style C fill:#efe,stroke:#333
+```
+*Nota: Par removido em cinza; seta grossa mostra o novo front_ptr*
 
 ```javascript
 function delete_queue(queue) {

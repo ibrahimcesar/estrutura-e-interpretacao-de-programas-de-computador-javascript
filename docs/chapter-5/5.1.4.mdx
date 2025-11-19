@@ -1,0 +1,180 @@
+---
+title: 5.1.4 Usando uma Pilha para Implementar Recursão
+---
+
+import CodePlayground from '@site/src/components/CodePlayground';
+
+# 5.1.4 Usando uma Pilha para Implementar Recursão
+
+Com as ideias ilustradas até agora, podemos implementar qualquer processo iterativo especificando uma máquina de registradores que tem um registrador correspondente a cada variável de estado do processo. A máquina executa repetidamente um laço do controlador, mudando os conteúdos dos registradores, até que alguma condição de terminação seja satisfeita. Em cada ponto na sequência do controlador, o estado da máquina (representando o estado do processo iterativo) é completamente determinado pelos conteúdos dos registradores (os valores das variáveis de estado).
+
+Implementar processos recursivos, no entanto, requer um mecanismo adicional. Considere o seguinte método recursivo para calcular fatoriais, que examinamos pela primeira vez na seção 1.2.1:
+
+<CodePlayground
+  code={`function factorial(n) {
+    return n === 1
+           ? 1
+           : n * factorial(n - 1);
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+Como vemos pela função, calcular *n*! requer calcular (*n*-1)!. Nossa máquina MDC, modelada na função
+
+<CodePlayground
+  code={`function gcd(a, b) {
+    return b === 0 ? a : gcd(b, a % b);
+}`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+similarmente tinha que calcular outro MDC. Mas há uma diferença importante entre a função `gcd`, que reduz o cálculo original a um novo cálculo de MDC, e `factorial`, que requer calcular outro fatorial como um subproblema. No MDC, a resposta ao novo cálculo de MDC é a resposta ao problema original. Para calcular o próximo MDC, simplesmente colocamos os novos argumentos nos registradores de entrada da máquina MDC e reutilizamos os caminhos de dados da máquina executando a mesma sequência do controlador. Quando a máquina termina de resolver o problema final de MDC, ela completou todo o cálculo.
+
+No caso do fatorial (ou qualquer processo recursivo), a resposta ao novo subproblema de fatorial não é a resposta ao problema original. O valor obtido para (*n*-1)! deve ser multiplicado por *n* para obter a resposta final. Se tentarmos imitar o projeto do MDC, e resolver o subproblema do fatorial decrementando o registrador `n` e reexecutando a máquina de fatorial, não teremos mais disponível o valor antigo de `n` pelo qual multiplicar o resultado. Assim, precisamos de uma segunda máquina de fatorial para trabalhar no subproblema. Este segundo cálculo de fatorial em si tem um subproblema de fatorial, que requer uma terceira máquina de fatorial, e assim por diante. Como cada máquina de fatorial contém outra máquina de fatorial dentro dela, a máquina total contém um aninhamento infinito de máquinas similares e, portanto, não pode ser construída a partir de um número fixo e finito de partes.
+
+No entanto, podemos implementar o processo de fatorial como uma máquina de registradores se pudermos arranjar para usar os mesmos componentes para cada instância aninhada da máquina. Especificamente, a máquina que calcula *n*! deve usar os mesmos componentes para trabalhar no subproblema de calcular (*n*-1)!, no subproblema para (*n*-2)!, e assim por diante. Isso é plausível porque, embora o processo de fatorial dite que um número ilimitado de cópias da mesma máquina são necessárias para realizar um cálculo, apenas uma dessas cópias precisa estar ativa em um dado momento. Quando a máquina encontra um subproblema recursivo, ela pode suspender o trabalho no problema principal, reutilizar as mesmas partes físicas para trabalhar no subproblema, depois continuar o cálculo suspenso.
+
+No subproblema, os conteúdos dos registradores serão diferentes do que eram no problema principal. (Neste caso, o registrador `n` é decrementado.) Para ser capaz de continuar o cálculo suspenso, a máquina deve salvar os conteúdos de quaisquer registradores que serão necessários depois que o subproblema for resolvido, para que estes possam ser restaurados para continuar o cálculo suspenso. No caso do fatorial, salvaremos o valor antigo de `n`, a ser restaurado quando terminarmos de calcular o fatorial do registrador `n` decrementado.[1](#footnote-1)
+
+Como não há limite *a priori* na profundidade de chamadas recursivas aninhadas, podemos precisar salvar um número arbitrário de valores de registradores. Esses valores devem ser restaurados na ordem reversa daquela em que foram salvos, pois em um aninhamento de recursões, o último subproblema a ser entrado é o primeiro a ser terminado. Isso dita o uso de uma *pilha*, ou estrutura de dados "último a entrar, primeiro a sair", para salvar valores de registradores. Podemos estender a linguagem de máquina de registradores para incluir uma pilha adicionando dois tipos de instruções: valores são colocados na pilha usando uma instrução `save` e restaurados da pilha usando uma instrução `restore`. Depois que uma sequência de valores foi salva (`save`d) na pilha, uma sequência de restaurações (`restore`s) recuperará esses valores em ordem reversa.[2](#footnote-2)
+
+Com a ajuda da pilha, podemos reutilizar uma única cópia dos caminhos de dados da máquina de fatorial para cada subproblema de fatorial. Há uma questão de projeto similar na reutilização da sequência do controlador que opera os caminhos de dados. Para reexecutar o cálculo de fatorial, o controlador não pode simplesmente voltar ao início, como com um processo iterativo, porque após resolver o subproblema (*n*-1)!, a máquina ainda deve multiplicar o resultado por *n*. O controlador deve suspender seu cálculo de *n*!, resolver o subproblema (*n*-1)!, depois continuar seu cálculo de *n*!. Esta visão do cálculo de fatorial sugere o uso do mecanismo de subrotina descrito na seção 5.1.3, que tem o controlador usando um registrador `continue` para transferir para a parte da sequência que resolve um subproblema e depois continuar de onde parou no problema principal. Podemos assim fazer uma subrotina de fatorial que retorna ao ponto de entrada armazenado no registrador `continue`. Em torno de cada chamada de subrotina, salvamos e restauramos `continue` assim como fazemos com o registrador `n`, pois cada "nível" do cálculo de fatorial usará o mesmo registrador `continue`. Ou seja, a subrotina de fatorial deve colocar um novo valor em `continue` quando ela chama a si mesma para um subproblema, mas ela precisará do valor antigo para retornar ao local que a chamou para resolver um subproblema.
+
+A Figura 5.11 mostra os caminhos de dados e o controlador para uma máquina que implementa a função `factorial` recursiva. A máquina tem uma pilha e três registradores, chamados `n`, `val` e `continue`. Para simplificar o diagrama de caminho de dados, não nomeamos os botões de atribuição de registradores, apenas os botões de operação de pilha (`sc` e `sn` para salvar registradores, `rc` e `rn` para restaurar registradores). Para operar a máquina, colocamos no registrador `n` o número cujo fatorial desejamos calcular e iniciamos a máquina. Quando a máquina alcança `fact_done`, o cálculo está terminado e a resposta será encontrada no registrador `val`. Na sequência do controlador, `n` e `continue` são salvos antes de cada chamada recursiva e restaurados ao retornar da chamada. Retornar de uma chamada é realizado ramificando para o local armazenado em `continue`. O registrador `continue` é inicializado quando a máquina inicia para que o último retorno vá para `fact_done`. O registrador `val`, que contém o resultado do cálculo de fatorial, não é salvo antes da chamada recursiva, porque o conteúdo antigo de `val` não é útil após o retorno da subrotina. Apenas o novo valor, que é o valor produzido pelo subcálculo, é necessário.
+
+<CodePlayground
+  code={`controller(
+  list(
+      assign("continue", label("fact_done")), // configura endereço de retorno final
+    "fact_loop",
+      test(list(op("="), reg("n"), constant(1))),
+      branch(label("base_case")),
+      // Configura para chamada recursiva salvando n e continue.
+      // Configura continue para que o cálculo continue
+      // em after_fact quando a subrotina retornar.
+      save("continue"),
+      save("n"),
+      assign("n", list(op("-"), reg("n"), constant(1))),
+      assign("continue", label("after_fact")),
+      go_to(label("fact_loop")),
+    "after_fact",
+      restore("n"),
+      restore("continue"),
+      assign("val",                   // val agora contém n(n-1)!
+             list(op("*"), reg("n"), reg("val"))),
+      go_to(reg("continue")),         // retorna ao chamador
+    "base_case",
+      assign("val", constant(1)),     // caso base: 1! = 1
+      go_to(reg("continue")),         // retorna ao chamador
+    "fact_done"))`}
+  height={550}
+  showLineNumbers={true}
+/>
+
+**Figura 5.11:** Uma máquina de fatorial recursiva.
+
+Embora em princípio o cálculo de fatorial exija uma máquina infinita, a máquina na Figura 5.11 é na verdade finita, exceto pela pilha, que é potencialmente ilimitada. Qualquer implementação física particular de uma pilha, no entanto, será de tamanho finito, e isso limitará a profundidade de chamadas recursivas que podem ser manipuladas pela máquina. Esta implementação de fatorial ilustra a estratégia geral para realizar algoritmos recursivos como máquinas de registradores comuns aumentadas por pilhas. Quando um subproblema recursivo é encontrado, salvamos na pilha os registradores cujos valores atuais serão necessários após o subproblema ser resolvido, resolvemos o subproblema recursivo, depois restauramos os registradores salvos e continuamos a execução no problema principal. O registrador `continue` deve sempre ser salvo. Se há outros registradores que precisam ser salvos depende da máquina particular, pois nem todos os cálculos recursivos precisam dos valores originais de registradores que são modificados durante a solução do subproblema (veja exercício 5.7).
+
+## Uma recursão dupla
+
+Vamos examinar um processo recursivo mais complexo, o cálculo recursivo em árvore dos números de Fibonacci, que introduzimos na seção 1.2.2:
+
+<CodePlayground
+  code={`function fib(n) {
+    return n === 0
+           ? 0
+           : n === 1
+           ? 1
+           : fib(n - 1) + fib(n - 2);
+}`}
+  height={180}
+  showLineNumbers={true}
+/>
+
+Assim como com fatorial, podemos implementar o cálculo recursivo de Fibonacci como uma máquina de registradores com registradores `n`, `val` e `continue`. A máquina é mais complexa do que a de fatorial, porque há dois lugares na sequência do controlador onde precisamos realizar chamadas recursivas—uma vez para calcular Fib(*n*-1) e uma vez para calcular Fib(*n*-2). Para configurar cada uma dessas chamadas, salvamos os registradores cujos valores serão necessários mais tarde, definimos o registrador `n` para o número cujo Fib precisamos calcular recursivamente (*n*-1 ou *n*-2), e atribuímos a `continue` o ponto de entrada na sequência principal ao qual retornar (`afterfib_n_1` ou `afterfib_n_2`, respectivamente). Então vamos para `fib_loop`. Quando retornamos da chamada recursiva, a resposta está em `val`. A Figura 5.12 mostra a sequência do controlador para esta máquina.
+
+<CodePlayground
+  code={`controller(
+  list(
+    assign("continue", label("fib_done")),
+  "fib_loop",
+    test(list(op("<"), reg("n"), constant(2))),
+    branch(label("immediate_answer")),
+    // configura para calcular Fib(n-1)
+    save("continue"),
+    assign("continue", label("afterfib_n_1")),
+    save("n"),                     // salva valor antigo de n
+    assign("n", list(op("-"), reg("n"), constant(1))), // sobrescreve n para n-1
+    go_to(label("fib_loop")),      // realiza chamada recursiva
+  "afterfib_n_1",                  // ao retornar, val contém Fib(n-1)
+    restore("n"),
+    restore("continue"),
+    // configura para calcular Fib(n-2)
+    assign("n", list(op("-"), reg("n"), constant(2))),
+    save("continue"),
+    assign("continue", label("afterfib_n_2")),
+    save("val"),                   // salva Fib(n-1)
+    go_to(label("fib_loop")),
+  "afterfib_n_2",                  // ao retornar, val contém Fib(n-2)
+    assign("n", reg("val")),       // n agora contém Fib(n-2)
+    restore("val"),                // val agora contém Fib(n-1)
+    restore("continue"),
+    assign("val",                  // Fib(n-1) + Fib(n-2)
+      list(op("+"), reg("val"), reg("n"))),
+    go_to(reg("continue")),        // retorna ao chamador, resposta em val
+  "immediate_answer",
+    assign("val", reg("n")),       // caso base: Fib(n) = n
+    go_to(reg("continue")),
+  "fib_done"))`}
+  height={800}
+  showLineNumbers={true}
+/>
+
+**Figura 5.12:** Controlador para uma máquina para calcular números de Fibonacci.
+
+## Exercício 5.7
+
+Especifique máquinas de registradores que implementam cada uma das seguintes funções. Para cada máquina, escreva uma sequência de instruções do controlador e desenhe um diagrama mostrando os caminhos de dados.
+
+a. Exponenciação recursiva:
+
+<CodePlayground
+  code={`function expt(b, n) {
+    return n === 0
+           ? 1
+           : b * expt(b, n - 1);
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+b. Exponenciação iterativa:
+
+<CodePlayground
+  code={`function expt(b, n) {
+    function expt_iter(counter, product) {
+        return counter === 0
+               ? product
+               : expt_iter(counter - 1, b * product);
+    }
+    return expt_iter(n, 1);
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
+
+## Exercício 5.8
+
+Simule manualmente as máquinas de fatorial e Fibonacci, usando alguma entrada não trivial (requerendo execução de pelo menos uma chamada recursiva). Mostre os conteúdos da pilha em cada ponto significativo na execução.
+
+## Exercício 5.9
+
+Ben Bitdiddle observa que a sequência do controlador da máquina de Fibonacci tem um `save` extra e um `restore` extra, que podem ser removidos para fazer uma máquina mais rápida. Onde estão essas instruções?
+
+---
+
+<a name="footnote-1"></a>[1] Pode-se argumentar que não precisamos salvar o `n` antigo; depois de decrementá-lo e resolver o subproblema, poderíamos simplesmente incrementá-lo para recuperar o valor antigo. Embora esta estratégia funcione para fatorial, ela não pode funcionar em geral, pois o valor antigo de um registrador nem sempre pode ser calculado a partir do novo.
+
+<a name="footnote-2"></a>[2] Na seção 5.3 veremos como implementar uma pilha em termos de operações mais primitivas.
