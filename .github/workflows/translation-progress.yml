@@ -30,49 +30,50 @@ jobs:
       - name: 📊 Analisar progresso da tradução
         id: progress
         run: |
-          echo "Analisando arquivos Markdown em docs/..."
+          echo "Analisando arquivos Markdown (.md e .mdx) em docs/..."
 
-          # Contar total de arquivos .md
-          total_files=$(find docs -name "*.md" -type f | wc -l)
+          # Contar total de arquivos .md e .mdx, excluindo arquivos de infraestrutura
+          total_files=$(find docs/chapter-* docs/prefaces -name "*.md" -o -name "*.mdx" | \
+            grep -vE "(_snippets|guia-traducao|como-contribuir|TRANSLATION_STATUS|README)" | wc -l)
 
-          # Contar palavras totais
-          total_words=$(find docs -name "*.md" -type f -exec cat {} \; | wc -w)
+          # Contar palavras totais (apenas arquivos do livro)
+          total_words=$(find docs/chapter-* docs/prefaces -name "*.md" -o -name "*.mdx" | \
+            grep -vE "(_snippets|guia-traducao|como-contribuir|TRANSLATION_STATUS|README)" | \
+            xargs cat 2>/dev/null | wc -w)
 
-          # Contar arquivos por capítulo
-          ch0_files=$(find docs/chapter-0 -name "*.md" 2>/dev/null | wc -l || echo 0)
-          ch1_files=$(find docs/chapter-1 -name "*.md" 2>/dev/null | wc -l || echo 0)
-          ch2_files=$(find docs/chapter-2 -name "*.md" 2>/dev/null | wc -l || echo 0)
-          ch3_files=$(find docs/chapter-3 -name "*.md" 2>/dev/null | wc -l || echo 0)
-          ch4_files=$(find docs/chapter-4 -name "*.md" 2>/dev/null | wc -l || echo 0)
-          ch5_files=$(find docs/chapter-5 -name "*.md" 2>/dev/null | wc -l || echo 0)
-          prefaces_files=$(find docs/prefaces -name "*.md" 2>/dev/null | wc -l || echo 0)
+          # Contar arquivos por capítulo (.md e .mdx)
+          ch1_files=$(find docs/chapter-1 -name "*.md" -o -name "*.mdx" 2>/dev/null | wc -l || echo 0)
+          ch2_files=$(find docs/chapter-2 -name "*.md" -o -name "*.mdx" 2>/dev/null | wc -l || echo 0)
+          ch3_files=$(find docs/chapter-3 -name "*.md" -o -name "*.mdx" 2>/dev/null | wc -l || echo 0)
+          ch4_files=$(find docs/chapter-4 -name "*.md" -o -name "*.mdx" 2>/dev/null | \
+            grep -v "TRANSLATION_STATUS" | wc -l || echo 0)
+          ch5_files=$(find docs/chapter-5 -name "*.md" -o -name "*.mdx" 2>/dev/null | wc -l || echo 0)
+          prefaces_files=$(find docs/prefaces -name "*.md" -o -name "*.mdx" 2>/dev/null | wc -l || echo 0)
 
-          # Palavras por capítulo
-          ch0_words=$(find docs/chapter-0 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
-          ch1_words=$(find docs/chapter-1 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
-          ch2_words=$(find docs/chapter-2 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
-          ch3_words=$(find docs/chapter-3 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
-          ch4_words=$(find docs/chapter-4 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
-          ch5_words=$(find docs/chapter-5 -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
-          prefaces_words=$(find docs/prefaces -name "*.md" -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          # Palavras por capítulo (.md e .mdx)
+          ch1_words=$(find docs/chapter-1 \( -name "*.md" -o -name "*.mdx" \) -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch2_words=$(find docs/chapter-2 \( -name "*.md" -o -name "*.mdx" \) -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch3_words=$(find docs/chapter-3 \( -name "*.md" -o -name "*.mdx" \) -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch4_words=$(find docs/chapter-4 \( -name "*.md" -o -name "*.mdx" \) -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          ch5_words=$(find docs/chapter-5 \( -name "*.md" -o -name "*.mdx" \) -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
+          prefaces_words=$(find docs/prefaces \( -name "*.md" -o -name "*.mdx" \) -type f -exec cat {} \; 2>/dev/null | wc -w || echo 0)
 
-          # Estimativa de progresso (assumindo ~500 palavras por arquivo no original)
-          # SICP tem aproximadamente 200 seções/arquivos
-          estimated_total_files=200
+          # Estimativa de progresso
+          # SICP JS tem aproximadamente 120 seções (Capítulos 1-5 + Prefácios)
+          # Baseado em: Caps 1-4 = ~94 seções, Cap 5 = ~23 seções (estimado), Prefácios = 3
+          estimated_total_files=120
           progress_percent=$(( (total_files * 100) / estimated_total_files ))
 
           # Salvar outputs
           echo "total_files=$total_files" >> $GITHUB_OUTPUT
           echo "total_words=$total_words" >> $GITHUB_OUTPUT
           echo "progress_percent=$progress_percent" >> $GITHUB_OUTPUT
-          echo "ch0_files=$ch0_files" >> $GITHUB_OUTPUT
           echo "ch1_files=$ch1_files" >> $GITHUB_OUTPUT
           echo "ch2_files=$ch2_files" >> $GITHUB_OUTPUT
           echo "ch3_files=$ch3_files" >> $GITHUB_OUTPUT
           echo "ch4_files=$ch4_files" >> $GITHUB_OUTPUT
           echo "ch5_files=$ch5_files" >> $GITHUB_OUTPUT
           echo "prefaces_files=$prefaces_files" >> $GITHUB_OUTPUT
-          echo "ch0_words=$ch0_words" >> $GITHUB_OUTPUT
           echo "ch1_words=$ch1_words" >> $GITHUB_OUTPUT
           echo "ch2_words=$ch2_words" >> $GITHUB_OUTPUT
           echo "ch3_words=$ch3_words" >> $GITHUB_OUTPUT
@@ -103,12 +104,11 @@ jobs:
           | Capítulo | Arquivos | Palavras |
           |----------|----------|----------|
           | Prefácios | ${{ steps.progress.outputs.prefaces_files }} | ${{ steps.progress.outputs.prefaces_words }} |
-          | Capítulo 0 | ${{ steps.progress.outputs.ch0_files }} | ${{ steps.progress.outputs.ch0_words }} |
-          | Capítulo 1 | ${{ steps.progress.outputs.ch1_files }} | ${{ steps.progress.outputs.ch1_words }} |
-          | Capítulo 2 | ${{ steps.progress.outputs.ch2_files }} | ${{ steps.progress.outputs.ch2_words }} |
-          | Capítulo 3 | ${{ steps.progress.outputs.ch3_files }} | ${{ steps.progress.outputs.ch3_words }} |
-          | Capítulo 4 | ${{ steps.progress.outputs.ch4_files }} | ${{ steps.progress.outputs.ch4_words }} |
-          | Capítulo 5 | ${{ steps.progress.outputs.ch5_files }} | ${{ steps.progress.outputs.ch5_words }} |
+          | Capítulo 1: Construindo Abstrações com Funções | ${{ steps.progress.outputs.ch1_files }} | ${{ steps.progress.outputs.ch1_words }} |
+          | Capítulo 2: Construindo Abstrações com Dados | ${{ steps.progress.outputs.ch2_files }} | ${{ steps.progress.outputs.ch2_words }} |
+          | Capítulo 3: Modularidade, Objetos e Estado | ${{ steps.progress.outputs.ch3_files }} | ${{ steps.progress.outputs.ch3_words }} |
+          | Capítulo 4: Avaliadores Metalinguísticos | ${{ steps.progress.outputs.ch4_files }} | ${{ steps.progress.outputs.ch4_words }} |
+          | Capítulo 5: Computação com Máquinas de Registradores | ${{ steps.progress.outputs.ch5_files }} | ${{ steps.progress.outputs.ch5_words }} |
 
           ## 📊 Barra de Progresso
 
@@ -176,11 +176,11 @@ jobs:
             | Capítulo | Arquivos | Palavras |
             |----------|----------|----------|
             | Prefácios | ${{ steps.progress.outputs.prefaces_files }} | ${{ steps.progress.outputs.prefaces_words }} |
-            | Capítulo 1 | ${{ steps.progress.outputs.ch1_files }} | ${{ steps.progress.outputs.ch1_words }} |
-            | Capítulo 2 | ${{ steps.progress.outputs.ch2_files }} | ${{ steps.progress.outputs.ch2_words }} |
-            | Capítulo 3 | ${{ steps.progress.outputs.ch3_files }} | ${{ steps.progress.outputs.ch3_words }} |
-            | Capítulo 4 | ${{ steps.progress.outputs.ch4_files }} | ${{ steps.progress.outputs.ch4_words }} |
-            | Capítulo 5 | ${{ steps.progress.outputs.ch5_files }} | ${{ steps.progress.outputs.ch5_words }} |
+            | Capítulo 1: Construindo Abstrações com Funções | ${{ steps.progress.outputs.ch1_files }} | ${{ steps.progress.outputs.ch1_words }} |
+            | Capítulo 2: Construindo Abstrações com Dados | ${{ steps.progress.outputs.ch2_files }} | ${{ steps.progress.outputs.ch2_words }} |
+            | Capítulo 3: Modularidade, Objetos e Estado | ${{ steps.progress.outputs.ch3_files }} | ${{ steps.progress.outputs.ch3_words }} |
+            | Capítulo 4: Avaliadores Metalinguísticos | ${{ steps.progress.outputs.ch4_files }} | ${{ steps.progress.outputs.ch4_words }} |
+            | Capítulo 5: Computação com Máquinas de Registradores | ${{ steps.progress.outputs.ch5_files }} | ${{ steps.progress.outputs.ch5_words }} |
 
             ### 📊 Barra de Progresso
 
