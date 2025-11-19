@@ -1,41 +1,211 @@
 ---
-title: 5.2.1 O Modelo de Máquina
+title: 5.2.1 O Modelo da Máquina
 ---
 
-# 5.2.1 O Modelo de Máquina
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.2.1 O Modelo da Máquina
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+O modelo de máquina gerado por `make_machine` é representado como uma função com estado local usando as técnicas de passagem de mensagens desenvolvidas no capítulo 3. Para construir este modelo, `make_machine` começa chamando a função `make_new_machine` para construir as partes do modelo de máquina que são comuns a todas as máquinas de registradores. Este modelo de máquina básico construído por `make_new_machine` é essencialmente um contêiner para alguns registradores e uma pilha, juntamente com um mecanismo de execução que processa as instruções do controlador uma por uma.
 
-## Visão Geral
+A função `make_machine` então estende este modelo básico (enviando-lhe mensagens) para incluir os registradores, operações e controlador da máquina específica sendo definida. Primeiro ela aloca um registrador na nova máquina para cada um dos nomes de registradores fornecidos e instala as operações designadas na máquina. Então ela usa um *montador* (descrito abaixo na seção 5.2.2) para transformar a lista do controlador em instruções para a nova máquina e instala estas como a sequência de instruções da máquina. A função `make_machine` retorna como seu valor o modelo de máquina modificado.
 
-Esta seção descreve o modelo de dados usado pelo simulador de máquina de registradores:
+<CodePlayground
+  code={`function make_machine(register_names, ops, controller) {
+    const machine = make_new_machine();
+    for_each(register_name =>
+               machine("allocate_register")(register_name),
+             register_names);
+    machine("install_operations")(ops);
+    machine("install_instruction_sequence")
+           (assemble(controller, machine));
+    return machine;
+}`}
+  height={250}
+  showLineNumbers={true}
+/>
 
-- Representação de máquinas como estruturas de dados JavaScript
-- Componentes internos de uma máquina (registradores, pilha, PC)
-- Interface de programação do simulador
-- Estrutura de controle e execução de instruções
+## Registradores
 
-## Tópicos Principais
+Representaremos um registrador como uma função com estado local, como no capítulo 3. A função `make_register` cria um registrador que mantém um valor que pode ser acessado ou modificado:
 
-- Estrutura de dados da máquina
-- Representação de registradores
-- Representação da pilha
-- Program counter (PC)
-- Tabela de instruções
-- Tabela de operações
-- Interface do simulador
+<CodePlayground
+  code={`function make_register(name) {
+    let contents = "*unassigned*";
+    function dispatch(message) {
+        return message === "get"
+               ? contents
+               : message === "set"
+               ? value => { contents = value; }
+               : error(message, "unknown request -- make_register");
+    }
+    return dispatch;
+}`}
+  height={250}
+  showLineNumbers={true}
+/>
 
-## Funções Principais
+As seguintes funções são usadas para acessar registradores:
 
-- `make_machine` - Construir uma máquina
-- `get_register_contents` - Ler valor de registrador
-- `set_register_contents` - Definir valor de registrador
-- `start` - Iniciar execução da máquina
+<CodePlayground
+  code={`function get_contents(register) {
+    return register("get");
+}
+function set_contents(register, value) {
+    return register("set")(value);
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
 
----
+## A pilha
 
-**Nota**: Esta seção estabelece a base para entender como o simulador funciona internamente.
+Também podemos representar uma pilha como uma função com estado local. A função `make_stack` cria uma pilha cujo estado local consiste em uma lista dos itens na pilha. Uma pilha aceita requisições para fazer `push` de um item na pilha, fazer `pop` do item do topo da pilha e retorná-lo, e `initialize` a pilha para vazia.
+
+<CodePlayground
+  code={`function make_stack() {
+    let stack = null;
+    function push(x) {
+        stack = pair(x, stack);
+        return "done";
+    }
+    function pop() {
+        if (is_null(stack)) {
+            error("empty stack -- pop");
+        } else {
+            const top = head(stack);
+            stack = tail(stack);
+            return top;
+        }
+    }
+    function initialize() {
+        stack = null;
+        return "done";
+    }
+    function dispatch(message) {
+        return message === "push"
+               ? push
+               : message === "pop"
+               ? pop()
+               : message === "initialize"
+               ? initialize()
+               : error(message, "unknown request -- stack");
+    }
+    return dispatch;
+}`}
+  height={500}
+  showLineNumbers={true}
+/>
+
+As seguintes funções são usadas para acessar pilhas:
+
+<CodePlayground
+  code={`function pop(stack) {
+    return stack("pop");
+}
+function push(stack, value) {
+    return stack("push")(value);
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+## A máquina básica
+
+A função `make_new_machine`, mostrada na figura 5.5, constrói um objeto cujo estado local consiste em uma pilha, uma sequência de instruções inicialmente vazia, uma lista de operações que inicialmente contém uma operação para inicializar a pilha, e uma *tabela de registradores* que inicialmente contém dois registradores, chamados `flag` e `pc` (para "contador de programa"). A função interna `allocate_register` adiciona novas entradas à tabela de registradores, e a função interna `lookup_register` procura registradores na tabela.
+
+<CodePlayground
+  code={`function make_new_machine() {
+    const pc = make_register("pc");
+    const flag = make_register("flag");
+    const stack = make_stack();
+    let the_instruction_sequence = null;
+    let the_ops = list(list("initialize_stack", () => stack("initialize")));
+    let register_table = list(list("pc", pc), list("flag", flag));
+    function allocate_register(name) {
+        if (is_undefined(assoc(name, register_table))) {
+            register_table = pair(list(name, make_register(name)),
+                                  register_table);
+        } else {
+            error(name, "multiply defined register");
+        }
+        return "register allocated";
+    }
+    function lookup_register(name) {
+        const val = assoc(name, register_table);
+        return is_undefined(val)
+               ? error(name, "unknown register")
+               : head(tail(val));
+    }
+    function execute() {
+        const insts = get_contents(pc);
+        if (is_null(insts)) {
+            return "done";
+        } else {
+            inst_execution_fun(head(insts))();
+            return execute();
+        }
+    }
+    function dispatch(message) {
+        function start() {
+            set_contents(pc, the_instruction_sequence);
+            return execute();
+        }
+        return message === "start"
+               ? start()
+               : message === "install_instruction_sequence"
+               ? seq => { the_instruction_sequence = seq; }
+               : message === "allocate_register"
+               ? allocate_register
+               : message === "get_register"
+               ? lookup_register
+               : message === "install_operations"
+               ? ops => { the_ops = append(the_ops, ops); }
+               : message === "stack"
+               ? stack
+               : message === "operations"
+               ? the_ops
+               : error(message, "unknown request -- machine");
+    }
+    return dispatch;
+}`}
+  height={750}
+  showLineNumbers={true}
+/>
+
+**Figura 5.5:** A função `make_new_machine` implementa o modelo básico de máquina.
+
+O registrador `flag` é usado para controlar ramificações na máquina simulada. Nossas instruções `test` definem o conteúdo de `flag` para o resultado do teste (verdadeiro ou falso). Nossas instruções `branch` decidem se devem ou não ramificar examinando o conteúdo de `flag`.
+
+O registrador `pc` determina o sequenciamento de instruções enquanto a máquina executa. Este sequenciamento é implementado pela função interna `execute`. No modelo de simulação, cada instrução de máquina é uma estrutura de dados que inclui uma função sem argumentos, chamada de *função de execução de instrução*, tal que chamar esta função simula a execução da instrução. Enquanto a simulação executa, `pc` aponta para o lugar na sequência de instruções começando com a próxima instrução a ser executada. A função `execute` obtém essa instrução, executa-a chamando a função de execução de instrução, e repete este ciclo até que não haja mais instruções para executar (ou seja, até que `pc` aponte para o fim da sequência de instruções).
+
+Como parte de sua operação, cada função de execução de instrução modifica `pc` para indicar a próxima instrução a ser executada. As instruções `branch` e `go_to` mudam `pc` para apontar para o novo destino. Todas as outras instruções simplesmente avançam `pc`, fazendo-o apontar para a próxima instrução na sequência. Observe que cada chamada a `execute` chama `execute` novamente, mas isso não produz um loop infinito porque executar a função de execução de instrução muda o conteúdo de `pc`.
+
+A função `make_new_machine` retorna uma função `dispatch` que implementa acesso por passagem de mensagens ao estado interno. Observe que iniciar a máquina é realizado definindo `pc` para o início da sequência de instruções e chamando `execute`.
+
+Para conveniência, fornecemos uma interface procedural alternativa para a operação `start` de uma máquina, assim como funções para definir e examinar conteúdos de registradores, conforme especificado no início da seção 5.2:
+
+<CodePlayground
+  code={`function start(machine) {
+    return machine("start");
+}
+function get_register_contents(machine, register_name) {
+    return get_contents(get_register(machine, register_name));
+}
+function set_register_contents(machine, register_name, value) {
+    set_contents(get_register(machine, register_name), value);
+    return "done";
+}`}
+  height={250}
+  showLineNumbers={true}
+/>
+
+Essas funções (e muitas funções nas seções 5.2.2 e 5.2.3) usam o seguinte para procurar o registrador com um determinado nome em uma determinada máquina:
+
+<CodePlayground
+  code={`function get_register(machine, reg_name) {
+    return machine("get_register")(reg_name);
+}`}
+  height={100}
+  showLineNumbers={true}
+/>

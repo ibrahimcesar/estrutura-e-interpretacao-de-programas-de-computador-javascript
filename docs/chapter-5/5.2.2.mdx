@@ -1,42 +1,165 @@
 ---
-title: 5.2.2 O Assembler
+title: 5.2.2 O Montador
 ---
 
-# 5.2.2 O Assembler
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.2.2 O Montador
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+O montador transforma a sequência de instruções do controlador para uma máquina em uma lista correspondente de instruções de máquina, cada uma com sua função de execução. No geral, o montador é muito parecido com os avaliadores que estudamos no capítulo 4—existe uma linguagem de entrada (neste caso, a linguagem de máquina de registradores) e devemos executar uma ação apropriada para cada tipo de componente na linguagem.
 
-## Visão Geral
+A técnica de produzir uma função de execução para cada instrução é exatamente o que usamos na seção 4.1.7 para acelerar o avaliador separando a análise da execução em tempo de execução. Como vimos no capítulo 4, muita análise útil de expressões JavaScript pode ser realizada sem saber os valores reais dos nomes. Aqui, analogamente, muita análise útil de expressões da linguagem de máquina de registradores pode ser realizada sem saber o conteúdo real dos registradores da máquina. Por exemplo, podemos substituir referências a registradores por ponteiros para os objetos de registrador, e podemos substituir referências a rótulos por ponteiros para o lugar na sequência de instruções que o rótulo designa.
 
-Esta seção explica como o assembler converte código de controlador em instruções executáveis:
+Antes de poder gerar as funções de execução de instrução, o montador deve saber a que todos os rótulos se referem, então ele começa varrendo a sequência do controlador para separar os rótulos das instruções. À medida que varre o controlador, ele constrói tanto uma lista de instruções quanto uma tabela que associa cada rótulo com um ponteiro para essa lista. Então o montador aumenta a lista de instruções inserindo a função de execução para cada instrução.
 
-- Processo de montagem (assembly)
-- Resolução de rótulos
-- Geração de instruções executáveis
-- Tratamento de referências a registradores e operações
+A função `assemble` é o ponto de entrada principal para o montador. Ela recebe a sequência do controlador e o modelo de máquina como argumentos e retorna a sequência de instruções a ser armazenada no modelo. A função `assemble` chama `extract_labels` para construir a lista de instruções inicial e a tabela de rótulos a partir da sequência do controlador fornecida. O segundo argumento para `extract_labels` é uma função a ser chamada para processar esses resultados: Esta função usa `update_insts` para gerar as funções de execução de instrução e inseri-las na lista de instruções, e retorna a lista modificada.
 
-## Tópicos Principais
+<CodePlayground
+  code={`function assemble(controller, machine) {
+    return extract_labels(controller,
+                          (insts, labels) => {
+                              update_insts(insts, labels, machine);
+                              return insts;
+                          });
+}`}
+  height={200}
+  showLineNumbers={true}
+/>
 
-- Análise sintática do código do controlador
-- Tabela de rótulos (label table)
-- Resolução de referências forward
-- Construção de objetos de instrução executáveis
-- Vinculação de registradores e operações
+A função `extract_labels` recebe uma lista `controller` e uma função `receive` como argumentos. A função `receive` será chamada com dois valores: (1) uma lista `insts` de estruturas de dados de instrução, cada uma contendo uma instrução de `controller`; e (2) uma tabela chamada `labels`, que associa cada rótulo de `controller` com a posição na lista `insts` que o rótulo designa.
 
-## Funções do Assembler
+<CodePlayground
+  code={`function extract_labels(controller, receive) {
+    return is_null(controller)
+           ? receive(null, null)
+           : extract_labels(
+                 tail(controller),
+                 (insts, labels) => {
+                   const next_element = head(controller);
+                   return is_string(next_element)
+                          ? receive(insts,
+                                    pair(make_label_entry(next_element,
+                                                          insts),
+                                         labels))
+                          : receive(pair(make_inst(next_element),
+                                         insts),
+                                    labels);
+                 });
+}`}
+  height={350}
+  showLineNumbers={true}
+/>
 
-- `extract_labels` - Extrai rótulos do código
-- `update_insts` - Atualiza instruções com informações de máquina
-- `assemble` - Monta o código do controlador
+A função `extract_labels` funciona varrendo sequencialmente os elementos do `controller` e acumulando `insts` e `labels`. Se um elemento é uma string (e portanto um rótulo), uma entrada apropriada é adicionada à tabela `labels`. Caso contrário, o elemento é acumulado na lista `insts`.[^1]
 
-## Exercícios
+[^1]: Usar a função `receive` aqui é uma maneira de fazer `extract_labels` efetivamente retornar dois valores—`labels` e `insts`—sem explicitamente criar uma estrutura de dados composta para mantê-los. Uma implementação alternativa, que retorna um par explícito de valores, é:
+    ```javascript
+    function extract_labels(controller) {
+        if (is_null(controller)) {
+            return pair(null, null);
+        } else {
+            const result = extract_labels(tail(controller));
+            const insts = head(result);
+            const labels = tail(result);
+            const next_element = head(controller);
+            return is_string(next_element)
+                   ? pair(insts,
+                          pair(make_label_entry(next_element, insts), labels))
+                   : pair(pair(make_inst(next_element), insts),
+                          labels);
+        }
+    }
+    ```
+    que seria chamada por `assemble` da seguinte forma:
+    ```javascript
+    function assemble(controller, machine) {
+        const result = extract_labels(controller);
+        const insts = head(result);
+        const labels = tail(result);
+        update_insts(insts, labels, machine);
+        return insts;
+    }
+    ```
+    Você pode considerar nosso uso de `receive` como demonstrando uma maneira elegante de retornar múltiplos valores, ou simplesmente uma desculpa para exibir um truque de programação. Um argumento como `receive` que é a próxima função a ser invocada é chamado de "continuação". Lembre-se de que também usamos continuações para implementar a estrutura de controle de retrocesso no avaliador `amb` na seção 4.3.3.
 
-Exercícios sobre a implementação e otimização do assembler.
+A função `update_insts` modifica a lista de instruções, que inicialmente contém apenas as instruções do controlador, para incluir as funções de execução correspondentes:
 
----
+<CodePlayground
+  code={`function update_insts(insts, labels, machine) {
+    const pc = get_register(machine, "pc");
+    const flag = get_register(machine, "flag");
+    const stack = machine("stack");
+    const ops = machine("operations");
+    return for_each(inst => set_inst_execution_fun(
+                                inst,
+                                make_execution_function(
+                                    inst_controller_instruction(inst),
+                                    labels, machine, pc,
+                                    flag, stack, ops)),
+                    insts);
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
 
-**Nota**: O assembler é crucial para transformar descrições de alto nível em código executável.
+A estrutura de dados de instrução de máquina simplesmente emparelha a instrução do controlador com a função de execução correspondente. A função de execução não está ainda disponível quando `extract_labels` constrói a instrução, e é inserida mais tarde por `update_insts`.
+
+<CodePlayground
+  code={`function make_inst(inst_controller_instruction) {
+    return pair(inst_controller_instruction, null);
+}
+function inst_controller_instruction(inst) {
+    return head(inst);
+}
+function inst_execution_fun(inst) {
+    return tail(inst);
+}
+function set_inst_execution_fun(inst, fun) {
+    set_tail(inst, fun);
+}`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+A instrução do controlador não é usada por nosso simulador, mas é útil manter por perto para depuração (veja o exercício 5.16).
+
+Elementos da tabela de rótulos são pares:
+
+<CodePlayground
+  code={`function make_label_entry(label_name, insts) {
+    return pair(label_name, insts);
+}`}
+  height={100}
+  showLineNumbers={true}
+/>
+
+Entradas serão procuradas na tabela com:
+
+<CodePlayground
+  code={`function lookup_label(labels, label_name) {
+    const val = assoc(label_name, labels);
+    return is_undefined(val)
+           ? error(label_name, "undefined label -- assemble")
+           : tail(val);
+}`}
+  height={150}
+  showLineNumbers={true}
+/>
+
+## Exercício 5.8
+
+O seguinte código de máquina de registradores é ambíguo, porque o rótulo `here` é definido mais de uma vez:
+
+```javascript
+"start",
+  go_to(label("here")),
+"here",
+  assign("a", constant(3)),
+  go_to(label("there")),
+"here",
+  assign("a", constant(4)),
+  go_to(label("there")),
+"there",
+```
+
+Com o simulador como escrito, qual será o conteúdo do registrador `a` quando o controle chegar a `there`? Modifique a função `extract_labels` de modo que o montador sinalize um erro se o mesmo nome de rótulo for usado para indicar dois locais diferentes.

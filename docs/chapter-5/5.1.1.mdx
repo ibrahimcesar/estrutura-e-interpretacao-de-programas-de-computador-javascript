@@ -2,36 +2,125 @@
 title: 5.1.1 Uma Linguagem para Descrever Máquinas de Registradores
 ---
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 # 5.1.1 Uma Linguagem para Descrever Máquinas de Registradores
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+Diagramas de caminho de dados e controlador são adequados para representar máquinas simples como a do MDC, mas são difíceis de manejar para descrever máquinas grandes como um interpretador JavaScript. Para tornar possível lidar com máquinas complexas, criaremos uma linguagem que apresenta, em forma textual, toda a informação fornecida pelos diagramas de caminho de dados e controlador. Começaremos com uma notação que espelha diretamente os diagramas.
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+Definimos os caminhos de dados de uma máquina descrevendo os registradores e as operações. Para descrever um registrador, damos a ele um nome e especificamos os botões que controlam a atribuição a ele. Damos a cada um desses botões um nome e especificamos a fonte dos dados que entram no registrador sob o controle do botão. (A fonte é um registrador, uma constante ou uma operação.) Para descrever uma operação, damos a ela um nome e especificamos suas entradas (registradores ou constantes).
 
-## Visão Geral
+Definimos o controlador de uma máquina como uma sequência de *instruções* juntamente com *rótulos* que identificam *pontos de entrada* na sequência. Uma instrução é uma das seguintes:
 
-Esta seção apresentará uma linguagem para descrever máquinas de registradores, incluindo:
+- O nome de um botão do caminho de dados a ser pressionado para atribuir um valor a um registrador. (Isso corresponde a uma caixa no diagrama do controlador.)
+- Uma instrução `test`, que realiza um teste especificado.
+- Uma ramificação condicional (instrução `branch`) para um local indicado por um rótulo do controlador, com base no resultado do teste anterior. (O teste e a ramificação juntos correspondem a um losango no diagrama do controlador.) Se o teste for falso, o controlador deve continuar com a próxima instrução na sequência. Caso contrário, o controlador deve continuar com a instrução após o rótulo.
+- Uma ramificação incondicional (instrução `go_to`) nomeando um rótulo do controlador no qual continuar a execução.
 
-- Notação para descrever controladores de máquinas
-- Estrutura de instruções de máquina de registradores
-- Especificação de caminhos de dados (data paths)
-- Exemplos de descrições de máquinas completas
+A máquina começa no início da sequência de instruções do controlador e para quando a execução atinge o fim da sequência. Exceto quando uma ramificação muda o fluxo de controle, as instruções são executadas na ordem em que são listadas.
 
-## Tópicos Principais
+<CodePlayground
+  code={`data_paths(
+  registers(
+    list(
+      pair(name("a"),
+           buttons(name("a<-b"), source(register("b")))),
+      pair(name("b"),
+           buttons(name("b<-t"), source(register("t")))),
+      pair(name("t"),
+           buttons(name("t<-r"), source(operation("rem")))))),
+  operations(
+    list(
+      pair(name("rem"),
+           inputs(register("a"), register("b"))),
+      pair(name("="),
+           inputs(register("b"), constant(0))))));
 
-- Instruções de atribuição (`assign`)
-- Instruções de teste (`test`)
-- Instruções de ramificação (`branch`)
-- Instruções de salto (`go_to`)
-- Rótulos e estrutura de controle
-- Operações e registradores
+controller(
+  list(
+    "test_b",                     // rótulo
+      test("="),                  // teste
+      branch(label("gcd_done")),  // ramificação condicional
+      "t<-r",                     // pressionar botão
+      "a<-b",                     // pressionar botão
+      "b<-t",                     // pressionar botão
+      go_to(label("test_b")),     // ramificação incondicional
+    "gcd_done"));                 // rótulo`}
+  height={500}
+  showLineNumbers={true}
+/>
 
-## Exercícios
+**Figura 5.3:** Uma especificação da máquina MDC.
 
-Esta seção contém exercícios relacionados à descrição de máquinas de registradores em linguagem de máquina.
+A Figura 5.3 mostra a máquina MDC descrita desta forma. Este exemplo apenas sugere a generalidade dessas descrições, uma vez que a máquina MDC é um caso muito simples: cada registrador tem apenas um botão, e cada botão e teste é usado apenas uma vez no controlador.
+
+Infelizmente, é difícil ler tal descrição. Para entender as instruções do controlador, devemos constantemente nos referir de volta às definições dos nomes dos botões e dos nomes das operações, e para entender o que os botões fazem, podemos ter que nos referir às definições dos nomes das operações. Assim, transformaremos nossa notação para combinar a informação das descrições do caminho de dados e do controlador de modo que vejamos tudo junto.
+
+Para obter esta forma de descrição, substituiremos os nomes arbitrários de botões e operações pelas definições de seu comportamento. Isto é, em vez de dizer (no controlador) "Pressione o botão `t<-r`" e separadamente dizer (nos caminhos de dados) "O botão `t<-r` atribui o valor da operação `rem` ao registrador `t`" e "As entradas da operação `rem` são os conteúdos dos registradores `a` e `b`", diremos (no controlador) "Pressione o botão que atribui ao registrador `t` o valor da operação `rem` nos conteúdos dos registradores `a` e `b`". Similarmente, em vez de dizer (no controlador) "Realize o teste `=`" e separadamente dizer (nos caminhos de dados) "O teste `=` opera nos conteúdos do registrador `b` e na constante 0", diremos "Realize o teste `=` nos conteúdos do registrador `b` e na constante 0". Omitiremos a descrição do caminho de dados, deixando apenas a sequência do controlador. Assim, a máquina MDC é descrita da seguinte forma:
+
+<CodePlayground
+  code={`controller(
+  list(
+    "test_b",
+      test(list(op("="), reg("b"), constant(0))),
+      branch(label("gcd_done")),
+      assign("t", list(op("rem"), reg("a"), reg("b"))),
+      assign("a", reg("b")),
+      assign("b", reg("t")),
+      go_to(label("test_b")),
+    "gcd_done"))`}
+  height={300}
+  showLineNumbers={true}
+/>
+
+Esta forma de descrição é mais fácil de ler do que o tipo ilustrado na Figura 5.3, mas também tem desvantagens:
+
+- É mais verbosa para máquinas grandes, porque descrições completas dos elementos do caminho de dados são repetidas sempre que os elementos são mencionados na sequência de instruções do controlador. (Isso não é um problema no exemplo do MDC, porque cada operação e botão é usado apenas uma vez.) Além disso, repetir as descrições do caminho de dados obscurece a estrutura real do caminho de dados da máquina; não é óbvio para uma máquina grande quantos registradores, operações e botões existem e como eles estão interconectados.
+
+- Como as instruções do controlador em uma definição de máquina se parecem com expressões JavaScript, é fácil esquecer que elas não são expressões JavaScript arbitrárias. Elas podem notar apenas operações legais de máquina. Por exemplo, operações podem operar diretamente apenas em constantes e nos conteúdos de registradores, não nos resultados de outras operações.
+
+Apesar dessas desvantagens, usaremos esta linguagem de máquina de registradores ao longo deste capítulo, porque estaremos mais preocupados em entender controladores do que em entender os elementos e conexões nos caminhos de dados. Devemos ter em mente, no entanto, que o projeto do caminho de dados é crucial no projeto de máquinas reais.
+
+## Exercício 5.5
+
+Use a linguagem de máquina de registradores para descrever a máquina de fatorial iterativa do exercício 5.1.
+
+## Ações
+
+Vamos modificar a máquina MDC para que possamos digitar os números cujo MDC queremos e obter a resposta impressa. Não discutiremos como fazer uma máquina que pode ler e imprimir, mas assumiremos (como fazemos quando usamos `prompt` e `display` em JavaScript) que elas estão disponíveis como operações primitivas.<sup>[1](#footnote-1)</sup>
+
+A operação `prompt` é como as operações que temos usado no sentido de que produz um valor que pode ser armazenado em um registrador. Mas `prompt` não recebe entradas de nenhum registrador; seu valor depende de algo que acontece fora das partes da máquina que estamos projetando. Permitiremos que as operações de nossa máquina tenham tal comportamento, e assim desenharemos e notaremos o uso de `prompt` da mesma forma que fazemos com qualquer outra operação que computa um valor.
+
+A operação `display`, por outro lado, difere das operações que temos usado de uma forma fundamental: ela não produz um valor de saída para ser armazenado em um registrador. Embora tenha um efeito, este efeito não está em uma parte da máquina que estamos projetando. Nos referiremos a este tipo de operação como uma *ação*. Representaremos uma ação em um diagrama de caminho de dados da mesma forma que representamos uma operação que computa um valor—como um trapézio que contém o nome da ação. Setas apontam para a caixa de ação de quaisquer entradas (registradores ou constantes). Também associamos um botão com a ação. Pressionar o botão faz a ação acontecer. Para fazer um controlador pressionar um botão de ação, usamos um novo tipo de instrução chamada `perform`. Assim, a ação de imprimir os conteúdos do registrador `a` é representada em uma sequência do controlador pela instrução
+
+```javascript
+perform(list(op("display"), reg("a")))
+```
+
+A Figura 5.4 mostra os caminhos de dados e o controlador para a nova máquina MDC. Em vez de fazer a máquina parar após imprimir a resposta, fizemos com que ela recomeçasse, de modo que ela repetidamente lê um par de números, calcula seu MDC e imprime o resultado. Esta estrutura é como os laços de driver que usamos nos interpretadores do capítulo 4.
+
+<CodePlayground
+  code={`controller(
+  list(
+    "gcd_loop",
+      assign("a", list(op("prompt"))),
+      assign("b", list(op("prompt"))),
+    "test_b",
+      test(list(op("="), reg("b"), constant(0))),
+      branch(label("gcd_done")),
+      assign("t", list(op("rem"), reg("a"), reg("b"))),
+      assign("a", reg("b")),
+      assign("b", reg("t")),
+      go_to(label("test_b")),
+    "gcd_done",
+      perform(list(op("display"), reg("a"))),
+      go_to(label("gcd_loop"))))`}
+  height={350}
+  showLineNumbers={true}
+/>
+
+**Figura 5.4:** Uma máquina MDC que lê entradas e imprime resultados.
 
 ---
 
-**Nota**: Esta subseção expande o conteúdo introduzido em 5.1 sobre o design de máquinas de registradores.
+<a name="footnote-1"></a>[1] Esta suposição omite uma grande quantidade de complexidade. A implementação de leitura e impressão requer esforço significativo, por exemplo, para lidar com codificações de caracteres para diferentes idiomas.

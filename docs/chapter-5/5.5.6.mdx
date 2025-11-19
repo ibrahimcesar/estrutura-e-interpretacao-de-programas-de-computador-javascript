@@ -1,53 +1,102 @@
 ---
-title: 5.5.6 Endereçamento Léxico
+title: 5.5.6 Análise Léxica
 ---
 
-# 5.5.6 Endereçamento Léxico
+import CodePlayground from '@site/src/components/CodePlayground';
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+# 5.5.6 Análise Léxica
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+Uma das otimizações mais comuns realizadas por compiladores é a otimização de busca de nomes. Nosso compilador, como o implementamos até agora, gera código que usa a operação `lookup_symbol_value` da máquina avaliadora. Isso busca um nome comparando-o com cada nome que está atualmente ligado, trabalhando quadro por quadro para fora através do ambiente de tempo de execução. Esta busca pode ser cara se os quadros estiverem profundamente aninhados ou se houver muitos nomes. Por exemplo, considere o problema de procurar o valor de `x` ao avaliar a expressão `x * y * z` em uma aplicação da função de cinco argumentos que é retornada por:
 
-## Visão Geral
+```javascript
+((x, y) =>
+   (a, b, c, d, e) =>
+     ((y, z) => x * y * z)(a * b * x, c + d + x))(3, 4)
+```
 
-Esta seção importante introduz uma otimização crucial para compiladores:
+Cada vez que `lookup_symbol_value` busca `x`, ela deve determinar que o símbolo `"x"` não é igual a `"y"` ou `"z"` (no primeiro quadro), nem a `"a"`, `"b"`, `"c"`, `"d"`, ou `"e"` (no segundo quadro). Porque nossa linguagem é lexicamente escopo, o ambiente de tempo de execução para qualquer componente terá uma estrutura que é paralela à estrutura léxica do programa no qual o componente aparece. Assim, o compilador pode saber, quando ele analisa a expressão acima, que cada vez que a função é aplicada a ligação para `x` em `x * y * z` será encontrada dois quadros para fora do quadro atual e será a primeira ligação naquele quadro.
 
-- Conceito de endereçamento léxico (lexical addressing)
-- Determinação estática de localização de variáveis
-- Acesso direto a variáveis sem busca
-- Eliminação de overhead de ambiente
+Podemos explorar este fato inventando um novo tipo de operação de busca de nome, `lexical_address_lookup`, que toma como argumentos um ambiente e um **endereço léxico** que consiste de dois números: um **número de quadro**, que especifica quantos quadros passar, e um **número de deslocamento**, que especifica quantas ligações passar naquele quadro. A operação `lexical_address_lookup` produzirá o valor do nome armazenado naquele endereço léxico em relação ao ambiente atual. Se adicionarmos a operação `lexical_address_lookup` à nossa máquina, podemos fazer o compilador gerar código que referencia nomes usando esta operação, ao invés de `lookup_symbol_value`. Da mesma forma, nosso código compilado pode usar uma nova operação `lexical_address_assign` ao invés de `assign_symbol_value`. Com endereçamento léxico, não há necessidade de incluir quaisquer referências simbólicas a nomes no código objeto, e quadros não precisam incluir símbolos em tempo de execução.
 
-## Tópicos Principais
+Para gerar tal código, o compilador deve ser capaz de determinar o endereço léxico de um nome sobre o qual ele está prestes a compilar uma referência. O endereço léxico de um nome em um programa depende de onde se está no código. Por exemplo, no programa seguinte, o endereço de `x` na expressão e₁ é (2,0)—dois quadros atrás e a primeira variável no quadro. Naquele ponto `y` está no endereço (0,0) e `c` está no endereço (1,2). Na expressão e₂, `x` está em (1,0), `y` está em (1,1), e `c` está em (0,2).
 
-- Limitações de busca de símbolos em tempo de execução
-- Endereços léxicos: `(frame, offset)`
-- Análise léxica em tempo de compilação
-- Operações `lexical_address_lookup` e `lexical_address_set`
-- Compilação com endereçamento léxico
+```javascript
+((x, y) =>
+   (a, b, c, d, e) =>
+     ((y, z) => e₁)(e₂, c + d + x))(3, 4);
+```
 
-## Vantagens
+Uma forma do compilador produzir código que usa endereçamento léxico é manter uma estrutura de dados chamada **ambiente de tempo de compilação**. Isso mantém o controle de quais ligações estarão em quais posições em quais quadros no ambiente de tempo de execução quando uma particular operação de acesso ao nome for executada. O ambiente de tempo de compilação é uma lista de quadros, cada um contendo uma lista de símbolos. Não haverá valores associados aos símbolos, já que valores não são computados em tempo de compilação. (O exercício 5.44 mudará isso, como uma otimização para constantes.) O ambiente de tempo de compilação torna-se um argumento adicional para `compile` e é passado adiante para cada gerador de código. A chamada de nível superior a `compile` usa um ambiente de tempo de compilação que inclui os nomes de todas as funções e valores primitivos. Quando o corpo de uma expressão lambda é compilado, `compile_lambda_body` estende o ambiente de tempo de compilação por um quadro contendo os parâmetros da função, de modo que o corpo seja compilado com aquele ambiente estendido. Similarmente, quando o corpo de um bloco é compilado, `compile_block` estende o ambiente de tempo de compilação por um quadro contendo os nomes locais escaneados do corpo. Em cada ponto na compilação, `compile_name` e `compile_assignment_declaration` usam o ambiente de tempo de compilação para gerar os endereços léxicos apropriados.
 
-- Acesso a variáveis em tempo constante O(1)
-- Eliminação de busca por símbolos
-- Código mais eficiente
-- Melhor previsibilidade de desempenho
+Os exercícios 5.42 a 5.45 descrevem como completar este esboço da estratégia de endereçamento léxico para incorporar busca léxica no compilador. Os exercícios 5.44 e 5.46 descrevem outros usos para o ambiente de tempo de compilação.
 
-## Implementação
+## Exercício 5.42
 
-- Modificação do compilador para usar endereços léxicos
-- Ambiente de compilação (compile-time environment)
-- Tradução de nomes para endereços léxicos
-- Operações otimizadas de ambiente
+Escreva uma função `lexical_address_lookup` que implementa a nova operação de busca. Ela deve tomar dois argumentos—um endereço léxico e um ambiente de tempo de execução—e retornar o valor do nome armazenado no endereço léxico especificado. A função `lexical_address_lookup` deve sinalizar um erro se o valor do nome for a string `"*unassigned*"`. Também escreva uma função `lexical_address_assign` que implementa a operação que muda o valor do nome em um endereço léxico especificado.
 
-## Exercícios
+## Exercício 5.43
 
-Exercícios sobre:
-- Implementação de endereçamento léxico
-- Cálculo de endereços léxicos
-- Comparação de desempenho
+Modifique o compilador para manter o ambiente de tempo de compilação como descrito acima. Ou seja, adicione um argumento de ambiente de tempo de compilação a `compile` e aos vários geradores de código, e estenda-o em `compile_lambda_body` e `compile_block`.
 
----
+## Exercício 5.44
 
-**Nota**: Esta é uma das otimizações mais importantes em compiladores reais.
+Escreva uma função `find_symbol` que toma como argumentos um símbolo e um ambiente de tempo de compilação e retorna o endereço léxico do símbolo com respeito àquele ambiente. Por exemplo, no fragmento de programa mostrado acima, o ambiente de tempo de compilação durante a compilação da expressão e₁ é:
+
+```javascript
+list(list("y", "z"),
+     list("a", "b", "c", "d", "e"),
+     list("x", "y"))
+```
+
+A função `find_symbol` deve produzir:
+
+```javascript
+find_symbol("c", list(list("y", "z"),
+                      list("a", "b", "c", "d", "e"),
+                      list("x", "y")));
+```
+
+Resultado:
+```javascript
+list(1, 2)
+```
+
+```javascript
+find_symbol("x", list(list("y", "z"),
+                      list("a", "b", "c", "d", "e"),
+                      list("x", "y")));
+```
+
+Resultado:
+```javascript
+list(2, 0)
+```
+
+```javascript
+find_symbol("w", list(list("y", "z"),
+                      list("a", "b", "c", "d", "e"),
+                      list("x", "y")));
+```
+
+Resultado:
+```javascript
+"not found"
+```
+
+## Exercício 5.45
+
+Usando `find_symbol` do exercício 5.44, reescreva `compile_assignment_declaration` e `compile_name` para produzir instruções de endereço léxico. Em casos onde `find_symbol` retorna `"not found"` (ou seja, onde o nome não está no ambiente de tempo de compilação), você deve reportar um erro de tempo de compilação. Teste o compilador modificado em alguns casos simples, como a combinação lambda aninhada no início desta seção.
+
+## Exercício 5.46
+
+Em JavaScript, uma tentativa de atribuir um novo valor a um nome que é declarado como uma constante leva a um erro. O exercício 4.16 mostra como detectar tais erros em tempo de execução. Com as técnicas apresentadas nesta seção, podemos detectar tentativas de atribuir um novo valor a uma constante **em tempo de compilação**. Para este propósito, estenda as funções `compile_lambda_body` e `compile_block` para registrar no ambiente de tempo de compilação se um nome é declarado como uma variável (usando `let` ou como um parâmetro), ou como uma constante (usando `const` ou `function`). Modifique `compile_assignment` para reportar um erro apropriado quando detectar uma atribuição a uma constante.
+
+## Exercício 5.47
+
+O conhecimento sobre constantes em tempo de compilação abre a porta para muitas otimizações que nos permitem gerar código objeto mais eficiente. Além da extensão do ambiente de tempo de compilação no exercício 5.46 para indicar nomes declarados como constantes, podemos armazenar o valor de uma constante se ele for conhecido em tempo de compilação, ou outras informações que podem nos ajudar a otimizar o código.
+
+a. Uma declaração constante como `const` *nome* `=` *literal*`;` nos permite substituir todas as ocorrências de *nome* dentro do escopo da declaração por *literal* de modo que *nome* não tenha que ser procurado no ambiente de tempo de execução. Esta otimização é chamada **propagação de constantes**. Use um ambiente de tempo de compilação estendido para armazenar constantes literais, e modifique `compile_name` para usar a constante armazenada na instrução `assign` gerada ao invés da operação `lookup_symbol_value`.
+
+b. Declaração de função é um componente derivado que se expande para declaração constante. Vamos assumir que os nomes de funções primitivas no ambiente global também são considerados constantes. Se estendermos ainda mais nosso ambiente de tempo de compilação para manter o controle de quais nomes se referem a funções compiladas e quais a funções primitivas, podemos mover o teste que verifica se uma função é compilada ou primitiva do tempo de execução para o tempo de compilação. Isso torna o código objeto mais eficiente porque ele substitui um teste que deve ser realizado uma vez por aplicação de função no código gerado por um que é realizado pelo compilador. Usando tal ambiente de tempo de compilação estendido, modifique `compile_function_call` de modo que se puder ser determinado em tempo de compilação se a função chamada é compilada ou primitiva, somente as instruções em `compiled_branch` ou `primitive_branch` sejam geradas.
+
+c. Substituir nomes constantes por seus valores literais como na parte (a) abre caminho para outra otimização, a saber, substituir aplicações de funções primitivas a valores literais com o resultado computado em tempo de compilação. Esta otimização, chamada **dobramento de constantes** (constant folding), substitui expressões como `40 + 2` por `42` realizando a adição no compilador. Estenda o compilador para realizar dobramento de constantes para operações aritméticas em números e para concatenação de strings.

@@ -2,50 +2,372 @@
 title: 5.5.5 Um Exemplo de Código Compilado
 ---
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 # 5.5.5 Um Exemplo de Código Compilado
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+Agora que vimos todos os elementos do compilador, vamos examinar um exemplo de código compilado para ver como as coisas se encaixam. Vamos compilar a declaração de uma função `factorial` recursiva passando como primeiro argumento para `compile` o resultado da aplicação de `parse` a uma representação em string do programa (aqui usando crases `` ` ``, que funcionam como aspas simples e duplas mas permitem que a string abranja múltiplas linhas):
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+```javascript
+compile(parse(`
+function factorial(n) {
+    return n === 1
+           ? 1
+           : factorial(n - 1) * n;
+}
+              `),
+        "val",
+        "next");
+```
 
-## Visão Geral
+Especificamos que o valor da declaração deve ser colocado no registrador `val`. Não nos importamos com o que o código compilado faz após executar a declaração, então nossa escolha de `"next"` como descritor de ligação é arbitrária.
 
-Esta seção apresenta um exemplo completo de código compilado:
+A função `compile` determina que recebeu uma declaração de função, então ela a transforma em uma declaração constante e então chama `compile_declaration`. Isso compila código para calcular o valor a ser atribuído (direcionado a `val`), seguido de código para instalar a declaração, seguido de código para colocar o valor da declaração (que é o valor `undefined`) no registrador alvo, seguido finalmente do código de ligação. O registrador `env` é preservado em torno do cálculo do valor, porque ele é necessário para instalar a declaração. Como a ligação é `"next"`, não há código de ligação neste caso. O esqueleto do código compilado é assim:
 
-- Walkthrough de compilação de uma função completa
-- Código gerado passo a passo
-- Comparação com código interpretado
-- Análise de eficiência
+```
+⟨salvar env se modificado pelo código para calcular valor⟩
+⟨compilação do valor da declaração, alvo val, ligação "next"⟩
+⟨restaurar env se salvo acima⟩
+perform(list(op("assign_symbol_value"),
+             constant("factorial"),
+             reg("val"),
+             reg("env"))),
+assign("val", constant(undefined))
+```
 
-## Tópicos Principais
+A expressão que é compilada para produzir o valor para o nome `factorial` é uma expressão lambda cujo valor é a função que calcula fatoriais. A função `compile` trata isso chamando `compile_lambda_expression`, que compila o corpo da função, rotula-o como um novo ponto de entrada e gera a instrução que combinará o corpo da função no novo ponto de entrada com o ambiente de tempo de execução e atribuirá o resultado a `val`. A sequência então pula ao redor do código da função compilada, que é inserido neste ponto. O código da função em si começa estendendo o ambiente de declaração da função por um quadro que liga o parâmetro `n` ao argumento da função. Então vem o corpo real da função. Como este código para o valor da variável não modifica o registrador `env`, o `save` e `restore` opcionais mostrados acima não são gerados. (O código da função em `entry1` não é executado neste ponto, então seu uso de `env` é irrelevante.) Portanto, o esqueleto para o código compilado torna-se:
 
-- Exemplo: compilação de fatorial recursivo
-- Código gerado para cada parte da função
-- Análise da sequência de instruções resultante
-- Uso de pilha e registradores
-- Otimizações aplicadas
+```javascript
+  assign("val", list(op("make_compiled_function"),
+                     label("entry1"),
+                     reg("env"))),
+  go_to(label("after_lambda2")),
+"entry1",
+  assign("env", list(op("compiled_function_env"), reg("fun"))),
+  assign("env", list(op("extend_environment"),
+                     constant(list("n")),
+                     reg("argl"),
+                     reg("env"))),
+  ⟨compilação do corpo da função⟩
+"after_lambda2",
+  perform(list(op("assign_symbol_value"),
+               constant("factorial"),
+               reg("val"),
+               reg("env"))),
+  assign("val", constant(undefined))
+```
 
-## Análise do Código Gerado
+O corpo de uma função é sempre compilado (por `compile_lambda_body`) com alvo `val` e ligação `"next"`. O corpo neste caso consiste de uma única instrução return:<sup>[1](#footnote-1)</sup>
 
-- Prólogo e epílogo de função
-- Código para corpo da função
-- Tratamento de recursão
-- Retorno de valor
-- Comparação de desempenho
+```javascript
+return n === 1
+       ? 1
+       : factorial(n - 1) * n;
+```
 
-## Comparação
+A função `compile_return_statement` gera código para reverter a pilha usando o marcador e para restaurar o registrador `continue`, e então compila a expressão return com alvo `val` e ligação `"return"`, porque seu valor deve ser retornado da função. A expressão return é uma expressão condicional, para a qual `compile_conditional` gera código que primeiro calcula o predicado (direcionado a `val`), então verifica o resultado e ramifica ao redor do ramo verdadeiro se o predicado for falso. Os registradores `env` e `continue` são preservados em torno do código do predicado, já que eles podem ser necessários para o resto da expressão condicional. Os ramos verdadeiro e falso são ambos compilados com alvo `val` e ligação `"return"`. (Ou seja, o valor do condicional, que é o valor calculado por qualquer um de seus ramos, é o valor da função.)
 
-- Código compilado vs. interpretado
-- Análise de número de instruções
-- Análise de uso de memória
-- Trade-offs compilação vs. interpretação
+```javascript
+  revert_stack_to_marker(),
+  restore("continue"),
+  ⟨salvar continue, env se modificado pelo predicado e necessário pelos ramos⟩
+  ⟨compilação do predicado, alvo val, ligação "next"⟩
+  ⟨restaurar continue, env se salvos acima⟩
+  test(list(op("is_falsy"), reg("val"))),
+  branch(label("false_branch4")),
+"true_branch3",
+  ⟨compilação do ramo verdadeiro, alvo val, ligação "return"⟩
+"false_branch4",
+  ⟨compilação do ramo falso, alvo val, ligação "return"⟩
+"after_cond5",
+```
 
-## Exercícios
+O predicado `n === 1` é uma aplicação de função (após transformação da combinação de operadores). Isso procura a expressão da função (o símbolo `"==="`) e coloca este valor em `fun`. Ele então monta os argumentos `1` e o valor de `n` em `argl`. Então ele testa se `fun` contém uma função primitiva ou composta, e despacha para um ramo primitivo ou um ramo composto de acordo. Ambos os ramos retomam no rótulo `after_call`. O ramo composto deve configurar `continue` para pular após o ramo primitivo e empurrar um marcador para a pilha para corresponder à operação de reversão na instrução return compilada da função.
 
-Exercícios sobre análise e compreensão de código compilado.
+```javascript
+  assign("fun", list(op("lookup_symbol_value"),
+                     constant("==="), reg("env"))),
+  assign("val", constant(1)),
+  assign("argl", list(op("list"), reg("val"))),
+  assign("val", list(op("lookup_symbol_value"),
+                     constant("n"), reg("env"))),
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch6")),
+"compiled_branch7",
+  assign("continue", label("after_call8")),
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch6",
+  assign("val", list(op("apply_primitive_function"),
+                     reg("fun"),
+                     reg("argl"))),
+"after_call8",
+```
+
+Os requisitos para preservar registradores em torno da avaliação das expressões de função e argumento não resultam em nenhum salvamento de registradores, porque neste caso essas avaliações não modificam os registradores em questão.
+
+O ramo verdadeiro, que é a constante 1, compila (com alvo `val` e ligação `"return"`) para:
+
+```javascript
+  assign("val", constant(1)),
+  go_to(reg("continue")),
+```
+
+O código para o ramo falso é outra chamada de função, onde a função é o valor do símbolo `"*"`, e os argumentos são `n` e o resultado de outra chamada de função (uma chamada a `factorial`). Cada uma dessas chamadas configura `fun` e `argl` e seus próprios ramos primitivo e composto. A Figura 5.17 mostra a compilação completa da declaração da função `factorial`. Note que os possíveis `save` e `restore` de `continue` e `env` em torno do predicado, mostrados acima, são de fato gerados, porque esses registradores são modificados pela chamada de função no predicado e necessários para a chamada de função e a ligação `"return"` nos ramos.
+
+**Figura 5.17:** Compilação da declaração da função `factorial` (continua na próxima página).
+
+```javascript
+// construir a função e pular o código para o corpo da função
+  assign("val", list(op("make_compiled_function"),
+                     label("entry1"), reg("env"))),
+  go_to(label("after_lambda2")),
+"entry1",                           // chamadas a factorial entrarão aqui
+  assign("env", list(op("compiled_function_env"), reg("fun"))),
+  assign("env", list(op("extend_environment"), constant(list("n")),
+                     reg("argl"), reg("env"))),
+// começar corpo real da função
+  revert_stack_to_marker(),         // começa com uma instrução return
+  restore("continue"),
+  save("continue"),                 // preservar registradores através do predicado
+  save("env"),
+// calcular n === 1
+  assign("fun", list(op("lookup_symbol_value"), constant("==="), reg("env"))),
+  assign("val", constant(1)),
+  assign("argl", list(op("list"), reg("val"))),
+  assign("val", list(op("lookup_symbol_value"), constant("n"), reg("env"))),
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch6")),
+"compiled_branch7",
+  assign("continue", label("after_call8")),
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch6",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+"after_call8",                      // val agora contém resultado de n === 1
+  restore("env"),
+  restore("continue"),
+  test(list(op("is_falsy"), reg("val"))),
+  branch(label("false_branch4")),
+"true_branch3",                     // retornar 1
+  assign("val", constant(1)),
+  go_to(reg("continue")),
+"false_branch4",
+// calcular e retornar factorial(n - 1) * n
+  assign("fun", list(op("lookup_symbol_value"), constant("*"), reg("env"))),
+  save("continue"),
+  save("fun"),                      // salvar função *
+  assign("val", list(op("lookup_symbol_value"), constant("n"), reg("env"))),
+  assign("argl", list(op("list"), reg("val"))),
+  save("argl"),                     // salvar lista parcial de argumentos para *
+// calcular factorial(n - 1) que é o outro argumento para *
+  assign("fun", list(op("lookup_symbol_value"),
+                     constant("factorial"), reg("env"))),
+  save("fun"),                      // salvar função factorial
+```
+
+**(continuação)**
+
+```javascript
+// calcular n - 1 que é o argumento para factorial
+  assign("fun", list(op("lookup_symbol_value"), constant("-"), reg("env"))),
+  assign("val", constant(1)),
+  assign("argl", list(op("list"), reg("val"))),
+  assign("val", list(op("lookup_symbol_value"), constant("n"), reg("env"))),
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch10")),
+"compiled_branch11",
+  assign("continue", label("after_call12")),
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch10",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+"after_call12",                     // val agora contém resultado de n - 1
+  assign("argl", list(op("list"), reg("val"))),
+  restore("fun"),                   // restaurar factorial
+// aplicar factorial
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch14")),
+"compiled_branch15",
+  assign("continue", label("after_call16")),
+  save("continue"),                 // configurar para retorno de função compilada
+  push_marker_to_stack(),           //   return na função restaurará a pilha
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch14",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+"after_call16",                     // val agora contém resultado de factorial(n - 1)
+  restore("argl"),                  // restaurar lista parcial de argumentos para *
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  restore("fun"),                   // restaurar *
+  restore("continue"),
+// aplicar * e retornar seu valor
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch18")),
+"compiled_branch19", // note que uma função composta aqui é chamada tail-recursivamente
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch18",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+  go_to(reg("continue")),
+"after_call20",
+"after_cond5",
+"after_lambda2",
+// atribuir a função ao nome factorial
+  perform(list(op("assign_symbol_value"),
+               constant("factorial"), reg("val"), reg("env"))),
+  assign("val", constant(undefined))
+```
+
+## Exercício 5.36
+
+Considere a seguinte declaração de uma função fatorial, que é ligeiramente diferente daquela dada acima:
+
+```javascript
+function factorial_alt(n) {
+    return n === 1
+           ? 1
+           : n * factorial_alt(n - 1);
+}
+```
+
+Compile esta função e compare o código resultante com aquele produzido para `factorial`. Explique quaisquer diferenças que você encontrar. Algum programa executa mais eficientemente que o outro?
+
+## Exercício 5.37
+
+Compile a função fatorial iterativa:
+
+```javascript
+function factorial(n) {
+    function iter(product, counter) {
+        return counter > n
+               ? product
+               : iter(product * counter, counter + 1);
+    }
+    return iter(1, 1);
+}
+```
+
+Anote o código resultante, mostrando a diferença essencial entre o código para as versões iterativa e recursiva de `factorial` que faz um processo construir espaço na pilha e o outro executar em espaço constante na pilha.
+
+## Exercício 5.38
+
+Que programa foi compilado para produzir o código mostrado na Figura 5.18?
+
+**Figura 5.18:** Um exemplo de saída do compilador (continua na próxima página). Veja o exercício 5.38.
+
+```javascript
+  assign("val", list(op("make_compiled_function"),
+                     label("entry1"), reg("env"))),
+"entry1"
+  assign("env", list(op("compiled_function_env"), reg("fun"))),
+  assign("env", list(op("extend_environment"),
+                     constant(list("x")), reg("argl"), reg("env"))),
+  revert_stack_to_marker(),
+  restore("continue"),
+  assign("fun", list(op("lookup_symbol_value"), constant("+"), reg("env"))),
+  save("continue"),
+  save("fun"),
+  save("env"),
+  assign("fun", list(op("lookup_symbol_value"), constant("g"), reg("env"))),
+  save("fun"),
+  assign("fun", list(op("lookup_symbol_value"), constant("+"), reg("env"))),
+  assign("val", constant(2)),
+  assign("argl", list(op("list"), reg("val"))),
+  assign("val", list(op("lookup_symbol_value"), constant("x"), reg("env"))),
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch3")),
+"compiled_branch4"
+  assign("continue", label("after_call5")),
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch3",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+"after_call5",
+  assign("argl", list(op("list"), reg("val"))),
+  restore("fun"),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch7")),
+"compiled_branch8",
+  assign("continue", label("after_call9")),
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch7",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+"after_call9",
+  assign("argl", list(op("list"), reg("val"))),
+  restore("env"),
+  assign("val", list(op("lookup_symbol_value"), constant("x"), reg("env"))),
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  restore("fun"),
+  restore("continue"),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch11")),
+```
+
+**(continuação)**
+
+```javascript
+"compiled_branch12",
+  save("continue"),
+  push_marker_to_stack(),
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
+  go_to(reg("val")),
+"primitive_branch11",
+  assign("val", list(op("apply_primitive_function"), reg("fun"), reg("argl"))),
+  go_to(reg("continue")),
+"after_call13",
+"after_lambda2",
+  perform(list(op("assign_symbol_value"),
+               constant("f"), reg("val"), reg("env"))),
+  assign("val", constant(undefined))
+```
+
+## Exercício 5.39
+
+Que ordem de avaliação nosso compilador produz para argumentos de uma aplicação? É da esquerda para a direita (como mandatado pela especificação ECMAScript), da direita para a esquerda, ou alguma outra ordem? Onde no compilador esta ordem é determinada? Modifique o compilador de modo que ele produza alguma outra ordem de avaliação. (Veja a discussão da ordem de avaliação para o avaliador de controle explícito na seção 5.4.) Como a mudança da ordem de avaliação de argumentos afeta a eficiência do código que constrói a lista de argumentos?
+
+## Exercício 5.40
+
+Uma forma de entender o mecanismo `preserving` do compilador para otimizar o uso da pilha é ver que operações extras seriam geradas se não usássemos essa ideia. Modifique `preserving` de modo que ele sempre gere as operações `save` e `restore`. Compile algumas expressões simples e identifique as operações de pilha desnecessárias que são geradas. Compare o código àquele gerado com o mecanismo `preserving` intacto.
+
+## Exercício 5.41
+
+Nosso compilador é inteligente sobre evitar operações de pilha desnecessárias, mas não é nada inteligente quando se trata de compilar chamadas às funções primitivas da linguagem em termos das operações primitivas fornecidas pela máquina. Por exemplo, considere quanto código é compilado para calcular `a + 1`: O código configura uma lista de argumentos em `argl`, coloca a função de adição primitiva (que encontra procurando o símbolo `"+"` no ambiente) em `fun`, e testa se a função é primitiva ou composta. O compilador sempre gera código para realizar o teste, assim como código para ramos primitivo e composto (apenas um dos quais será executado). Não mostramos a parte do controlador que implementa primitivas, mas presumimos que essas instruções fazem uso de operações aritméticas primitivas nos caminhos de dados da máquina. Considere quanto menos código seria gerado se o compilador pudesse fazer **codificação aberta** (open-code) de primitivas—isto é, se ele pudesse gerar código para usar diretamente essas operações primitivas da máquina. A expressão `a + 1` poderia ser compilada em algo tão simples quanto:<sup>[2](#footnote-2)</sup>
+
+```javascript
+assign("val", list(op("lookup_symbol_value"), constant("a"), reg("env"))),
+assign("val", list(op("+"), reg("val"), constant(1)))
+```
+
+Neste exercício estenderemos nosso compilador para suportar codificação aberta de primitivas selecionadas. Código de propósito especial será gerado para chamadas a essas funções primitivas ao invés do código geral de aplicação de função. Para suportar isso, aumentaremos nossa máquina com registradores de argumentos especiais `arg1` e `arg2`. As operações aritméticas primitivas da máquina tomarão suas entradas de `arg1` e `arg2`. Os resultados podem ser colocados em `val`, `arg1` ou `arg2`.
+
+O compilador deve ser capaz de reconhecer a aplicação de uma primitiva de código aberto no programa fonte. Aumentaremos o despacho no procedimento `compile` para reconhecer os nomes dessas primitivas além das formas sintáticas que ele atualmente reconhece. Para cada forma sintática nosso compilador tem um gerador de código. Neste exercício construiremos uma família de geradores de código para as primitivas de código aberto.
+
+a. As primitivas de código aberto, ao contrário das formas sintáticas, todas precisam que suas expressões de argumento sejam avaliadas. Escreva um gerador de código `spread_arguments` para uso por todos os geradores de código de código aberto. A função `spread_arguments` deve tomar uma lista de expressões de argumento e compilar as expressões de argumento dadas direcionadas a registradores de argumentos sucessivos. Note que uma expressão de argumento pode conter uma chamada a uma primitiva de código aberto, então registradores de argumentos terão que ser preservados durante a avaliação da expressão de argumento.
+
+b. Os operadores JavaScript `===`, `*`, `-` e `+`, entre outros, são implementados na máquina de registradores como funções primitivas e são referidos no ambiente global com os símbolos `"==="`, `"*"`, `"-"` e `"+"`. Em JavaScript, não é possível redeclarar esses nomes, porque eles não atendem às restrições sintáticas para nomes. Isso significa que é seguro fazer código aberto deles. Para cada uma das funções primitivas `===`, `*`, `-` e `+`, escreva um gerador de código que tome uma aplicação com uma expressão de função que nomeia essa função, junto com um alvo e um descritor de ligação, e produza código para espalhar os argumentos nos registradores e então realizar a operação direcionada ao alvo dado com a ligação dada. Faça `compile` despachar para esses geradores de código.
+
+c. Experimente seu novo compilador no exemplo de `factorial`. Compare o código resultante com o resultado produzido sem código aberto.
 
 ---
 
-**Nota**: Esta seção fornece intuição concreta sobre o que o compilador produz.
+<a name="footnote-1"></a>[1] Porque o `append_return_undefined` em `compile_lambda_body`, o corpo na verdade consiste de uma sequência com duas instruções return. No entanto, a verificação de código morto em `compile_@sequence` parará após a compilação da primeira instrução return, então o corpo efetivamente consiste de apenas uma única instrução return.
+
+<a name="footnote-2"></a>[2] Usamos o mesmo símbolo `+` aqui para denotar tanto a função da linguagem fonte quanto a operação da máquina. Em geral não haverá uma correspondência um-para-um entre primitivas da linguagem fonte e primitivas da máquina.

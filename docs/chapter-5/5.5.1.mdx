@@ -2,44 +2,165 @@
 title: 5.5.1 Estrutura do Compilador
 ---
 
+import CodePlayground from '@site/src/components/CodePlayground';
+
 # 5.5.1 Estrutura do Compilador
 
-:::info Em Tradução
-Esta seção está sendo preparada para tradução. O conteúdo completo será adicionado em breve.
+Na seção 4.1.7 modificamos nosso interpretador metacircular original para separar a análise da execução. Analisamos cada componente para produzir uma função de execução que recebe um ambiente como argumento e realiza as operações requeridas. Em nosso compilador, faremos essencialmente a mesma análise. Em vez de produzir funções de execução, no entanto, geraremos sequências de instruções para serem executadas por nossa máquina de registradores.
 
-Contribuições são bem-vindas! Se você gostaria de ajudar na tradução desta seção, consulte o [Guia de Tradução](/guia-traducao).
-:::
+A função `compile` é o despacho de nível superior no compilador. Ela corresponde à função `evaluate` da seção 4.1.1, à função `analyze` da seção 4.1.7, e ao ponto de entrada `eval_dispatch` do avaliador de controle explícito na seção 5.4.1. O compilador, como os interpretadores, usa as funções de sintaxe de componentes definidas na seção 4.1.2.[^1] A função `compile` realiza uma análise de caso no tipo sintático do componente a ser compilado. Para cada tipo de componente, ela despacha para um *gerador de código* especializado:
 
-## Visão Geral
+[^1]: Note, no entanto, que nosso compilador é um programa JavaScript, e as funções de sintaxe que ele usa para manipular expressões são as funções JavaScript reais usadas com o avaliador metacircular. Para o avaliador de controle explícito, em contraste, assumimos que operações de sintaxe equivalentes estavam disponíveis como operações para a máquina de registradores. (Claro, quando simulamos a máquina de registradores em JavaScript, usamos as funções JavaScript reais em nossa simulação de máquina de registradores.)
 
-Esta seção introduz a estrutura geral do compilador JavaScript:
+<CodePlayground
+  code={`function compile(component, target, linkage) {
+    return is_literal(component)
+           ? compile_literal(component, target, linkage)
+           : is_name(component)
+           ? compile_name(component, target, linkage)
+           : is_application(component)
+           ? compile_application(component, target, linkage)
+           : is_operator_combination(component)
+           ? compile(operator_combination_to_application(component),
+                     target, linkage)
+           : is_conditional(component)
+           ? compile_conditional(component, target, linkage)
+           : is_lambda_expression(component)
+           ? compile_lambda_expression(component, target, linkage)
+           : is_sequence(component)
+           ? compile_sequence(sequence_statements(component),
+                              target, linkage)
+           : is_block(component)
+           ? compile_block(component, target, linkage)
+           : is_return_statement(component)
+           ? compile_return_statement(component, target, linkage)
+           : is_function_declaration(component)
+           ? compile(function_decl_to_constant_decl(component),
+                     target, linkage)
+           : is_declaration(component)
+           ? compile_declaration(component, target, linkage)
+           : is_assignment(component)
+           ? compile_assignment(component, target, linkage)
+           : error(component, "unknown component type -- compile");
+}`}
+  height={450}
+  showLineNumbers={true}
+/>
 
-- Visão geral do processo de compilação
-- Diferença entre interpretação e compilação
-- Estrutura de dados para sequências de instruções
-- Registradores alvo e linkage descriptors
-- Preservação de registradores
+## Alvos e ligações
 
-## Tópicos Principais
+A função `compile` e os geradores de código que ela chama recebem dois argumentos além do componente a ser compilado. Há um *alvo* (*target*), que especifica o registrador no qual o código compilado deve retornar o valor do componente. Há também um *descritor de ligação* (*linkage descriptor*), que descreve como o código resultante da compilação do componente deve proceder quando terminar sua execução. O descritor de ligação pode exigir que o código faça uma das seguintes três coisas:
 
-- Arquitetura do compilador
-- Compilação vs. interpretação
-- Sequências de instruções (instruction sequences)
-- Registradores necessários e modificados
-- Tipos de linkage: `return`, `next`, `label`
-- Análise estática de uso de registradores
+- prosseguir para a próxima instrução em sequência (isso é especificado pelo descritor de ligação `"next"`),
+- saltar para o valor atual do registrador `continue` como parte do retorno de uma chamada de função (isso é especificado pelo descritor de ligação `"return"`), ou
+- saltar para um ponto de entrada nomeado (isso é especificado usando o rótulo designado como descritor de ligação).
 
-## Funções Principais
+Por exemplo, compilar o literal `5` com um alvo do registrador `val` e uma ligação de `"next"` deve produzir a instrução
 
-- `compile` - Função principal de compilação
-- `make_instruction_sequence` - Construir sequência de instruções
-- `preserving` - Preservar registradores entre sequências
-- `tack_on_instruction_sequence` - Concatenar sequências
+```javascript
+assign("val", constant(5))
+```
 
-## Exercícios
+Compilar a mesma expressão com uma ligação de `"return"` deve produzir as instruções
 
-Exercícios sobre a estrutura e organização do compilador.
+```javascript
+assign("val", constant(5)),
+go_to(reg("continue"))
+```
 
----
+No primeiro caso, a execução continuará com a próxima instrução na sequência. No segundo caso, saltaremos para qualquer ponto de entrada esteja armazenado no registrador `continue`. Em ambos os casos, o valor da expressão será colocado no registrador alvo `val`.
 
-**Nota**: Esta seção estabelece os fundamentos para entender como código é compilado para linguagem de máquina.
+Nosso compilador usa a ligação `"return"` ao compilar a expressão de retorno de uma declaração de retorno. Assim como no avaliador de controle explícito, retornar de uma chamada de função acontece em três etapas:
+
+1. reverter a pilha para o marcador e restaurar `continue` (que contém uma continuação configurada no início da chamada de função)
+2. calcular o valor de retorno e colocá-lo em `val`
+3. saltar para o ponto de entrada em `continue`
+
+A compilação de uma declaração de retorno gera explicitamente código para reverter a pilha e restaurar `continue`. A expressão de retorno é compilada com alvo `val` e ligação `"return"` de modo que o código gerado para calcular o valor de retorno coloque o valor de retorno em `val` e termine saltando para `continue`.
+
+## Sequências de instruções e uso da pilha
+
+Cada gerador de código retorna uma *sequência de instruções* contendo o código objeto que gerou para o componente. A geração de código para um componente composto é realizada combinando a saída de geradores de código mais simples para subcomponentes, assim como a avaliação de um componente composto é realizada avaliando os subcomponentes.
+
+O método mais simples para combinar sequências de instruções é uma função chamada `append_instruction_sequences`, que recebe como argumentos duas sequências de instruções que devem ser executadas sequencialmente. Ela as anexa e retorna a sequência combinada. Isto é, se seq₁ e seq₂ são sequências de instruções, então avaliar
+
+```javascript
+append_instruction_sequences(seq₁, seq₂)
+```
+
+produz a sequência
+
+```
+seq₁
+seq₂
+```
+
+Sempre que registradores possam precisar ser salvos, os geradores de código do compilador usam `preserving`, que é um método mais sutil para combinar sequências de instruções. A função `preserving` recebe três argumentos: um conjunto de registradores e duas sequências de instruções que devem ser executadas sequencialmente. Ela anexa as sequências de tal modo que o conteúdo de cada registrador no conjunto seja preservado sobre a execução da primeira sequência, se isso for necessário para a execução da segunda sequência. Isto é, se a primeira sequência modifica o registrador e a segunda sequência realmente precisa do conteúdo original do registrador, então `preserving` envolve um `save` e um `restore` do registrador em torno da primeira sequência antes de anexar as sequências. Caso contrário, `preserving` simplesmente retorna as sequências de instruções anexadas. Assim, por exemplo,
+
+```javascript
+preserving(list(reg₁, reg₂), seq₁, seq₂)
+```
+
+produz uma das seguintes quatro sequências de instruções, dependendo de como seq₁ e seq₂ usam reg₁ e reg₂:
+
+```
+seq₁        save(reg₁),      save(reg₂),      save(reg₂),
+seq₂        seq₁             seq₁             save(reg₁),
+            restore(reg₁),   restore(reg₂),   seq₁
+            seq₂             seq₂             restore(reg₁),
+                                              restore(reg₂),
+                                              seq₂
+```
+
+Ao usar `preserving` para combinar sequências de instruções, o compilador evita operações desnecessárias de pilha. Isso também isola os detalhes de se gerar ou não instruções `save` e `restore` dentro da função `preserving`, separando-os das preocupações que surgem ao escrever cada um dos geradores de código individuais. De fato, nenhuma instrução `save` ou `restore` é explicitamente produzida pelos geradores de código, exceto que o código para chamar uma função salva `continue` e o código para retornar de uma função o restaura: essas instruções `save` e `restore` correspondentes são explicitamente geradas por diferentes chamadas a `compile`, não como um par correspondente por `preserving` (como veremos na seção 5.5.3).
+
+Em princípio, poderíamos representar uma sequência de instruções simplesmente como uma lista de instruções. A função `append_instruction_sequences` poderia então combinar sequências de instruções realizando um `append` de lista ordinário. No entanto, `preserving` seria então uma operação complexa, porque teria que analisar cada sequência de instruções para determinar como a sequência usa seus registradores. A função `preserving` seria ineficiente assim como complexa, porque teria que analisar cada um de seus argumentos de sequência de instruções, mesmo que essas sequências pudessem ter sido construídas por chamadas a `preserving`, caso em que suas partes já teriam sido analisadas. Para evitar tal análise repetitiva, associaremos com cada sequência de instruções algumas informações sobre seu uso de registradores. Quando construímos uma sequência de instruções básica, forneceremos essa informação explicitamente, e as funções que combinam sequências de instruções derivarão informação de uso de registradores para a sequência combinada a partir da informação associada com as sequências sendo combinadas.
+
+Uma sequência de instruções conterá três pedaços de informação:
+
+- o conjunto de registradores que devem ser inicializados antes que as instruções na sequência sejam executadas (diz-se que esses registradores são *necessários* pela sequência),
+- o conjunto de registradores cujos valores são modificados pelas instruções na sequência, e
+- as instruções reais na sequência.
+
+Representaremos uma sequência de instruções como uma lista de suas três partes. O construtor para sequências de instruções é, portanto,
+
+<CodePlayground
+  code={`function make_instruction_sequence(needs, modifies, instructions) {
+    return list(needs, modifies, instructions);
+}`}
+  height={100}
+/>
+
+Por exemplo, a sequência de duas instruções que procura o valor do símbolo `"x"` no ambiente atual, atribui o resultado a `val`, e então prossegue para a continuação, requer que os registradores `env` e `continue` tenham sido inicializados, e modifica o registrador `val`. Esta sequência seria construída como
+
+```javascript
+make_instruction_sequence(list("env", "continue"), list("val"),
+    list(assign("val",
+                list(op("lookup_symbol_value"), constant("x"),
+                     reg("env"))),
+         go_to(reg("continue"))));
+```
+
+As funções para combinar sequências de instruções são mostradas na seção 5.5.4.
+
+## Exercício 5.31
+
+Ao avaliar uma aplicação de função, o avaliador de controle explícito sempre salva e restaura o registrador `env` em torno da avaliação da expressão de função, salva e restaura `env` em torno da avaliação de cada expressão de argumento (exceto a final), salva e restaura `argl` em torno da avaliação de cada expressão de argumento, e salva e restaura `fun` em torno da avaliação da sequência de expressão de argumento. Para cada uma das seguintes aplicações, diga quais dessas operações `save` e `restore` são supérfluas e portanto poderiam ser eliminadas pelo mecanismo `preserving` do compilador:
+
+```javascript
+f("x", "y")
+
+f()("x", "y")
+
+f(g("x"), y)
+
+f(g("x"), "y")
+```
+
+## Exercício 5.32
+
+Usando o mecanismo `preserving`, o compilador evitará salvar e restaurar `env` em torno da avaliação da expressão de função de uma aplicação no caso em que a expressão de função é um nome. Poderíamos também construir tais otimizações no avaliador. De fato, o avaliador de controle explícito da seção 5.4 já realiza uma otimização similar, ao tratar aplicações sem argumentos como um caso especial.
+
+1. Estenda o avaliador de controle explícito para reconhecer como uma classe separada de componentes aplicações cuja expressão de função é um nome, e para tirar proveito desse fato ao avaliar tais componentes.
+
+2. Alyssa P. Hacker sugere que ao estender o avaliador para reconhecer mais e mais casos especiais poderíamos incorporar todas as otimizações do compilador, e que isso eliminaria a vantagem da compilação completamente. O que você acha dessa ideia?
