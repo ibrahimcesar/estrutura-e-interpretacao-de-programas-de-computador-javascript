@@ -365,19 +365,16 @@ const sidebars = {
       label: 'Sobre o Projeto SICP JS',
     },
     {
-      type: 'doc',
-      id: 'sobre-traducao-brasileira',
+      type: 'category',
       label: 'Sobre a Tradução Brasileira',
-    },
-    {
-      type: 'doc',
-      id: 'guia-traducao',
-      label: 'Guia de Tradução',
-    },
-    {
-      type: 'doc',
-      id: 'como-contribuir',
-      label: 'Como Contribuir',
+      link: {
+        type: 'doc',
+        id: 'sobre-traducao-brasileira',
+      },
+      items: [
+        'guia-traducao',
+        'como-contribuir',
+      ],
     },
   ],
 };
