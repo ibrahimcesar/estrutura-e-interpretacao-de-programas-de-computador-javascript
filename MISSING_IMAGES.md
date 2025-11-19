@@ -166,42 +166,26 @@ This report identifies all pages in the SICP JavaScript translation that referen
 
 ---
 
-## Image Organization Inconsistency
+## Image Organization
 
-The current image organization varies across chapters, which should be standardized:
+The image directory structure has been standardized to a consistent `chapter-N/` pattern:
 
-### Current Structure
+### Current Structure ✅
 ```
 static/img/
-├── ch1-*.svg                    # Chapter 1 - root level
-├── javascript/
-│   └── ch2-*.svg               # Chapter 2 - subdirectory
-├── chapter-3/
-│   └── ch3-*.svg               # Chapter 3 - subdirectory
-└── (no chapter-4 directory)    # Chapter 4 - missing
-```
-
-### Recommended Consistent Structure
-```
-static/img/
-├── chapter-1/
+├── chapter-1/          # 5 images (complete)
 │   └── ch1-*.svg
-├── chapter-2/
+├── chapter-2/          # 5 images (complete)
 │   └── ch2-*.svg
-├── chapter-3/
-│   └── ch3-*.svg
-├── chapter-4/
-│   └── ch4-*.svg
-└── chapter-5/
-    └── ch5-*.svg
+├── chapter-3/          # 13 images (partial - 16+ missing)
+│   └── ch3-*.svg, Fig3.*.svg
+├── chapter-4/          # 0 images (directory created, awaiting images)
+│   └── (empty - all images missing)
+└── chapter-5/          # 5 images (partial - more needed)
+    └── ch5-*.svg, Fig5.*.svg, *.png
 ```
 
-**Actions for consistency:**
-1. Create `static/img/chapter-1/` and move Chapter 1 images there
-2. Rename `static/img/javascript/` to `static/img/chapter-2/`
-3. Create `static/img/chapter-4/` directory
-4. Ensure Chapter 5 images are in `static/img/chapter-5/`
-5. Update all markdown references to use new paths
+All markdown references have been updated to use the new paths.
 
 ---
 
