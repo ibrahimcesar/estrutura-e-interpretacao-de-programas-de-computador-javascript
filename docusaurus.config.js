@@ -171,7 +171,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Projeto SICP.js PT-BR. Conteúdo licenciado sob CC BY-SA 4.0.`,
+        copyright: `Este trabalho está licenciado sob <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>.`,
       },
       prism: {
         theme: prismThemes.github,
