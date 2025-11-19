@@ -5,8 +5,8 @@
 This report tracks figures/diagrams in the SICP JavaScript translation. Many missing diagrams have been implemented using Mermaid.js for inline rendering.
 
 **Status Update:**
-- ✅ **13 diagrams implemented** using Mermaid.js
-- ⏳ **12+ diagrams still missing**
+- ✅ **18 diagrams implemented** (17 Mermaid.js + 2 downloaded SVGs)
+- ⏳ **7+ diagrams still missing**
 - 📊 **Total figures tracked:** ~25+
 
 ---
@@ -59,12 +59,12 @@ This report tracks figures/diagrams in the SICP JavaScript translation. Many mis
 
 ---
 
-### 3.3.5 Constraint Propagation
+### 3.3.5 Constraint Propagation ✅ COMPLETE
 **File:** `docs/chapter-3/3.3.5.mdx`
-**Missing Images (1):**
-- **Figure 3.28** - Constraint network diagram for Celsius-Fahrenheit temperature converter
+**Implemented with Mermaid.js (1):**
+- **Figure 3.28** ✅ - Constraint network diagram for Celsius-Fahrenheit temperature converter
 
-**Context:** Shows constraint boxes (multipliers, adders, constants) connected by connectors.
+**Implementation:** Flowchart showing constraint boxes (multipliers, adders, constants) connected by connectors with color-coded styling.
 
 ---
 
@@ -99,32 +99,34 @@ This report tracks figures/diagrams in the SICP JavaScript translation. Many mis
 
 ---
 
-### 4.1.2 Representing Expressions
+### 4.1.2 Representing Expressions ✅ COMPLETE
 **File:** `docs/chapter-4/4.1.2.mdx`
-**Missing Images (1):**
-- Abstraction barrier diagram for syntax representation
+**Implemented with Mermaid.js (1):**
+- **Abstraction barrier diagram** ✅ - Shows syntax abstraction layers
 
-**Context:** Shows layers separating evaluator from list representation and string representation.
+**Implementation:** Flowchart showing three layers (Evaluator, Tagged List Representation, String Representation) separated by two abstraction barriers (predicates/selectors and parse function).
 
 ---
 
-### 4.1.5 Data as Programs
+### 4.1.5 Data as Programs ✅ COMPLETE
 **File:** `docs/chapter-4/4.1.5.mdx`
-**Missing Images (2):**
-- **Figure 4.2** - `/img/chapter-4/ch4-Z-G-2.svg` - Factorial program as abstract machine
-- **Figure 4.3** - `/img/chapter-4/ch4-Z-G-3.svg` - Evaluator emulating factorial machine
+**Implemented with Mermaid.js (2):**
+- **Figure 4.2** ✅ - Factorial program as abstract machine
+- **Figure 4.3** ✅ - Evaluator emulating factorial machine
 
-**Status:** These images are referenced in `<Figure>` tags but the files don't exist. The directory `static/img/chapter-4/` doesn't exist yet.
+**Implementation:**
+- Figure 4.2: Flowchart showing factorial as a machine with decrement, multiply, equality test components and recursive factorial machine
+- Figure 4.3: Flowchart showing the universal evaluator containing the emulated factorial machine from Figure 4.2
 
 ---
 
-### 4.4.4 Implementing the Query System
+### 4.4.4 Implementing the Query System ✅ COMPLETE
 **File:** `docs/chapter-4/4.4.4.mdx`
-**Missing Images (2):**
-- **Figure 4.5** - Diagram showing processing of AND queries with frame streams
-- **Figure 4.6** - Diagram showing processing of OR queries with frame streams
+**Downloaded from Upstream (2):**
+- **Figure 4.5** ✅ - `/img/chapter-4/Fig4.5.svg` - Processing of AND queries with frame streams
+- **Figure 4.6** ✅ - `/img/chapter-4/Fig4.6.svg` - Processing of OR queries with frame streams
 
-**Context:** Data flow diagrams for query language implementation.
+**Status:** Downloaded from source-academy/sicp repository and integrated into the documentation with appropriate `<Figure>` tags.
 
 ---
 
@@ -136,14 +138,14 @@ This report tracks figures/diagrams in the SICP JavaScript translation. Many mis
 | 3.3.2 | Queues | ✅ Complete | 3 Mermaid | High |
 | 3.3.3 | Tables | ✅ Complete | 2 Mermaid | High |
 | 3.3.4 | Digital Circuits | ⏳ Missing | 3 SVG needed | High |
-| 3.3.5 | Constraints | ⏳ Missing | 1 SVG needed | High |
+| 3.3.5 | Constraints | ✅ Complete | 1 Mermaid | High |
 | 3.5.3 | Streams | ⏳ Missing | 1+ diagrams | Medium |
 | 3.5.4 | Delayed Evaluation | ⏳ Missing | 3+ diagrams | Medium |
 | 4.1 | Evaluator | ✅ Complete | 1 Mermaid | High |
-| 4.1.2 | Syntax | ⏳ Missing | 1 diagram | Medium |
-| 4.1.5 | Data as Programs | ⏳ Missing | 2 SVG needed | High |
-| 4.4.4 | Query System | ⏳ Missing | 2 diagrams | Medium |
-| **TOTAL** | **11 pages** | **4 complete** | **13 done, 12+ todo** | |
+| 4.1.2 | Syntax | ✅ Complete | 1 Mermaid | Medium |
+| 4.1.5 | Data as Programs | ✅ Complete | 2 Mermaid | High |
+| 4.4.4 | Query System | ✅ Complete | 2 SVG (downloaded) | Medium |
+| **TOTAL** | **11 pages** | **8 complete** | **18 done, 7+ todo** | |
 
 ---
 
@@ -196,15 +198,23 @@ All markdown references have been updated to use the new paths.
 
 ### What Was Implemented
 
-Successfully implemented **13 diagrams** using Mermaid.js inline rendering:
+Successfully implemented **17 diagrams** using Mermaid.js inline rendering:
 
-**Chapter 3.3 - Data Structures (11 diagrams):**
+**Chapter 3.3 - Data Structures (12 diagrams):**
 - ✅ Figures 3.12-3.17: Mutable list structures with box-and-pointer notation
 - ✅ Figures 3.18-3.20: Queue operations showing front/rear pointer management
 - ✅ Figures 3.21-3.22: Table structures (1D and 2D with subtables)
+- ✅ Figure 3.28: Constraint network for Celsius-Fahrenheit converter
 
-**Chapter 4.1 - Evaluator (1 diagram):**
+**Chapter 4.1 - Evaluator (5 diagrams):**
 - ✅ Figure 4.1: Eval-apply cycle flowchart
+- ✅ Abstraction barrier diagram (4.1.2): Syntax representation layers
+- ✅ Figure 4.2: Factorial program as abstract machine
+- ✅ Figure 4.3: Evaluator as universal machine emulating factorial
+
+**Chapter 4.4 - Query System (2 diagrams - downloaded SVG):**
+- ✅ Figure 4.5: AND query processing with frame streams
+- ✅ Figure 4.6: OR query processing with frame streams
 
 ### Benefits of Mermaid
 

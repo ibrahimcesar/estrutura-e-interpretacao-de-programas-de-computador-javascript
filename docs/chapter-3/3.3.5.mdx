@@ -22,7 +22,62 @@ Nossa linguagem fornece um meio de combinar restrições primitivas para express
 9C = 5(F - 32)
 ```
 
-Tal restrição pode ser pensada como uma rede consistindo de restrições primitivas adder, multiplier e constant (Figura 3.28). Na figura, vemos à esquerda uma caixa multiplicadora com três terminais, rotulados m₁, m₂ e p. Estes conectam o multiplicador ao resto da rede da seguinte forma: O terminal m₁ está ligado a um conector C, que manterá a temperatura Celsius. O terminal m₂ está ligado a um conector w, que também está ligado a uma caixa constante que mantém 9. O terminal p, que a caixa multiplicadora restringe a ser o produto de m₁ e m₂, está ligado ao terminal p de outra caixa multiplicadora, cujo m₂ está conectado a uma constante 5 e cujo m₁ está conectado a um dos termos em uma soma.
+Tal restrição pode ser pensada como uma rede consistindo de restrições primitivas adder, multiplier e constant (Figura 3.28).
+
+**Figura 3.28:** Rede de restrições para conversão Celsius-Fahrenheit
+
+```mermaid
+flowchart TB
+    C["C<br/>(Celsius)"]
+    F["F<br/>(Fahrenheit)"]
+
+    u(("u"))
+    v(("v"))
+    w(("w"))
+    x(("x"))
+    y(("y"))
+
+    M1["✕<br/>multiplier"]
+    M2["✕<br/>multiplier"]
+    A["＋<br/>adder"]
+
+    C1["9<br/>constant"]
+    C2["5<br/>constant"]
+    C3["32<br/>constant"]
+
+    C -->|"m₁"| M1
+    w -->|"m₂"| M1
+    M1 -->|"p"| u
+
+    v -->|"m₁"| M2
+    x -->|"m₂"| M2
+    M2 -->|"p"| u
+
+    v --> A
+    y --> A
+    A --> F
+
+    C1 -.-> w
+    C2 -.-> x
+    C3 -.-> y
+
+    style C fill:#ffd,stroke:#333,stroke-width:3px
+    style F fill:#ffd,stroke:#333,stroke-width:3px
+    style M1 fill:#e1f5ff,stroke:#0066cc,stroke-width:2px
+    style M2 fill:#e1f5ff,stroke:#0066cc,stroke-width:2px
+    style A fill:#ffe1f5,stroke:#cc0066,stroke-width:2px
+    style C1 fill:#e1ffe1,stroke:#006600
+    style C2 fill:#e1ffe1,stroke:#006600
+    style C3 fill:#e1ffe1,stroke:#006600
+    style u fill:#fff,stroke:#666,stroke-dasharray: 5 5
+    style v fill:#fff,stroke:#666,stroke-dasharray: 5 5
+    style w fill:#fff,stroke:#666,stroke-dasharray: 5 5
+    style x fill:#fff,stroke:#666,stroke-dasharray: 5 5
+    style y fill:#fff,stroke:#666,stroke-dasharray: 5 5
+```
+*Nota: Conectores (círculos tracejados); Restrições (caixas coloridas); Entradas/Saídas (amarelo)*
+
+Na figura, vemos à esquerda uma caixa multiplicadora com três terminais, rotulados m₁, m₂ e p. Estes conectam o multiplicador ao resto da rede da seguinte forma: O terminal m₁ está ligado a um conector C, que manterá a temperatura Celsius. O terminal m₂ está ligado a um conector w, que também está ligado a uma caixa constante que mantém 9. O terminal p, que a caixa multiplicadora restringe a ser o produto de m₁ e m₂, está ligado ao terminal p de outra caixa multiplicadora, cujo m₂ está conectado a uma constante 5 e cujo m₁ está conectado a um dos termos em uma soma.
 
 A computação por tal rede prossegue da seguinte forma: Quando um conector recebe um valor (pelo usuário ou por uma caixa de restrição à qual está ligado), ele acorda todas as suas restrições associadas (exceto pela restrição que acabou de acordá-lo) para informá-las de que tem um valor. Cada caixa de restrição acordada então consulta seus conectores para ver se há informação suficiente para determinar um valor para um conector. Se sim, a caixa define esse conector, que então acorda todas as suas restrições associadas, e assim por diante. Por exemplo, na conversão entre Celsius e Fahrenheit, w, x e y são imediatamente definidos pelas caixas constantes para 9, 5 e 32, respectivamente. Os conectores acordam os multiplicadores e o somador, que determinam que não há informação suficiente para prosseguir. Se o usuário (ou alguma outra parte da rede) define C para um valor (digamos 25), o multiplicador mais à esquerda será acordado, e ele definirá u para 25 × 9 = 225. Então u acorda o segundo multiplicador, que define v para 45, e v acorda o somador, que define F para 77.
 
