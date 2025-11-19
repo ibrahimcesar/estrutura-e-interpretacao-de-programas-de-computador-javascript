@@ -316,6 +316,26 @@ const sidebars = {
     },
     {
       type: 'doc',
+      id: 'referencias',
+      label: 'Referências',
+    },
+    {
+      type: 'doc',
+      id: 'agradecimentos',
+      label: 'Agradecimentos',
+    },
+    {
+      type: 'doc',
+      id: 'sobre-o-projeto',
+      label: 'Sobre o Projeto SICP JS',
+    },
+    {
+      type: 'doc',
+      id: 'sobre-traducao-brasileira',
+      label: 'Sobre a Tradução Brasileira',
+    },
+    {
+      type: 'doc',
       id: 'guia-traducao',
       label: 'Guia de Tradução',
     },
