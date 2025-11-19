@@ -15,8 +15,8 @@ import { useColorMode } from '@docusaurus/theme-common';
  * @param {string} props.title - Título do exemplo (opcional)
  * @param {boolean} props.showLineNumbers - Mostrar números de linha (padrão: true)
  * @param {boolean} props.showConsole - Mostrar console (padrão: true)
- * @param {boolean} props.autorun - Executar automaticamente (padrão: false)
- * @param {number} props.height - Altura do editor (padrão: 300)
+ * @param {boolean} props.autorun - Executar automaticamente (padrão: true)
+ * @param {number} props.height - Altura do editor (padrão: 400)
  */
 export default function CodePlayground({
   code,
@@ -25,8 +25,8 @@ export default function CodePlayground({
   title = "Exemplo de Código",
   showLineNumbers = true,
   showConsole = true,
-  autorun = false,
-  height = 300,
+  autorun = true,
+  height = 400,
 }) {
   const { colorMode } = useColorMode();
   const theme = colorMode === 'dark' ? 'dark' : 'light';
@@ -91,10 +91,13 @@ export default function CodePlayground({
           showLineNumbers: showLineNumbers,
           showInlineErrors: true,
           showConsole: showConsole,
-          showConsoleButton: true,
+          showConsoleButton: showConsole,
           editorHeight: height,
           autorun: autorun,
+          autoReload: true,
           closableTabs: false,
+          resizablePanels: true,
+          editorWidthPercentage: 50,
         }}
         customSetup={{
           dependencies: {},
