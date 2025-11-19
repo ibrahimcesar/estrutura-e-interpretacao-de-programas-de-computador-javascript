@@ -1,0 +1,40 @@
+.progressBarContainer {
+  position: fixed;
+  top: 60px; /* Abaixo da navbar do Docusaurus */
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+}
+
+html[data-theme='dark'] .progressBarContainer {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #f7df1e 0%, #ffa500 50%, #ff6347 100%);
+  transition: width 0.2s ease-out;
+  box-shadow: 0 0 10px rgba(247, 223, 30, 0.5);
+}
+
+html[data-theme='dark'] .progressBar {
+  box-shadow: 0 0 10px rgba(247, 223, 30, 0.7);
+}
+
+/* Animação de pulso quando chegando perto do final */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(247, 223, 30, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(247, 223, 30, 0.8);
+  }
+}
+
+.progressBar[style*="width: 9"],
+.progressBar[style*="width: 100"] {
+  animation: pulse 1.5s ease-in-out infinite;
+}

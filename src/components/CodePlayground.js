@@ -114,6 +114,8 @@ export default function CodePlayground({
           showInlineErrors: true,
           showConsole: showConsole,
           showConsoleButton: showConsole,
+          showRefreshButton: true,
+          showRunButton: true,
           editorHeight: height,
           autorun: autorun,
           autoReload: true,
