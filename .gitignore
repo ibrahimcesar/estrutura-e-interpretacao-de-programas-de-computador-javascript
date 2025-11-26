@@ -128,4 +128,4 @@ yarn-error.log*
 .vscode/
 
 # Generated eBooks
-ebooks/
+ebooks/.vscode/branch-timer.json

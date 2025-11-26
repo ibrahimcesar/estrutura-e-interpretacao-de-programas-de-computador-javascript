@@ -1,0 +1,256 @@
+---
+title: Demo - Live Codeblocks vs CodePlayground
+sidebar_label: Demo Live Codeblocks
+sidebar_position: 100
+---
+
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+
+# Demonstração: Live Codeblocks do Docusaurus
+
+Esta página demonstra a nova funcionalidade de **Live Codeblocks** do Docusaurus comparada com o nosso `CodePlayground` tradicional (Sandpack).
+
+## Live Codeblocks - Exemplos Interativos
+
+### Exemplo 1: Componente React Simples
+
+Os Live Codeblocks são perfeitos para demonstrar componentes React interativos. Experimente editar o código abaixo:
+
+```jsx live
+function Welcome() {
+  const [name, setName] = React.useState('Mundo');
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'system-ui' }}>
+      <h3 style={{ color: '#f7df1e' }}>Olá, {name}!</h3>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Digite seu nome"
+        style={{
+          padding: '8px',
+          fontSize: '16px',
+          borderRadius: '4px',
+          border: '1px solid #ccc'
+        }}
+      />
+    </div>
+  );
+}
+```
+
+### Exemplo 2: Estado e Efeitos
+
+Este exemplo demonstra `useState` e `useEffect`:
+
+```jsx live
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  const [isRunning, setIsRunning] = React.useState(false);
+
+  React.useEffect(() => {
+    let interval;
+    if (isRunning) {
+      interval = setInterval(() => {
+        setCount(c => c + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  return (
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h2 style={{ fontSize: '48px', margin: '20px 0' }}>{count}</h2>
+      <button
+        onClick={() => setIsRunning(!isRunning)}
+        style={{
+          padding: '10px 20px',
+          fontSize: '16px',
+          marginRight: '10px',
+          cursor: 'pointer',
+          background: '#f7df1e',
+          border: 'none',
+          borderRadius: '4px'
+        }}
+      >
+        {isRunning ? '⏸️ Pausar' : '▶️ Iniciar'}
+      </button>
+      <button
+        onClick={() => setCount(0)}
+        style={{
+          padding: '10px 20px',
+          fontSize: '16px',
+          cursor: 'pointer',
+          background: '#ff6b6b',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px'
+        }}
+      >
+        🔄 Resetar
+      </button>
+    </div>
+  );
+}
+```
+
+### Exemplo 3: Calculadora SICP-style
+
+Um exemplo mais próximo do conteúdo do livro, mas renderizado como componente React:
+
+```jsx live noInline
+function Calculator() {
+  const [x, setX] = React.useState(5);
+  const [y, setY] = React.useState(3);
+
+  // Funções matemáticas do SICP
+  function square(n) {
+    return n * n;
+  }
+
+  function sumOfSquares(a, b) {
+    return square(a) + square(b);
+  }
+
+  function abs(x) {
+    return x >= 0 ? x : -x;
+  }
+
+  return (
+    <div style={{
+      padding: '20px',
+      fontFamily: 'monospace',
+      background: '#f8f9fa',
+      borderRadius: '8px',
+      color: '#000'
+    }}>
+      <h3 style={{ marginTop: 0 }}>Calculadora SICP</h3>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label>
+          x = <input
+            type="number"
+            value={x}
+            onChange={(e) => setX(Number(e.target.value))}
+            style={{ width: '80px', padding: '5px', marginLeft: '5px' }}
+          />
+        </label>
+        <label style={{ marginLeft: '20px' }}>
+          y = <input
+            type="number"
+            value={y}
+            onChange={(e) => setY(Number(e.target.value))}
+            style={{ width: '80px', padding: '5px', marginLeft: '5px' }}
+          />
+        </label>
+      </div>
+
+      <div style={{ background: '#fff', padding: '15px', borderRadius: '4px' }}>
+        <div>square({x}) = {square(x)}</div>
+        <div>square({y}) = {square(y)}</div>
+        <div>sumOfSquares({x}, {y}) = {sumOfSquares(x, y)}</div>
+        <div>abs({x}) = {abs(x)}</div>
+        <div>abs({y}) = {abs(y)}</div>
+      </div>
+    </div>
+  );
+}
+
+render(<Calculator />);
+```
+
+## CodePlayground Tradicional - Console Output
+
+O CodePlayground (Sandpack) continua sendo ideal para exemplos com `console.log`:
+
+<CodePlayground
+  code={`// Funções do SICP
+function square(x) {
+  return x * x;
+}
+
+function sumOfSquares(x, y) {
+  return square(x) + square(y);
+}
+
+// Testando as funções
+console.log("square(5) =", square(5));
+console.log("square(10) =", square(10));
+console.log("sumOfSquares(3, 4) =", sumOfSquares(3, 4));
+
+// Demonstrando recursão
+function factorial(n) {
+  return n <= 1 ? 1 : n * factorial(n - 1);
+}
+
+console.log("factorial(5) =", factorial(5));
+console.log("factorial(10) =", factorial(10));`}
+  height={400}
+  showLineNumbers={true}
+  showConsole={true}
+  autorun={false}
+/>
+
+## Comparação: Live Codeblocks vs CodePlayground
+
+| Característica | Live Codeblocks | CodePlayground (Sandpack) |
+|----------------|-----------------|---------------------------|
+| **Sintaxe** | Markdown puro | Componente React |
+| **Bundle Size** | Menor (nativo) | Maior (Sandpack) |
+| **Console Output** | ❌ Não | ✅ Sim |
+| **JavaScript Puro** | ⚠️ Limitado | ✅ Sim |
+| **Componentes React** | ✅ Excelente | ✅ Sim |
+| **Múltiplos Arquivos** | ❌ Não | ✅ Sim |
+| **Código Oculto** | ❌ Não | ✅ Sim |
+| **Preview Visual** | ✅ Sim | ✅ Sim |
+| **Edição em Tempo Real** | ✅ Sim | ✅ Sim |
+
+## Recomendações de Uso
+
+### Use Live Codeblocks para:
+- ✅ Demonstrações de componentes React
+- ✅ Exemplos interativos com UI
+- ✅ Quando você quer sintaxe markdown simples
+- ✅ Reduzir o bundle size
+
+### Use CodePlayground para:
+- ✅ Código JavaScript puro com console.log
+- ✅ Exemplos que precisam mostrar output no console
+- ✅ Múltiplos arquivos ou código oculto (helpers)
+- ✅ Ensino de conceitos fundamentais de programação
+
+## Sintaxe do Live Codeblock
+
+### Básico
+````markdown
+```jsx live
+function MyComponent() {
+  return <div>Hello!</div>;
+}
+```
+````
+
+### Com noInline (múltiplos componentes)
+````markdown
+```jsx live noInline
+function Greeting() {
+  return <p>Olá!</p>;
+}
+
+function App() {
+  return <Greeting />;
+}
+
+render(<App />);
+```
+````
+
+## Conclusão
+
+Ambas as ferramentas têm seu lugar neste projeto:
+
+- **Live Codeblocks**: Perfeito para demonstrações React interativas
+- **CodePlayground**: Ideal para ensinar JavaScript e mostrar console output
+
+Veja o [guia de migração](/MIGRATION_TO_LIVE_CODEBLOCKS.md) para mais detalhes.

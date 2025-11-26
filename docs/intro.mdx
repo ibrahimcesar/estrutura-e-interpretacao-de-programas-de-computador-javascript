@@ -31,7 +31,45 @@ O SICP é um dos livros mais influentes sobre ciência da computação e program
 Navegue pelos capítulos usando a barra lateral. Cada seção contém explicações detalhadas, exemplos e exercícios.
 
 ### Execute o Código
-Os exemplos de código neste site são **interativos**! Você pode executá-los diretamente no navegador usando o playground integrado.
+Os exemplos de código neste site são **interativos**! Você pode executá-los diretamente no navegador.
+
+Experimente modificar o código abaixo e veja o resultado em tempo real:
+
+```jsx live
+function Square() {
+  const [number, setNumber] = React.useState(5);
+
+  function square(x) {
+    return x * x;
+  }
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'monospace' }}>
+      <div style={{ marginBottom: '10px' }}>
+        <label>
+          Número:
+          <input
+            type="number"
+            value={number}
+            onChange={(e) => setNumber(Number(e.target.value))}
+            style={{ marginLeft: '10px', padding: '5px' }}
+          />
+        </label>
+      </div>
+      <div style={{
+        padding: '10px',
+        background: '#f0f0f0',
+        borderRadius: '5px',
+        color: '#000'
+      }}>
+        square({number}) = {square(number)}
+      </div>
+    </div>
+  );
+}
+```
+
+Também mantemos o CodePlayground tradicional para exemplos que usam `console.log`:
 
 <CodePlayground
   code={`// Experimente executar este código!
