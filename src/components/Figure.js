@@ -8,7 +8,7 @@ export default function Figure({ src, alt, caption }) {
     <figure style={{ margin: '2rem 0', textAlign: 'center' }}>
       <img
         src={src}
-        alt={alt}
+        alt={alt || caption || ''}
         style={{ maxWidth: '100%', height: 'auto' }}
       />
       {caption && (

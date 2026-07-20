@@ -63,6 +63,9 @@ jobs:
   link-check:
     name: Link Validation
     runs-on: ubuntu-latest
+    # Links externos oscilam (rede, rate limits); o job informa sem
+    # bloquear merges. Links internos falham o build via onBrokenLinks.
+    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -80,18 +83,37 @@ jobs:
         run: |
           find . -name "*.md" -not -path "./node_modules/*" -exec markdown-link-check --quiet --config .github/markdown-link-check.json {} \;
 
+  playgrounds:
+    name: Playground Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run playground tests and docs audit
+        run: npm test
+
   summary:
     name: Quality Check Summary
     runs-on: ubuntu-latest
-    needs: [lint, spelling, link-check]
+    needs: [lint, spelling, playgrounds]
     if: always()
     steps:
       - name: Check all jobs status
         run: |
           echo "Lint: ${{ needs.lint.result }}"
           echo "Spelling: ${{ needs.spelling.result }}"
-          echo "Link Check: ${{ needs.link-check.result }}"
-          if [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.spelling.result }}" != "success" ] || [ "${{ needs.link-check.result }}" != "success" ]; then
+          echo "Playgrounds: ${{ needs.playgrounds.result }}"
+          if [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.spelling.result }}" != "success" ] || [ "${{ needs.playgrounds.result }}" != "success" ]; then
             echo "❌ Some quality checks failed"
             exit 1
           fi

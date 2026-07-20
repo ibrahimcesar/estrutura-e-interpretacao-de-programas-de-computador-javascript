@@ -16,6 +16,7 @@ Somos gratos à STINT, The Swedish Foundation for International Cooperation in R
 
 Gostaríamos de reconhecer o trabalho corajoso do comitê do ECMAScript 2015, liderado por Allen Wirfs-Brock. SICP JS depende fortemente de declarações const e let e expressões lambda, todas adicionadas ao JavaScript com o ECMAScript 2015. Essas adições nos permitiram permanecer próximos do original na apresentação das ideias mais importantes do SICP. Guy Lewis Steele Jr., que liderou a primeira padronização do ECMAScript, forneceu feedback detalhado e útil sobre alguns exercícios do capítulo 4.
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Martin Henz e Tobias Wrigstad**
 
 ## Agradecimentos da Segunda Edição do SICP, 1996
@@ -52,4 +53,5 @@ Apreciamos o trabalho daqueles que contribuíram para tornar este um livro real,
 
 Finalmente, gostaríamos de reconhecer o apoio das organizações que encorajaram este trabalho ao longo dos anos, incluindo o apoio da Hewlett-Packard, possibilitado por Ira Goldstein e Joel Birnbaum, e o apoio da DARPA, possibilitado por Bob Kahn.
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Harold Abelson e Gerald Jay Sussman**

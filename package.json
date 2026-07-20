@@ -8,14 +8,14 @@
     "start": "docusaurus start",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "lint": "markdownlint **/*.md --ignore node_modules --config .github/markdownlint.yml",
     "lint:fix": "markdownlint **/*.md --ignore node_modules --config .github/markdownlint.yml --fix",
-    "link-check": "find . -name '*.md' -not -path './node_modules/*' -exec markdown-link-check --quiet --config .github/markdown-link-check.json {} \\;"
+    "link-check": "find . -name '*.md' -not -path './node_modules/*' -exec markdown-link-check --quiet --config .github/markdown-link-check.json {} \\;",
+    "test": "node scripts/playground-tests.mjs && node scripts/audit-playgrounds.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.2",

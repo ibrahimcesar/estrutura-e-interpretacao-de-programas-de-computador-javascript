@@ -4,11 +4,11 @@ import HelpFooter from '@site/src/components/HelpFooter';
 
 <a id="sec:how-query-works"></a>
 
-Na seção [4.4.4](#sec:implementing-the-query-system) apresentaremos uma implementação do interpretador de consultas como uma coleção de funções. Nesta seção fornecemos uma visão geral que explica a estrutura geral do sistema independente de detalhes de implementação de baixo nível. Após descrever a implementação do interpretador, estaremos em posição de compreender algumas de suas limitações e algumas das formas sutis nas quais as operações lógicas da linguagem de consultas diferem das operações da lógica matemática.
+Na seção [4.4.4](4.4.4) apresentaremos uma implementação do interpretador de consultas como uma coleção de funções. Nesta seção fornecemos uma visão geral que explica a estrutura geral do sistema independente de detalhes de implementação de baixo nível. Após descrever a implementação do interpretador, estaremos em posição de compreender algumas de suas limitações e algumas das formas sutis nas quais as operações lógicas da linguagem de consultas diferem das operações da lógica matemática.
 
-Deve ficar aparente que o avaliador de consultas deve realizar algum tipo de busca para fazer a correspondência de consultas com fatos e regras no banco de dados. Uma maneira de fazer isso seria implementar o sistema de consultas como um programa não-determinístico, usando o avaliador `amb` da seção [4.3](#sec:nondeterministic-evaluation) (veja o exercício [4.78](#ex:query-lang-amb)). Outra possibilidade é gerenciar a busca com a ajuda de streams. Nossa implementação segue esta segunda abordagem.
+Deve ficar aparente que o avaliador de consultas deve realizar algum tipo de busca para fazer a correspondência de consultas com fatos e regras no banco de dados. Uma maneira de fazer isso seria implementar o sistema de consultas como um programa não-determinístico, usando o avaliador `amb` da seção [4.3](4.3.1) (veja o exercício 4.78). Outra possibilidade é gerenciar a busca com a ajuda de streams. Nossa implementação segue esta segunda abordagem.
 
-O sistema de consultas está organizado em torno de duas operações centrais, chamadas *pattern matching* (correspondência de padrões) e *unification* (unificação). Primeiro descrevemos pattern matching e explicamos como esta operação, juntamente com a organização da informação em termos de streams de frames, nos permite implementar tanto consultas simples quanto compostas. Em seguida, discutimos unification, uma generalização de pattern matching necessária para implementar regras. Finalmente, mostramos como todo o interpretador de consultas se encaixa através de uma função que classifica consultas de maneira análoga ao modo como `evaluate` classifica expressões para o interpretador descrito na seção [4.1.1](#sec:mc-eval).
+O sistema de consultas está organizado em torno de duas operações centrais, chamadas *pattern matching* (correspondência de padrões) e *unification* (unificação). Primeiro descrevemos pattern matching e explicamos como esta operação, juntamente com a organização da informação em termos de streams de frames, nos permite implementar tanto consultas simples quanto compostas. Em seguida, discutimos unification, uma generalização de pattern matching necessária para implementar regras. Finalmente, mostramos como todo o interpretador de consultas se encaixa através de uma função que classifica consultas de maneira análoga ao modo como `evaluate` classifica expressões para o interpretador descrito na seção [4.1.1](4.1.1).
 
 ### Pattern Matching
 
@@ -30,12 +30,14 @@ escaneamos todas as asserções no banco de dados e selecionamos aquelas que cor
 
 O teste de padrões contra frames é organizado através do uso de streams. Dado um único frame, o processo de correspondência percorre as entradas do banco de dados uma por uma. Para cada entrada do banco de dados, o matcher gera ou um símbolo especial indicando que a correspondência falhou ou uma extensão para o frame. Os resultados para todas as entradas do banco de dados são coletados em um stream, que é passado por um filtro para eliminar as falhas. O resultado é um stream de todos os frames que estendem o frame fornecido através de uma correspondência com alguma asserção no banco de dados.[^1]
 
-[^1]: Como a correspondência é geralmente muito cara, gostaríamos de evitar aplicar o matcher completo a cada elemento do banco de dados. Isso geralmente é organizado dividindo o processo em uma correspondência rápida e grosseira e a correspondência final. A correspondência grosseira filtra o banco de dados para produzir um pequeno conjunto de candidatos para a correspondência final. Com cuidado, podemos organizar nosso banco de dados de forma que parte do trabalho de correspondência grosseira possa ser feito quando o banco de dados é construído, em vez de quando queremos selecionar os candidatos. Isso é chamado de *indexação* do banco de dados. Há uma vasta tecnologia construída em torno de esquemas de indexação de bancos de dados. Nossa implementação, descrita na seção [4.4.4](#sec:implementing-the-query-system), contém uma forma simplista de tal otimização.
+[^1]: Como a correspondência é geralmente muito cara, gostaríamos de evitar aplicar o matcher completo a cada elemento do banco de dados. Isso geralmente é organizado dividindo o processo em uma correspondência rápida e grosseira e a correspondência final. A correspondência grosseira filtra o banco de dados para produzir um pequeno conjunto de candidatos para a correspondência final. Com cuidado, podemos organizar nosso banco de dados de forma que parte do trabalho de correspondência grosseira possa ser feito quando o banco de dados é construído, em vez de quando queremos selecionar os candidatos. Isso é chamado de *indexação* do banco de dados. Há uma vasta tecnologia construída em torno de esquemas de indexação de bancos de dados. Nossa implementação, descrita na seção [4.4.4](4.4.4), contém uma forma simplista de tal otimização.
 
 Em nosso sistema, uma consulta recebe um stream de entrada de frames e executa a operação de correspondência acima para cada frame no stream, conforme indicado na figura [4.4](#fig:query-stream). Ou seja, para cada frame no stream de entrada, a consulta gera um novo stream consistindo de todas as extensões para aquele frame por correspondências com asserções no banco de dados. Todos esses streams são então combinados para formar um enorme stream, que contém todas as extensões possíveis de cada frame no stream de entrada. Este stream é a saída da consulta.
 
 <figure id="fig:query-stream">
-<img src="img_javascript/Fig4.4a.std.svg" alt="Uma consulta processa um stream de frames." />
+
+![Uma consulta processa um stream de frames.](/img/chapter-4/Fig4.4a.std.svg)
+
 <figcaption>Uma consulta processa um stream de frames.</figcaption>
 </figure>
 
@@ -65,18 +67,22 @@ job($person, $x)
 de uma maneira que seja consistente com a vinculação fornecida para `$x`. Cada correspondência produzirá um frame contendo vinculações para `$x` e `$person`. O `and` de duas consultas pode ser visto como uma combinação em série das duas consultas componentes, conforme mostrado na figura [4.5](#fig:query-and). Os frames que passam pelo primeiro filtro de consulta são filtrados e estendidos ainda mais pela segunda consulta.
 
 <figure id="fig:query-and">
-<img src="img_javascript/Fig4.5a.std.svg" alt="A combinação and de duas consultas é produzida operando no stream de frames em série." />
+
+![A combinação and de duas consultas é produzida operando no stream de frames em série.](/img/chapter-4/Fig4.5a.std.svg)
+
 <figcaption>A combinação <code>and</code> de duas consultas é produzida operando no stream de frames em série.</figcaption>
 </figure>
 
 A figura [4.6](#fig:query-or) mostra o método análogo para calcular o `or` de duas consultas como uma combinação paralela das duas consultas componentes. O stream de entrada de frames é estendido separadamente por cada consulta. Os dois streams resultantes são então mesclados para produzir o stream de saída final.
 
 <figure id="fig:query-or">
-<img src="img_javascript/Fig4.6a.std.svg" alt="A combinação or de duas consultas é produzida operando no stream de frames em paralelo e mesclando os resultados." />
+
+![A combinação or de duas consultas é produzida operando no stream de frames em paralelo e mesclando os resultados.](/img/chapter-4/Fig4.6a.std.svg)
+
 <figcaption>A combinação <code>or</code> de duas consultas é produzida operando no stream de frames em paralelo e mesclando os resultados.</figcaption>
 </figure>
 
-Mesmo desta descrição de alto nível, é aparente que o processamento de consultas compostas pode ser lento. Por exemplo, já que uma consulta pode produzir mais de um frame de saída para cada frame de entrada, e cada consulta em um `and` recebe seus frames de entrada da consulta anterior, uma consulta `and` poderia, no pior caso, ter que executar um número de correspondências que é exponencial no número de consultas (veja o exercício [4.76](#ex:q-exponential-and)).[^2] Embora sistemas para lidar apenas com consultas simples sejam bastante práticos, lidar com consultas complexas é extremamente difícil.[^3]
+Mesmo desta descrição de alto nível, é aparente que o processamento de consultas compostas pode ser lento. Por exemplo, já que uma consulta pode produzir mais de um frame de saída para cada frame de entrada, e cada consulta em um `and` recebe seus frames de entrada da consulta anterior, uma consulta `and` poderia, no pior caso, ter que executar um número de correspondências que é exponencial no número de consultas (veja o exercício 4.76).[^2] Embora sistemas para lidar apenas com consultas simples sejam bastante práticos, lidar com consultas complexas é extremamente difícil.[^3]
 
 [^2]: Mas esse tipo de explosão exponencial não é comum em consultas `and` porque as condições adicionadas tendem a reduzir em vez de expandir o número de frames produzidos.
 
@@ -97,7 +103,7 @@ and(supervisor($x, $y),
 
 a primeira cláusula gerará frames com vinculações para `$x` e `$y`. A cláusula `not` então filtrará estes removendo todos os frames nos quais a vinculação para `$x` satisfaz a restrição de que `$x` é um programador de computador.[^4]
 
-[^4]: Há uma diferença sutil entre esta implementação de filtro de `not` e o significado usual de `not` na lógica matemática. Veja a seção [4.4.3](#sec:math-logic).
+[^4]: Há uma diferença sutil entre esta implementação de filtro de `not` e o significado usual de `not` na lógica matemática. Veja a seção [4.4.3](4.4.3).
 
 A forma sintática `javascript_predicate` é implementada como um filtro similar em streams de frames. Usamos cada frame no stream para instanciar quaisquer variáveis no padrão, então aplicamos o predicado JavaScript. Removemos do stream de entrada todos os frames para os quais o predicado falha.
 
@@ -148,11 +154,11 @@ Em um padrão complexo, muitas variáveis diferentes podem ter que ser determina
 
 [^5]: A linguagem de consultas também não permite que variáveis sejam usadas como a tag inicial de um padrão em uma asserção ou regra. Isso é porque nosso algoritmo de unificação foi projetado assumindo que a tag inicial especifica a relação ou o tipo de asserção.
 
-[^6]: Mesmo assim, certos padrões malformados às vezes podem escapar por entre as rachaduras e dar ao sistema problemas. Por exemplo, se tentarmos usar a regra recursiva para o avô que mostramos na seção [4.4.1](#sec:deductive-info-retrieval) mas acidentalmente digitarmos o padrão no corpo da regra como `grandf($z, $y)` em vez de `grandson($z, $x)`, o sistema pode tornar-se confuso e pode não terminar.
+[^6]: Mesmo assim, certos padrões malformados às vezes podem escapar por entre as rachaduras e dar ao sistema problemas. Por exemplo, se tentarmos usar a regra recursiva para o avô que mostramos na seção [4.4.1](4.4.1) mas acidentalmente digitarmos o padrão no corpo da regra como `grandf($z, $y)` em vez de `grandson($z, $x)`, o sistema pode tornar-se confuso e pode não terminar.
 
 ### Aplicando Regras
 
-Unification é a operação chave para aplicar regras. Para ver como isso funciona, considere o processo de aplicar uma regra a uma dada consulta. Realizaremos esta aplicação usando um registro de ativação, como na seção [4.1.3](#sec:recursion-and-iteration), onde ilustramos como realizar aplicações em uma linguagem de programação comum. Aqui registros de ativação terão a forma de frames, e a operação que manipula os frames é unification.
+Unification é a operação chave para aplicar regras. Para ver como isso funciona, considere o processo de aplicar uma regra a uma dada consulta. Realizaremos esta aplicação usando um registro de ativação, como na seção [4.1.3](4.1.3), onde ilustramos como realizar aplicações em uma linguagem de programação comum. Aqui registros de ativação terão a forma de frames, e a operação que manipula os frames é unification.
 
 Para aplicar uma regra usamos a seguinte receita:
 
@@ -172,7 +178,7 @@ rule(lives_near($person_1, $person_2),
 
 Para aplicar a regra, unificamos a consulta com a conclusão da regra. Isso resulta em um frame especificando que `$person_2` está vinculado a `list("Hacker", "Alyssa", "P")` e que `$x` deve ser o mesmo que `$person_1`. Agora, relativo a este frame, avaliamos o corpo composto da regra. Bem-sucedido nisso, estenderemos este frame pela unificação (por exemplo, encontrando um endereço para `$person_1` e `$person_2` na mesma cidade). O resultado final, se a avaliação do corpo da regra for bem-sucedida, é um frame no qual `$x` está vinculado a uma pessoa que mora perto de Alyssa P. Hacker.
 
-Na seção [4.4.4](#sec:implementing-the-query-system), veremos que nosso sistema de consultas mantém o controle de quais regras foram aplicadas para que uma dada consulta não resulte em aplicação infinita de regras. Esta é uma característica análoga à representação de ambientes em um avaliador metacircular, onde um ambiente consiste em alguns novos frames ligados a um ambiente circundante.
+Na seção [4.4.4](4.4.4), veremos que nosso sistema de consultas mantém o controle de quais regras foram aplicadas para que uma dada consulta não resulte em aplicação infinita de regras. Esta é uma característica análoga à representação de ambientes em um avaliador metacircular, onde um ambiente consiste em alguns novos frames ligados a um ambiente circundante.
 
 ### Consultas Simples
 
@@ -180,7 +186,7 @@ Agora vimos todos os elementos do sistema de consultas exceto um: o procedimento
 
 Como no caso de todas as consultas compostas, a busca para combinar streams de frames é executada um frame de cada vez. Por exemplo, suponha que tenhamos uma consulta `and` de dois componentes, e que o processamento do primeiro componente produza os frames F₁ e F₂. O processamento da consulta então prossegue aplicando o segundo componente a F₁. Se este tiver sucesso e produzir os frames F'₁ e F'₂, então F'₁ e F'₂ são enviados para fora como os dois primeiros frames de resposta para toda a consulta `and`. O processamento então continua aplicando o segundo componente a F₂. Os frames resultantes são enviados para fora como o resto da resposta para a consulta `and`.
 
-De maneira análoga a `evaluate` no avaliador geral, a função `evaluate_query` é o ponto de entrada crucial para o sistema de consultas. Ela classifica a consulta de acordo com sua forma sintática e direciona seu processamento. `evaluate_query` e as funções que ela chama (`qeval` na implementação real) formam um classificador abstrato similar ao classificador de expressões que formam o núcleo do avaliador geral na seção [4.1.1](#sec:mc-eval). O método geral é o mesmo: `evaluate_query` decompõe a consulta e despacha para uma função de avaliação apropriada para o tipo de consulta. Existe uma função de avaliação para cada forma especial (`and`, `or`, `not` e `javascript_predicate`) e uma para consultas simples.
+De maneira análoga a `evaluate` no avaliador geral, a função `evaluate_query` é o ponto de entrada crucial para o sistema de consultas. Ela classifica a consulta de acordo com sua forma sintática e direciona seu processamento. `evaluate_query` e as funções que ela chama (`qeval` na implementação real) formam um classificador abstrato similar ao classificador de expressões que formam o núcleo do avaliador geral na seção [4.1.1](4.1.1). O método geral é o mesmo: `evaluate_query` decompõe a consulta e despacha para uma função de avaliação apropriada para o tipo de consulta. Existe uma função de avaliação para cada forma especial (`and`, `or`, `not` e `javascript_predicate`) e uma para consultas simples.
 
 O tipo de consulta mais geral é a consulta simples, que consulta o banco de dados por correspondências de padrões. Quando uma consulta simples é processada, a stream de entrada de frames (como descrito acima) consiste de um único frame vazio e a stream de saída consiste de frames formados estendendo este frame inicial com todas as maneiras de corresponder o padrão de consulta contra fatos no banco de dados. Esta stream de saída é então usada como entrada para a próxima etapa de processamento de consulta, ou (se não houver etapas adicionais de processamento) o sistema toma esta como a resposta final à consulta e a usa para instanciar o padrão de consulta.
 

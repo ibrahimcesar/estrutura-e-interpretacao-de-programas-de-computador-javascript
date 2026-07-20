@@ -17,7 +17,7 @@
       <img src="https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg" alt="License: CC BY-SA 4.0">
     </a>
     <a href="package.json">
-      <img src="https://img.shields.io/badge/node-%3E%3D18.0-brightgreen" alt="Node Version">
+      <img src="https://img.shields.io/badge/node-%3E%3D22.0-brightgreen" alt="Node Version">
     </a>
     <a href="CONTRIBUTING.md">
       <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
@@ -92,10 +92,15 @@ Para informações detalhadas sobre o processo de tradução, convenções de es
 ## 📖 Estrutura do Projeto
 
 ```
-00/    # Prefácios e introdução
-01/    # Capítulo 1: Construindo Abstrações com Funções
-02/    # Capítulo 2: (em andamento)
-...
+docs/
+  prefaces/     # Prefácios (1984, 1996, 2003)
+  chapter-1/    # Capítulo 1: Construindo Abstrações com Funções
+  chapter-2/    # Capítulo 2: Construindo Abstrações com Dados
+  chapter-3/    # Capítulo 3: Modularidade, Objetos e Estado
+  chapter-4/    # Capítulo 4: Abstração Metalinguística
+  chapter-5/    # Capítulo 5: Computação com Máquinas de Registradores
+src/            # Componentes do site (playgrounds interativos, tema)
+scripts/        # Testes dos playgrounds e auditoria dos exemplos
 ```
 
 ## 🛠️ Tecnologias
@@ -110,9 +115,8 @@ Para informações detalhadas sobre o processo de tradução, convenções de es
 ### Progresso Geral
 
 ```
-Tradução: 🟢 Em Andamento
-Capítulos Concluídos: 3/5
-Progresso Estimado: ~60%
+Tradução: ✅ Completa (5/5 capítulos) — em revisão
+Site: https://sicpjs.com
 ```
 
 ### Detalhamento por Capítulo
@@ -250,60 +254,33 @@ Progresso Estimado: ~60%
 
 #### 📖 Capítulo 4: Abstração Metalinguística
 
-##### 4.1 O Avaliador Metacircular
-- ⬜ 4.1.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 4.0 Introdução do capítulo
+- ✅ 4.1 O Avaliador Metacircular (4.1.1–4.1.7)
+- ✅ 4.2 Avaliação Preguiçosa (4.2.1–4.2.3)
+- ✅ 4.3 Computação Não-Determinística (4.3.1–4.3.3)
+- ✅ 4.4 Programação Lógica (4.4.1–4.4.4)
 
-##### 4.2 Variações sobre um Scheme - Avaliação Preguiçosa
-- ⬜ 4.2.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-##### 4.3 Variações sobre um Scheme - Computação Não-Determinística
-- ⬜ 4.3.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-##### 4.4 Programação Lógica
-- ⬜ 4.4.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-**Status: ⬜ Não Iniciado (0/~20)**
+**Status: ✅ Completo — em revisão**
 
 ---
 
 #### 📖 Capítulo 5: Computação com Máquinas de Registradores
 
-##### 5.1 Projetando Máquinas de Registradores
-- ⬜ 5.1.md (Introdução da seção)
-- ⬜ Todas as subseções
+- ✅ 5.0 Introdução do capítulo
+- ✅ 5.1 Projetando Máquinas de Registradores (5.1.1–5.1.5)
+- ✅ 5.2 Um Simulador de Máquina de Registradores (5.2.1–5.2.4)
+- ✅ 5.3 Alocação de Armazenamento e Coleta de Lixo (5.3.1–5.3.2)
+- ✅ 5.4 O Avaliador de Controle Explícito (5.4.1–5.4.4)
+- ✅ 5.5 Compilação (5.5.1–5.5.7)
 
-##### 5.2 Um Simulador de Máquina de Registradores
-- ⬜ 5.2.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-##### 5.3 Alocação de Armazenamento e Coleta de Lixo
-- ⬜ 5.3.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-##### 5.4 O Avaliador Explícito-Control
-- ⬜ 5.4.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-##### 5.5 Compilação
-- ⬜ 5.5.md (Introdução da seção)
-- ⬜ Todas as subseções
-
-**Status: ⬜ Não Iniciado (0/~25)**
+**Status: ✅ Completo — em revisão**
 
 ---
 
 ### 🎯 Próximas Prioridades de Tradução
 
-1. **Capítulo 4 - Abstração Metalinguística**
-   - Iniciar tradução completa de todas as seções
-   - Aproximadamente 20 seções a serem traduzidas
-
-2. **Capítulo 5 - Computação com Máquinas de Registradores**
-   - Próximo após conclusão do Capítulo 4
+1. **Revisão da tradução** dos capítulos 2 a 5
+2. **Exemplos interativos**: estender as sessões de playground (`session`) a mais páginas dos capítulos 2 e 3
 
 ### 📊 Como Acompanhar o Progresso
 

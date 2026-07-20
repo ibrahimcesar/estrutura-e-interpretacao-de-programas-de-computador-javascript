@@ -338,6 +338,8 @@ export default function SignalFlowDiagram({ type }) {
         height={diagram.height}
         viewBox={`0 0 ${diagram.width} ${diagram.height}`}
         className={styles.diagram}
+        role="img"
+        aria-label={`Diagrama de fluxo de sinais: ${type}`}
       >
         <defs>
           <marker

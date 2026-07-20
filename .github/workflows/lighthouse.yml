@@ -31,6 +31,11 @@ jobs:
       - name: 🏗️ Build do site
         run: npm run build
 
+      - name: 🌐 Servir o build
+        run: |
+          npx docusaurus serve --port 3000 &
+          npx wait-on --timeout 60000 http://localhost:3000/pt_BR/
+
       - name: 🔦 Run Lighthouse CI
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v11
@@ -38,7 +43,7 @@ jobs:
           urls: |
             http://localhost:3000/pt_BR/
             http://localhost:3000/pt_BR/prefaces/foreword84
-            http://localhost:3000/pt_BR/chapter-1/intro
+            http://localhost:3000/pt_BR/chapter-1/1.0
           budgetPath: .github/lighthouse/budget.json
           temporaryPublicStorage: true
           uploadArtifacts: true

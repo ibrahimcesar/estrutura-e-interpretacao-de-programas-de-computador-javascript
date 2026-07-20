@@ -11,7 +11,6 @@ import DocItemTOCDesktop from '@theme/DocItem/TOC/Desktop';
 import DocItemContent from '@theme/DocItem/Content';
 import DocBreadcrumbs from '@theme/DocBreadcrumbs';
 import ContentVisibility from '@theme/ContentVisibility';
-import ReadingProgressBar from '@site/src/components/ReadingProgressBar';
 import styles from './styles.module.css';
 
 /**
@@ -39,7 +38,6 @@ export default function DocItemLayout({children}) {
   const {metadata} = useDoc();
   return (
     <>
-      <ReadingProgressBar />
       <div className="row">
         <div className={clsx('col', !docTOC.hidden && styles.docItemCol)}>
           <ContentVisibility metadata={metadata} />

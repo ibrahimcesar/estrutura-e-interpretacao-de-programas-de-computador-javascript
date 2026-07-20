@@ -120,7 +120,6 @@ yarn-error.log*
 .github/wordlist.dict
 
 # Percy visual testing
-.percy/
 .lighthouseci/
 
 # IDE

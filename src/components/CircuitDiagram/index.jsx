@@ -315,6 +315,8 @@ export default function CircuitDiagram({ type }) {
         height={circuit.height}
         viewBox={`0 0 ${circuit.width} ${circuit.height}`}
         className={styles.circuit}
+        role="img"
+        aria-label={`Diagrama de circuito lógico: ${type}`}
       >
         <LogicGates />
 

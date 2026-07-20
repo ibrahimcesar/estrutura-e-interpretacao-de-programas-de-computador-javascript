@@ -49,6 +49,10 @@ jobs:
           find build -maxdepth 1 -mindepth 1 -type d ! -name 'pt_BR' -exec mv {} build/pt_BR/ \;
           # Copy redirect index.html to root
           cp .github/redirect-index.html build/index.html
+          # robots.txt e 404.html precisam existir na RAIZ do domínio
+          # (o GitHub Pages só honra /robots.txt e /404.html)
+          cp build/pt_BR/robots.txt build/robots.txt
+          cp build/pt_BR/404.html build/404.html
           echo "Directory structure created:"
           ls -la build/
           echo "pt_BR contents:"

@@ -27,13 +27,13 @@ const config = {
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
 
-  onBrokenLinks: 'warn',
+  onBrokenLinks: 'throw',
 
   // Markdown configuration
   markdown: {
     mermaid: true,
     hooks: {
-      onBrokenMarkdownLinks: 'warn',
+      onBrokenMarkdownLinks: 'throw',
     },
   },
 
@@ -171,7 +171,7 @@ const config = {
                 to: '/guia-traducao',
               },
               {
-                label: 'Como Contribuir',
+                label: 'Código de Conduta',
                 to: '/como-contribuir',
               },
               {
@@ -181,7 +181,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Este trabalho está licenciado sob <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>.`,
+        copyright: `Tradução de <a href="https://sourceacademy.org/sicpjs/index" target="_blank" rel="noopener noreferrer"><em>Structure and Interpretation of Computer Programs — JavaScript Edition</em></a>, de Harold Abelson e Gerald Jay Sussman, adaptado para JavaScript por Martin Henz e Tobias Wrigstad (MIT Press / Source Academy), licenciado sob CC BY-SA 4.0. Este trabalho está licenciado sob <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>.`,
       },
       prism: {
         theme: prismThemes.github,
@@ -198,14 +198,6 @@ const config = {
         defaultMode: 'light',
         disableSwitch: false,
         respectPrefersColorScheme: true,
-      },
-      announcementBar: {
-        id: 'work_in_progress',
-        content:
-          '🚧 Este site está em desenvolvimento. Quer ajudar? <a target="_blank" rel="noopener noreferrer" href="https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript">Contribua no GitHub</a>! 🚧',
-        backgroundColor: '#ffd700',
-        textColor: '#091E42',
-        isCloseable: true,
       },
     }),
 };

@@ -1,16 +1,6 @@
 name: 📚 Generate eBooks (PDF & EPUB)
 
 on:
-  # Runs on pushes to main
-  push:
-    branches:
-      - main
-    paths:
-      - 'docs/**/*.md'
-      - 'docs/**/*.mdx'
-      - 'scripts/generate-ebook.sh'
-      - '.github/workflows/generate-ebooks.yml'
-
   # Allows manual triggering
   workflow_dispatch:
 

@@ -22,9 +22,9 @@ function sqrt(x) {
 
 Isso apenas evita a questão.
 
-O contraste entre função matemática e função de computador é um reflexo da distinção geral entre descrever propriedades das coisas e descrever como fazer as coisas, ou, como às vezes é referido, a distinção entre conhecimento declarativo e conhecimento imperativo. Em matemática, geralmente estamos preocupados com descrições declarativas (o que é), enquanto em ciência da computação geralmente estamos preocupados com descrições imperativas (como fazer).[<sup>1</sup>](#footnote-1)
+O contraste entre função matemática e função de computador é um reflexo da distinção geral entre descrever propriedades das coisas e descrever como fazer as coisas, ou, como às vezes é referido, a distinção entre conhecimento declarativo e conhecimento imperativo. Em matemática, geralmente estamos preocupados com descrições declarativas (o que é), enquanto em ciência da computação geralmente estamos preocupados com descrições imperativas (como fazer).<a name="footnote-link-1"></a>[<sup>1</sup>](#footnote-1)
 
-Como se calcula raízes quadradas? A maneira mais comum é usar o método de Newton de aproximações sucessivas, que diz que sempre que temos um palpite *y* para o valor da raiz quadrada de um número *x*, podemos realizar uma manipulação simples para obter um palpite melhor (mais próximo da raiz quadrada real) fazendo a média de *y* com *x*/*y*.[<sup>2</sup>](#footnote-2) Por exemplo, podemos calcular a raiz quadrada de 2 da seguinte forma. Suponha que nosso palpite inicial seja 1:
+Como se calcula raízes quadradas? A maneira mais comum é usar o método de Newton de aproximações sucessivas, que diz que sempre que temos um palpite *y* para o valor da raiz quadrada de um número *x*, podemos realizar uma manipulação simples para obter um palpite melhor (mais próximo da raiz quadrada real) fazendo a média de *y* com *x*/*y*.<a name="footnote-link-2"></a>[<sup>2</sup>](#footnote-2) Por exemplo, podemos calcular a raiz quadrada de 2 da seguinte forma. Suponha que nosso palpite inicial seja 1:
 
 $$
 \begin{array}{lll}
@@ -73,7 +73,7 @@ onde
   showLineNumbers={false}
 />
 
-Também temos que dizer o que queremos dizer com "bom o suficiente". O seguinte servirá para ilustração, mas não é realmente um teste muito bom. (Veja o exercício 1.7.) A ideia é melhorar a resposta até que ela esteja próxima o suficiente de modo que seu quadrado difira do radicando por menos do que uma tolerância predeterminada (aqui 0.001):[<sup>3</sup>](#footnote-3)
+Também temos que dizer o que queremos dizer com "bom o suficiente". O seguinte servirá para ilustração, mas não é realmente um teste muito bom. (Veja o exercício 1.7.) A ideia é melhorar a resposta até que ela esteja próxima o suficiente de modo que seu quadrado difira do radicando por menos do que uma tolerância predeterminada (aqui 0.001):<a name="footnote-link-3"></a>[<sup>3</sup>](#footnote-3)
 
 <CodePlayground
   session="1.1.7"
@@ -148,7 +148,7 @@ Se digitarmos essas declarações no interpretador, podemos usar `sqrt` assim co
 1000.000369924366
 ```
 
-O programa `sqrt` também ilustra que a linguagem funcional simples que introduzimos até agora é suficiente para escrever qualquer programa puramente numérico que se poderia escrever em, digamos, C ou Pascal. Isso pode parecer surpreendente, já que não incluímos em nossa linguagem nenhum construto iterativo (de loop) que direcione o computador a fazer algo repetidamente. A função `sqrt_iter`, por outro lado, demonstra como a iteração pode ser realizada sem usar nenhum construto especial além da capacidade ordinária de chamar uma função.[<sup>4</sup>](#footnote-4)
+O programa `sqrt` também ilustra que a linguagem funcional simples que introduzimos até agora é suficiente para escrever qualquer programa puramente numérico que se poderia escrever em, digamos, C ou Pascal. Isso pode parecer surpreendente, já que não incluímos em nossa linguagem nenhum construto iterativo (de loop) que direcione o computador a fazer algo repetidamente. A função `sqrt_iter`, por outro lado, demonstra como a iteração pode ser realizada sem usar nenhum construto especial além da capacidade ordinária de chamar uma função.<a name="footnote-link-4"></a>[<sup>4</sup>](#footnote-4)
 
 ---
 
@@ -156,7 +156,7 @@ O programa `sqrt` também ilustra que a linguagem funcional simples que introduz
 
 ### Exercício 1.6
 
-Alyssa P. Hacker não gosta da sintaxe de expressões condicionais, envolvendo os caracteres `?` e `:`. "Por que não posso simplesmente declarar uma função condicional ordinária cuja aplicação funciona como expressões condicionais?" ela pergunta.[<sup>5</sup>](#footnote-5) A amiga de Alyssa, Eva Lu Ator, afirma que isso pode de fato ser feito, e ela declara uma função `conditional` da seguinte forma:
+Alyssa P. Hacker não gosta da sintaxe de expressões condicionais, envolvendo os caracteres `?` e `:`. "Por que não posso simplesmente declarar uma função condicional ordinária cuja aplicação funciona como expressões condicionais?" ela pergunta.<a name="footnote-link-5"></a>[<sup>5</sup>](#footnote-5) A amiga de Alyssa, Eva Lu Ator, afirma que isso pode de fato ser feito, e ela declara uma função `conditional` da seguinte forma:
 
 <CodePlayground
   session="1.1.7-cond"

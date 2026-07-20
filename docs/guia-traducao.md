@@ -152,7 +152,7 @@ e formar ideias mais complexas:
 Mantenha consistência na tradução de termos técnicos. Aqui estão alguns termos comuns:
 
 | Inglês | Português | Observação |
-|--------|-----------|------------|
+| -------- | ----------- | ------------ |
 | function | função | Sempre traduzir |
 | procedure | procedimento | Sempre traduzir |
 | expression | expressão | Sempre traduzir |
