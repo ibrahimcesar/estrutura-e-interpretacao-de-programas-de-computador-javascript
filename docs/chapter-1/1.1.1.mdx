@@ -9,9 +9,9 @@ import HelpFooter from '@site/src/components/HelpFooter';
 
 Uma maneira fácil de começar a programar é examinar algumas interações típicas com um interpretador da linguagem JavaScript. Você digita uma *instrução* e o interpretador responde exibindo o resultado da *avaliação* dessa instrução.
 
-Nesta edição, o clique do mouse nas instruções JavaScript com fundo escuro é programado de forma que seja exibido um interpretador JavaScript, que pode *avaliar* a instrução e exibir o valor resultante. A propósito, o programa que faz o clique do mouse em uma instrução JavaScript exibir o interpretador é escrito em JavaScript; é chamado de *script* para o clique do mouse. Esses scripts eram um objetivo central no design original do JavaScript.
+Nesta edição, você pode executar o código JavaScript diretamente na página: cada exemplo aparece em um editor interativo e é avaliado ao pressionar o botão "Executar". O código também é editável — experimente modificá-lo e executar de novo!
 
-Um tipo de instrução que você pode digitar é uma instrução de *expressão*, que consiste em uma expressão seguida por um ponto e vírgula. Um tipo de expressão primitiva é um número. (Mais precisamente, a expressão que você digita consiste nos numerais que representam o número na base 10.) Se você pedir ao nosso script para avaliar a instrução da expressão
+Um tipo de instrução que você pode digitar é uma instrução de *expressão*, que consiste em uma expressão seguida por um ponto e vírgula. Um tipo de expressão primitiva é um número. (Mais precisamente, a expressão que você digita consiste nos numerais que representam o número na base 10.) Se você pedir ao interpretador para avaliar a instrução de expressão
 
 <CodePlayground
   code={`486;`}
@@ -19,9 +19,9 @@ Um tipo de instrução que você pode digitar é uma instrução de *expressão*
   showLineNumbers={false}
 />
 
-clicando nela, ele responderá exibindo um interpretador JavaScript com a opção de avaliar a instrução pressionando um botão "Run" (Executar). Clique na instrução da expressão primitiva e veja o que acontece!
+ele responderá exibindo o valor resultante. Pressione "Executar" na instrução de expressão primitiva acima e veja o que acontece!
 
-Expressões que representam números podem ser combinadas com operadores (como + ou \*) para formar uma expressão composta que representa a aplicação de uma função primitiva correspondente a esses números. Por exemplo, avalie qualquer uma das seguintes instrções de expressão clicando nela:
+Expressões que representam números podem ser combinadas com operadores (como `+` ou `*`) para formar uma expressão composta que representa a aplicação de uma função primitiva correspondente a esses números. Por exemplo, avalie qualquer uma das seguintes instruções de expressão:
 
 <CodePlayground
   code={`137 + 349;`}

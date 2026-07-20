@@ -8,7 +8,7 @@ import CodePlayground from '@site/src/components/CodePlaygroundLazy';
 
 # Demonstração: Live Codeblocks do Docusaurus
 
-Esta página demonstra a nova funcionalidade de **Live Codeblocks** do Docusaurus comparada com o nosso `CodePlayground` tradicional (Sandpack).
+Esta página demonstra a funcionalidade de **Live Codeblocks** do Docusaurus comparada com o nosso `CodePlayground`.
 
 ## Live Codeblocks - Exemplos Interativos
 
@@ -160,9 +160,9 @@ function Calculator() {
 render(<Calculator />);
 ```
 
-## CodePlayground Tradicional - Console Output
+## CodePlayground - JavaScript puro
 
-O CodePlayground (Sandpack) continua sendo ideal para exemplos com `console.log`:
+O CodePlayground executa JavaScript puro em um Web Worker: mostra a saída de `console.log` e ecoa o valor da última expressão, como em um REPL:
 
 <CodePlayground
   code={`// Funções do SICP
@@ -194,16 +194,15 @@ console.log("factorial(10) =", factorial(10));`}
 
 ## Comparação: Live Codeblocks vs CodePlayground
 
-| Característica | Live Codeblocks | CodePlayground (Sandpack) |
-|----------------|-----------------|---------------------------|
+| Característica | Live Codeblocks | CodePlayground |
+|----------------|-----------------|----------------|
 | **Sintaxe** | Markdown puro | Componente React |
-| **Bundle Size** | Menor (nativo) | Maior (Sandpack) |
 | **Console Output** | ❌ Não | ✅ Sim |
+| **Valor da última expressão (REPL)** | ❌ Não | ✅ Sim |
 | **JavaScript Puro** | ⚠️ Limitado | ✅ Sim |
-| **Componentes React** | ✅ Excelente | ✅ Sim |
-| **Múltiplos Arquivos** | ❌ Não | ✅ Sim |
-| **Código Oculto** | ❌ Não | ✅ Sim |
-| **Preview Visual** | ✅ Sim | ✅ Sim |
+| **Componentes React** | ✅ Excelente | ❌ Não |
+| **Código Oculto** | ❌ Não | ✅ Sim (`hiddenCode`) |
+| **Proteção contra laços infinitos** | ❌ Não | ✅ Sim (timeout de 5s) |
 | **Edição em Tempo Real** | ✅ Sim | ✅ Sim |
 
 ## Recomendações de Uso
@@ -215,9 +214,9 @@ console.log("factorial(10) =", factorial(10));`}
 - ✅ Reduzir o bundle size
 
 ### Use CodePlayground para:
-- ✅ Código JavaScript puro com console.log
+- ✅ Código JavaScript puro (o valor da última expressão é exibido como em um REPL)
 - ✅ Exemplos que precisam mostrar output no console
-- ✅ Múltiplos arquivos ou código oculto (helpers)
+- ✅ Código oculto de apoio (`hiddenCode`)
 - ✅ Ensino de conceitos fundamentais de programação
 
 ## Sintaxe do Live Codeblock
@@ -251,6 +250,6 @@ render(<App />);
 Ambas as ferramentas têm seu lugar neste projeto:
 
 - **Live Codeblocks**: Perfeito para demonstrações React interativas
-- **CodePlayground**: Ideal para ensinar JavaScript e mostrar console output
+- **CodePlayground**: Ideal para ensinar JavaScript, ver valores de expressões e mostrar console output
 
 Veja o [guia de migração](/MIGRATION_TO_LIVE_CODEBLOCKS.md) para mais detalhes.

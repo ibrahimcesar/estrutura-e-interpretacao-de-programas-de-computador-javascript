@@ -9,6 +9,7 @@ Em JavaScript, nomeamos constantes com *declarações de constantes*.
 
 <CodePlayground
   code={`const size = 2;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
@@ -17,6 +18,7 @@ faz com que o intepretador associe o valor 2 ao tamanho do nome.<sup>[1](#footno
 
 <CodePlayground
   code={`size;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
@@ -25,21 +27,23 @@ faz com que o intepretador associe o valor 2 ao tamanho do nome.<sup>[1](#footno
 
 <CodePlayground
   code={`5 * size;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
 
 10
 
-O interpretador JavaScript precisa executar a declaração constante `size` antes que o nome `size` possa ser usado em uma expressão. Neste livro online, as instruções que precisam ser avaliadas antes de uma nova instrução são omitidas por questões de brevidade. Porém, para ver e brincar com o programa, você pode clicar nele. O programa então aparece em uma nova aba do navegador, com a opção "Show Dependencies" (Mostrar Dependências). Assim, como resultado de clicar em
+O interpretador JavaScript precisa executar a declaração da constante `size` antes que o nome `size` possa ser usado em uma expressão. Nesta edição, os exemplos de uma mesma página compartilham o mesmo ambiente: ao executar um bloco, as instruções dos blocos anteriores são avaliadas primeiro, automaticamente. Assim, executar
 
 <CodePlayground
   code={`5 * size;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
 
-uma nova aba aparece contendo o programa e, após clicar em "Show Dependencies", você verá:
+equivale a executar o programa completo, com suas dependências incluídas:
 
 <CodePlayground
   code={`const size = 2;
@@ -52,18 +56,21 @@ Aqui estão outros exemplos do uso de `const`:
 
 <CodePlayground
   code={`const pi = 3.14159;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
   code={`const radius = 10;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
   code={`pi * radius * radius;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
@@ -72,12 +79,14 @@ Aqui estão outros exemplos do uso de `const`:
 
 <CodePlayground
   code={`const circumference = 2 * pi * radius;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
   code={`circumference;`}
+  session="1.1.2"
   height={150}
   showLineNumbers={false}
 />

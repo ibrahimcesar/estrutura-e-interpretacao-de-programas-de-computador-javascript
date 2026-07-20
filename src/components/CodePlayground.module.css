@@ -1,0 +1,165 @@
+.wrapper {
+  margin-bottom: 2rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.titleBar {
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-primary);
+  color: black;
+  font-weight: bold;
+}
+
+/* ---- Editor ---- */
+
+.editorScroll {
+  overflow: auto;
+  position: relative;
+}
+
+.editorScroll:focus-within {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+}
+
+.editorInner {
+  position: relative;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.codeFont {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 14px;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+/* Evita o zoom automático do iOS ao focar campos com fonte < 16px */
+@media (pointer: coarse) {
+  .codeFont {
+    font-size: 16px;
+  }
+}
+
+.pre {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  white-space: pre;
+  overflow: visible;
+}
+
+.line {
+  min-height: 1.5em;
+}
+
+.lineNumber {
+  display: inline-block;
+  width: 3ch;
+  margin-right: 1ch;
+  text-align: right;
+  user-select: none;
+  opacity: 0.45;
+}
+
+.textarea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  white-space: pre;
+}
+
+.textareaWithGutter {
+  padding-left: calc(1rem + 4ch);
+}
+
+/* ---- Barra de ações ---- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--ifm-background-surface-color);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+@media (max-width: 600px) {
+  .hint {
+    display: none;
+  }
+}
+
+/* ---- Saída ---- */
+
+.output {
+  padding: 0.75rem 1rem;
+  background: var(--ifm-background-surface-color);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.entryResult {
+  color: var(--ifm-font-color-base);
+}
+
+.resultPrompt {
+  color: var(--ifm-color-primary-darkest);
+  font-weight: bold;
+  user-select: none;
+}
+
+:global([data-theme='dark']) .resultPrompt {
+  color: var(--ifm-color-primary-lightest);
+}
+
+.entryLog {
+  color: var(--ifm-font-color-base);
+}
+
+.entryWarn {
+  color: var(--ifm-color-warning-darkest);
+}
+
+:global([data-theme='dark']) .entryWarn {
+  color: var(--ifm-color-warning-light);
+}
+
+.entryError {
+  color: var(--ifm-color-danger-dark);
+}
+
+:global([data-theme='dark']) .entryError {
+  color: var(--ifm-color-danger-light);
+}
+
+.entryStatus {
+  color: var(--ifm-color-emphasis-600);
+  font-style: italic;
+}
