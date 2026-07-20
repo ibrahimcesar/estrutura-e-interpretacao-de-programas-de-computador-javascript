@@ -124,7 +124,7 @@ jobs:
       - name: 📥 Download baseline (se existir)
         if: github.event_name == 'pull_request'
         continue-on-error: true
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: build-size.yml
           branch: main
