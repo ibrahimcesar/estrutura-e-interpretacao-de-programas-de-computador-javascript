@@ -12,8 +12,8 @@ Assim como no avaliador metacircular, combinações de operadores são transform
 
 Começamos a avaliação de uma aplicação avaliando a expressão de função para produzir uma função, que será aplicada posteriormente às expressões de argumento avaliadas. Para avaliar a expressão de função, movemos ela para o registrador `comp` e vamos para `eval_dispatch`. O ambiente no registrador `env` já é o correto no qual avaliar a expressão de função. No entanto, salvamos `env` porque vamos precisar dele depois para avaliar as expressões de argumento. Também extraímos as expressões de argumento em `unev` e salvamos isso na pilha. Configuramos `continue` de modo que `eval_dispatch` retome em `ev_appl_did_function_expression` após a expressão de função ter sido avaliada. Primeiro, no entanto, salvamos o valor antigo de `continue`, que diz ao controlador onde continuar após a aplicação.
 
-<CodePlayground
-  code={`"ev_operator_combination",
+```js
+"ev_operator_combination",
   assign("comp", list(op("operator_combination_to_application"),
                       reg("comp"), reg("env"))),
 "ev_application",
@@ -23,32 +23,28 @@ Começamos a avaliação de uma aplicação avaliando a expressão de função p
   save("unev"),
   assign("comp", list(op("function_expression"), reg("comp"))),
   assign("continue", label("ev_appl_did_function_expression")),
-  go_to(label("eval_dispatch")),`}
-  height={300}
-  showLineNumbers={true}
-/>
+  go_to(label("eval_dispatch")),
+```
 
 ## Avaliação de argumentos
 
 Ao retornar da avaliação da expressão de função, prosseguimos para avaliar as expressões de argumento da aplicação e acumular os argumentos resultantes em uma lista, mantida em `argl`. (Isso é como a avaliação de uma sequência de instruções, exceto que coletamos os valores.) Primeiro restauramos as expressões de argumento não avaliadas e o ambiente. Inicializamos `argl` como uma lista vazia. Então atribuímos ao registrador `fun` a função que foi produzida ao avaliar a expressão de função. Se não há expressões de argumento, vamos diretamente para `apply_dispatch`. Caso contrário, salvamos `fun` na pilha e iniciamos o laço de avaliação de argumentos:[^3]
 
-<CodePlayground
-  code={`"ev_appl_did_function_expression",
+```js
+"ev_appl_did_function_expression",
   restore("unev"), // as expressões de argumento
   restore("env"),
   assign("argl", list(op("empty_arglist"))),
   assign("fun", reg("val")), // a função
   test(list(op("is_null"), reg("unev"))),
   branch(label("apply_dispatch")),
-  save("fun"),`}
-  height={250}
-  showLineNumbers={true}
-/>
+  save("fun"),
+```
 
 Cada ciclo do laço de avaliação de argumentos avalia uma expressão de argumento da lista em `unev` e acumula o resultado em `argl`. Para avaliar uma expressão de argumento, colocamos ela no registrador `comp` e vamos para `eval_dispatch`, após configurar `continue` de modo que a execução retome com a fase de acumulação de argumentos. Mas primeiro salvamos os argumentos acumulados até agora (mantidos em `argl`), o ambiente (mantido em `env`), e as expressões de argumento restantes a serem avaliadas (mantidas em `unev`). Um caso especial é feito para a avaliação da última expressão de argumento, que é tratada em `ev_appl_last_arg`.
 
-<CodePlayground
-  code={`"ev_appl_argument_expression_loop",
+```js
+"ev_appl_argument_expression_loop",
   save("argl"),
   assign("comp", list(op("head"), reg("unev"))),
   test(list(op("is_last_argument_expression"), reg("unev"))),
@@ -56,39 +52,33 @@ Cada ciclo do laço de avaliação de argumentos avalia uma expressão de argume
   save("env"),
   save("unev"),
   assign("continue", label("ev_appl_accumulate_arg")),
-  go_to(label("eval_dispatch")),`}
-  height={300}
-  showLineNumbers={true}
-/>
+  go_to(label("eval_dispatch")),
+```
 
 Quando uma expressão de argumento foi avaliada, o valor é acumulado na lista mantida em `argl`. A expressão de argumento é então removida da lista de expressões de argumento não avaliadas em `unev`, e o laço de avaliação de argumentos continua.
 
-<CodePlayground
-  code={`"ev_appl_accumulate_arg",
+```js
+"ev_appl_accumulate_arg",
   restore("unev"),
   restore("env"),
   restore("argl"),
   assign("argl", list(op("adjoin_arg"), reg("val"), reg("argl"))),
   assign("unev", list(op("tail"), reg("unev"))),
-  go_to(label("ev_appl_argument_expression_loop")),`}
-  height={250}
-  showLineNumbers={true}
-/>
+  go_to(label("ev_appl_argument_expression_loop")),
+```
 
 A avaliação da última expressão de argumento é tratada de forma diferente, assim como a última instrução em uma sequência. Não há necessidade de salvar o ambiente ou a lista de expressões de argumento não avaliadas antes de ir para `eval_dispatch`, pois elas não serão necessárias após a última expressão de argumento ser avaliada. Assim, retornamos da avaliação para um ponto de entrada especial `ev_appl_accum_last_arg`, que restaura a lista de argumentos, acumula o novo argumento, restaura a função salva, e vai realizar a aplicação.[^4]
 
-<CodePlayground
-  code={`"ev_appl_last_arg",
+```js
+"ev_appl_last_arg",
   assign("continue", label("ev_appl_accum_last_arg")),
   go_to(label("eval_dispatch")),
 "ev_appl_accum_last_arg",
   restore("argl"),
   assign("argl", list(op("adjoin_arg"), reg("val"), reg("argl"))),
   restore("fun"),
-  go_to(label("apply_dispatch")),`}
-  height={250}
-  showLineNumbers={true}
-/>
+  go_to(label("apply_dispatch")),
+```
 
 Os detalhes do laço de avaliação de argumentos determinam a ordem na qual o interpretador avalia as expressões de argumento de uma combinação (por exemplo, da esquerda para a direita ou da direita para a esquerda—veja exercício 4.1). Esta ordem não é determinada pelo avaliador metacircular, que herda sua estrutura de controle do JavaScript subjacente no qual está implementado.[^5]
 
@@ -98,28 +88,24 @@ Como usamos `head` em `ev_appl_argument_expression_loop` para extrair expressõe
 
 O ponto de entrada `apply_dispatch` corresponde à função `apply` do avaliador metacircular. Quando chegamos a `apply_dispatch`, o registrador `fun` contém a função a ser aplicada e `argl` contém a lista de argumentos avaliados aos quais ela deve ser aplicada. O valor salvo de `continue` (originalmente passado para `eval_dispatch` e salvo em `ev_application`), que diz onde retornar com o resultado da aplicação de função, está na pilha. Quando a aplicação está completa, o controlador transfere para o ponto de entrada especificado pelo `continue` salvo, com o resultado da aplicação em `val`. Assim como no `apply` metacircular, há dois casos a considerar. Ou a função a ser aplicada é uma primitiva ou é uma função composta.
 
-<CodePlayground
-  code={`"apply_dispatch",
+```js
+"apply_dispatch",
   test(list(op("is_primitive_function"), reg("fun"))),
   branch(label("primitive_apply")),
   test(list(op("is_compound_function"), reg("fun"))),
   branch(label("compound_apply")),
-  go_to(label("unknown_function_type")),`}
-  height={200}
-  showLineNumbers={true}
-/>
+  go_to(label("unknown_function_type")),
+```
 
 Assumimos que cada primitiva é implementada de modo a obter seus argumentos de `argl` e colocar seu resultado em `val`. Para especificar como a máquina trata primitivas, teríamos que fornecer uma sequência de instruções do controlador para implementar cada primitiva e arranjar para `primitive_apply` despachar para as instruções para a primitiva identificada pelos conteúdos de `fun`. Como estamos interessados na estrutura do processo de avaliação em vez dos detalhes das primitivas, simplesmente usaremos uma operação `apply_primitive_function` que aplica a função em `fun` aos argumentos em `argl`. Para o propósito de simular o avaliador com o simulador da seção 5.2, usamos a função `apply_primitive_function`, que chama o sistema JavaScript subjacente para realizar a aplicação, assim como fizemos para o avaliador metacircular na seção 4.1.1. Após calcular o valor da aplicação primitiva, restauramos `continue` e vamos para o ponto de entrada designado.
 
-<CodePlayground
-  code={`"primitive_apply",
+```js
+"primitive_apply",
   assign("val", list(op("apply_primitive_function"),
                      reg("fun"), reg("argl"))),
   restore("continue"),
-  go_to(reg("continue")),`}
-  height={150}
-  showLineNumbers={true}
-/>
+  go_to(reg("continue")),
+```
 
 A sequência de instruções rotulada `compound_apply` especifica a aplicação de funções compostas. Para aplicar uma função composta, procedemos de maneira similar ao que fizemos no avaliador metacircular. Construímos um frame que vincula os parâmetros da função aos argumentos, usamos esse frame para estender o ambiente transportado pela função, e avaliamos nesse ambiente estendido o corpo da função.
 
@@ -129,8 +115,8 @@ A complicação tem dois aspectos. Um é que em qualquer ponto na avaliação do
 
 O outro aspecto da complicação é que se a avaliação do corpo termina sem executar uma instrução return, o valor do corpo deve ser `undefined`. Para tratar isso, configuramos o registrador `continue` para apontar para o ponto de entrada `return_undefined` antes de ir para `eval_dispatch` para avaliar o corpo. Se uma instrução return não é encontrada durante a avaliação do corpo, a avaliação do corpo continuará em `return_undefined`.
 
-<CodePlayground
-  code={`"compound_apply",
+```js
+"compound_apply",
   assign("unev", list(op("function_parameters"), reg("fun"))),
   assign("env", list(op("function_environment"), reg("fun"))),
   assign("env", list(op("extend_environment"),
@@ -138,36 +124,30 @@ O outro aspecto da complicação é que se a avaliação do corpo termina sem ex
   assign("comp", list(op("function_body"), reg("fun"))),
   push_marker_to_stack(),
   assign("continue", label("return_undefined")),
-  go_to(label("eval_dispatch")),`}
-  height={300}
-  showLineNumbers={true}
-/>
+  go_to(label("eval_dispatch")),
+```
 
 Os únicos lugares no interpretador onde o registrador `env` recebe um novo valor são `compound_apply` e `ev_block` (seção 5.4.3). Assim como no avaliador metacircular, o novo ambiente para avaliação do corpo de uma função é construído a partir do ambiente transportado pela função, juntamente com a lista de argumentos e a lista correspondente de nomes a serem vinculados.
 
 Quando uma instrução return é avaliada em `ev_return`, usamos a instrução `revert_stack_to_marker` para restaurar a pilha ao seu estado no início da chamada de função removendo todos os valores da pilha até e incluindo o marcador. Como consequência, `restore("continue")` irá restaurar a continuação da chamada de função, que foi salva em `ev_application`. Então prosseguimos para avaliar a expressão de retorno, cujo resultado será colocado em `val` e assim será o valor retornado da função quando continuarmos após a avaliação da expressão de retorno.
 
-<CodePlayground
-  code={`"ev_return",
+```js
+"ev_return",
   revert_stack_to_marker(),
   restore("continue"),
   assign("comp", list(op("return_expression"), reg("comp"))),
-  go_to(label("eval_dispatch")),`}
-  height={200}
-  showLineNumbers={true}
-/>
+  go_to(label("eval_dispatch")),
+```
 
 Se nenhuma instrução return é encontrada durante a avaliação do corpo da função, a avaliação continua em `return_undefined`, a continuação que foi configurada em `compound_apply`. Para retornar `undefined` da função, colocamos `undefined` em `val` e vamos para o ponto de entrada que foi colocado na pilha em `ev_application`. Antes de podermos restaurar essa continuação da pilha, no entanto, devemos remover o marcador que foi salvo em `compound_apply`.
 
-<CodePlayground
-  code={`"return_undefined",
+```js
+"return_undefined",
   revert_stack_to_marker(),
   restore("continue"),
   assign("val", constant(undefined)),
-  go_to(reg("continue")),`}
-  height={180}
-  showLineNumbers={true}
-/>
+  go_to(reg("continue")),
+```
 
 ## Instruções Return e Recursão em Cauda
 

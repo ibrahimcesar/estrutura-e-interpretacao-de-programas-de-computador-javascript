@@ -70,12 +70,18 @@ export default function CodePlayground({
   const rafRef = useRef(null);
   const entryCountRef = useRef(0);
 
-  // Identidade estável do bloco na sessão; devolve sempre o código atual.
+  // Identidade estável do bloco na sessão; devolve sempre o programa atual
+  // do bloco (hiddenCode + código do editor).
   const editorCodeRef = useRef(editorCode);
   editorCodeRef.current = editorCode;
+  const hiddenCodeRef = useRef(hiddenCode);
+  hiddenCodeRef.current = hiddenCode;
   const getCodeRef = useRef(null);
   if (getCodeRef.current === null) {
-    getCodeRef.current = () => editorCodeRef.current;
+    getCodeRef.current = () =>
+      hiddenCodeRef.current
+        ? hiddenCodeRef.current + '\n' + editorCodeRef.current
+        : editorCodeRef.current;
   }
   const sessionKeyRef = useRef(null);
 

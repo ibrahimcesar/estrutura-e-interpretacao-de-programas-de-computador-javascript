@@ -34,8 +34,8 @@ Esta máquina tem duas caixas de operação de resto e duas caixas para testar i
 
 Removemos os componentes duplicados do caminho de dados (de modo que os caminhos de dados são novamente como na Figura 5.1), mas o controlador agora tem duas sequências de MDC que diferem apenas em seus rótulos de ponto de entrada. Seria melhor substituir essas duas sequências por ramificações para uma única sequência—uma *subrotina* `gcd`—no final da qual ramificamos de volta ao local correto na sequência de instruções principal. Podemos realizar isso da seguinte forma: antes de ramificar para `gcd`, colocamos um valor distintivo (como 0 ou 1) em um registrador especial, `continue`. No final da subrotina `gcd`, retornamos para `after_gcd_1` ou para `after_gcd_2`, dependendo do valor do registrador `continue`. A Figura 5.9 mostra a porção relevante da sequência do controlador resultante, que inclui apenas uma única cópia das instruções `gcd`.
 
-<CodePlayground
-  code={`"gcd",
+```js
+"gcd",
   test(list(op("="), reg("b"), constant(0))),
   branch(label("gcd_done")),
   assign("t", list(op("rem"), reg("a"), reg("b"))),
@@ -56,10 +56,8 @@ Removemos os componentes duplicados do caminho de dados (de modo que os caminhos
   // Antes do segundo uso de gcd, colocamos 1 no registrador continue
   assign("continue", constant(1)),
   go_to(label("gcd")),
-"after_gcd_2"`}
-  height={600}
-  showLineNumbers={true}
-/>
+"after_gcd_2"
+```
 
 **Figura 5.9:** Usando um registrador `continue` para evitar a sequência duplicada do controlador na Figura 5.8.
 
@@ -67,8 +65,8 @@ Esta é uma abordagem razoável para lidar com problemas pequenos, mas seria inc
 
 Para refletir esta habilidade, estenderemos a instrução `assign` da linguagem de máquina de registradores para permitir que um registrador receba como valor um rótulo da sequência do controlador (como um tipo especial de constante). Também estenderemos a instrução `go_to` para permitir que a execução continue no ponto de entrada descrito pelos conteúdos de um registrador em vez de apenas em um ponto de entrada descrito por um rótulo constante. Usando essas novas construções, podemos terminar a subrotina `gcd` com uma ramificação para o local armazenado no registrador `continue`. Isso leva à sequência do controlador mostrada na Figura 5.10.
 
-<CodePlayground
-  code={`"gcd",
+```js
+"gcd",
   test(list(op("="), reg("b"), constant(0))),
   branch(label("gcd_done")),
   assign("t", list(op("rem"), reg("a"), reg("b"))),
@@ -87,10 +85,8 @@ Para refletir esta habilidade, estenderemos a instrução `assign` da linguagem 
   // Aqui está a segunda chamada a gcd, com uma continuação diferente.
   assign("continue", label("after_gcd_2")),
   go_to(label("gcd")),
-"after_gcd_2"`}
-  height={500}
-  showLineNumbers={true}
-/>
+"after_gcd_2"
+```
 
 **Figura 5.10:** Atribuir rótulos ao registrador `continue` simplifica e generaliza a estratégia mostrada na Figura 5.9.
 

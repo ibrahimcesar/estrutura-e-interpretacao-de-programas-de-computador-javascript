@@ -28,8 +28,8 @@ assign("t", list(op("rem"), reg("a"), reg("b")))
 
 na definição do controlador MDC é substituída por uma sequência de instruções que contém um laço, como mostrado na Figura 5.6.
 
-<CodePlayground
-  code={`controller(
+```js
+controller(
   list(
     "test_b",
       test(list(op("="), reg("b"), constant(0))),
@@ -44,10 +44,8 @@ na definição do controlador MDC é substituída por uma sequência de instruç
       assign("a", reg("b")),
       assign("b", reg("t")),
       go_to(label("test_b")),
-    "gcd_done"))`}
-  height={450}
-  showLineNumbers={true}
-/>
+    "gcd_done"))
+```
 
 **Figura 5.6:** Sequência de instruções do controlador para a máquina MDC na Figura 5.5.
 

@@ -10,13 +10,11 @@ O método de representação delineado na seção 5.3.1 resolve o problema de im
 
 [^1]: Isso pode não ser verdade eventualmente, porque as memórias podem ficar grandes o suficiente para que seria impossível esgotar a memória livre durante o tempo de vida do computador. Por exemplo, há cerca de 3×10¹⁶ nanossegundos em um ano, então se fôssemos criar um `pair` uma vez por nanossegundo, precisaríamos de cerca de 10¹⁸ células de memória para construir uma máquina que pudesse operar por 30 anos sem ficar sem memória. Essa quantidade de memória parece absurdamente grande pelos padrões de hoje, mas não é fisicamente impossível. Por outro lado, processadores estão ficando mais rápidos e computadores modernos têm cada vez mais processadores operando em paralelo em uma única memória, então pode ser possível usar memória muito mais rápido do que postulamos.
 
-<CodePlayground
-  code={`accumulate((x, y) => x + y,
+```js
+accumulate((x, y) => x + y,
            0,
-           filter(is_odd, enumerate_interval(0, n)))`}
-  height={120}
-  showLineNumbers={true}
-/>
+           filter(is_odd, enumerate_interval(0, n)))
+```
 
 constrói duas listas: a enumeração e o resultado de filtrar a enumeração. Quando a acumulação está completa, essas listas não são mais necessárias, e a memória alocada pode ser recuperada. Se pudermos arranjar para coletar todo o lixo periodicamente, e se isso acabar reciclando memória aproximadamente na mesma taxa em que construímos novos pares, teremos preservado a ilusão de que há uma quantidade infinita de memória.
 
@@ -48,8 +46,8 @@ Depois de realocar a raiz, o coletor de lixo entra em seu ciclo básico. A cada 
 
 Podemos especificar o algoritmo stop-and-copy como uma sequência de instruções para uma máquina de registradores. O passo básico de realocar um objeto é realizado por uma sub-rotina chamada `relocate_old_result_in_new`. Esta sub-rotina obtém seu argumento, um ponteiro para o objeto a ser realocado, de um registrador chamado `old`. Ela realoca o objeto designado (incrementando `free` no processo), coloca um ponteiro para o objeto realocado em um registrador chamado `new`, e retorna ramificando para o ponto de entrada armazenado no registrador `relocate_continue`. Para começar a coleta de lixo, invocamos esta sub-rotina para realocar o ponteiro `root`, após inicializar `free` e `scan`. Quando a realocação de `root` foi realizada, instalamos o novo ponteiro como o novo `root` e entramos no loop principal do coletor de lixo.
 
-<CodePlayground
-  code={`"begin_garbage_collection",
+```js
+"begin_garbage_collection",
   assign("free", constant(0)),
   assign("scan", constant(0)),
   assign("old", reg("root")),
@@ -57,28 +55,24 @@ Podemos especificar o algoritmo stop-and-copy como uma sequência de instruçõe
   go_to(label("relocate_old_result_in_new")),
 "reassign_root",
   assign("root", reg("new")),
-  go_to(label("gc_loop")),`}
-  height={280}
-  showLineNumbers={true}
-/>
+  go_to(label("gc_loop")),
+```
 
 No loop principal do coletor de lixo devemos determinar se há mais objetos para serem escaneados. Fazemos isso testando se o ponteiro `scan` é coincidente com o ponteiro `free`. Se os ponteiros são iguais, então todos os objetos acessíveis foram realocados, e ramificamos para `gc_flip`, que limpa as coisas para que possamos continuar a computação interrompida. Se ainda há pares para serem escaneados, chamamos a sub-rotina de realocação para realocar o `head` do próximo par (colocando o ponteiro `head` em `old`). O registrador `relocate_continue` é configurado para que a sub-rotina retorne para atualizar o ponteiro `head`.
 
-<CodePlayground
-  code={`"gc_loop",
+```js
+"gc_loop",
   test(list(op("==="), reg("scan"), reg("free"))),
   branch(label("gc_flip")),
   assign("old", list(op("vector_ref"), reg("new_heads"), reg("scan"))),
   assign("relocate_continue", label("update_head")),
-  go_to(label("relocate_old_result_in_new")),`}
-  height={220}
-  showLineNumbers={true}
-/>
+  go_to(label("relocate_old_result_in_new")),
+```
 
 Em `update_head`, modificamos o ponteiro `head` do par sendo escaneado, então procedemos para realocar o `tail` do par. Retornamos para `update_tail` quando essa realocação foi realizada. Depois de realocar e atualizar o `tail`, terminamos de escanear aquele par, então continuamos com o loop principal.
 
-<CodePlayground
-  code={`"update_head",
+```js
+"update_head",
   perform(list(op("vector_set"),
                reg("new_heads"), reg("scan"), reg("new"))),
   assign("old", list(op("vector_ref"),
@@ -90,17 +84,15 @@ Em `update_head`, modificamos o ponteiro `head` do par sendo escaneado, então p
   perform(list(op("vector_set"),
                reg("new_tails"), reg("scan"), reg("new"))),
   assign("scan", list(op("+"), reg("scan"), constant(1))),
-  go_to(label("gc_loop")),`}
-  height={350}
-  showLineNumbers={true}
-/>
+  go_to(label("gc_loop")),
+```
 
 A sub-rotina `relocate_old_result_in_new` realoca objetos da seguinte forma: se o objeto a ser realocado (apontado por `old`) não é um par, então retornamos o mesmo ponteiro para o objeto inalterado (em `new`). (Por exemplo, podemos estar escaneando um par cujo `head` é o número 4. Se representarmos o `head` por `n4`, conforme descrito na seção 5.3.1, então queremos que o ponteiro `head` "realocado" ainda seja `n4`.) Caso contrário, devemos realizar a realocação. Se a posição `head` do par a ser realocado contém uma tag de coração partido, então o par de fato já foi movido, então recuperamos o endereço de encaminhamento (da posição `tail` do coração partido) e retornamos isto em `new`. Se o ponteiro em `old` aponta para um par ainda não movido, então movemos o par para a primeira célula livre na nova memória (apontada por `free`) e configuramos o coração partido armazenando uma tag de coração partido e endereço de encaminhamento na localização antiga. A sub-rotina `relocate_old_result_in_new` usa um registrador `oldht` para guardar o `head` ou o `tail` do objeto apontado por `old`.[^6]
 
 [^6]: O coletor de lixo usa o predicado de baixo nível `is_pointer_to_pair` em vez da operação de estrutura de lista `is_pair` porque em um sistema real pode haver várias coisas que são tratadas como pares para propósitos de coleta de lixo. Por exemplo, em um sistema que está em conformidade com o padrão IEEE, um objeto de função pode ser implementado como um tipo especial de "par" que não satisfaz o predicado `is_pair`. Para propósitos de simulação, `is_pointer_to_pair` pode ser implementado como `is_pair`.
 
-<CodePlayground
-  code={`"relocate_old_result_in_new",
+```js
+"relocate_old_result_in_new",
   test(list(op("is_pointer_to_pair"), reg("old"))),
   branch(label("pair")),
   assign("new", reg("old")),
@@ -133,21 +125,17 @@ A sub-rotina `relocate_old_result_in_new` realoca objetos da seguinte forma: se 
 "already_moved",
   assign("new", list(op("vector_ref"),
                      reg("the_tails"), reg("old"))),
-  go_to(reg("relocate_continue")),`}
-  height={700}
-  showLineNumbers={true}
-/>
+  go_to(reg("relocate_continue")),
+```
 
 No final do processo de coleta de lixo, intercambiamos o papel das memórias antiga e nova intercambiando ponteiros: intercambiando `the_heads` com `new_heads`, e `the_tails` com `new_tails`. Estaremos então prontos para realizar outra coleta de lixo na próxima vez que a memória acabar.
 
-<CodePlayground
-  code={`"gc_flip",
+```js
+"gc_flip",
   assign("temp", reg("the_tails")),
   assign("the_tails", reg("new_tails")),
   assign("new_tails", reg("temp")),
   assign("temp", reg("the_heads")),
   assign("the_heads", reg("new_heads")),
-  assign("new_heads", reg("temp"))`}
-  height={220}
-  showLineNumbers={true}
-/>
+  assign("new_heads", reg("temp"))
+```

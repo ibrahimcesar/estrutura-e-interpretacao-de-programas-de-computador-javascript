@@ -19,8 +19,8 @@ Definimos o controlador de uma máquina como uma sequência de *instruções* ju
 
 A máquina começa no início da sequência de instruções do controlador e para quando a execução atinge o fim da sequência. Exceto quando uma ramificação muda o fluxo de controle, as instruções são executadas na ordem em que são listadas.
 
-<CodePlayground
-  code={`data_paths(
+```js
+data_paths(
   registers(
     list(
       pair(name("a"),
@@ -45,10 +45,8 @@ controller(
       "a<-b",                     // pressionar botão
       "b<-t",                     // pressionar botão
       go_to(label("test_b")),     // ramificação incondicional
-    "gcd_done"));                 // rótulo`}
-  height={500}
-  showLineNumbers={true}
-/>
+    "gcd_done"));                 // rótulo
+```
 
 **Figura 5.3:** Uma especificação da máquina MDC.
 
@@ -58,8 +56,8 @@ Infelizmente, é difícil ler tal descrição. Para entender as instruções do 
 
 Para obter esta forma de descrição, substituiremos os nomes arbitrários de botões e operações pelas definições de seu comportamento. Isto é, em vez de dizer (no controlador) "Pressione o botão `t<-r`" e separadamente dizer (nos caminhos de dados) "O botão `t<-r` atribui o valor da operação `rem` ao registrador `t`" e "As entradas da operação `rem` são os conteúdos dos registradores `a` e `b`", diremos (no controlador) "Pressione o botão que atribui ao registrador `t` o valor da operação `rem` nos conteúdos dos registradores `a` e `b`". Similarmente, em vez de dizer (no controlador) "Realize o teste `=`" e separadamente dizer (nos caminhos de dados) "O teste `=` opera nos conteúdos do registrador `b` e na constante 0", diremos "Realize o teste `=` nos conteúdos do registrador `b` e na constante 0". Omitiremos a descrição do caminho de dados, deixando apenas a sequência do controlador. Assim, a máquina MDC é descrita da seguinte forma:
 
-<CodePlayground
-  code={`controller(
+```js
+controller(
   list(
     "test_b",
       test(list(op("="), reg("b"), constant(0))),
@@ -68,10 +66,8 @@ Para obter esta forma de descrição, substituiremos os nomes arbitrários de bo
       assign("a", reg("b")),
       assign("b", reg("t")),
       go_to(label("test_b")),
-    "gcd_done"))`}
-  height={300}
-  showLineNumbers={true}
-/>
+    "gcd_done"))
+```
 
 Esta forma de descrição é mais fácil de ler do que o tipo ilustrado na Figura 5.3, mas também tem desvantagens:
 
@@ -99,8 +95,8 @@ perform(list(op("display"), reg("a")))
 
 A Figura 5.4 mostra os caminhos de dados e o controlador para a nova máquina MDC. Em vez de fazer a máquina parar após imprimir a resposta, fizemos com que ela recomeçasse, de modo que ela repetidamente lê um par de números, calcula seu MDC e imprime o resultado. Esta estrutura é como os laços de driver que usamos nos interpretadores do capítulo 4.
 
-<CodePlayground
-  code={`controller(
+```js
+controller(
   list(
     "gcd_loop",
       assign("a", list(op("prompt"))),
@@ -114,10 +110,8 @@ A Figura 5.4 mostra os caminhos de dados e o controlador para a nova máquina MD
       go_to(label("test_b")),
     "gcd_done",
       perform(list(op("display"), reg("a"))),
-      go_to(label("gcd_loop"))))`}
-  height={350}
-  showLineNumbers={true}
-/>
+      go_to(label("gcd_loop"))))
+```
 
 **Figura 5.4:** Uma máquina MDC que lê entradas e imprime resultados.
 

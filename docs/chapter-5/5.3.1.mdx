@@ -33,72 +33,58 @@ Dado o esquema de representação acima, podemos substituir cada operação de l
 
 Por exemplo, podemos fazer uma máquina de registradores suportar as instruções
 
-<CodePlayground
-  code={`assign(reg₁, list(op("head"), reg(reg₂)))
+```js
+assign(reg₁, list(op("head"), reg(reg₂)))
 
-assign(reg₁, list(op("tail"), reg(reg₂)))`}
-  height={150}
-  showLineNumbers={true}
-/>
+assign(reg₁, list(op("tail"), reg(reg₂)))
+```
 
 se implementarmos estas, respectivamente, como
 
-<CodePlayground
-  code={`assign(reg₁, list(op("vector_ref"), reg("the_heads"), reg(reg₂)))
+```js
+assign(reg₁, list(op("vector_ref"), reg("the_heads"), reg(reg₂)))
 
-assign(reg₁, list(op("vector_ref"), reg("the_tails"), reg(reg₂)))`}
-  height={150}
-  showLineNumbers={true}
-/>
+assign(reg₁, list(op("vector_ref"), reg("the_tails"), reg(reg₂)))
+```
 
 As instruções
 
-<CodePlayground
-  code={`perform(list(op("set_head"), reg(reg₁), reg(reg₂)))
+```js
+perform(list(op("set_head"), reg(reg₁), reg(reg₂)))
 
-perform(list(op("set_tail"), reg(reg₁), reg(reg₂)))`}
-  height={150}
-  showLineNumbers={true}
-/>
+perform(list(op("set_tail"), reg(reg₁), reg(reg₂)))
+```
 
 são implementadas como
 
-<CodePlayground
-  code={`perform(list(op("vector_set"), reg("the_heads"), reg(reg₁), reg(reg₂)))
+```js
+perform(list(op("vector_set"), reg("the_heads"), reg(reg₁), reg(reg₂)))
 
-perform(list(op("vector_set"), reg("the_tails"), reg(reg₁), reg(reg₂)))`}
-  height={150}
-  showLineNumbers={true}
-/>
+perform(list(op("vector_set"), reg("the_tails"), reg(reg₁), reg(reg₂)))
+```
 
 A operação `pair` é realizada alocando um índice não utilizado e armazenando os argumentos de `pair` em `the_heads` e `the_tails` naquela posição indexada do vetor. Presumimos que há um registrador especial, `free`, que sempre contém um ponteiro de par contendo o próximo índice disponível, e que podemos incrementar a parte de índice daquele ponteiro para encontrar a próxima localização livre.[^7] Por exemplo, a instrução
 
-<CodePlayground
-  code={`assign(reg₁, list(op("pair"), reg(reg₂), reg(reg₃)))`}
-  height={100}
-  showLineNumbers={true}
-/>
+```js
+assign(reg₁, list(op("pair"), reg(reg₂), reg(reg₃)))
+```
 
 é implementada como a seguinte sequência de operações de vetor:[^8]
 
-<CodePlayground
-  code={`perform(list(op("vector_set"),
+```js
+perform(list(op("vector_set"),
              reg("the_heads"), reg("free"), reg(reg₂))),
 perform(list(op("vector_set"),
              reg("the_tails"), reg("free"), reg(reg₃))),
 assign(reg₁, reg("free")),
-assign("free", list(op("+"), reg("free"), constant(1)))`}
-  height={200}
-  showLineNumbers={true}
-/>
+assign("free", list(op("+"), reg("free"), constant(1)))
+```
 
 A operação `===`
 
-<CodePlayground
-  code={`list(op("==="), reg(reg₁), reg(reg₂))`}
-  height={80}
-  showLineNumbers={true}
-/>
+```js
+list(op("==="), reg(reg₁), reg(reg₂))
+```
 
 simplesmente testa a igualdade de todos os campos nos registradores, e predicados como `is_pair`, `is_null`, `is_string` e `is_number` precisam verificar apenas o campo de tipo.
 
@@ -106,28 +92,22 @@ simplesmente testa a igualdade de todos os campos nos registradores, e predicado
 
 Embora nossas máquinas de registradores usem pilhas, não precisamos fazer nada especial aqui, já que pilhas podem ser modeladas em termos de listas. A pilha pode ser uma lista dos valores salvos, apontada por um registrador especial `the_stack`. Assim, `save(reg)` pode ser implementado como
 
-<CodePlayground
-  code={`assign("the_stack", list(op("pair"), reg(reg), reg("the_stack")))`}
-  height={80}
-  showLineNumbers={true}
-/>
+```js
+assign("the_stack", list(op("pair"), reg(reg), reg("the_stack")))
+```
 
 Similarmente, `restore(reg)` pode ser implementado como
 
-<CodePlayground
-  code={`assign(reg, list(op("head"), reg("the_stack")))
-assign("the_stack", list(op("tail"), reg("the_stack")))`}
-  height={100}
-  showLineNumbers={true}
-/>
+```js
+assign(reg, list(op("head"), reg("the_stack")))
+assign("the_stack", list(op("tail"), reg("the_stack")))
+```
 
 e `perform(list(op("initialize_stack")))` pode ser implementado como
 
-<CodePlayground
-  code={`assign("the_stack", constant(null))`}
-  height={80}
-  showLineNumbers={true}
-/>
+```js
+assign("the_stack", constant(null))
+```
 
 Essas operações podem ser expandidas ainda mais em termos das operações de vetor dadas acima. Em arquiteturas de computador convencionais, no entanto, geralmente é vantajoso alocar a pilha como um vetor separado. Então, empurrar e desempilhar a pilha pode ser realizado incrementando ou decrementando um índice naquele vetor.
 

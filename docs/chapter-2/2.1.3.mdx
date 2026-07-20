@@ -142,8 +142,8 @@ Esta representação é conhecida como *numerais de Church*, em homenagem ao seu
 
 Defina `one` e `two` diretamente (não em termos de `zero` e `add_1`). (Dica: Use substituição para avaliar `add_1(zero)`). Dê uma definição direta da função de adição `plus` (não em termos de aplicação repetida de `add_1`).
 
-<CodePlayground
-  code={`const zero = f => x => x;
+```js
+const zero = f => x => x;
 
 const one = // Sua implementação direta aqui
 
@@ -160,8 +160,7 @@ function church_to_number(c) {
     return c(n => n + 1)(0);
 }
 
-church_to_number(three);`}
-  height={400}
-/>
+church_to_number(three);
+```
 
 <HelpFooter />

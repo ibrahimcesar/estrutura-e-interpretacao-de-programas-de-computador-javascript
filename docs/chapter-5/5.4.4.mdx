@@ -10,8 +10,8 @@ Com a implementação do avaliador de controle explícito chegamos ao fim de um 
 
 Instalaremos um laço de driver em nossa máquina avaliadora. Isso desempenha o papel da função `driver_loop` da seção 4.1.4. O avaliador irá repetidamente imprimir um prompt, ler um programa, avaliar o programa indo para `eval_dispatch`, e imprimir o resultado. Quando nada é inserido no prompt, pulamos para o rótulo `evaluator_done`, que é o último ponto de entrada no controlador. O seguinte forma o início da sequência do controlador do avaliador de controle explícito:[^1]
 
-<CodePlayground
-  code={`"read_evaluate_print_loop",
+```js
+"read_evaluate_print_loop",
   perform(list(op("initialize_stack"))),
   assign("comp", list(op("user_read"),
                       constant("EC-evaluate input:"))),
@@ -31,10 +31,8 @@ Instalaremos um laço de driver em nossa máquina avaliadora. Isso desempenha o 
 "print_result",
   perform(list(op("user_print"),
                constant("EC-evaluate value:"), reg("val"))),
-  go_to(label("read_evaluate_print_loop")),`}
-  height={550}
-  showLineNumbers={true}
-/>
+  go_to(label("read_evaluate_print_loop")),
+```
 
 Armazenamos o ambiente atual, inicialmente o ambiente global, na variável `current_environment` e atualizamos ela a cada volta do laço para lembrar declarações passadas. As operações `get_current_environment` e `set_current_environment` simplesmente obtêm e definem essa variável.
 
@@ -52,8 +50,8 @@ function set_current_environment(env) {
 
 Quando encontramos um erro em uma função (tal como o erro "tipo de função desconhecido" indicado em `apply_dispatch`), imprimimos uma mensagem de erro e retornamos ao laço de driver.[^2]
 
-<CodePlayground
-  code={`"unknown_component_type",
+```js
+"unknown_component_type",
   assign("val", constant("unknown syntax")),
   go_to(label("signal_error")),
 
@@ -65,10 +63,8 @@ Quando encontramos um erro em uma função (tal como o erro "tipo de função de
 "signal_error",
   perform(list(op("user_print"),
                constant("EC-evaluator error:"), reg("val"))),
-  go_to(label("read_evaluate_print_loop")),`}
-  height={350}
-  showLineNumbers={true}
-/>
+  go_to(label("read_evaluate_print_loop")),
+```
 
 Para os propósitos da simulação, inicializamos a pilha a cada volta do laço de driver, já que ela pode não estar vazia após um erro (tal como um nome não declarado) interromper uma avaliação.[^3]
 
@@ -93,12 +89,10 @@ const eceval_operations = list(list("is_literal", is_literal),
 
 Finalmente, podemos inicializar o ambiente global e executar o avaliador:
 
-<CodePlayground
-  code={`const the_global_environment = setup_environment();
-start(eceval);`}
-  height={100}
-  showLineNumbers={true}
-/>
+```js
+const the_global_environment = setup_environment();
+start(eceval);
+```
 
 ```
 EC-evaluate input:
@@ -136,16 +130,14 @@ Claro, avaliar programas desta maneira levará muito mais tempo do que se os tiv
 
 A simulação pode ser uma ferramenta poderosa para guiar a implementação de avaliadores. As simulações facilitam não apenas explorar variações do projeto da máquina de registradores, mas também monitorar o desempenho do avaliador simulado. Por exemplo, um fator importante no desempenho é quão eficientemente o avaliador usa a pilha. Podemos observar o número de operações de pilha necessárias para avaliar vários programas definindo a máquina de registradores do avaliador com a versão do simulador que coleta estatísticas sobre uso de pilha (seção 5.2.4), e adicionando uma instrução no ponto de entrada `print_result` do avaliador para imprimir as estatísticas:
 
-<CodePlayground
-  code={`"print_result",
+```js
+"print_result",
   perform(list(op("print_stack_statistics"))), // instrução adicionada
   // o resto é o mesmo de antes
   perform(list(op("user_print"),
                constant("EC-evaluate value:"), reg("val"))),
-  go_to(label("read_evaluate_print_loop")),`}
-  height={200}
-  showLineNumbers={true}
-/>
+  go_to(label("read_evaluate_print_loop")),
+```
 
 Interações com o avaliador agora ficam assim:
 

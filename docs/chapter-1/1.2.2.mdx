@@ -16,6 +16,7 @@ Em geral, os números de Fibonacci podem ser definidos pela regra:
 Podemos traduzir imediatamente esta definição em uma função recursiva para calcular números de Fibonacci:
 
 <CodePlayground
+  session="1.2.2"
   code={`function fib(n) {
     return n === 0
            ? 0
@@ -51,6 +52,7 @@ b ← a
 Não é difícil mostrar que, após aplicar essa transformação n vezes, *a* e *b* serão iguais, respectivamente, a Fib(n + 1) e Fib(n). Assim, podemos calcular números de Fibonacci iterativamente usando a função:
 
 <CodePlayground
+  session="1.2.2"
   code={`function fib(n) {
     return fib_iter(1, 0, n);
 }
@@ -89,6 +91,7 @@ Assim, podemos reduzir recursivamente o problema de trocar uma determinada quant
 Podemos facilmente traduzir esta descrição em uma função recursiva:
 
 <CodePlayground
+  session="1.2.2"
   code={`function count_change(amount) {
     return cc(amount, 5);
 }
@@ -119,6 +122,7 @@ function first_denomination(kinds_of_coins) {
 (A função `first_denomination` recebe como entrada o número de tipos de moedas disponíveis e retorna a denominação do primeiro tipo. Aqui estamos pensando nas moedas como organizadas em ordem da maior para a menor, mas qualquer ordem funcionaria igualmente bem.) Agora podemos responder nossa pergunta original sobre trocar um dólar:
 
 <CodePlayground
+  session="1.2.2"
   code={`count_change(100);`}
   height={150}
   showLineNumbers={false}

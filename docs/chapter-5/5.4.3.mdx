@@ -10,8 +10,8 @@ import CodePlayground from '@site/src/components/CodePlayground';
 
 O corpo de um bloco é avaliado com respeito ao ambiente atual estendido por um frame que vincula todos os nomes locais ao valor `"*unassigned*"`. Temporariamente fazemos uso do registrador `val` para armazenar a lista de todas as variáveis declaradas no bloco, que é obtida por `scan_out_declarations` da seção 4.1.1. As funções `scan_out_declarations` e `list_of_unassigned` são assumidas como estando disponíveis como operações de máquina.[^1]
 
-<CodePlayground
-  code={`"ev_block",
+```js
+"ev_block",
   assign("comp", list(op("block_body"), reg("comp"))),
   assign("val", list(op("scan_out_declarations"), reg("comp"))),
 
@@ -20,17 +20,15 @@ O corpo de um bloco é avaliado com respeito ao ambiente atual estendido por um 
   assign("env", list(op("extend_environment"),
                      reg("val"), reg("comp"), reg("env"))),
   restore("comp"), // o corpo do bloco
-  go_to(label("eval_dispatch")),`}
-  height={300}
-  showLineNumbers={true}
-/>
+  go_to(label("eval_dispatch")),
+```
 
 ## Atribuições e declarações
 
 Atribuições são tratadas por `ev_assignment`, que é alcançado a partir de `eval_dispatch` com a expressão de atribuição em `comp`. O código em `ev_assignment` primeiro avalia a parte do valor da expressão e então instala o novo valor no ambiente. A função `assign_symbol_value` é assumida como estando disponível como uma operação de máquina.
 
-<CodePlayground
-  code={`"ev_assignment",
+```js
+"ev_assignment",
   assign("unev", list(op("assignment_symbol"), reg("comp"))),
   save("unev"), // salva variável para depois
   assign("comp", list(op("assignment_value_expression"), reg("comp"))),
@@ -44,15 +42,13 @@ Atribuições são tratadas por `ev_assignment`, que é alcançado a partir de `
   restore("unev"),
   perform(list(op("assign_symbol_value"),
                reg("unev"), reg("val"), reg("env"))),
-  go_to(reg("continue")),`}
-  height={400}
-  showLineNumbers={true}
-/>
+  go_to(reg("continue")),
+```
 
 Declarações de variáveis e constantes são tratadas de maneira similar. Note que enquanto o valor de uma atribuição é o valor que foi atribuído, o valor de uma declaração é `undefined`. Isso é tratado configurando `val` como `undefined` antes de continuar. Assim como no avaliador metacircular, transformamos uma declaração de função em uma declaração de constante cuja expressão de valor é uma expressão lambda. Isso acontece em `ev_function_declaration`, que faz a transformação no lugar em `comp` e passa para `ev_declaration`.
 
-<CodePlayground
-  code={`"ev_function_declaration",
+```js
+"ev_function_declaration",
   assign("comp",
          list(op("function_decl_to_constant_decl"), reg("comp"))),
 "ev_declaration",
@@ -71,10 +67,8 @@ Declarações de variáveis e constantes são tratadas de maneira similar. Note 
   perform(list(op("assign_symbol_value"),
                reg("unev"), reg("val"), reg("env"))),
   assign("val", constant(undefined)),
-  go_to(reg("continue")),`}
-  height={500}
-  showLineNumbers={true}
-/>
+  go_to(reg("continue")),
+```
 
 ## Exercício 5.28
 

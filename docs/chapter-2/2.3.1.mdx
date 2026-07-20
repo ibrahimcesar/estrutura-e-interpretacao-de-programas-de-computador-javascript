@@ -73,6 +73,13 @@ tail(head(list(list("x1", "x2"), list("y1", "y2"))));
 member("red", list(list("red", "shoes"), list("blue", "socks")));
 
 member("red", list("red", "shoes", "blue", "socks"));`}
+  hiddenCode={`function member(item, x) {
+    return is_null(x)
+           ? null
+           : item === head(x)
+           ? x
+           : member(item, tail(x));
+}`}
   height={350}
 />
 

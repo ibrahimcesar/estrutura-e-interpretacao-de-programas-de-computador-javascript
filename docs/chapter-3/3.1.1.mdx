@@ -10,7 +10,18 @@ import HelpFooter from '@site/src/components/HelpFooter';
 Para ilustrar o que queremos dizer com ter um objeto computacional com estado que varia com o tempo, vamos modelar a situação de sacar dinheiro de uma conta bancária. Faremos isso usando uma função `withdraw`, que recebe como argumento um `amount` (valor) a ser sacado. Se houver dinheiro suficiente na conta para acomodar o saque, então `withdraw` deve retornar o saldo restante após o saque. Caso contrário, `withdraw` deve retornar a mensagem "Insufficient funds" (Fundos insuficientes). Por exemplo, se começarmos com $100 na conta, devemos obter a seguinte sequência de respostas usando `withdraw`:
 
 <CodePlayground
+  session="3.1.1-saldo"
   code={`withdraw(25);`}
+  hiddenCode={`let balance = 100;
+
+function withdraw(amount) {
+    if (balance >= amount) {
+        balance = balance - amount;
+        return balance;
+    } else {
+        return "Insufficient funds";
+    }
+}`}
   height={150}
   showLineNumbers={false}
 />
@@ -20,6 +31,7 @@ Para ilustrar o que queremos dizer com ter um objeto computacional com estado qu
 ```
 
 <CodePlayground
+  session="3.1.1-saldo"
   code={`withdraw(25);`}
   height={150}
   showLineNumbers={false}
@@ -30,6 +42,7 @@ Para ilustrar o que queremos dizer com ter um objeto computacional com estado qu
 ```
 
 <CodePlayground
+  session="3.1.1-saldo"
   code={`withdraw(60);`}
   height={150}
   showLineNumbers={false}
@@ -40,6 +53,7 @@ Para ilustrar o que queremos dizer com ter um objeto computacional com estado qu
 ```
 
 <CodePlayground
+  session="3.1.1-saldo"
   code={`withdraw(15);`}
   height={150}
   showLineNumbers={false}
@@ -56,6 +70,7 @@ Até agora, todos os nossos nomes eram *imutáveis*. Quando uma função era apl
 A função `withdraw` verifica se `balance` é pelo menos tão grande quanto o `amount` solicitado. Se for, `withdraw` decrementa `balance` por `amount` e retorna o novo valor de `balance`. Caso contrário, `withdraw` retorna a mensagem "Insufficient funds". Aqui estão as declarações de `balance` e `withdraw`:
 
 <CodePlayground
+  session="3.1.1"
   code={`let balance = 100;
 
 function withdraw(amount) {
@@ -97,6 +112,7 @@ Embora `withdraw` funcione conforme desejado, a variável `balance` apresenta um
 Podemos tornar `balance` interno a `withdraw` reescrevendo a definição da seguinte forma:
 
 <CodePlayground
+  session="3.1.1"
   code={`function make_withdraw_balance_100() {
     let balance = 100;
     return amount => {
@@ -120,6 +136,7 @@ Combinar atribuições com declarações de variáveis é a técnica geral de pr
 Parâmetros de funções, assim como nomes declarados com `let`, são variáveis. A seguinte função, `make_withdraw`, cria "processadores de saque". O parâmetro `balance` em `make_withdraw` especifica o valor inicial de dinheiro na conta.<sup>[6](#footnote-6)</sup>
 
 <CodePlayground
+  session="3.1.1"
   code={`function make_withdraw(balance) {
     return amount => {
                if (balance >= amount) {
@@ -137,6 +154,7 @@ Parâmetros de funções, assim como nomes declarados com `let`, são variáveis
 A função `make_withdraw` pode ser usada da seguinte forma para criar dois objetos `W1` e `W2`:
 
 <CodePlayground
+  session="3.1.1"
   code={`const W1 = make_withdraw(100);
 const W2 = make_withdraw(100);`}
   height={150}
@@ -144,6 +162,7 @@ const W2 = make_withdraw(100);`}
 />
 
 <CodePlayground
+  session="3.1.1"
   code={`W1(50);`}
   height={150}
   showLineNumbers={false}
@@ -154,6 +173,7 @@ const W2 = make_withdraw(100);`}
 ```
 
 <CodePlayground
+  session="3.1.1"
   code={`W2(70);`}
   height={150}
   showLineNumbers={false}
@@ -164,6 +184,7 @@ const W2 = make_withdraw(100);`}
 ```
 
 <CodePlayground
+  session="3.1.1"
   code={`W2(40);`}
   height={150}
   showLineNumbers={false}
@@ -174,6 +195,7 @@ const W2 = make_withdraw(100);`}
 ```
 
 <CodePlayground
+  session="3.1.1"
   code={`W1(40);`}
   height={150}
   showLineNumbers={false}
@@ -188,6 +210,7 @@ Observe que `W1` e `W2` são objetos completamente independentes, cada um com su
 Também podemos criar objetos que lidam com depósitos assim como saques, e assim podemos representar contas bancárias simples. Aqui está uma função que retorna um "objeto de conta bancária" com um saldo inicial especificado:
 
 <CodePlayground
+  session="3.1.1"
   code={`function make_account(balance) {
     function withdraw(amount) {
         if (balance >= amount) {
@@ -219,12 +242,14 @@ Cada chamada a `make_account` estabelece um ambiente com uma variável de estado
 A função `make_account` pode ser usada da seguinte forma:
 
 <CodePlayground
+  session="3.1.1"
   code={`const acc = make_account(100);`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="3.1.1"
   code={`acc("withdraw")(50);`}
   height={150}
   showLineNumbers={false}
@@ -235,6 +260,7 @@ A função `make_account` pode ser usada da seguinte forma:
 ```
 
 <CodePlayground
+  session="3.1.1"
   code={`acc("withdraw")(60);`}
   height={150}
   showLineNumbers={false}
@@ -245,6 +271,7 @@ A função `make_account` pode ser usada da seguinte forma:
 ```
 
 <CodePlayground
+  session="3.1.1"
   code={`acc("deposit")(40);`}
   height={150}
   showLineNumbers={false}
@@ -255,6 +282,7 @@ A função `make_account` pode ser usada da seguinte forma:
 ```
 
 <CodePlayground
+  session="3.1.1"
   code={`acc("withdraw")(60);`}
   height={150}
   showLineNumbers={false}
@@ -267,6 +295,7 @@ A função `make_account` pode ser usada da seguinte forma:
 Cada chamada a `acc` retorna a função `deposit` ou `withdraw` definida localmente, que é então aplicada ao `amount` especificado. Assim como aconteceu com `make_withdraw`, outra chamada a `make_account`
 
 <CodePlayground
+  session="3.1.1"
   code={`const acc2 = make_account(100);`}
   height={150}
   showLineNumbers={false}
@@ -279,12 +308,14 @@ produzirá um objeto de conta completamente separado, que mantém seu próprio `
 Um *acumulador* é uma função que é chamada repetidamente com um único argumento numérico e acumula seus argumentos em uma soma. Cada vez que é chamada, ela retorna a soma atualmente acumulada. Escreva uma função `make_accumulator` que gera acumuladores, cada um mantendo uma soma independente. A entrada para `make_accumulator` deve especificar o valor inicial da soma; por exemplo
 
 <CodePlayground
+  session="3.1.1-ex1"
   code={`const a = make_accumulator(5);`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="3.1.1-ex1"
   code={`a(10);`}
   height={150}
   showLineNumbers={false}
@@ -295,6 +326,7 @@ Um *acumulador* é uma função que é chamada repetidamente com um único argum
 ```
 
 <CodePlayground
+  session="3.1.1-ex1"
   code={`a(10);`}
   height={150}
   showLineNumbers={false}
@@ -309,12 +341,14 @@ Um *acumulador* é uma função que é chamada repetidamente com um único argum
 Em aplicações de teste de software, é útil poder contar o número de vezes que uma determinada função é chamada durante o curso de uma computação. Escreva uma função `make_monitored` que recebe como entrada uma função, `f`, que ela mesma recebe uma entrada. O resultado retornado por `make_monitored` é uma terceira função, digamos `mf`, que mantém o controle do número de vezes que foi chamada mantendo um contador interno. Se a entrada para `mf` é a string `"how many calls"`, então `mf` retorna o valor do contador. Se a entrada é a string `"reset count"`, então `mf` redefine o contador para zero. Para qualquer outra entrada, `mf` retorna o resultado de chamar `f` nessa entrada e incrementa o contador. Por exemplo, poderíamos fazer uma versão monitorada da função `sqrt`:
 
 <CodePlayground
+  session="3.1.1-ex2"
   code={`const s = make_monitored(math_sqrt);`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="3.1.1-ex2"
   code={`s(100);`}
   height={150}
   showLineNumbers={false}
@@ -325,6 +359,7 @@ Em aplicações de teste de software, é útil poder contar o número de vezes q
 ```
 
 <CodePlayground
+  session="3.1.1-ex2"
   code={`s("how many calls");`}
   height={150}
   showLineNumbers={false}
@@ -339,6 +374,7 @@ Em aplicações de teste de software, é útil poder contar o número de vezes q
 Modifique a função `make_account` para que ela crie contas protegidas por senha. Ou seja, `make_account` deve receber uma string como argumento adicional, como em
 
 <CodePlayground
+  session="3.1.1-ex3"
   code={`const acc = make_account(100, "secret password");`}
   height={150}
   showLineNumbers={false}
@@ -347,6 +383,7 @@ Modifique a função `make_account` para que ela crie contas protegidas por senh
 O objeto de conta resultante deve processar uma solicitação apenas se ela for acompanhada pela senha com a qual a conta foi criada, e deve retornar uma reclamação caso contrário:
 
 <CodePlayground
+  session="3.1.1-ex3"
   code={`acc("secret password", "withdraw")(40);`}
   height={150}
   showLineNumbers={false}
@@ -357,6 +394,7 @@ O objeto de conta resultante deve processar uma solicitação apenas se ela for 
 ```
 
 <CodePlayground
+  session="3.1.1-ex3"
   code={`acc("some other password", "deposit")(40);`}
   height={150}
   showLineNumbers={false}

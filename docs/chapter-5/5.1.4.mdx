@@ -44,8 +44,8 @@ Com a ajuda da pilha, podemos reutilizar uma única cópia dos caminhos de dados
 
 A Figura 5.11 mostra os caminhos de dados e o controlador para uma máquina que implementa a função `factorial` recursiva. A máquina tem uma pilha e três registradores, chamados `n`, `val` e `continue`. Para simplificar o diagrama de caminho de dados, não nomeamos os botões de atribuição de registradores, apenas os botões de operação de pilha (`sc` e `sn` para salvar registradores, `rc` e `rn` para restaurar registradores). Para operar a máquina, colocamos no registrador `n` o número cujo fatorial desejamos calcular e iniciamos a máquina. Quando a máquina alcança `fact_done`, o cálculo está terminado e a resposta será encontrada no registrador `val`. Na sequência do controlador, `n` e `continue` são salvos antes de cada chamada recursiva e restaurados ao retornar da chamada. Retornar de uma chamada é realizado ramificando para o local armazenado em `continue`. O registrador `continue` é inicializado quando a máquina inicia para que o último retorno vá para `fact_done`. O registrador `val`, que contém o resultado do cálculo de fatorial, não é salvo antes da chamada recursiva, porque o conteúdo antigo de `val` não é útil após o retorno da subrotina. Apenas o novo valor, que é o valor produzido pelo subcálculo, é necessário.
 
-<CodePlayground
-  code={`controller(
+```js
+controller(
   list(
       assign("continue", label("fact_done")), // configura endereço de retorno final
     "fact_loop",
@@ -68,10 +68,8 @@ A Figura 5.11 mostra os caminhos de dados e o controlador para uma máquina que 
     "base_case",
       assign("val", constant(1)),     // caso base: 1! = 1
       go_to(reg("continue")),         // retorna ao chamador
-    "fact_done"))`}
-  height={550}
-  showLineNumbers={true}
-/>
+    "fact_done"))
+```
 
 **Figura 5.11:** Uma máquina de fatorial recursiva.
 
@@ -95,8 +93,8 @@ Vamos examinar um processo recursivo mais complexo, o cálculo recursivo em árv
 
 Assim como com fatorial, podemos implementar o cálculo recursivo de Fibonacci como uma máquina de registradores com registradores `n`, `val` e `continue`. A máquina é mais complexa do que a de fatorial, porque há dois lugares na sequência do controlador onde precisamos realizar chamadas recursivas—uma vez para calcular Fib(*n*-1) e uma vez para calcular Fib(*n*-2). Para configurar cada uma dessas chamadas, salvamos os registradores cujos valores serão necessários mais tarde, definimos o registrador `n` para o número cujo Fib precisamos calcular recursivamente (*n*-1 ou *n*-2), e atribuímos a `continue` o ponto de entrada na sequência principal ao qual retornar (`afterfib_n_1` ou `afterfib_n_2`, respectivamente). Então vamos para `fib_loop`. Quando retornamos da chamada recursiva, a resposta está em `val`. A Figura 5.12 mostra a sequência do controlador para esta máquina.
 
-<CodePlayground
-  code={`controller(
+```js
+controller(
   list(
     assign("continue", label("fib_done")),
   "fib_loop",
@@ -127,10 +125,8 @@ Assim como com fatorial, podemos implementar o cálculo recursivo de Fibonacci c
   "immediate_answer",
     assign("val", reg("n")),       // caso base: Fib(n) = n
     go_to(reg("continue")),
-  "fib_done"))`}
-  height={800}
-  showLineNumbers={true}
-/>
+  "fib_done"))
+```
 
 **Figura 5.12:** Controlador para uma máquina para calcular números de Fibonacci.
 

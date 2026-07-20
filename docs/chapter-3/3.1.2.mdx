@@ -29,6 +29,11 @@ Podemos implementar `rand` como uma função com uma variável de estado local `
           };
 }
 const rand = make_rand();`}
+  hiddenCode={`const random_init = 7;
+
+function rand_update(x) {
+    return (16807 * x) % 2147483647;
+}`}
   height={250}
   showLineNumbers={true}
 />
@@ -77,6 +82,11 @@ function random_gcd_test(trials, initial_x) {
                : iter(trials_remaining - 1, trials_passed, x2);
     }
     return iter(trials, 0, initial_x);
+}`}
+  hiddenCode={`const random_init = 7;
+
+function rand_update(x) {
+    return (16807 * x) % 2147483647;
 }`}
   height={400}
   showLineNumbers={true}

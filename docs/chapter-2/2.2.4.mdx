@@ -32,37 +32,33 @@ A linguagem fornece operações que criam novos painters a partir de painters ex
 
 ### Transformações Simples
 
-<CodePlayground
-  code={`// flip_vert vira o painter verticalmente
+```js
+// flip_vert vira o painter verticalmente
 const flipped_wave = flip_vert(wave);
 
 // flip_horiz vira horizontalmente
 const flipped_horiz_wave = flip_horiz(wave);
 
 // rotate90 rotaciona 90 graus
-const rotated_wave = rotate90(wave);`}
-  height={250}
-  showLineNumbers={false}
-/>
+const rotated_wave = rotate90(wave);
+```
 
 ### Composição
 
-<CodePlayground
-  code={`// beside coloca dois painters lado a lado
+```js
+// beside coloca dois painters lado a lado
 const wave2 = beside(wave, flip_vert(wave));
 
 // below empilha painters verticalmente
-const wave4 = below(wave2, wave2);`}
-  height={180}
-  showLineNumbers={false}
-/>
+const wave4 = below(wave2, wave2);
+```
 
 ## Closure e Abstração
 
 Como `beside` e `below` retornam painters, podemos usá-los como building blocks para padrões cada vez mais complexos:
 
-<CodePlayground
-  code={`function flipped_pairs(painter) {
+```js
+function flipped_pairs(painter) {
     const painter2 = beside(painter, flip_vert(painter));
     return below(painter2, painter2);
 }
@@ -90,10 +86,8 @@ function corner_split(painter, n) {
         return beside(below(painter, top_left),
                      below(bottom_right, corner));
     }
-}`}
-  height={550}
-  showLineNumbers={false}
-/>
+}
+```
 
 ## Design Estratificado
 

@@ -18,6 +18,7 @@ Sequências, implementadas como listas, servem como uma interface convencional q
 Seleciona elementos que satisfazem um predicado:
 
 <CodePlayground
+  session="2.2.3"
   code={`function filter(predicate, sequence) {
     return is_null(sequence)
            ? null
@@ -36,6 +37,7 @@ filter(x => x > 0, list(-1, 2, -3, 4, -5));`}
 Combina elementos usando uma operação:
 
 <CodePlayground
+  session="2.2.3"
   code={`function accumulate(op, initial, sequence) {
     return is_null(sequence)
            ? initial
@@ -54,6 +56,7 @@ accumulate((x, y) => x * y, 1, list(1, 2, 3, 4, 5));`}
 Gera sequências de valores:
 
 <CodePlayground
+  session="2.2.3"
   code={`function enumerate_interval(low, high) {
     return low > high
            ? null
@@ -70,6 +73,7 @@ enumerate_interval(2, 7);`}
 Transforma cada elemento:
 
 <CodePlayground
+  session="2.2.3"
   code={`function map(fun, sequence) {
     return accumulate((x, y) => pair(fun(x), y),
                       null,
@@ -85,6 +89,7 @@ map(x => x * x, list(1, 2, 3, 4, 5));`}
 O verdadeiro poder vem de combinar essas operações. Por exemplo, encontrar a soma dos quadrados dos números ímpares em uma árvore:
 
 <CodePlayground
+  session="2.2.3"
   code={`function filter(predicate, sequence) {
     return is_null(sequence)
            ? null
@@ -119,6 +124,11 @@ function sum_odd_squares(tree) {
 }
 
 sum_odd_squares(list(1, list(2, list(3, 4)), 5));`}
+  hiddenCode={`function append(list1, list2) {
+    return is_null(list1)
+           ? list2
+           : pair(head(list1), append(tail(list1), list2));
+}`}
   height={500}
 />
 
@@ -127,6 +137,7 @@ sum_odd_squares(list(1, list(2, list(3, 4)), 5));`}
 Podemos estender o paradigma de sequência para incluir muitas computações que são comumente expressas usando loops aninhados. Considere o problema de gerar todos os pares ordenados de inteiros positivos distintos i e j, onde 1 ≤ j < i ≤ n:
 
 <CodePlayground
+  session="2.2.3"
   code={`function flatmap(fun, seq) {
     return accumulate(append, null, map(fun, seq));
 }

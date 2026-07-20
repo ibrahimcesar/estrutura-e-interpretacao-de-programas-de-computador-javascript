@@ -10,6 +10,7 @@ import HelpFooter from '@site/src/components/HelpFooter';
 Podemos recorrer ao modelo de ambiente para ver como funções e atribuição podem ser usados para representar objetos com estado local. Como exemplo, considere o "processador de saque" da seção 3.1.1 criado chamando a função
 
 <CodePlayground
+  session="3.2.3"
   code={`function make_withdraw(balance) {
     return amount => {
                if (balance >= amount) {
@@ -27,6 +28,7 @@ Podemos recorrer ao modelo de ambiente para ver como funções e atribuição po
 Vamos descrever a avaliação de
 
 <CodePlayground
+  session="3.2.3"
   code={`const W1 = make_withdraw(100);`}
   height={150}
   showLineNumbers={false}
@@ -35,6 +37,7 @@ Vamos descrever a avaliação de
 seguido de
 
 <CodePlayground
+  session="3.2.3"
   code={`W1(50);`}
   height={150}
   showLineNumbers={false}
@@ -90,6 +93,7 @@ Quando a atribuição é executada, a vinculação de `balance` em E1 é alterad
 Observe o que acontece quando criamos um segundo objeto "withdraw" fazendo outra chamada a `make_withdraw`:
 
 <CodePlayground
+  session="3.2.3"
   code={`const W2 = make_withdraw(100);`}
   height={150}
   showLineNumbers={false}
@@ -106,6 +110,7 @@ Isso produz a estrutura de ambiente da figura 3.10, que mostra que `W2` é um ob
 Na função `make_withdraw`, a variável local `balance` é criada como um parâmetro de `make_withdraw`. Também poderíamos criar a variável de estado local separadamente, usando o que podemos chamar de *expressão lambda invocada imediatamente*, da seguinte forma:
 
 <CodePlayground
+  session="3.2.3-v2"
   code={`function make_withdraw(initial_amount) {
     return (balance =>
               amount => {
@@ -126,6 +131,7 @@ A expressão lambda externa é invocada imediatamente após ser avaliada. Seu ú
 Use o modelo de ambiente para analisar esta versão alternativa de `make_withdraw`, desenhando figuras como as acima para ilustrar as interações
 
 <CodePlayground
+  session="3.2.3-v2"
   code={`const W1 = make_withdraw(100);
 
 W1(50);

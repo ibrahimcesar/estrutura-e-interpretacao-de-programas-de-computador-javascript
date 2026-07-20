@@ -10,8 +10,31 @@ Nos podemos ilustrar essa ideia olhando de novo para o exemplo de ponto fixo des
 Nos podemos expressar a ideia do amortecimento médio pela seguinte função:
 
 <CodePlayground
+  session="1.3.4"
   code={`function average_damp(f){
     return x => average(x,f(x));
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function average(x, y) {
+    return (x + y) / 2;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
 }`}
   height={150}
   showLineNumbers={false}
@@ -20,6 +43,7 @@ Nos podemos expressar a ideia do amortecimento médio pela seguinte função:
 A função `average_damp` tem como argumento a função `f` e retorna como seu valor uma função (produzida pela expressão lambda) que, quando aplicada a um número `x`, produz a média de `x` e `f(X)`. Por exemplo, aplicando `average_damp` na função `square` produz uma função que o valor de um número $x$ e a média de $x$ e $x^2$. Aplicando essa função resultante em 10 obteremos a média de 10 e 100, ou 55<sup>[1](#footnote-link-1)</sup>
 
 <CodePlayground
+  session="1.3.4"
   code={`average_damp(square)(10);`}
   height={150}
   showLineNumbers={false}
@@ -30,6 +54,7 @@ A função `average_damp` tem como argumento a função `f` e retorna como seu v
 Usando `average_damp`, nós podemos reformular a função da raiz quadrada:
 
 <CodePlayground
+  session="1.3.4"
   code={`function sqrt(x){
     return fixed_point(average_damp(y => x/y), 1);
 }`}
@@ -40,6 +65,7 @@ Usando `average_damp`, nós podemos reformular a função da raiz quadrada:
 Perceba como essa formulação faz uso explicito de três ideias no método: busca de ponto fixo, amortecimento médio e a função $y \mapsto{x/y}$. É intrusivo comparar essa reformulação com o método de raiz quadrada dado na seção 1.1.7. Tenha em mente que essas funções expressam o mesmo processo, e perceba o quão claro a ideia é quando nos expressamos o processo em termos dessas abstrações. No geral, existem muitas maneiras de transformar um processo numa função. Programadores experientes sabem como escolher as implementações particularmente perspicazes, e onde elementos úteis do processo são expostos como entidades separadas que podem ser utilizadas em outras aplicações. Como um simples exemplo de reutilização, note como a raiz cúbica de $x$ é um ponto fixo da função $y \mapsto{x/y^2}$, então nos podemos imediatamente generalizar nossa função de raiz quadrada para uma que extrai raiz cúbicas<sup>[2](#footnote-link-2)</sup>
 
 <CodePlayground
+  session="1.3.4"
   code={`function cube_root(x){
     return fixed_point(average_damp(y => x/square(y)), 1);
 }`}
@@ -62,6 +88,7 @@ $Dg(x) = \frac{g(x+dx)-g(x)}{dx}$
 Assim podemos expressar a ideia de derivada (tomando $dx$ como sendo, digamos, 0.00001) como a função:
 
 <CodePlayground
+  session="1.3.4"
   code={`function deriv(g) {
     return x => (g(x+dx) - g(x)) / dx;
 }`}
@@ -72,6 +99,7 @@ Assim podemos expressar a ideia de derivada (tomando $dx$ como sendo, digamos, 0
 junto com a declaração:
 
 <CodePlayground
+  session="1.3.4"
   code={`const dx = 0.00001;`}
   height={150}
   showLineNumbers={false}
@@ -80,9 +108,10 @@ junto com a declaração:
 Semelhante a `average_damp`, `deriv` é uma função que recebe uma função como argumento e retorna uma função. Por exemplo para aproximar a derivada de $x \mapsto{x^3}$ em 5 (o qual o valor exato é 75), nos podemos calcular:
 
 <CodePlayground
+  session="1.3.4"
   code={`function cubo(x) { return x * x * x; }
 
-deriv(cube)(5);`}
+deriv(cubo)(5);`}
   height={150}
   showLineNumbers={false}
 />
@@ -92,6 +121,7 @@ deriv(cube)(5);`}
 Com a ajuda de `deriv`, podemos expressar o método de Newton como um processo de ponto fixo:
 
 <CodePlayground
+  session="1.3.4"
   code={`function newton_transform(g) {
     return x=> x - g(x) / deriv(g)(x)
 }
@@ -106,6 +136,7 @@ function newtons_method(g, guess) {
 A função `newton_transform` expressa a formula dada no começo dessa seção, e `newtons_method` e prontamente definido em termos termos disso. Tem como argumento uma função que computa a função pela qual nos queremos achar zero, junto com uma suposição inicial. Por exemplo, para achar a raiz quadrada de $x$, nos podemos usar o método de Newton para achar o zero da função $y \mapsto{y^2-x}$ partindo de uma suposição inicial de 1.<sup>[5](#footnote-link-5)</sup> Isso prove ainda outra forma da função da raiz quadrada:
 
 <CodePlayground
+  session="1.3.4"
   code={`function sqrt(x) {
     return newtons_method(y => square(y) - x, 1);
 }`}
@@ -118,6 +149,7 @@ A função `newton_transform` expressa a formula dada no começo dessa seção, 
 Nos vemos duas maneiras para expressas a computação da raiz quadrada, como uma instância mais geral do método, uma com uma busca de ponto fixo e outra utilizando o método de Newton que foi expresso como um processo de ponto fixo, na verdade nos vimos duas maneiras de computar raízes quadradas como pontos fixos. Cada método começa com uma função e acha um ponto fixo de alguma transformação da função. Nos podemos expressar a ideia geral como sendo a função:
 
 <CodePlayground
+  session="1.3.4"
   code={`function fixed_point_of_transform(g, transform, guess) {
     return fixed_point(transform(g), guess);
 }`}
@@ -130,6 +162,7 @@ Essa função genérica tem como argumento uma função $g$, e uma suposição i
 Utilizando essa abstração, nos podemos refazer a primeira computação dessa seção (onde nos procuramos um ponto fixo na versão do amortecimento médio da função $y \mapsto{x/y}$) como uma instância desse método geral.
 
 <CodePlayground
+  session="1.3.4"
   code={`function sqrt(x) {
     return fixed_point_of_transform(
         y => x/y,
@@ -143,6 +176,7 @@ Utilizando essa abstração, nos podemos refazer a primeira computação dessa s
 De maneira similar, nos podemos expressar a segunda maneira de computar a raiz quadrada dessa seção (a que instanciámos o método de Newton que acha um ponto fixo pela transformada de Newton da função $y \mapsto{y^2 -x}$) como:
 
 <CodePlayground
+  session="1.3.4"
   code={`function sqrt(x) {
     return fixed_point_of_transform(
         y => square(y) - x,

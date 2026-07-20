@@ -41,6 +41,7 @@ Continuando este processo, obtemos aproximações cada vez melhores da raiz quad
 Agora vamos formalizar o processo em termos de funções. Começamos com um valor para o radicando (o número cuja raiz quadrada estamos tentando calcular) e um valor para o palpite. Se o palpite é bom o suficiente para nossos propósitos, terminamos; se não, devemos repetir o processo com um palpite melhorado. Escrevemos esta estratégia básica como uma função:
 
 <CodePlayground
+  session="1.1.7"
   code={`function sqrt_iter(guess, x) {
     return is_good_enough(guess, x)
            ? guess
@@ -53,6 +54,7 @@ Agora vamos formalizar o processo em termos de funções. Começamos com um valo
 Um palpite é melhorado fazendo a média dele com o quociente do radicando e o palpite antigo:
 
 <CodePlayground
+  session="1.1.7"
   code={`function improve(guess, x) {
     return average(guess, x / guess);
 }`}
@@ -63,6 +65,7 @@ Um palpite é melhorado fazendo a média dele com o quociente do radicando e o p
 onde
 
 <CodePlayground
+  session="1.1.7"
   code={`function average(x, y) {
     return (x + y) / 2;
 }`}
@@ -73,8 +76,16 @@ onde
 Também temos que dizer o que queremos dizer com "bom o suficiente". O seguinte servirá para ilustração, mas não é realmente um teste muito bom. (Veja o exercício 1.7.) A ideia é melhorar a resposta até que ela esteja próxima o suficiente de modo que seu quadrado difira do radicando por menos do que uma tolerância predeterminada (aqui 0.001):[<sup>3</sup>](#footnote-3)
 
 <CodePlayground
+  session="1.1.7"
   code={`function is_good_enough(guess, x) {
     return abs(square(guess) - x) < 0.001;
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+
+function abs(x) {
+    return x >= 0 ? x : -x;
 }`}
   height={150}
   showLineNumbers={false}
@@ -83,6 +94,7 @@ Também temos que dizer o que queremos dizer com "bom o suficiente". O seguinte 
 Finalmente, precisamos de uma maneira de começar. Por exemplo, podemos sempre supor que a raiz quadrada de qualquer número é 1:
 
 <CodePlayground
+  session="1.1.7"
   code={`function sqrt(x) {
     return sqrt_iter(1, x);
 }`}
@@ -93,6 +105,7 @@ Finalmente, precisamos de uma maneira de começar. Por exemplo, podemos sempre s
 Se digitarmos essas declarações no interpretador, podemos usar `sqrt` assim como podemos usar qualquer função:
 
 <CodePlayground
+  session="1.1.7"
   code={`sqrt(9);`}
   height={100}
   showLineNumbers={false}
@@ -103,6 +116,7 @@ Se digitarmos essas declarações no interpretador, podemos usar `sqrt` assim co
 ```
 
 <CodePlayground
+  session="1.1.7"
   code={`sqrt(100 + 37);`}
   height={100}
   showLineNumbers={false}
@@ -113,6 +127,7 @@ Se digitarmos essas declarações no interpretador, podemos usar `sqrt` assim co
 ```
 
 <CodePlayground
+  session="1.1.7"
   code={`sqrt(sqrt(2) + sqrt(3));`}
   height={100}
   showLineNumbers={false}
@@ -123,6 +138,7 @@ Se digitarmos essas declarações no interpretador, podemos usar `sqrt` assim co
 ```
 
 <CodePlayground
+  session="1.1.7"
   code={`square(sqrt(1000));`}
   height={100}
   showLineNumbers={false}
@@ -143,6 +159,7 @@ O programa `sqrt` também ilustra que a linguagem funcional simples que introduz
 Alyssa P. Hacker não gosta da sintaxe de expressões condicionais, envolvendo os caracteres `?` e `:`. "Por que não posso simplesmente declarar uma função condicional ordinária cuja aplicação funciona como expressões condicionais?" ela pergunta.[<sup>5</sup>](#footnote-5) A amiga de Alyssa, Eva Lu Ator, afirma que isso pode de fato ser feito, e ela declara uma função `conditional` da seguinte forma:
 
 <CodePlayground
+  session="1.1.7-cond"
   code={`function conditional(predicate, then_clause, else_clause) {
     return predicate ? then_clause : else_clause;
 }`}
@@ -153,6 +170,7 @@ Alyssa P. Hacker não gosta da sintaxe de expressões condicionais, envolvendo o
 Eva demonstra o programa para Alyssa:
 
 <CodePlayground
+  session="1.1.7-cond"
   code={`conditional(2 === 3, 0, 5);`}
   height={100}
   showLineNumbers={false}
@@ -163,6 +181,7 @@ Eva demonstra o programa para Alyssa:
 ```
 
 <CodePlayground
+  session="1.1.7-cond"
   code={`conditional(1 === 1, 0, 5);`}
   height={100}
   showLineNumbers={false}
@@ -175,6 +194,7 @@ Eva demonstra o programa para Alyssa:
 Encantada, Alyssa usa `conditional` para reescrever o programa de raiz quadrada:
 
 <CodePlayground
+  session="1.1.7-cond"
   code={`function sqrt_iter(guess, x) {
     return conditional(is_good_enough(guess, x),
                        guess,
@@ -203,6 +223,26 @@ O programa a seguir alivia o problema substituindo uma tolerância absoluta por 
   code={`const relative_tolerance = 0.0001;
 function is_good_enough(guess, x) {
     return abs(square(guess) - x) < guess * relative_tolerance;
+}`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function abs(x) {
+    return x >= 0 ? x : -x;
+}
+function average(x, y) {
+    return (x + y) / 2;
+}
+function improve(guess, x) {
+    return average(guess, x / guess);
+}
+function sqrt_iter(guess, x) {
+    return is_good_enough(guess, x)
+           ? guess
+           : sqrt_iter(improve(guess, x), x);
+}
+function sqrt(x) {
+    return sqrt_iter(1, x);
 }`}
   height={150}
   showLineNumbers={false}
@@ -234,6 +274,12 @@ function cube_root(guess, x) {
     return is_good_enough(guess, x)
            ? guess
            : cube_root(improve(guess, x), x);
+}`}
+  hiddenCode={`function abs(x) {
+    return x >= 0 ? x : -x;
+}
+function cube(x) {
+    return x * x * x;
 }`}
   height={350}
   showLineNumbers={false}

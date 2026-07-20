@@ -14,6 +14,7 @@ Enquanto não usamos atribuições, duas avaliações da mesma função com os m
 Para entender como a atribuição complica as coisas, considere uma versão simplificada da função `make_withdraw` da seção 3.1.1 que não se preocupa em verificar se há um valor insuficiente:
 
 <CodePlayground
+  session="3.1.3"
   code={`function make_simplified_withdraw(balance) {
     return amount => {
                balance = balance - amount;
@@ -25,12 +26,14 @@ Para entender como a atribuição complica as coisas, considere uma versão simp
 />
 
 <CodePlayground
+  session="3.1.3"
   code={`const W = make_simplified_withdraw(25);`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="3.1.3"
   code={`W(20);`}
   height={150}
   showLineNumbers={false}
@@ -41,6 +44,7 @@ Para entender como a atribuição complica as coisas, considere uma versão simp
 ```
 
 <CodePlayground
+  session="3.1.3"
   code={`W(10);`}
   height={150}
   showLineNumbers={false}
@@ -53,6 +57,7 @@ Para entender como a atribuição complica as coisas, considere uma versão simp
 Compare esta função com a seguinte função `make_decrementer`, que não usa atribuição:
 
 <CodePlayground
+  session="3.1.3"
   code={`function make_decrementer(balance) {
     return amount => balance - amount;
 }`}
@@ -63,12 +68,14 @@ Compare esta função com a seguinte função `make_decrementer`, que não usa a
 A função `make_decrementer` retorna uma função que subtrai sua entrada de um valor designado `balance`, mas não há efeito acumulado sobre chamadas sucessivas, como com `make_simplified_withdraw`:
 
 <CodePlayground
+  session="3.1.3"
   code={`const D = make_decrementer(25);`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="3.1.3"
   code={`D(20);`}
   height={150}
   showLineNumbers={false}
@@ -79,6 +86,7 @@ A função `make_decrementer` retorna uma função que subtrai sua entrada de um
 ```
 
 <CodePlayground
+  session="3.1.3"
   code={`D(10);`}
   height={150}
   showLineNumbers={false}
@@ -91,6 +99,7 @@ A função `make_decrementer` retorna uma função que subtrai sua entrada de um
 Podemos usar o modelo de substituição para explicar como `make_decrementer` funciona. Por exemplo, vamos analisar a avaliação da expressão
 
 <CodePlayground
+  session="3.1.3"
   code={`make_decrementer(25)(20);`}
   height={150}
   showLineNumbers={false}
@@ -143,6 +152,7 @@ A questão que está surgindo aqui é mais profunda do que a mera quebra de um m
 Suponha que chamemos `make_decrementer` duas vezes com o mesmo argumento para criar duas funções:
 
 <CodePlayground
+  session="3.1.3"
   code={`const D1 = make_decrementer(25);
 
 const D2 = make_decrementer(25);`}
@@ -155,6 +165,7 @@ const D2 = make_decrementer(25);`}
 Contraste isso com fazer duas chamadas a `make_simplified_withdraw`:
 
 <CodePlayground
+  session="3.1.3"
   code={`const W1 = make_simplified_withdraw(25);
 
 const W2 = make_simplified_withdraw(25);`}
@@ -165,6 +176,7 @@ const W2 = make_simplified_withdraw(25);`}
 `W1` e `W2` são iguais? Certamente não, porque chamadas a `W1` e `W2` têm efeitos distintos, como mostrado pela seguinte sequência de interações:
 
 <CodePlayground
+  session="3.1.3"
   code={`W1(20);`}
   height={150}
   showLineNumbers={false}
@@ -175,6 +187,7 @@ const W2 = make_simplified_withdraw(25);`}
 ```
 
 <CodePlayground
+  session="3.1.3"
   code={`W1(20);`}
   height={150}
   showLineNumbers={false}
@@ -185,6 +198,7 @@ const W2 = make_simplified_withdraw(25);`}
 ```
 
 <CodePlayground
+  session="3.1.3"
   code={`W2(20);`}
   height={150}
   showLineNumbers={false}
@@ -205,6 +219,28 @@ Como exemplo de como esta questão surge em programação, considere a situaçã
 <CodePlayground
   code={`const peter_acc = make_account(100);
 const paul_acc = make_account(100);`}
+  hiddenCode={`function make_account(balance) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(m) {
+        return m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}`}
   height={150}
   showLineNumbers={true}
 />
@@ -214,6 +250,28 @@ e modelar isso como
 <CodePlayground
   code={`const peter_acc = make_account(100);
 const paul_acc = peter_acc;`}
+  hiddenCode={`function make_account(balance) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(m) {
+        return m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}`}
   height={150}
   showLineNumbers={true}
 />
@@ -227,6 +285,7 @@ Com referência às observações acima sobre "semelhança" e "mudança", observ
 Em contraste com a programação funcional, a programação que faz uso extensivo de atribuição é conhecida como *programação imperativa*. Além de levantar complicações sobre modelos computacionais, programas escritos em estilo imperativo são suscetíveis a bugs que não podem ocorrer em programas funcionais. Por exemplo, relembre o programa fatorial iterativo da seção 1.2.1 (aqui usando uma instrução condicional em vez de uma expressão condicional):
 
 <CodePlayground
+  session="3.1.3"
   code={`function factorial(n) {
     function iter(product, counter) {
         if (counter > n) {
@@ -245,6 +304,7 @@ Em contraste com a programação funcional, a programação que faz uso extensiv
 Em vez de passar argumentos no loop iterativo interno, poderíamos adotar um estilo mais imperativo usando atribuição explícita para atualizar os valores das variáveis `product` e `counter`:
 
 <CodePlayground
+  session="3.1.3"
   code={`function factorial(n) {
     let product = 1;
     let counter = 1;
@@ -280,6 +340,30 @@ Considere os objetos de conta bancária criados por `make_account`, com a modifi
 
 <CodePlayground
   code={`const paul_acc = make_joint(peter_acc, "open sesame", "rosebud");`}
+  hiddenCode={`function make_account(balance) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(m) {
+        return m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}
+
+const peter_acc = make_account(100);`}
   height={150}
   showLineNumbers={false}
 />

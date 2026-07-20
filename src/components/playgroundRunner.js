@@ -6,6 +6,11 @@
  * congelar a página. O valor de conclusão do programa (última instrução de
  * expressão) é ecoado como em um REPL: eval("137 + 349;") → 486.
  *
+ * O worker expõe a biblioteca padrão do SICP JS (Source Academy): pair,
+ * head, tail, list, display, error, math_*, etc., para que os exemplos do
+ * livro rodem sem preâmbulo. Declarações do leitor com o mesmo nome
+ * simplesmente as sobrescrevem.
+ *
  * Toda a saída é formatada em string DENTRO do worker, então postMessage
  * nunca falha com valores não-serializáveis (funções, objetos circulares).
  */
@@ -34,14 +39,24 @@ function fmt(v, seen, depth) {
   if (t !== 'object') return String(v);
   if (v instanceof Error) return v.name + ': ' + v.message;
   if (seen.has(v)) return '[circular]';
-  if (depth > 4) return Array.isArray(v) ? '[...]' : '{...}';
+  if (depth > 6) return Array.isArray(v) ? '[...]' : '{...}';
   seen.add(v);
+  var out;
   if (Array.isArray(v)) {
-    return '[' + v.map(function (x) { return fmt(x, seen, depth + 1); }).join(', ') + ']';
+    if (v.length === 2) {
+      // Par do SICP: a espinha da lista não aumenta a profundidade, para
+      // que listas longas sejam exibidas por inteiro.
+      out = '[' + fmt(v[0], seen, depth + 1) + ', ' + fmt(v[1], seen, depth) + ']';
+    } else {
+      out = '[' + v.map(function (x) { return fmt(x, seen, depth + 1); }).join(', ') + ']';
+    }
+  } else {
+    out = '{ ' + Object.entries(v).map(function (kv) {
+      return kv[0] + ': ' + fmt(kv[1], seen, depth + 1);
+    }).join(', ') + ' }';
   }
-  return '{ ' + Object.entries(v).map(function (kv) {
-    return kv[0] + ': ' + fmt(kv[1], seen, depth + 1);
-  }).join(', ') + ' }';
+  seen.delete(v); // backtracking: estrutura compartilhada não é ciclo
+  return out;
 }
 var fmtResult = function (v) {
   return typeof v === 'string' ? JSON.stringify(v) : fmt(v);
@@ -55,6 +70,63 @@ var fmtResult = function (v) {
 self.prompt = self.alert = self.confirm = function () {
   throw new Error('prompt/alert/confirm não são suportados neste playground; use console.log para exibir valores');
 };
+
+// --- Biblioteca padrão do SICP JS (subconjunto do Source Academy) ---
+self.pair = function (h, t) { return [h, t]; };
+self.is_pair = function (x) { return Array.isArray(x) && x.length === 2; };
+self.head = function (p) {
+  if (!self.is_pair(p)) throw new Error('head espera um par, recebeu: ' + fmtResult(p));
+  return p[0];
+};
+self.tail = function (p) {
+  if (!self.is_pair(p)) throw new Error('tail espera um par, recebeu: ' + fmtResult(p));
+  return p[1];
+};
+self.set_head = function (p, v) {
+  if (!self.is_pair(p)) throw new Error('set_head espera um par, recebeu: ' + fmtResult(p));
+  p[0] = v;
+};
+self.set_tail = function (p, v) {
+  if (!self.is_pair(p)) throw new Error('set_tail espera um par, recebeu: ' + fmtResult(p));
+  p[1] = v;
+};
+self.is_null = function (x) { return x === null; };
+self.list = function () {
+  var r = null;
+  for (var i = arguments.length - 1; i >= 0; i--) r = [arguments[i], r];
+  return r;
+};
+self.display = function (v, s) {
+  emit('log', (s === undefined ? '' : String(s) + ' ') + fmt(v));
+  return v;
+};
+self.stringify = function (v) { return fmtResult(v); };
+self.error = function (v, s) {
+  throw new Error((s === undefined ? '' : String(s) + ' ') + fmt(v));
+};
+self.is_number = function (x) { return typeof x === 'number'; };
+self.is_string = function (x) { return typeof x === 'string'; };
+self.is_boolean = function (x) { return typeof x === 'boolean'; };
+self.is_function = function (x) { return typeof x === 'function'; };
+self.is_undefined = function (x) { return x === undefined; };
+self.char_at = function (s, i) { return i < s.length ? s.charAt(i) : undefined; };
+self.get_time = function () { return Date.now(); };
+Object.getOwnPropertyNames(Math).forEach(function (k) {
+  self['math_' + k] = Math[k];
+});
+var opTable = Object.create(null);
+self.put = function (op, type, item) { opTable[op + '|' + fmtResult(type)] = item; };
+self.get = function (op, type) { return opTable[op + '|' + fmtResult(type)]; };
+var coercionTable = Object.create(null);
+self.put_coercion = function (t1, t2, fn) { coercionTable[t1 + '|' + t2] = fn; };
+self.get_coercion = function (t1, t2) { return coercionTable[t1 + '|' + t2]; };
+self.apply_in_underlying_javascript = function (fn, args) {
+  var a = [];
+  while (args !== null) { a.push(args[0]); args = args[1]; }
+  return fn.apply(null, a);
+};
+// --- fim da biblioteca ---
+
 self.addEventListener('error', function (e) {
   e.preventDefault();
   emit('error', e.message);
