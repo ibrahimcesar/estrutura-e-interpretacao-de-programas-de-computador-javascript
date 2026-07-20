@@ -129,7 +129,7 @@ const config = {
               },
               {
                 label: 'Capítulo 1',
-                to: '/chapter-1/intro',
+                to: '/chapter-1/1.0',
               },
             ],
           },
