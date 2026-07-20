@@ -194,20 +194,22 @@ jobs:
               tip = '\n\n> ℹ️ Este é um PR grande. A revisão pode levar mais tempo.';
             }
 
-            const comment = `## ${sizeEmoji} Análise Automática do PR
-
-**Tamanho**: ${sizeLabel}
-
-| Métrica | Valor |
-|---------|-------|
-| ➕ Adições | ${additions} |
-| ➖ Remoções | ${deletions} |
-| 📝 Arquivos modificados | ${changedFiles} |
-| 🔢 Total de mudanças | ${totalChanges} |
-${tip}
-
----
-*Análise automática gerada pelo workflow de qualidade*`;
+            const comment = [
+              `## ${sizeEmoji} Análise Automática do PR`,
+              '',
+              `**Tamanho**: ${sizeLabel}`,
+              '',
+              '| Métrica | Valor |',
+              '|---------|-------|',
+              `| ➕ Adições | ${additions} |`,
+              `| ➖ Remoções | ${deletions} |`,
+              `| 📝 Arquivos modificados | ${changedFiles} |`,
+              `| 🔢 Total de mudanças | ${totalChanges} |`,
+              tip,
+              '',
+              '---',
+              '*Análise automática gerada pelo workflow de qualidade*',
+            ].join('\n');
 
             // Verificar se já existe comentário
             const { data: comments } = await github.rest.issues.listComments({
