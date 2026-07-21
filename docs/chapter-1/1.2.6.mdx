@@ -172,7 +172,7 @@ A existência de testes para os quais se pode provar que a chance de erro torna-
 <a name="ex-1-21"></a>
 Use a função `smallest_divisor` para encontrar o menor divisor de cada um dos seguintes números: 199, 1999, 19999.
 
-<Solution>
+<Solution exercise="1.21">
 
 <CodePlayground
   code={`display(smallest_divisor(199));
@@ -255,7 +255,7 @@ function is_prime(n) {
 
 Usando esta função, escreva uma função `search_for_primes` que verifica a primalidade de inteiros ímpares consecutivos em um intervalo especificado. Use sua função para encontrar os três menores primos maiores que 1000; maiores que 10.000; maiores que 100.000; maiores que 1.000.000. Observe o tempo necessário para testar cada primo. Como o algoritmo de teste tem ordem de crescimento de $\Theta(\sqrt{n})$, você deve esperar que testar primos em torno de 10.000 leve cerca de $\sqrt{10}$ vezes mais tempo do que testar primos em torno de 1000. Seus dados de temporização confirmam isso? Quão bem os dados para 100.000 e 1.000.000 suportam a previsão de $\sqrt{n}$? Seu resultado é compatível com a noção de que programas em sua máquina executam em tempo proporcional ao número de passos necessários para o cálculo?
 
-<Solution>
+<Solution exercise="1.22">
 
 **Ideia.** Caminhar só pelos ímpares, decrementando o contador a cada primo encontrado.
 
@@ -322,7 +322,7 @@ function is_even(n) {
 <a name="ex-1-23"></a>
 A função `smallest_divisor` mostrada no início desta seção faz muitos testes desnecessários: Depois que ela verifica se o número é divisível por 2, não há sentido em verificar se ele é divisível por qualquer número par maior. Isso sugere que os valores usados para `test_divisor` não deveriam ser 2, 3, 4, 5, 6, ... mas sim 2, 3, 5, 7, 9, ... Para implementar esta mudança, declare uma função `next` que retorna 3 se sua entrada for igual a 2 e caso contrário retorna sua entrada mais 2. Modifique a função `smallest_divisor` para usar `next(test_divisor)` em vez de `test_divisor + 1`. Com `timed_prime_test` incorporando esta versão modificada de `smallest_divisor`, execute o teste para cada um dos 12 primos encontrados no exercício 1.22. Como esta modificação reduz pela metade o número de passos de teste, você deve esperar que execute cerca de duas vezes mais rápido. Esta expectativa é confirmada? Se não, qual é a razão observada das velocidades dos dois algoritmos, e como você explica o fato de que ela é diferente de 2?
 
-<Solution>
+<Solution exercise="1.23">
 
 <CodePlayground
   code={`function next(n) {
@@ -362,7 +362,7 @@ function divides(a, b) {
 <a name="ex-1-24"></a>
 Modifique a função `timed_prime_test` do exercício 1.22 para usar `fast_is_prime` (o método de Fermat), e teste cada um dos 12 primos que você encontrou naquele exercício. Como o teste de Fermat tem crescimento $\Theta(\log n)$, como você esperaria que o tempo para testar primos perto de 1.000.000 se comparasse com o tempo necessário para testar primos perto de 1000? Seus dados confirmam isso? Você pode explicar qualquer discrepância que encontrar?
 
-<Solution>
+<Solution exercise="1.24">
 
 **Ideia.** Trocar `is_prime` por `fast_is_prime` (teste de Fermat) na mesma estrutura de medição:
 
@@ -417,7 +417,7 @@ function expmod(base, exp, m) {
 
 Ela está correta? Esta função serviria tão bem para nosso testador de primos rápido? Explique.
 
-<Solution>
+<Solution exercise="1.25">
 
 **Alyssa está errada** — a função dela é matematicamente correta, mas inútil na prática.
 
@@ -445,7 +445,7 @@ function expmod(base, exp, m) {
 
 "Não vejo que diferença isso poderia fazer", diz Louis. "Eu vejo", diz Eva. "Ao escrever a função dessa forma, você transformou o processo $\Theta(\log n)$ em um processo $\Theta(n)$." Explique.
 
-<Solution>
+<Solution exercise="1.26">
 
 Na versão de Louis, o argumento de `square` virou **duas chamadas idênticas**: cada nível de recursão com expoente par dispara *duas* subárvores completas em vez de uma. A recursão que antes era uma *corrente* de comprimento $\log n$ virou uma *árvore binária* de profundidade $\log n$ — e uma árvore binária com essa profundidade tem da ordem de $2^{\log_2 n} = n$ nós.
 
@@ -458,7 +458,7 @@ Formalmente: $T(e) = 2\,T(e/2) + \Theta(1)$ resolve para $T(e) = \Theta(e)$, enq
 <a name="ex-1-27"></a>
 Demonstre que os números de Carmichael listados na nota de rodapé 4 realmente enganam o teste de Fermat. Isto é, escreva uma função que recebe um inteiro $n$ e testa se $a^n$ é congruente a $a$ módulo $n$ para todo $a < n$, e tente sua função nos números de Carmichael dados.
 
-<Solution>
+<Solution exercise="1.27">
 
 **Ideia.** Testar a congruência $a^n \equiv a \pmod n$ para *todos* os $a < n$:
 
@@ -504,7 +504,7 @@ function is_even(n) {
 <a name="ex-1-28"></a>
 Uma variante do teste de Fermat que não pode ser enganada é chamada de *teste de Miller-Rabin* (Miller 1976; Rabin 1980). Este começa de uma forma alternativa do Pequeno Teorema de Fermat, que afirma que se $n$ é um número primo e $a$ é qualquer inteiro positivo menor que $n$, então $a$ elevado à $(n-1)$-ésima potência é congruente a 1 módulo $n$. Para testar a primalidade de um número $n$ pelo teste de Miller-Rabin, escolhemos um número aleatório $a < n$ e elevamos $a$ à $(n-1)$-ésima potência módulo $n$ usando a função `expmod`. No entanto, sempre que realizamos o passo de elevação ao quadrado em `expmod`, verificamos se descobrimos uma "raiz quadrada não trivial de 1 módulo $n$", isto é, um número diferente de 1 ou $n-1$ cujo quadrado é igual a 1 módulo $n$. É possível provar que se tal raiz quadrada não trivial de 1 existir, então $n$ não é primo. Também é possível provar que se $n$ é um número ímpar que não é primo, então, para pelo menos metade dos números $a < n$, calcular $a^{n-1}$ desta forma revelará uma raiz quadrada não trivial de 1 módulo $n$. (É por isso que o teste de Miller-Rabin não pode ser enganado.) Modifique a função `expmod` para sinalizar se ela descobrir uma raiz quadrada não trivial de 1, e use isso para implementar o teste de Miller-Rabin com uma função análoga a `fermat_test`. Verifique sua função testando vários primos e não-primos conhecidos. Dica: Uma maneira conveniente de fazer `expmod` sinalizar é fazê-la retornar 0.
 
-<Solution>
+<Solution exercise="1.28">
 
 **Ideia.** No passo de elevação ao quadrado, sinalizar (retornando 0) quando encontramos uma raiz quadrada não trivial de 1 módulo $n$ — um $x \neq 1, n-1$ com $x^2 \equiv 1 \pmod n$:
 

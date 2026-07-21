@@ -128,3 +128,7 @@ yarn-error.log*
 
 # Generated eBooks
 ebooks/.vscode/branch-timer.json
+# Saídas de geração de eBooks
+ebooks/temp/
+ebooks/*.pdf
+ebooks/*.epub

@@ -1,6 +1,6 @@
 {
   "name": "sicp-js-pt-br",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "description": "Estrutura e Interpretação de Programas de Computador - Adaptação JavaScript em Português",
   "private": true,
   "scripts": {
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.2",
+    "@docusaurus/plugin-pwa": "^3.10.2",
     "@docusaurus/preset-classic": "^3.10.2",
     "@docusaurus/theme-live-codeblock": "^3.10.2",
     "@docusaurus/theme-mermaid": "^3.9.2",

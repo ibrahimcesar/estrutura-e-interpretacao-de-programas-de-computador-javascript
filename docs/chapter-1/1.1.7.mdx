@@ -207,7 +207,7 @@ Encantada, Alyssa usa `conditional` para reescrever o programa de raiz quadrada:
 
 O que acontece quando Alyssa tenta usar isso para calcular raízes quadradas? Explique.
 
-<Solution>
+<Solution exercise="1.6">
 
 Qualquer chamada de `sqrt_iter` leva imediatamente a um loop infinito. A razão para isso é nossa avaliação de ordem aplicativa. A avaliação da expressão de retorno de `sqrt_iter` precisa avaliar seus argumentos primeiro, incluindo a chamada recursiva de `sqrt_iter`, independentemente de o predicado avaliar para verdadeiro ou falso. O mesmo acontece com a chamada recursiva, e assim a função `conditional` nunca é realmente aplicada.
 
@@ -217,7 +217,7 @@ Qualquer chamada de `sqrt_iter` leva imediatamente a um loop infinito. A razão 
 
 O teste `is_good_enough` usado no cálculo de raízes quadradas não será muito eficaz para encontrar as raízes quadradas de números muito pequenos. Além disso, em computadores reais, operações aritméticas são quase sempre realizadas com precisão limitada. Isso torna nosso teste inadequado para números muito grandes. Explique essas afirmações, com exemplos mostrando como o teste falha para números pequenos e grandes. Uma estratégia alternativa para implementar `is_good_enough` é observar como `guess` muda de uma iteração para a próxima e parar quando a mudança for uma fração muito pequena do palpite. Projete uma função de raiz quadrada que usa esse tipo de teste final. Isso funciona melhor para números pequenos e grandes?
 
-<Solution>
+<Solution exercise="1.7">
 
 A tolerância absoluta de 0.001 é muito grande ao calcular a raiz quadrada de um valor pequeno. Por exemplo, `sqrt(0.0001)` resulta em 0.03230844833048122 em vez do valor esperado 0.01, um erro de mais de 200%.
 
@@ -266,7 +266,7 @@ $$
 
 Use esta fórmula para implementar uma função de raiz cúbica análoga à função de raiz quadrada. (Na seção 1.3.4 veremos como implementar o método de Newton em geral como uma abstração dessas funções de raiz quadrada e raiz cúbica.)
 
-<Solution>
+<Solution exercise="1.8">
 
 
 

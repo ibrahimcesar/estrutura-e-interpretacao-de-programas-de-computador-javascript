@@ -70,7 +70,7 @@ const primitive_constant_values =
 
 Para aplicar uma função primitiva, simplesmente aplicamos a função de implementação aos argumentos, usando o sistema JavaScript subjacente:[^2]
 
-[^2]: O método `apply` do JavaScript espera os argumentos da função em um *vetor*. (Vetores são chamados de "arrays" em JavaScript.) Assim, o `arglist` é transformado em um vetor—aqui usando um loop while (veja o exercício 4.8):
+[^2]: O método `apply` do JavaScript espera os argumentos da função em um *vetor*. (Vetores são chamados de "arrays" em JavaScript.) Assim, o `arglist` é transformado em um vetor—aqui usando um loop while (veja o exercício 4.7):
 
     ```javascript
     function apply_in_underlying_javascript(prim, arglist) {
@@ -183,7 +183,7 @@ M-evaluate value:
 
 Eva Lu Ator e Louis Reasoner estão cada um experimentando com o avaliador metacircular. Eva digita a definição de `map` e executa alguns programas de teste que o usam. Eles funcionam bem. Louis, em contraste, instalou a versão do sistema de `map` como uma primitiva para o avaliador metacircular. Quando ele tenta, as coisas dão terrivelmente errado. Explique por que o `map` de Louis falha mesmo que o de Eva funcione.
 
-<Solution>
+<Solution exercise="4.14">
 
 A `map` de Eva é definida **dentro** da linguagem avaliada: quando ela passa uma função para `map`, passa um *objeto-função do avaliador* (uma lista etiquetada com parâmetros, corpo e ambiente), e é o próprio avaliador que a aplica, via seu `apply`.
 

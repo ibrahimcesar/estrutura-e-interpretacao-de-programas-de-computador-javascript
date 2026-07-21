@@ -79,7 +79,7 @@ Para dividir dois intervalos, Alyssa multiplica o primeiro pelo recíproco do se
 
 O programa de Alyssa está incompleto porque ela não especificou a implementação da abstração de intervalo. Defina os seletores `upper_bound` e `lower_bound` para completar a implementação.
 
-<Solution>
+<Solution exercise="2.7">
 
 Com `make_interval` construindo o par na ordem (inferior, superior), os seletores são diretos:
 
@@ -100,7 +100,7 @@ function upper_bound(i) {
 
 Usando um raciocínio análogo ao de Alyssa, descreva como a diferença de dois intervalos pode ser calculada. Defina uma função correspondente chamada `sub_interval`.
 
-<Solution>
+<Solution exercise="2.8">
 
 **Raciocínio.** O menor valor da diferença $x - y$ ocorre com o menor $x$ e o **maior** $y$; o maior, com o maior $x$ e o menor $y$:
 
@@ -149,7 +149,7 @@ Equivalente a somar com o intervalo negado $[-u_y, -l_y]$ — repare a troca dos
 
 A *largura* de um intervalo é metade da diferença entre seus limites superior e inferior. A largura é uma medida da incerteza do número especificado pelo intervalo. Para algumas operações aritméticas, a largura do resultado de combinar dois intervalos é uma função apenas das larguras dos intervalos argumentos, enquanto para outras a largura do intervalo resultado da combinação não é uma função das larguras dos intervalos argumentos. Mostre que a largura da soma (ou diferença) de dois intervalos é uma função apenas das larguras dos intervalos sendo adicionados (ou subtraídos). Dê exemplos para mostrar que isso não é verdadeiro para multiplicação ou divisão.
 
-<Solution>
+<Solution exercise="2.9">
 
 **Soma:** com $x = [l_x, u_x]$, $y = [l_y, u_y]$,
 
@@ -206,7 +206,7 @@ $[0,2] \times [0,2] = [0,4]$ tem largura 2, enquanto $[4,6] \times [4,6] = [16,3
 
 Ben Bitdiddle, um especialista programador, observa que não faz sentido dividir por um intervalo que abrange zero. Modifique o código de Alyssa para verificar essa condição e sinalizar um erro se isso ocorrer.
 
-<Solution>
+<Solution exercise="2.10">
 
 Um intervalo "atravessa zero" quando $l \le 0 \le u$ — dividir por ele não faz sentido (o recíproco explode):
 
@@ -258,7 +258,7 @@ A segunda chamada dispara o erro — execute e veja.
 
 Em passando por esse código, Ben também observa que é possível melhorar a eficiência de `mul_interval` usando o fato de que os pontos extremos dos intervalos são números. Mostre que existem nove casos para computar o produto de dois intervalos com base nos sinais dos pontos extremos, e reescreva `mul_interval` para levar vantagem disso.
 
-<Solution>
+<Solution exercise="2.11">
 
 Cada extremo pode ser negativo ou não-negativo; classificando os dois intervalos pelos sinais de $(l, u)$ há $3 \times 3 = 9$ combinações — e em oito delas os extremos do produto são conhecidos de antemão. Só quando **ambos** atravessam zero é preciso comparar produtos:
 
@@ -376,7 +376,7 @@ Essas duas funções produzem resultados diferentes! Isso ocorre porque a aritm�
 
 Os exercícios restantes exploram mais profundamente este problema da dependência, derivando fórmulas para tolerância percentual em produtos, investigando por que `par2` produz resultados melhores que `par1`, e explorando se é possível projetar um sistema de aritmética de intervalos que evite completamente esse problema.
 
-<Solution>
+<Solution exercise="2.12">
 
 <CodePlayground
   code={`function make_center_width(c, w) {

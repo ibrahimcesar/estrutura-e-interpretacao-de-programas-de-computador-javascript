@@ -97,7 +97,7 @@ L-evaluate value:
 
 ## Exercícios
 
-### Exercício 4.32
+### Exercício 4.30
 
 Dê alguns exemplos que ilustrem a diferença entre os streams do capítulo 3 e as listas preguiçosas "ainda mais preguiçosas" descritas nesta seção. Como você pode tirar vantagem dessa preguiça extra?
 
@@ -154,7 +154,7 @@ function first_non_null(list1, list2) {
 ```
 </details>
 
-<Solution>
+<Solution exercise="4.30">
 
 Nos streams do capítulo 3, só a **cauda** é adiada — a cabeça é avaliada na construção. Nas listas preguiçosas desta seção, `pair` é uma função composta do avaliador preguiçoso, então **os dois lados** chegam como thunks.
 
@@ -167,7 +167,7 @@ Diferenças observáveis:
 
 </Solution>
 
-### Exercício 4.33
+### Exercício 4.31
 
 Ben Bitdiddle testa a implementação de lista preguiçosa dada acima avaliando a expressão:
 
@@ -187,7 +187,7 @@ Você precisará modificar como a função primitiva `list` é implementada. Uma
 Alternativamente, você poderia modificar o avaliador para detectar aplicações de `list` e tratá-las especialmente, construindo a lista resultante usando `pair` preguiçoso.
 </details>
 
-<Solution>
+<Solution exercise="4.31">
 
 O problema: `list("a", "b", "c")` é avaliada pela **primitiva** `list`, que constrói pares do sistema hospedeiro — mas `head` agora é a função composta que espera os pares-função do avaliador preguiçoso. Os dois "tipos de par" não se entendem.
 
@@ -207,7 +207,7 @@ Com a tradução instalada em `evaluate`, `head(list("a", "b", "c"))` devolve `"
 
 </Solution>
 
-### Exercício 4.34
+### Exercício 4.32
 
 Modifique o loop do driver para o avaliador de modo que pares preguiçosos e listas sejam impressos de alguma forma razoável. (O que você vai fazer sobre listas infinitas?) Você também pode precisar modificar a representação de pares preguiçosos para que o avaliador possa identificá-los a fim de imprimi-los.
 
@@ -239,7 +239,7 @@ L-evaluate value:
 Você precisará modificar `user_print` e possivelmente adicionar funções auxiliares para detectar e imprimir listas preguiçosas de forma inteligente.
 </details>
 
-<Solution>
+<Solution exercise="4.32">
 
 Duas mudanças:
 

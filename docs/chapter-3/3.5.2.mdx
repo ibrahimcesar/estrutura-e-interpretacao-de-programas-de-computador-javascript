@@ -168,7 +168,7 @@ Sem executar o programa, descreva os elementos do stream definido por
 const s = pair(1, () => add_streams(s, s));
 ```
 
-<Solution>
+<Solution exercise="3.53">
 
 Sem executar: a cabeça é 1, e cada elemento seguinte é a soma do stream consigo mesmo — ou seja, **o dobro do anterior**. O stream é o das potências de 2: `1, 2, 4, 8, 16, …`
 
@@ -234,7 +234,7 @@ Defina uma função `mul_streams`, análoga a `add_streams`, que produz o produt
 const factorials = pair(1, () => mul_streams(..., ...));
 ```
 
-<Solution>
+<Solution exercise="3.54">
 
 <CodePlayground
   code={`function mul_streams(s1, s2) {
@@ -303,7 +303,7 @@ function first_n(s, n) {
 
 Defina uma função `partial_sums` que recebe como argumento um stream $S$ e retorna o stream cujos elementos são $S_0$, $S_0 + S_1$, $S_0 + S_1 + S_2$, ... Por exemplo, `partial_sums(integers)` deve ser o stream 1, 3, 6, 10, 15, ...
 
-<Solution>
+<Solution exercise="3.55">
 
 <CodePlayground
   code={`function partial_sums(s) {
@@ -383,7 +383,7 @@ const S = pair(1, () => merge(..., merge(..., ...)));
 
 Complete a definição de `S` preenchendo as partes faltantes na definição da função `merge` e fornecendo as expressões faltantes nas lacunas.
 
-<Solution>
+<Solution exercise="3.56">
 
 <CodePlayground
   code={`function merge(s1, s2) {
@@ -461,7 +461,7 @@ O caso de igualdade avança **os dois** streams — é o que elimina as repetiç
 
 Quantas adições são realizadas quando computamos o $n$-ésimo número de Fibonacci usando a definição de `fibs` baseada em `add_streams`? Mostre que o número de adições seria exponencialmente maior se tivéssemos implementado `add_streams` sem usar a otimização de memoização fornecida pela função `memo` (exercício 3.50).
 
-<Solution>
+<Solution exercise="3.57">
 
 **Com memoização**, o $n$-ésimo Fibonacci custa $n - 1$ adições: cada elemento do stream é computado uma única vez, e computar o elemento $k$ faz exatamente uma adição sobre dois elementos já lembrados.
 
@@ -491,7 +491,7 @@ expand(1, 7, 10);
 expand(3, 8, 10);
 ```
 
-<Solution>
+<Solution exercise="3.58">
 
 `expand(num, den, radix)` produz **os dígitos da expansão de `num/den` na base `radix`**, depois da vírgula: cada passo multiplica o resto por `radix`, tira o dígito inteiro e continua com o novo resto — o algoritmo escolar de divisão contínua.
 
@@ -572,7 +572,7 @@ $$\frac{de^x}{dx} = e^x$$
 
 com $e^0 = 1$. Gere o stream de séries de potências para $e^x$.
 
-<Solution>
+<Solution exercise="3.59">
 
 <CodePlayground
   code={`// a. integrar termo a termo: divide o k-ésimo coeficiente por k
@@ -660,7 +660,7 @@ function mul_series(s1, s2) {
 
 Você pode testar sua função verificando que $\sin^2 x + \cos^2 x = 1$, usando as séries do exercício 3.59.
 
-<Solution>
+<Solution exercise="3.60">
 
 <CodePlayground
   code={`function mul_series(s1, s2) {
@@ -738,16 +738,18 @@ const sine_series =
 
 Seja $S$ uma série de potências (exercício 3.59) cujo termo constante é 1. Suponha que queremos encontrar a série de potências $1/S$, isto é, a série $X$ tal que $SX = 1$. Escreva $S = 1 + S_R$ onde $S_R$ é a parte de $S$ após o termo constante. Então podemos resolver para $X$ da seguinte forma:
 
-$$\begin{align*}
+$$
+\begin{align*}
 S \cdot X &= 1 \\
 (1 + S_R) \cdot X &= 1 \\
 X + S_R \cdot X &= 1 \\
 X &= 1 - S_R \cdot X
-\end{align*}$$
+\end{align*}
+$$
 
 Em outras palavras, $X$ é a série de potências cujo termo constante é 1 e cujos termos de ordem superior são o negativo de $S_R$ vezes $X$. Use esta ideia para escrever uma função `invert_unit_series` que computa $1/S$ para uma série de potências $S$ com termo constante 1. Você precisará usar `mul_series` do exercício 3.60.
 
-<Solution>
+<Solution exercise="3.61">
 
 A dedução do enunciado vira código diretamente — $X = 1 - S_R \cdot X$:
 
@@ -833,7 +835,7 @@ A definição parece circular — `invert_unit_series(s)` aparece no próprio co
 
 Use os resultados dos exercícios 3.60 e 3.61 para definir uma função `div_series` que divide duas séries de potências. A função `div_series` deve funcionar para qualquer duas séries, desde que o denominador comece com um termo constante não zero. (Se o denominador tiver um termo constante zero, então `div_series` deve sinalizar um erro.) Mostre como usar `div_series` juntamente com os resultados do exercício 3.59 para gerar a série de potências para a tangente.
 
-<Solution>
+<Solution exercise="3.62">
 
 <CodePlayground
   code={`function div_series(num, den) {

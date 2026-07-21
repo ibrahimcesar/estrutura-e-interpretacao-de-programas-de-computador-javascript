@@ -78,43 +78,14 @@ urlcolor: blue
 ---
 EOF
 
-# Collect all markdown files in order
-MARKDOWN_FILES=(
-    "$DOCS_DIR/intro.md"
-    "$DOCS_DIR/prefaces/foreword84.md"
-    "$DOCS_DIR/prefaces/prefaces96.md"
-    "$DOCS_DIR/prefaces/prefaces03.md"
-)
-
-# Add all chapter files in order
-for chapter in 1 2 3 4 5; do
-    # Add chapter intro
-    if [ -f "$DOCS_DIR/chapter-$chapter/${chapter}.0.md" ]; then
-        MARKDOWN_FILES+=("$DOCS_DIR/chapter-$chapter/${chapter}.0.md")
-    fi
-
-    # Add sections
-    find "$DOCS_DIR/chapter-$chapter" -name "${chapter}.*.md" ! -name "${chapter}.0.md" | sort -V | while read -r file; do
-        MARKDOWN_FILES+=("$file")
-    done
-done
-
-# Add appendices
-MARKDOWN_FILES+=(
-    "$DOCS_DIR/referencias.md"
-    "$DOCS_DIR/agradecimentos.md"
-    "$DOCS_DIR/sobre-o-projeto.md"
-    "$DOCS_DIR/sobre-traducao-brasileira.md"
-)
-
-# Filter out files that don't exist
+# Converte .mdx/.md (componentes JSX -> Markdown puro) na ordem de leitura.
+# A lista ordenada vem do conversor — inclui TODOS os capítulos (.mdx incluído),
+# o que a coleta antiga de apenas .md não fazia.
 EXISTING_FILES=()
-for file in "${MARKDOWN_FILES[@]}"; do
-    if [ -f "$file" ]; then
-        EXISTING_FILES+=("$file")
-        echo -e "  ${GREEN}✓${NC} $(basename "$file")"
-    fi
-done
+while IFS= read -r file; do
+    EXISTING_FILES+=("$file")
+    echo -e "  ${GREEN}✓${NC} $(basename "$file")"
+done < <(node "$SCRIPT_DIR/mdx-to-md.mjs" "$TEMP_DIR/converted")
 
 echo ""
 echo -e "${BOLD}${CYAN}📦 Total de arquivos: ${#EXISTING_FILES[@]}${NC}"

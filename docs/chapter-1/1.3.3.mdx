@@ -325,7 +325,7 @@ Com essa modificação, a função de raiz quadrada funciona. Na verdade, se des
 <a name="ex-1-35"></a>
 Mostre que a razão áurea $\phi$ (seção 1.2.2) é um ponto fixo da transformação $x \mapsto 1 + 1/x$, e use isso para calcular $\phi$ por meio da função `fixed_point`.
 
-<Solution>
+<Solution exercise="1.35">
 
 **A demonstração.** $\phi$ satisfaz $\phi^2 = \phi + 1$ (é a raiz positiva dessa equação, por definição). Dividindo os dois lados por $\phi$: $\phi = 1 + 1/\phi$ — ou seja, $\phi$ é exatamente um ponto fixo de $x \mapsto 1 + 1/x$.
 
@@ -357,7 +357,7 @@ O resultado, $\approx 1{,}6180$, é a razão áurea.
 <a name="ex-1-36"></a>
 Modifique `fixed_point` para que ela imprima a sequência de aproximações que gera, usando a função primitiva `display` mostrada no exercício 1.22. Então encontre uma solução de $x^x = 1000$ encontrando um ponto fixo de $x \mapsto \log(1000)/\log(x)$. (Use a função primitiva `math_log` do JavaScript, que calcula logaritmos naturais.) Compare o número de passos necessários com e sem amortecimento médio. (Observe que você não pode iniciar `fixed_point` com um palpite de 1, pois isso causaria divisão por $\log(1) = 0$.)
 
-<Solution>
+<Solution exercise="1.36">
 
 **Versão com impressão** e a busca por $x^x = 1000$:
 
@@ -418,7 +418,7 @@ para valores sucessivos de `k`. Quão grande você tem que fazer `k` para obter 
 
 **b.** Se sua função `cont_frac` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
 
-<Solution>
+<Solution exercise="1.37">
 
 **a. Recursivo** — contando do termo $k$ para dentro:
 
@@ -465,7 +465,7 @@ A fração contínua se "enrola" naturalmente de dentro para fora, então a vers
 <a name="ex-1-38"></a>
 Em 1737, o matemático suíço Leonhard Euler publicou um artigo *De Fractionibus Continuis*, que incluía uma expansão em fração contínua para $e - 2$, onde $e$ é a base dos logaritmos naturais. Nesta fração, os $N_i$ são todos 1, e os $D_i$ são sucessivamente 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, ... Escreva um programa que usa sua função `cont_frac` do exercício 1.37 para aproximar $e$, baseado na expansão de Euler.
 
-<Solution>
+<Solution exercise="1.38">
 
 **Ideia.** Só precisamos descrever a sequência de denominadores $1, 2, 1, 1, 4, 1, 1, 6, \ldots$: nas posições $2, 5, 8, \ldots$ (isto é, $i \equiv 2 \pmod 3$) o valor é $\frac{2(i+1)}{3}$; nas demais é 1.
 
@@ -505,7 +505,7 @@ $$
 
 onde $x$ está em radianos. Declare uma função `tan_cf(x, k)` que calcula uma aproximação da função tangente baseada na fórmula de Lambert. A constante `k` especifica o número de termos a calcular, como no exercício 1.37.
 
-<Solution>
+<Solution exercise="1.39">
 
 **Ideia.** Na fórmula de Lambert, $N_1 = x$ e os demais $N_i = -x^2$ (o sinal de menos da fórmula vira sinal do numerador); os denominadores são os ímpares $1, 3, 5, \ldots$
 

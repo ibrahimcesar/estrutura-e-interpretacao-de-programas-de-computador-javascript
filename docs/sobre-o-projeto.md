@@ -26,6 +26,8 @@ O precursor da edição comparativa foi a edição web amigável para dispositiv
 
 As primeiras edições em PDF (2010-2018) usavam XSLT para gerar LaTeX a partir dos fontes XML. A primeira versão em Node.js da edição em PDF foi projetada e implementada por Chan Ger Hean em 2019. Tobias Wrigstad e Martin Henz são os principais desenvolvedores deste sistema.
 
+Esta tradução também é publicada em **EPUB e PDF**, gerados automaticamente a partir do texto do site — [baixe a versão mais recente](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/releases/latest). Nos eBooks, as soluções aparecem logo após cada enunciado (sem o botão de revelar da versão web), e os playgrounds interativos viram blocos de código.
+
 ## Figuras
 
 A maioria das figuras são adaptadas da [versão HTML5/EPUB3 do SICP](https://github.com/sarabander/sicp) por Andres Raba. As figuras são licenciadas sob a Licença Creative Commons Attribution-ShareAlike 4.0 International [(cc by-sa)](https://creativecommons.org/licenses/by-sa/4.0). As adaptações das figuras para JavaScript foram feitas por Tobias Wrigstad usando Inkscape e uso generoso de `sed`.

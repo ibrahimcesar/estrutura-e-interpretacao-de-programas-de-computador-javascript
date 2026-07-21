@@ -50,7 +50,7 @@ Podemos usar este teorema para obter uma estimativa de ordem de crescimento para
 <a name="ex-1-20"></a>
 O processo que uma função gera é, claro, dependente das regras usadas pelo interpretador. Como exemplo, considere a função iterativa `gcd` dada acima. Suponha que fôssemos interpretar esta função usando avaliação em ordem normal, como discutido na seção 1.1.5. (A regra de avaliação em ordem normal para expressões condicionais é descrita no exercício 1.5.) Usando o método de substituição (para ordem normal), ilustre o processo gerado ao avaliar `gcd(206, 40)` e indique as operações `%` (resto) que são realmente realizadas. Quantas operações de resto são realmente realizadas na avaliação em ordem normal de `gcd(206, 40)`? Na avaliação em ordem aplicativa?
 
-<Solution>
+<Solution exercise="1.20">
 
 **Ordem normal.** Os argumentos são substituídos *sem avaliar*, então as expressões de resto se acumulam dentro dos predicados. Expandindo `gcd(206, 40)`, cada teste `b === 0` força a avaliação do `b` acumulado:
 

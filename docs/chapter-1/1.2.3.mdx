@@ -25,7 +25,7 @@ Ordens de crescimento fornecem apenas uma descrição grosseira do comportamento
 <a name="ex-1-14"></a>
 Desenhe a árvore ilustrando o processo gerado pela função `count_change` da seção 1.2.2 ao fazer troco de 11 centavos. Quais são as ordens de crescimento do espaço e do número de passos usados por este processo à medida que a quantia a ser trocada aumenta?
 
-<Solution>
+<Solution exercise="1.14">
 
 **A árvore.** Cada chamada `cc(quantia, tipos)` se ramifica em duas: *não usar* a maior moeda (`cc(quantia, tipos - 1)`) e *usá-la uma vez* (`cc(quantia - valor, tipos)`). Para 11 centavos com 5 tipos de moeda, a árvore desce rapidamente para os casos com apenas centavos — desenhe alguns níveis e o padrão fica claro. Você pode gerar a árvore real com o rastreador:
 
@@ -87,7 +87,7 @@ function sine(angle) {
 
 **b.** Qual é a ordem de crescimento no espaço e no número de passos (como uma função de $a$) usados pelo processo gerado pela função `sine` quando `sine(a)` é avaliado?
 
-<Solution>
+<Solution exercise="1.15">
 
 **a.** A cada aplicação o ângulo é dividido por 3, até ficar com magnitude ≤ 0,1. Procuramos o menor $k$ com $12{,}15/3^k \le 0{,}1$, isto é, $3^k \ge 121{,}5$ — e $3^5 = 243$. Então `p` é aplicada **5 vezes**. Confira com o rastreador:
 

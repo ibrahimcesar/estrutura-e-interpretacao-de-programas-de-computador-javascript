@@ -89,7 +89,7 @@ function integral(integrand, initial_value, dt) {
 
 Quando usada em sistemas com loops, esta função tem o mesmo problema que nossa versão original de `integral`. Modifique a função para que ela espere o `integrand` como um argumento atrasado e, portanto, possa ser usada na função `solve` mostrada acima.
 
-<Solution>
+<Solution exercise="3.77">
 
 Basta adiar também o `integrand` nesta formulação, chamando-o quando a cauda for construída:
 
@@ -174,7 +174,7 @@ O stream de saída, modelando $y$, é gerado por uma rede que contém um loop. I
 
 Escreva uma função `solve_2nd` que recebe como argumentos as constantes $a$, $b$ e $dt$ e os valores iniciais $y_0$ e $dy_0$ para $y$ e $dy/dt$ e gera o stream de valores sucessivos de $y$.
 
-<Solution>
+<Solution exercise="3.78">
 
 Seguindo o diagrama: `ddy` é a combinação `a·dy + b·y`, e `dy` e `y` são integrais encadeadas de `ddy`:
 
@@ -249,7 +249,7 @@ As três funções são mutuamente recursivas e nenhuma executa nada até o stre
 
 Generalize a função `solve_2nd` do exercício 3.78 para que ela possa ser usada para resolver equações diferenciais de segunda ordem gerais $d^2y/dt^2 = f(dy/dt, y)$.
 
-<Solution>
+<Solution exercise="3.79">
 
 A generalização troca a combinação linear fixa por uma função arbitrária de `dy` e `y`:
 
@@ -325,25 +325,31 @@ function integral(delayed_integrand, initial_value, dt) {
 
 Um *circuito RLC em série* consiste de um resistor, um capacitor e um indutor conectados em série, como mostrado na figura. Se $R$, $L$ e $C$ são a resistência, indutância e capacitância, então as relações entre voltagem ($v$) e corrente ($i$) para os três componentes são descritas pelas equações
 
-$$\begin{align*}
+$$
+\begin{align*}
 v_R &= i_R R \\
 v_L &= L\frac{di_L}{dt} \\
 i_C &= C\frac{dv_C}{dt}
-\end{align*}$$
+\end{align*}
+$$
 
 e as conexões do circuito ditam as relações
 
-$$\begin{align*}
+$$
+\begin{align*}
 i_R &= i_L = -i_C \\
 v_C &= v_L + v_R
-\end{align*}$$
+\end{align*}
+$$
 
 Combinando essas equações mostra que o estado do circuito (resumido por $v_C$, a voltagem através do capacitor, e $i_L$, a corrente no indutor) é descrito pelo par de equações diferenciais
 
-$$\begin{align*}
+$$
+\begin{align*}
 \frac{dv_C}{dt} &= -\frac{i_L}{C} \\
 \frac{di_L}{dt} &= \frac{1}{L}v_C - \frac{R}{L}i_L
-\end{align*}$$
+\end{align*}
+$$
 
 O diagrama de fluxo de sinal representando este sistema de equações diferenciais é mostrado na figura.
 
@@ -359,7 +365,7 @@ Os exemplos nesta seção ilustram como a avaliação atrasada fornece grande fl
 
 Uma maneira de evitar a necessidade de duas classes diferentes de funções é fazer todas as funções receberem argumentos atrasados. Poderíamos adotar um modelo de avaliação no qual todos os argumentos para funções são automaticamente atrasados e os argumentos são forçados apenas quando são realmente necessários (por exemplo, quando são exigidos por uma operação primitiva). Isso transformaria nossa linguagem para usar avaliação em ordem normal, que descrevemos pela primeira vez quando introduzimos o modelo de substituição para avaliação na seção 1.1.5. Converter para avaliação em ordem normal fornece uma maneira uniforme e elegante de simplificar o uso de avaliação atrasada, e esta seria uma estratégia natural a adotar se estivéssemos preocupados apenas com o processamento de streams. Na seção 4.2, após estudarmos o avaliador, veremos como transformar nossa linguagem exatamente dessa maneira. Infelizmente, incluir atrasos em chamadas de função causa estragos com nossa capacidade de projetar programas que dependem da ordem de eventos, como programas que usam atribuição, mutam dados ou executam entrada ou saída. Mesmo um único atraso no tail de um par pode causar grande confusão, como ilustrado pelos exercícios 3.51 e 3.52. Até onde se sabe, mutabilidade e avaliação atrasada não se misturam bem em linguagens de programação.
 
-<Solution>
+<Solution exercise="3.80">
 
 Das leis do circuito: $\dfrac{dv_C}{dt} = -\dfrac{i_L}{C}$ e $\dfrac{di_L}{dt} = \dfrac{v_C}{L} - \dfrac{R}{L} i_L$ — duas integrais acopladas:
 

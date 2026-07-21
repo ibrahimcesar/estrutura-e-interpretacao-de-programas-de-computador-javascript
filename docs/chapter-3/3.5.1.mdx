@@ -232,7 +232,7 @@ function stream_map_2(f, s1, s2) {
 
 Similar a `stream_map_optimized`, declare uma função `stream_map_2_optimized` modificando sua `stream_map_2` de modo que o stream resultante empregue memoização.
 
-<Solution>
+<Solution exercise="3.50">
 
 <CodePlayground
   code={`function stream_map_2(f, s1, s2) {
@@ -335,7 +335,7 @@ stream_ref(x, 5);
 stream_ref(x, 7);
 ```
 
-<Solution>
+<Solution exercise="3.51">
 
 **Com `stream_map` (sem memoização):**
 
@@ -374,7 +374,7 @@ display_stream(z);
 
 Qual é o valor de `sum` após cada uma das instruções acima ser avaliada? Qual é a resposta impressa ao avaliar as expressões `stream_ref` e `display_stream`? Essas respostas difeririam se tivéssemos aplicado a função `memo` em cada tail de cada par de stream construído, como sugerido na otimização acima? Explique.
 
-<Solution>
+<Solution exercise="3.52">
 
 **Sem memoização** (verificado executando — experimente!):
 

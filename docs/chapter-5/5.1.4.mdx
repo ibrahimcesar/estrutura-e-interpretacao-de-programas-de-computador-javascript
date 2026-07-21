@@ -166,7 +166,7 @@ b. Exponenciação iterativa:
   showLineNumbers={true}
 />
 
-<Solution>
+<Solution exercise="5.4">
 
 **a. Exponenciação recursiva** — precisa de pilha e `continue`, como a máquina de fatorial do texto:
 
@@ -213,7 +213,7 @@ Lado a lado, as duas máquinas *materializam* a distinção do capítulo 1: o pr
 
 Simule manualmente as máquinas de fatorial e Fibonacci, usando alguma entrada não trivial (requerendo execução de pelo menos uma chamada recursiva). Mostre os conteúdos da pilha em cada ponto significativo na execução.
 
-<Solution>
+<Solution exercise="5.5">
 
 **Fatorial de 3** (máquina recursiva do texto). A pilha guarda pares (`continue`, `n`) a caminho da base e os consome na volta:
 
@@ -252,7 +252,7 @@ Ben Bitdiddle observa que a sequência do controlador da máquina de Fibonacci t
 <a name="footnote-1"></a>[1] Pode-se argumentar que não precisamos salvar o `n` antigo; depois de decrementá-lo e resolver o subproblema, poderíamos simplesmente incrementá-lo para recuperar o valor antigo. Embora esta estratégia funcione para fatorial, ela não pode funcionar em geral, pois o valor antigo de um registrador nem sempre pode ser calculado a partir do novo.
 
 <a name="footnote-2"></a>[2] Na seção 5.3 veremos como implementar uma pilha em termos de operações mais primitivas.
-<Solution>
+<Solution exercise="5.6">
 
 Estão no trecho `afterfib_n_1`: ao voltar do cálculo de Fib(n−1), o controlador faz `restore("continue")` e, logo em seguida — sem que `continue` tenha sido usado ou alterado — `save("continue")` de novo, antes de partir para Fib(n−2).
 

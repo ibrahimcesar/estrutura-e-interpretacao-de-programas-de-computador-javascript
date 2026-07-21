@@ -205,11 +205,11 @@ function analyze_return_statement(component) {
 
 Nosso novo avaliador usa as mesmas estruturas de dados, funções de sintaxe e operações de execução da seção 4.1.2, 4.1.3 e 4.1.4.
 
-## Exercício 4.22
+## Exercício 4.20
 
 Estenda o avaliador de análise sintática nesta seção para suportar a forma sintática especial derivada `let` (do exercício 4.6).
 
-<Solution>
+<Solution exercise="4.20">
 
 Como `let` é uma forma derivada, o avaliador de análise só precisa **transformar antes de analisar** — o caso novo em `analyze` delega para a análise da tradução:
 
@@ -226,7 +226,7 @@ onde `let_to_application` é a mesma transformação do avaliador original (o `l
 
 </Solution>
 
-## Exercício 4.23
+## Exercício 4.21
 
 Alyssa P. Hacker não entende por que `analyze_sequence` precisa ser tão complicada. Tudo o que outras funções de análise fazem é analisar seus componentes e retornar uma função de execução. Ela o reescreve como:
 
@@ -253,7 +253,7 @@ Eva Lu Ator explica a Alyssa que a versão no texto faz mais da análise na fase
 
 Compare as duas versões de `analyze_sequence`. Por exemplo, considere o caso comum (típico de corpos de função) onde a sequência tem apenas uma declaração. Que trabalho a função de execução produzida pelo programa de Alyssa fará? E quanto à função de execução produzida pelo programa no texto acima? Como as duas versões se comparam para uma sequência com duas expressões?
 
-<Solution>
+<Solution exercise="4.21">
 
 As duas versões produzem os mesmos resultados; a diferença é **quanto trabalho sobra para a execução**.
 
@@ -265,11 +265,11 @@ Para uma sequência dentro de uma função chamada em um laço, a versão do tex
 
 </Solution>
 
-## Exercício 4.24
+## Exercício 4.22
 
 Projete e realize alguns experimentos para comparar a velocidade do avaliador metacircular original com a versão nesta seção. Use seus resultados para estimar a fração de tempo que é gasto em análise versus execução para várias funções.
 
-<Solution>
+<Solution exercise="4.22">
 
 Um experimento honesto compara os dois avaliadores sobre o mesmo programa, variando a razão análise/execução:
 

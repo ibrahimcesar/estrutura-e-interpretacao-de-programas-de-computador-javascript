@@ -158,7 +158,7 @@ Equipados com uma maneira de lidar com declarações dentro de blocos, podemos r
 
 Dissemos que o corpo de um bloco é avaliado em um ambiente que contém todos os nomes declarados diretamente no corpo do bloco. Um nome declarado localmente é colocado no ambiente quando o bloco é entrado, mas sem um valor associado. A avaliação de sua declaração durante a avaliação do corpo do bloco então atribui ao nome o resultado de avaliar a expressão à direita do `=`, como se a declaração fosse uma atribuição. Como a adição do nome ao ambiente é separada da avaliação da declaração, e todo o bloco está no escopo do nome, um programa errôneo poderia tentar acessar o valor de um nome antes que sua declaração seja avaliada; a avaliação de um nome não atribuído sinaliza um erro.[^1]
 
-<Solution>
+<Solution exercise="3.11">
 
 `const acc = make_account(50);` cria o ambiente `E1` com `balance = 50` e os vínculos de `withdraw`, `deposit` e `dispatch` — os três objetos-função apontam para `E1` como ambiente de criação. `acc` é o `dispatch`.
 

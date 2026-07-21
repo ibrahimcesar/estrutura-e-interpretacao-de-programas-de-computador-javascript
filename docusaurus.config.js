@@ -76,7 +76,26 @@ const config = {
         theme: {
           customCss: './src/css/custom.css',
         },
+        gtag: {
+          trackingID: 'G-N0PRPGT6HZ',
+          anonymizeIP: true,
+        },
       }),
+    ],
+  ],
+
+  plugins: [
+    [
+      '@docusaurus/plugin-pwa',
+      {
+        // offline após instalar o app (Adicionar à Tela Inicial) ou com ?offline
+        offlineModeActivationStrategies: ['appInstalled', 'standalone', 'queryString'],
+        pwaHead: [
+          { tagName: 'link', rel: 'manifest', href: '/pt_BR/manifest.json' },
+          { tagName: 'meta', name: 'theme-color', content: '#f7df1e' },
+          { tagName: 'link', rel: 'apple-touch-icon', href: '/pt_BR/img/pwa-icon-192.png' },
+        ],
+      },
     ],
   ],
 
@@ -123,6 +142,11 @@ const config = {
           {
             to: '/playground',
             label: 'Playground',
+            position: 'left',
+          },
+          {
+            to: '/progresso',
+            label: 'Progresso',
             position: 'left',
           },
           {
@@ -203,6 +227,10 @@ const config = {
             title: 'Mais',
             items: [
               {
+                label: 'eBook (EPUB/PDF)',
+                href: 'https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/releases/latest',
+              },
+              {
                 label: 'Guia de Tradução',
                 to: '/guia-traducao',
               },
@@ -224,12 +252,6 @@ const config = {
         darkTheme: prismThemes.dracula,
         additionalLanguages: ['javascript', 'typescript', 'jsx', 'tsx'],
       },
-      // Algolia Search (pode ser configurado depois)
-      // algolia: {
-      //   appId: 'YOUR_APP_ID',
-      //   apiKey: 'YOUR_SEARCH_API_KEY',
-      //   indexName: 'sicp-js-pt-br',
-      // },
       colorMode: {
         defaultMode: 'light',
         disableSwitch: false,

@@ -315,15 +315,15 @@ Para garantir que todas as funções terminem executando uma declaração de ret
   height={150}
 />
 
-Esta transformação simples de corpos lambda é uma terceira maneira de garantir que uma função que não retorna explicitamente tenha o valor de retorno `undefined`. No avaliador metacircular, usamos um objeto de valor de retorno, que também desempenhava um papel em parar a avaliação de uma sequência. No avaliador de controle explícito, funções que não retornavam explicitamente continuavam para um ponto de entrada que armazenava `undefined` em `val`. Veja o exercício 5.38 para uma maneira mais elegante de tratar a inserção de declarações de retorno.
+Esta transformação simples de corpos lambda é uma terceira maneira de garantir que uma função que não retorna explicitamente tenha o valor de retorno `undefined`. No avaliador metacircular, usamos um objeto de valor de retorno, que também desempenhava um papel em parar a avaliação de uma sequência. No avaliador de controle explícito, funções que não retornavam explicitamente continuavam para um ponto de entrada que armazenava `undefined` em `val`. Veja o exercício 5.35 para uma maneira mais elegante de tratar a inserção de declarações de retorno.
 
-## Exercício 5.37
+## Exercício 5.34
 
 A nota de rodapé 3 apontou que o compilador não identifica todas as instâncias de código morto. O que seria necessário de um compilador para detectar todas as instâncias de código morto?
 
 Dica: A resposta depende de como definimos código morto. Uma definição possível (e útil) é "código seguindo uma declaração de retorno em uma sequência"—mas e quanto ao código no ramo consequente de `if (false) ...` ou código seguindo uma chamada a `run_forever()` do exercício 3.26?
 
-<Solution>
+<Solution exercise="5.34">
 
 Depende da definição — e cada degrau custa mais:
 
@@ -335,7 +335,7 @@ Ou seja: um compilador pode sempre detectar *mais* código morto investindo em a
 
 </Solution>
 
-## Exercício 5.38
+## Exercício 5.35
 
 O design atual de `append_return_undefined` é um pouco bruto: Ele sempre anexa um `return undefined;` a um corpo lambda, mesmo que já exista uma declaração de retorno em cada caminho de execução do corpo. Reescreva `append_return_undefined` de modo que insira `return undefined;` no fim de apenas aqueles caminhos que não contêm uma declaração de retorno. Teste sua solução nas funções abaixo, substituindo quaisquer expressões por e₁ e e₂ e quaisquer declarações (não-retorno) por s₁ e s₂. Em `t`, uma declaração de retorno deve ser adicionada ou em ambos os `(*)` ou apenas em `(**)`. Em `w` e `h`, uma declaração de retorno deve ser adicionada em um dos `(*)`. Em `m`, nenhuma declaração de retorno deve ser adicionada.
 
@@ -355,7 +355,7 @@ function t(b) {   function w(b) {    function m(b) {    function h(b1, b2) {
                                                            (*)
                                                         }
 ```
-<Solution>
+<Solution exercise="5.35">
 
 A ideia: uma análise recursiva `returns_on_all_paths(stmt)` que decide, sintaticamente, se todo caminho de execução termina em `return`:
 

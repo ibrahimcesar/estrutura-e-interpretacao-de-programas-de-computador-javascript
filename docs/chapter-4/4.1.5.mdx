@@ -79,7 +79,7 @@ flowchart TB
 
 Desta perspectiva, nosso avaliador é visto como uma _máquina universal_. Ele imita outras máquinas quando estas são descritas como programas JavaScript.[^1]
 
-[^1]: O fato de que as máquinas são descritas em JavaScript não é essencial. Se dermos ao nosso avaliador um programa JavaScript que se comporta como um avaliador para alguma outra linguagem, digamos C, o avaliador JavaScript emulará o avaliador C, que por sua vez pode emular qualquer máquina descrita como um programa C. Similarmente, escrever um avaliador JavaScript em C produz um programa C que pode executar qualquer programa JavaScript. A ideia profunda aqui é que qualquer avaliador pode emular qualquer outro. Assim, a noção de "o que pode em princípio ser computado" (ignorando praticidades de tempo e memória requeridos) é independente da linguagem ou do computador, e em vez disso reflete uma noção subjacente de _computabilidade_. Isso foi demonstrado pela primeira vez de forma clara por Alan M. Turing (1912–1954), cujo artigo de 1936 lançou as fundações para a ciência da computação teórica. No artigo, Turing apresentou um modelo computacional simples — agora conhecido como uma _máquina de Turing_ — e argumentou que qualquer "processo efetivo" pode ser formulado como um programa para tal máquina. (Este argumento é conhecido como a _tese de Church-Turing_.) Turing então implementou uma máquina universal, i.e., uma máquina de Turing que se comporta como um avaliador para programas de máquina de Turing. Ele usou este framework para demonstrar que existem problemas bem formulados que não podem ser computados por máquinas de Turing (veja o exercício 4.18), e portanto por implicação não podem ser formulados como "processos efetivos". Turing continuou a fazer contribuições fundamentais à ciência da computação prática também. Por exemplo, ele inventou a ideia de estruturar programas usando sub-rotinas de propósito geral. Veja Hodges 1983 para uma biografia de Turing.
+[^1]: O fato de que as máquinas são descritas em JavaScript não é essencial. Se dermos ao nosso avaliador um programa JavaScript que se comporta como um avaliador para alguma outra linguagem, digamos C, o avaliador JavaScript emulará o avaliador C, que por sua vez pode emular qualquer máquina descrita como um programa C. Similarmente, escrever um avaliador JavaScript em C produz um programa C que pode executar qualquer programa JavaScript. A ideia profunda aqui é que qualquer avaliador pode emular qualquer outro. Assim, a noção de "o que pode em princípio ser computado" (ignorando praticidades de tempo e memória requeridos) é independente da linguagem ou do computador, e em vez disso reflete uma noção subjacente de _computabilidade_. Isso foi demonstrado pela primeira vez de forma clara por Alan M. Turing (1912–1954), cujo artigo de 1936 lançou as fundações para a ciência da computação teórica. No artigo, Turing apresentou um modelo computacional simples — agora conhecido como uma _máquina de Turing_ — e argumentou que qualquer "processo efetivo" pode ser formulado como um programa para tal máquina. (Este argumento é conhecido como a _tese de Church-Turing_.) Turing então implementou uma máquina universal, i.e., uma máquina de Turing que se comporta como um avaliador para programas de máquina de Turing. Ele usou este framework para demonstrar que existem problemas bem formulados que não podem ser computados por máquinas de Turing (veja o exercício 4.15), e portanto por implicação não podem ser formulados como "processos efetivos". Turing continuou a fazer contribuições fundamentais à ciência da computação prática também. Por exemplo, ele inventou a ideia de estruturar programas usando sub-rotinas de propósito geral. Veja Hodges 1983 para uma biografia de Turing.
 
 Isso é impressionante. Tente imaginar um avaliador análogo para circuitos elétricos. Este seria um circuito que recebe como entrada um sinal codificando os planos para algum outro circuito, como um filtro. Dada esta entrada, o avaliador de circuito então se comportaria como um filtro com a mesma descrição. Tal circuito elétrico universal é quase inimaginavelmente complexo. É notável que o avaliador de programa é um programa relativamente simples.[^2]
 
@@ -103,7 +103,7 @@ ambos retornarão 25.[^3]
 
 [^3]: Note que `eval` pode não estar disponível no ambiente JavaScript que você está usando, ou seu uso pode ser restrito por razões de segurança.
 
-<Exercise id="4.18">
+<Exercise id="4.15">
 
 Dada uma função `f` de um argumento e um objeto `a`, `f` é dito "parar" em `a` se avaliar a expressão `f(a)` retornar um valor (ao contrário de terminar com uma mensagem de erro ou executar para sempre). Mostre que é impossível escrever uma função `halts` que determine corretamente se `f` para em `a` para qualquer função `f` e objeto `a`.
 
@@ -120,6 +120,21 @@ function strange(f) {
 ```
 
 Agora considere avaliar a expressão `strange(strange)` e mostre que qualquer resultado possível (ou parar ou executar para sempre) viola o comportamento pretendido de `halts`.[^4]
+
+<Solution exercise="4.15">
+
+Suponha que `halts` exista e avalie `strange(strange)`. Dentro da chamada, `halts(strange, strange)` responde a pergunta: "`strange(strange)` para?" — exatamente a expressão que estamos avaliando. Siga os dois casos:
+
+- **Se `halts(strange, strange)` retorna `true`** ("`strange(strange)` para"), então `strange` executa o ramo `run_forever()` — e `strange(strange)` **não para**. `halts` mentiu.
+- **Se retorna `false`** ("`strange(strange)` não para"), então `strange` retorna `"halted"` imediatamente — e `strange(strange)` **para**. `halts` mentiu de novo.
+
+Todo caso leva a `halts` contradizendo a si mesma; como `halts` foi a única hipótese, ela não pode existir. É o argumento diagonal de Cantor vestido de programa: `strange` é construída *a partir de* `halts` precisamente para fazer o oposto do que `halts` prevê sobre ela mesma.
+
+**Por que nenhum truque escapa:** o raciocínio não usa nada sobre *como* `halts` funciona — nem que ela só recebe a função como caixa-preta (a nota de rodapé estende o argumento para `halts` com acesso ao texto-fonte e ao ambiente). Qualquer suposto analisador estático perfeito de término cai na mesma armadilha, porque `strange` pode ser construída mecanicamente a partir dele.
+
+**Conexão com a seção:** é a contrapartida negativa de "dados como programas" — a mesma universalidade que permite a `evaluate` rodar qualquer programa impede que qualquer programa preveja o comportamento de todos os programas. A auto-aplicação `strange(strange)` é prima da auto-aplicação do exercício 4.18 — lá construtiva, aqui destrutiva.
+
+</Solution>
 
 [^4]: Embora tenhamos estipulado que `halts` recebe um objeto de função, note que este raciocínio ainda se aplica mesmo se `halts` puder ganhar acesso ao texto da função e seu ambiente. Este é o celebrado _Teorema da Parada_ de Turing, que deu o primeiro exemplo claro de um problema _não computável_, i.e., uma tarefa bem formulada que não pode ser realizada como uma função computacional.
 

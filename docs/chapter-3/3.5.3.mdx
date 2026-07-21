@@ -173,7 +173,7 @@ function sqrt_stream(x) {
 
 Alyssa P. Hacker responde que esta versão da função é consideravelmente menos eficiente porque ela realiza computações redundantes. Explique a resposta de Alyssa. A resposta dela seria diferente se nossa implementação de avaliação atrasada não usasse a otimização de memoização fornecida pela função `memo`?
 
-<Solution>
+<Solution exercise="3.63">
 
 A diferença está na **memoização compartilhada**. Na versão do texto, o nome local `guesses` faz o stream referir-se *a si mesmo*: cada elemento é computado uma vez e lembrado, e o elemento $n$ custa um passo sobre o $n-1$ já pronto — custo total linear.
 
@@ -193,7 +193,7 @@ function sqrt(x, tolerance) {
 }
 ```
 
-<Solution>
+<Solution exercise="3.64">
 
 <CodePlayground
   code={`function stream_limit(s, tolerance) {
@@ -292,7 +292,7 @@ $$\ln 2 = 1 - \frac{1}{2} + \frac{1}{3} - \frac{1}{4} + \cdots$$
 
 para computar três streams de aproximações para o logaritmo natural de 2, de maneiras análogas às que usamos acima para computar $\pi$. Quão rapidamente esses streams convergem?
 
-<Solution>
+<Solution exercise="3.65">
 
 As três acelerações do texto, aplicadas à série de $\ln 2$:
 
@@ -405,7 +405,7 @@ function accelerated_sequence(transform, s) {
 
 Examine o stream `pairs(integers, integers)`. Você pode fazer uma estimativa geral de quantos pares precedem o par (1,100)? o par (99,100)? o par (100,100)? (Se você puder fazer uma estimativa precisa da matemática, ainda melhor. Mas a parte importante é você ter uma boa intuição.)
 
-<Solution>
+<Solution exercise="3.66">
 
 Empiricamente (conte você mesmo com `pairs(integers, integers)`!): os pares $(1, n)$ ocupam metade do stream — $(1, n)$ está no índice $2n - 3$ (para $n \ge 2$); os pares $(n, n)$ estão no índice $2^n - 2$; e $(n, n+1)$ no índice $3 \cdot 2^{n-1} - 2$.
 
@@ -423,7 +423,7 @@ Logo:
 
 Modifique a função `pairs` para que `pairs(integers, integers)` produza o stream de *todos* os pares de inteiros positivos $(i,j)$ (sem a condição $i \leq j$). Dica: Você precisará misturar um stream adicional.
 
-<Solution>
+<Solution exercise="3.67">
 
 **Ideia.** Além da primeira linha (pares $(S_0, t)$) e do resto recursivo, misture também a primeira **coluna** (pares $(s, T_0)$):
 
@@ -518,7 +518,7 @@ function pairs(s, t) {
 
 Isso funciona? Considere o que acontece se avaliarmos `pairs(integers, integers)` usando a definição de Louis.
 
-<Solution>
+<Solution exercise="3.68">
 
 A versão de Louis **não funciona**: entra em recursão infinita antes de produzir o primeiro par.
 
@@ -601,7 +601,7 @@ O `pair(cabeça, cauda-adiada)` explícito não é burocracia: é o que dá ao s
 
 Escreva uma função `triples` que recebe três streams infinitos, $S$, $T$ e $U$, e produz o stream de triplas $(S_i,T_j,U_k)$ tais que $i \leq j \leq k$. Use `triples` para gerar o stream de todos os triplos pitagóricos de inteiros positivos, isto é, as triplas $(i,j,k)$ tais que $i \leq j$ e $i^2 + j^2 = k^2$.
 
-<Solution>
+<Solution exercise="3.69">
 
 <CodePlayground
   code={`function triples(s, t, u) {
@@ -693,7 +693,7 @@ a. o stream de todos os pares de inteiros positivos $(i,j)$ com $i \leq j$ orden
 
 b. o stream de todos os pares de inteiros positivos $(i,j)$ com $i \leq j$, onde nem $i$ nem $j$ são divisíveis por 2, 3 ou 5, e os pares são ordenados de acordo com a soma $2i + 3j + 5ij$.
 
-<Solution>
+<Solution exercise="3.70">
 
 <CodePlayground
   code={`function merge_weighted(s1, s2, weight) {
@@ -798,7 +798,7 @@ Diferente do `merge` do exercício 3.56, aqui **não** eliminamos "empates": pes
 
 Números que podem ser expressos como a soma de dois cubos de mais de uma maneira são às vezes chamados de *números de Ramanujan*, em homenagem ao matemático Srinivasa Ramanujan.[^1] Os streams ordenados de pares fornecem uma maneira elegante de computar esses números. Para encontrar um número que pode ser escrito como a soma de dois cubos de duas maneiras diferentes, precisamos apenas gerar o stream de pares de inteiros $(i,j)$ ponderados de acordo com a soma $i^3 + j^3$, então procurar por dois pares consecutivos com o mesmo peso. Escreva uma função para gerar os números de Ramanujan. O primeiro desses números é 1.729. Quais são os próximos cinco?
 
-<Solution>
+<Solution exercise="3.71">
 
 <CodePlayground
   code={`function cube(x) { return x * x * x; }
@@ -896,7 +896,7 @@ No stream ordenado por $i^3 + j^3$, uma soma que aparece **duas vezes seguidas**
 
 De maneira similar ao exercício 3.71, gere um stream de todos os números que podem ser escritos como a soma de dois quadrados de três maneiras diferentes (mostrando como eles podem ser escritos assim).
 
-<Solution>
+<Solution exercise="3.72">
 
 Mesma técnica, com peso $i^2 + j^2$ e **três** pesos consecutivos iguais:
 

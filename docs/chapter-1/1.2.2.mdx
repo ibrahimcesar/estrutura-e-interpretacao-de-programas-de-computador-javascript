@@ -140,7 +140,7 @@ A função `count_change` gera um processo recursivo em árvore com redundância
 
 Uma função *f* é definida pelas regras *f(n) = n* se *n < 3* e *f(n) = f(n - 1) + 2f(n - 2) + 3f(n - 3)* se *n ≥ 3*. Escreva uma função JavaScript que calcula *f* por meio de um processo recursivo. Escreva uma função que calcula *f* por meio de um processo iterativo.
 
-<Solution>
+<Solution exercise="1.11">
 
 **Recursivo** — tradução literal das regras:
 
@@ -192,7 +192,7 @@ O seguinte padrão de números é chamado de *triângulo de Pascal*.
 
 Os números na borda do triângulo são todos 1, e cada número dentro do triângulo é a soma dos dois números acima dele. Escreva uma função que calcula elementos do triângulo de Pascal por meio de um processo recursivo.
 
-<Solution>
+<Solution exercise="1.12">
 
 **Ideia.** Trate o elemento pela posição: `pascal(linha, coluna)`, com bordas iguais a 1 e o interior somando os dois de cima — a própria definição do triângulo vira o código.
 
@@ -216,7 +216,7 @@ pascal(4, 2);`}
 
 Prove que Fib(n) é o inteiro mais próximo de φⁿ/√5, onde φ = (1 + √5)/2. Dica: Use indução e a definição dos números de Fibonacci para provar que Fib(n) = (φⁿ - ψⁿ)/√5, onde ψ = (1 - √5)/2.
 
-<Solution>
+<Solution exercise="1.13">
 
 **Ideia.** Seguindo a dica, provamos por indução forte que $\text{Fib}(n) = (\varphi^n - \psi^n)/\sqrt{5}$, e disso o resultado segue porque o termo com $\psi$ é minúsculo.
 

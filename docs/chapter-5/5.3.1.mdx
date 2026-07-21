@@ -125,7 +125,7 @@ const y = list(x, x);`}
 
 com o ponteiro `free` inicialmente `p1`. Qual é o valor final de `free`? Que ponteiros representam os valores de `x` e `y`?
 
-<Solution>
+<Solution exercise="5.19">
 
 Para `list(1, 2, 3)` construída como `pair(1, pair(2, pair(3, null)))`, com os pares alocados de dentro para fora nos índices 1, 2, 3:
 
@@ -184,7 +184,7 @@ b. `count_leaves` recursiva com contador explícito:
   showLineNumbers={true}
 />
 
-<Solution>
+<Solution exercise="5.20">
 
 **a. `count_leaves` recursiva** — a máquina espelha a de Fibonacci (duas chamadas recursivas por nó):
 
@@ -222,7 +222,7 @@ A perna do `tail` vira chamada em posição de cauda — só a do `head` empilha
 ## Exercício 5.21
 
 O exercício 3.12 da seção 3.3.1 apresentou uma função `append` que anexa duas listas para formar uma nova lista e uma função `append_mutator` que junta duas listas. Projete uma máquina de registradores para implementar cada uma dessas funções. Assuma que as operações de memória de estrutura de lista estão disponíveis como operações primitivas.
-<Solution>
+<Solution exercise="5.21">
 
 **`append` (funcional)** — recursiva pela primeira lista; a pilha guarda as cabeças a costurar na volta:
 

@@ -67,7 +67,7 @@ Há considerável modularidade nesta abordagem, porque ainda podemos formular um
 
 O exercício 3.6 discutiu generalizar o gerador de números aleatórios para permitir redefinir a sequência de números aleatórios de modo a produzir sequências repetíveis de números "aleatórios". Produza uma formulação de stream deste mesmo gerador que opera em um stream de entrada de solicitações para `"generate"` um novo número aleatório ou para `"reset"` a sequência para um valor especificado e que produz o stream desejado de números aleatórios. Não use atribuição em sua solução.
 
-<Solution>
+<Solution exercise="3.81">
 
 Sem atribuição: o estado (o valor corrente do gerador) viaja como argumento na própria recursão do stream:
 
@@ -157,7 +157,7 @@ Um pedido `"generate"` produz `rand_update` do valor anterior; um pedido `list("
 
 Refaça o exercício 3.5 sobre integração de Monte Carlo em termos de streams. A versão de stream de `estimate_integral` não terá um argumento dizendo quantas tentativas realizar. Em vez disso, ela produzirá um stream de estimativas baseadas em sucessivamente mais tentativas.
 
-<Solution>
+<Solution exercise="3.82">
 
 <CodePlayground
   code={`function random_in_range(low, high) {

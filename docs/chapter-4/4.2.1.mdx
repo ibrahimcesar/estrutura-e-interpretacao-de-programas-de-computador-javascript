@@ -40,7 +40,7 @@ Se o corpo de uma função é executado antes que um argumento seja avaliado, di
 
 [^2]: A terminologia "estrita" versus "não estrita" significa essencialmente o mesmo que "ordem aplicativa" versus "ordem normal", exceto que se refere a funções e argumentos individuais ao invés da linguagem como um todo. Em uma conferência sobre linguagens de programação, você pode ouvir alguém dizer: "A linguagem de ordem normal Hassle tem certas primitivas estritas. Outras funções recebem seus argumentos por avaliação preguiçosa."
 
-Em uma linguagem puramente de ordem aplicativa, todas as funções são estritas em cada argumento. Em uma linguagem puramente de ordem normal, todas as funções compostas são não estritas em cada argumento, e as funções primitivas podem ser estritas ou não estritas. Existem também linguagens (veja o exercício 4.31) que dão aos programadores controle detalhado sobre a rigorosidade das funções que eles definem.
+Em uma linguagem puramente de ordem aplicativa, todas as funções são estritas em cada argumento. Em uma linguagem puramente de ordem normal, todas as funções compostas são não estritas em cada argumento, e as funções primitivas podem ser estritas ou não estritas. Existem também linguagens (veja o exercício 4.29) que dão aos programadores controle detalhado sobre a rigorosidade das funções que eles definem.
 
 ## Pares não estritos
 
@@ -48,7 +48,7 @@ Um exemplo marcante de uma função que pode ser útil tornar não estrita é `p
 
 ## Exercícios
 
-### Exercício 4.25
+### Exercício 4.23
 
 Suponha que (em JavaScript de ordem aplicativa comum) definimos `unless` como mostrado acima e então definimos `factorial` em termos de `unless` como:
 
@@ -72,7 +72,7 @@ Quando avaliado em modo padrão ('estrito'), o código passa por redução de or
 Quando avaliado em modo preguiçoso, o código passa por redução de ordem normal. Ele produz a saída correta porque a função `unless` é aplicada antes que seus argumentos sejam avaliados.
 </details>
 
-<Solution>
+<Solution exercise="4.23">
 
 Em ordem aplicativa, `factorial(5)` **nunca termina**. Antes de `unless` sequer decidir alguma coisa, seus três argumentos são avaliados — inclusive `n * factorial(n - 1)`, que chama `factorial(n - 1)`, que avalia `n * factorial(n - 2)`… A recursão desce sem freio: o caso base `n === 1` existe, mas mora dentro de um argumento que é avaliado *antes* de o teste importar. (Na prática: estouro de pilha.)
 
@@ -80,13 +80,13 @@ Em **ordem normal**, funciona: os argumentos chegam adiados, `unless` escolhe qu
 
 </Solution>
 
-### Exercício 4.26
+### Exercício 4.24
 
 Ben Bitdiddle e Alyssa P. Hacker discordam sobre a importância da avaliação preguiçosa para implementar coisas como `unless`. Ben aponta que é possível implementar `unless` em ordem aplicativa como uma forma sintática. Alyssa contra-argumenta que, se fizéssemos isso, `unless` seria meramente sintaxe, não uma função que poderia ser usada em conjunto com funções de ordem superior.
 
 Preencha os detalhes de ambos os lados do argumento. Mostre como implementar `unless` como um componente derivado (como combinação de operadores), capturando em `evaluate` aplicações cuja expressão de função é o nome `unless`. Dê um exemplo de uma situação onde pode ser útil ter `unless` disponível como uma função, ao invés de uma forma sintática.
 
-<Solution>
+<Solution exercise="4.24">
 
 **O lado de Ben — `unless` como forma derivada:** intercepte aplicações cujo operador é o nome `unless` e traduza para a expressão condicional:
 

@@ -211,7 +211,7 @@ a === 4
 
 Os parênteses ao redor das expressões condicionais nas últimas duas instruções são necessários porque a forma sintática de expressão condicional tem precedência mais baixa que os operadores aritméticos `+` e `*`.
 
-<Solution>
+<Solution exercise="1.1">
 
 **Ideia.** Basta avaliar na ordem, lembrando que declarações têm valor `undefined` e que os operadores seguem precedência e associatividade usuais.
 
@@ -256,7 +256,7 @@ $$
 \frac{5 + 4 + (2 - (3 - (6 + \frac{4}{5})))}{3(6 - 2)(2 - 7)}
 $$
 
-<Solution>
+<Solution exercise="1.2">
 
 **Ideia.** É uma tradução direta — o cuidado todo está nos parênteses do numerador e em escrever o denominador como um produto.
 
@@ -276,7 +276,7 @@ $$
 
 Declare uma função que recebe três números como argumentos e retorna a soma dos quadrados dos dois números maiores.
 
-<Solution>
+<Solution exercise="1.3">
 
 **Ideia.** Somar os quadrados dos dois maiores é o mesmo que *excluir o menor* dos três. Então basta descobrir quem é o menor e somar os quadrados dos outros dois.
 
@@ -321,7 +321,7 @@ function a_plus_abs_b(a, b) {
   showLineNumbers={false}
 />
 
-<Solution>
+<Solution exercise="1.4">
 
 **Ideia.** Numa aplicação, a expressão de função também é avaliada — e aqui ela é a expressão condicional `b >= 0 ? plus : minus`, cujo valor é **uma função**.
 
@@ -362,7 +362,7 @@ Que comportamento Ben observará com um interpretador que usa avaliação de ord
 
 <a name="footnote-2"></a> [[2]](#footnote-link-2) "Interpretado como verdadeiro ou falso" significa isto: Em JavaScript completo, condicionais podem aceitar qualquer valor como resultado da avaliação da expressão predicado (veja a nota de rodapé na seção 4.1.2 para detalhes). Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
 
-<Solution>
+<Solution exercise="1.5">
 
 **Ideia.** A definição `function p() { return p(); }` só causa problema se `p()` for de fato *avaliada* — e é exatamente nisso que os dois regimes diferem.
 

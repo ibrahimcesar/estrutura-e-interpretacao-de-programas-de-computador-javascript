@@ -311,6 +311,7 @@ Um *acumulador* é uma função que é chamada repetidamente com um único argum
   session="3.1.1-ex1"
   code={`const a = make_accumulator(5);`}
   checks={[{expression: 'a(10)', expected: '15'}, {expression: 'a(10)', expected: '25'}]}
+  exercise="3.1"
   height={150}
   showLineNumbers={false}
 />
@@ -337,7 +338,7 @@ Um *acumulador* é uma função que é chamada repetidamente com um único argum
 25
 ```
 
-<Solution>
+<Solution exercise="3.1">
 
 **Ideia.** O próprio parâmetro `sum` serve de variável de estado: a função devolvida fecha sobre ele e o atualiza a cada chamada.
 
@@ -368,6 +369,7 @@ Em aplicações de teste de software, é útil poder contar o número de vezes q
   session="3.1.1-ex2"
   code={`const s = make_monitored(math_sqrt);`}
   checks={[{expression: 's(100)', expected: '10'}, {expression: 's("how many calls")', expected: '1'}]}
+  exercise="3.2"
   height={150}
   showLineNumbers={false}
 />
@@ -394,7 +396,7 @@ Em aplicações de teste de software, é útil poder contar o número de vezes q
 1
 ```
 
-<Solution>
+<Solution exercise="3.2">
 
 <CodePlayground
   code={`function make_monitored(f) {
@@ -434,6 +436,7 @@ Modifique a função `make_account` para que ela crie contas protegidas por senh
   session="3.1.1-ex3"
   code={`const acc = make_account(100, "secret password");`}
   checks={[{expression: 'acc("secret password", "withdraw")(40)', expected: '60'}, {expression: 'acc("some other password", "deposit")(50)', expected: '"Incorrect password"'}]}
+  exercise="3.3"
   height={150}
   showLineNumbers={false}
 />
@@ -462,7 +465,7 @@ O objeto de conta resultante deve processar uma solicitação apenas se ela for 
 "Incorrect password"
 ```
 
-<Solution>
+<Solution exercise="3.3">
 
 **Ideia.** `dispatch` ganha um primeiro argumento de senha; a checagem vem antes de qualquer outra coisa. Para manter o contrato (o resultado de `acc(...)` é sempre uma função a ser aplicada à quantia), a recusa também é uma função — que ignora a quantia e devolve a reclamação.
 
@@ -505,7 +508,7 @@ acc("some other password", "deposit")(50);`}
 
 Modifique a função `make_account` do exercício 3.3 adicionando outra variável de estado local de modo que, se uma conta for acessada mais de sete vezes consecutivas com uma senha incorreta, ela invoque a função `call_the_cops`.
 
-<Solution>
+<Solution exercise="3.4">
 
 **Ideia.** Mais uma variável de estado local, `consecutive_wrong`, zerada a cada acesso correto.
 

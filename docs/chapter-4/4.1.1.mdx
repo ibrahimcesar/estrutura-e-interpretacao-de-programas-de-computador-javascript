@@ -170,7 +170,7 @@ function eval_sequence(stmts, env) {
 
 ## Blocos
 
-A função `eval_block` trata blocos. As variáveis e constantes (incluindo funções) declaradas no bloco têm todo o bloco como seu escopo e portanto são "extraídas" antes que o corpo do bloco seja avaliado. O corpo do bloco é avaliado com respeito a um ambiente que estende o ambiente atual por um frame que vincula cada nome local a um valor especial, `"*unassigned*"`. Esta string serve como um placeholder, antes que a avaliação da declaração atribua ao nome seu valor adequado. Uma tentativa de acessar o valor do nome antes que sua declaração seja avaliada leva a um erro em tempo de execução (veja exercício 4.16), conforme declarado na nota de rodapé 17 no capítulo 1.
+A função `eval_block` trata blocos. As variáveis e constantes (incluindo funções) declaradas no bloco têm todo o bloco como seu escopo e portanto são "extraídas" antes que o corpo do bloco seja avaliado. O corpo do bloco é avaliado com respeito a um ambiente que estende o ambiente atual por um frame que vincula cada nome local a um valor especial, `"*unassigned*"`. Esta string serve como um placeholder, antes que a avaliação da declaração atribua ao nome seu valor adequado. Uma tentativa de acessar o valor do nome antes que sua declaração seja avaliada leva a um erro em tempo de execução (veja exercício 4.12), conforme declarado na nota de rodapé 17 no capítulo 1.
 
 ```javascript
 function eval_block(component, env) {
@@ -248,6 +248,40 @@ O resultado da avaliação do corpo de uma função é determinado por declaraç
 Note que não podemos dizer se o avaliador metacircular avalia expressões de argumento da esquerda para a direita ou da direita para a esquerda. Sua ordem de avaliação é herdada do JavaScript subjacente: Se os argumentos para `pair` em `map` são avaliados da esquerda para a direita, então `list_of_values` avaliará expressões de argumento da esquerda para a direita; e se os argumentos para `pair` são avaliados da direita para a esquerda, então `list_of_values` avaliará expressões de argumento da direita para a esquerda.
 
 Escreva uma versão de `list_of_values` que avalie expressões de argumento da esquerda para a direita independentemente da ordem de avaliação no JavaScript subjacente. Escreva também uma versão de `list_of_values` que avalie expressões de argumento da direita para a esquerda.
+
+<Solution exercise="4.1">
+
+O truque é **sequenciar com declarações**: a ordem de avaliação de declarações `const` consecutivas é garantida pela semântica do JavaScript, não importa em que ordem os argumentos de `pair` sejam avaliados:
+
+```javascript
+// esquerda → direita
+function list_of_values_ltr(exps, env) {
+    if (is_null(exps)) {
+        return null;
+    } else {
+        const first = evaluate(first_operand(exps), env);
+        const rest = list_of_values_ltr(rest_operands(exps), env);
+        return pair(first, rest);
+    }
+}
+
+// direita → esquerda
+function list_of_values_rtl(exps, env) {
+    if (is_null(exps)) {
+        return null;
+    } else {
+        const rest = list_of_values_rtl(rest_operands(exps), env);
+        const first = evaluate(first_operand(exps), env);
+        return pair(first, rest);
+    }
+}
+```
+
+**Por que funciona:** em `pair(evaluate(...), list_of_values(...))`, quem decide a ordem é o JavaScript hospedeiro. Ao dar nome a cada resultado intermediário numa `const`, nós — e não o hospedeiro — fixamos a sequência: a primeira declaração é avaliada por completo antes da segunda começar.
+
+**Armadilha:** a diferença só é observável quando as expressões de argumento têm efeitos (atribuições, `display`). É por isso que o capítulo 3 precisou vir antes deste: sem estado, as duas ordens são indistinguíveis.
+
+</Solution>
 
 </Exercise>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useLocation } from '@docusaurus/router';
+import { track } from '@site/src/lib/analytics';
 
 /**
  * Reading Progress Bar Component
@@ -81,6 +82,13 @@ export default function ReadingProgressBar() {
       // Trigger confetti when reaching 100% for the first time
       if (newProgress >= 99.5 && !hasConfettied && isChapterEnd) {
         setHasConfettied(true);
+        const chapter = (location.pathname.match(/chapter-(\d)/) || [])[1];
+        track('chapter_complete', { chapter });
+        try {
+          localStorage.setItem(`chdone:${chapter}`, new Date().toISOString());
+        } catch (ignored) {
+          // sem persistência
+        }
         triggerConfetti();
       }
     };

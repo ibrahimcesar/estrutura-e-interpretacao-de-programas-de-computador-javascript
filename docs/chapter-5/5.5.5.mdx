@@ -230,7 +230,7 @@ O código para o ramo falso é outra chamada de função, onde a função é o v
   assign("val", constant(undefined))
 ```
 
-## Exercício 5.39
+## Exercício 5.36
 
 Considere a seguinte declaração de uma função fatorial, que é ligeiramente diferente daquela dada acima:
 
@@ -244,13 +244,13 @@ function factorial_alt(n) {
 
 Compile esta função e compare o código resultante com aquele produzido para `factorial`. Explique quaisquer diferenças que você encontrar. Algum programa executa mais eficientemente que o outro?
 
-<Solution>
+<Solution exercise="5.36">
 
 A diferença da versão do texto: o condicional testa `n === 1` como *expressão de retorno* de outra forma (ou a base retorna direto), mudando onde o compilador emite os desvios. Comparando as saídas compiladas, as instruções são **essencialmente as mesmas** — mudam os pontos onde o teste acontece e qual ramo cai no `goto` — e a moral é que variações superficiais do fonte produzem variações igualmente superficiais do objeto: o esqueleto (teste, chamada recursiva com `save`/`restore` mínimos via `preserving`, multiplicação na volta) é idêntico, porque é a *estrutura recursiva*, não a sintaxe, que dita o código.
 
 </Solution>
 
-## Exercício 5.40
+## Exercício 5.37
 
 Compile a função fatorial iterativa:
 
@@ -267,7 +267,7 @@ function factorial(n) {
 
 Anote o código resultante, mostrando a diferença essencial entre o código para as versões iterativa e recursiva de `factorial` que faz um processo construir espaço na pilha e o outro executar em espaço constante na pilha.
 
-<Solution>
+<Solution exercise="5.37">
 
 O ponto a observar na saída da compilação da fatorial **iterativa**: o laço `iter` vira uma chamada em posição de cauda — o compilador emite, na chamada recursiva de `iter`, um salto direto (`compile` com ligação `"return"`) **sem nenhum `save` pendente**: a pilha não cresce entre iterações. Compare com a fatorial recursiva do texto, cujo código objeto salva `continue`/`env` antes da chamada e multiplica na volta.
 
@@ -275,11 +275,11 @@ O código compilado da iterativa é, na prática, o laço da máquina de registr
 
 </Solution>
 
-## Exercício 5.41
+## Exercício 5.38
 
 Que programa foi compilado para produzir o código mostrado na Figura 5.18?
 
-**Figura 5.18:** Um exemplo de saída do compilador (continua na próxima página). Veja o exercício 5.41.
+**Figura 5.18:** Um exemplo de saída do compilador (continua na próxima página). Veja o exercício 5.38.
 
 ```javascript
   assign("val", list(op("make_compiled_function"),
@@ -353,7 +353,7 @@ Que programa foi compilado para produzir o código mostrado na Figura 5.18?
   assign("val", constant(undefined))
 ```
 
-<Solution>
+<Solution exercise="5.38">
 
 Lendo a figura de trás para diante: o código monta uma função com dois parâmetros que, no corpo, testa `x === 0`? não — os acessos são `lookup "x"` e `lookup "n"`?… O método é o que importa: (1) identifique os `lookup_symbol_value` para descobrir os nomes envolvidos; (2) ache os testes (`is_falsy`) e o que cada ramo devolve; (3) reconstrua o condicional e as chamadas pelos `save`/`restore` e ligações de `continue`. O programa da figura 5.18 é a declaração recursiva
 
@@ -367,11 +367,11 @@ function f(x) {
 
 </Solution>
 
-## Exercício 5.42
+## Exercício 5.39
 
 Que ordem de avaliação nosso compilador produz para argumentos de uma aplicação? É da esquerda para a direita (como mandatado pela especificação ECMAScript), da direita para a esquerda, ou alguma outra ordem? Onde no compilador esta ordem é determinada? Modifique o compilador de modo que ele produza alguma outra ordem de avaliação. (Veja a discussão da ordem de avaliação para o avaliador de controle explícito na seção 5.4.) Como a mudança da ordem de avaliação de argumentos afeta a eficiência do código que constrói a lista de argumentos?
 
-<Solution>
+<Solution exercise="5.39">
 
 O compilador do texto gera a avaliação dos argumentos **da direita para a esquerda**: `construct_arglist` inverte a lista de códigos de operandos e vai fazendo `pair` do valor corrente com `argl` — o último operando é avaliado primeiro (assim `argl` é construída por `pair` sem inversão final).
 
@@ -381,11 +381,11 @@ O compilador do texto gera a avaliação dos argumentos **da direita para a esqu
 
 </Solution>
 
-## Exercício 5.43
+## Exercício 5.40
 
 Uma forma de entender o mecanismo `preserving` do compilador para otimizar o uso da pilha é ver que operações extras seriam geradas se não usássemos essa ideia. Modifique `preserving` de modo que ele sempre gere as operações `save` e `restore`. Compile algumas expressões simples e identifique as operações de pilha desnecessárias que são geradas. Compare o código àquele gerado com o mecanismo `preserving` intacto.
 
-<Solution>
+<Solution exercise="5.40">
 
 Trocando `preserving` por uma versão que sempre embrulha:
 
@@ -406,7 +406,7 @@ Compilando `f("x", "y")` com isso: aparecem `save("env")`/`restore("env")` em vo
 
 </Solution>
 
-## Exercício 5.44
+## Exercício 5.41
 
 Nosso compilador é inteligente sobre evitar operações de pilha desnecessárias, mas não é nada inteligente quando se trata de compilar chamadas às funções primitivas da linguagem em termos das operações primitivas fornecidas pela máquina. Por exemplo, considere quanto código é compilado para calcular `a + 1`: O código configura uma lista de argumentos em `argl`, coloca a função de adição primitiva (que encontra procurando o símbolo `"+"` no ambiente) em `fun`, e testa se a função é primitiva ou composta. O compilador sempre gera código para realizar o teste, assim como código para ramos primitivo e composto (apenas um dos quais será executado). Não mostramos a parte do controlador que implementa primitivas, mas presumimos que essas instruções fazem uso de operações aritméticas primitivas nos caminhos de dados da máquina. Considere quanto menos código seria gerado se o compilador pudesse fazer **codificação aberta** (open-code) de primitivas—isto é, se ele pudesse gerar código para usar diretamente essas operações primitivas da máquina. A expressão `a + 1` poderia ser compilada em algo tão simples quanto:<sup>[2](#footnote-2)</sup>
 
@@ -424,7 +424,7 @@ a. As primitivas de código aberto, ao contrário das formas sintáticas, todas 
 b. Os operadores JavaScript `===`, `*`, `-` e `+`, entre outros, são implementados na máquina de registradores como funções primitivas e são referidos no ambiente global com os símbolos `"==="`, `"*"`, `"-"` e `"+"`. Em JavaScript, não é possível redeclarar esses nomes, porque eles não atendem às restrições sintáticas para nomes. Isso significa que é seguro fazer código aberto deles. Para cada uma das funções primitivas `===`, `*`, `-` e `+`, escreva um gerador de código que tome uma aplicação com uma expressão de função que nomeia essa função, junto com um alvo e um descritor de ligação, e produza código para espalhar os argumentos nos registradores e então realizar a operação direcionada ao alvo dado com a ligação dada. Faça `compile` despachar para esses geradores de código.
 
 c. Experimente seu novo compilador no exemplo de `factorial`. Compare o código resultante com o resultado produzido sem código aberto.
-<Solution>
+<Solution exercise="5.41">
 
 Codificação aberta das primitivas: um caso novo no compilador reconhece aplicações cujo operador é um dos operadores conhecidos (`+`, `-`, `*`, `/`, `===`, …) e emite a operação de máquina diretamente:
 

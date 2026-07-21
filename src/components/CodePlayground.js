@@ -5,6 +5,8 @@ import BoxPointerDiagram from './BoxPointerDiagram';
 import CallTreeDiagram from './CallTreeDiagram';
 import { createRunner } from './playgroundRunner';
 import { registerBlock, getSessionPrefix } from './playgroundSession';
+import { track } from '@site/src/lib/analytics';
+import { setMarked } from '@site/src/lib/progress';
 import styles from './CodePlayground.module.css';
 
 const RUN_TIMEOUT_MS = 5000;
@@ -62,6 +64,7 @@ function simpleHash(text) {
  * @param {string} props.hiddenCode - Código auxiliar oculto (funções de dependência)
  * @param {string} props.session - Blocos da mesma página com a mesma session compartilham o ambiente: declarações dos blocos anteriores valem nos seguintes
  * @param {Array<{expression: string, expected: string}>} props.checks - Verificações de exercício: cada expressão é avaliada após o código e comparada ao valor esperado
+ * @param {string} props.exercise - Número do exercício ("3.1"); quando todas as verificações passam, ele é marcado como resolvido em /progresso
  * @param {Array<{name: string, code: string, hidden?: boolean}>} props.files - Descontinuado; usa o primeiro arquivo visível
  * @param {string} props.title - Título do exemplo (null oculta a barra)
  * @param {boolean} props.showLineNumbers - Mostrar números de linha (padrão: true)
@@ -74,6 +77,7 @@ export default function CodePlayground({
   hiddenCode,
   session,
   checks,
+  exercise,
   files,
   title = "Exemplo de Código",
   showLineNumbers = true,
@@ -118,6 +122,7 @@ export default function CodePlayground({
   const wrapperRef = useRef(null);
   const blockIdRef = useRef(null);
   const checkStatsRef = useRef({ pass: 0, fail: 0 });
+  const errorSeenRef = useRef(false);
 
   // Identidade estável do bloco na sessão; devolve sempre o programa atual
   // do bloco (hiddenCode + código do editor).
@@ -254,6 +259,7 @@ export default function CodePlayground({
     setStreamActive(false);
     clearTimeout(pullTimerRef.current);
     checkStatsRef.current = { pass: 0, fail: 0 };
+    errorSeenRef.current = false;
 
     const parts = [];
     if (session && sessionKeyRef.current) {
@@ -272,6 +278,7 @@ export default function CodePlayground({
           if (showConsole) pushEntry({ kind: msg.type, text: msg.text });
           break;
         case 'error':
+          errorSeenRef.current = true;
           pushEntry({ kind: 'error', text: withHint(msg.text) });
           break;
         case 'result':
@@ -311,12 +318,19 @@ export default function CodePlayground({
             pushEntry({ kind: 'status', text: '✓ Executado (nenhum valor a exibir)' });
           }
           if (typeof msg.elapsed === 'number') setElapsedMs(msg.elapsed);
+          track('playground_run', {
+            outcome: errorSeenRef.current ? 'error' : 'ok',
+            edited: editorCodeRef.current !== initialCode,
+            has_checks: Boolean(checks && checks.length > 0),
+          });
           if (
             checks &&
             checks.length > 0 &&
             checkStatsRef.current.pass === checks.length &&
             checkStatsRef.current.fail === 0
           ) {
+            track('exercise_pass', { checks: checks.length, exercise });
+            if (exercise) setMarked(exercise, true);
             pushEntry({ kind: 'status', text: '🎉 Exercício concluído!' });
             const doneKey = storageKeyRef.current?.replace('pgcode:', 'pgdone:');
             if (doneKey) {
@@ -361,6 +375,7 @@ export default function CodePlayground({
       });
       setTimedOut(timeoutMs < RETRY_TIMEOUT_MS);
       setStatus('done');
+      track('playground_run', { outcome: 'timeout' });
     }, timeoutMs);
     runnerRef.current = { worker, timer };
   };
@@ -427,6 +442,7 @@ export default function CodePlayground({
     const url = window.location.origin + window.location.pathname + hash;
     try {
       await navigator.clipboard.writeText(url);
+      track('playground_share', { edited: editorCode !== initialCode });
       setShared(true);
       setTimeout(() => setShared(false), 1500);
     } catch (ignored) {

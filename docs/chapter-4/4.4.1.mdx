@@ -326,7 +326,7 @@ and(salary($person, $amount), javascript_predicate($amount > 50000))
 
 [^2]: Uma consulta deve usar `javascript_predicate` apenas para executar uma operação não fornecida na linguagem de consulta. Em particular, `javascript_predicate` não deve ser usado para testar igualdade (já que isso é o que a correspondência na linguagem de consulta foi projetada para fazer) ou desigualdade (já que isso pode ser feito com a regra `same` mostrada abaixo).
 
-<Solution>
+<Solution exercise="4.53">
 
 ```javascript
 // 1. supervisionados por Ben
@@ -417,7 +417,7 @@ rule(outranked_by($staff_person, $boss),
 
 diz que uma pessoa da equipe é superada por um chefe na organização se o chefe é o supervisor da pessoa ou (recursivamente) se o supervisor da pessoa é superado pelo chefe.
 
-<Solution>
+<Solution exercise="4.54">
 
 ```javascript
 // 1. supervisionados por Ben, com endereços
@@ -447,7 +447,7 @@ Defina uma regra que diga que a pessoa 1 pode substituir a pessoa 2 se a pessoa 
 1. todas as pessoas que podem substituir Cy D. Fect;
 2. todas as pessoas que podem substituir alguém que está sendo pago mais do que elas, juntamente com os dois salários.
 
-<Solution>
+<Solution exercise="4.55">
 
 ```javascript
 rule(can_replace($person_1, $person_2),
@@ -475,7 +475,7 @@ and(can_replace($person_1, $person_2),
 
 Defina uma regra que diga que uma pessoa é um "grande chefe" em uma divisão se a pessoa trabalha na divisão mas não tem um supervisor que trabalhe na divisão.
 
-<Solution>
+<Solution exercise="4.56">
 
 ```javascript
 rule(big_shot($person, $division),
@@ -515,7 +515,7 @@ meeting("whole-company", list("Wednesday", "4pm"))
 
 3. Alyssa chega ao trabalho na quarta-feira de manhã e se pergunta quais reuniões ela tem para participar naquele dia. Tendo definido a regra acima, que consulta ela deve fazer para descobrir isso?
 
-<Solution>
+<Solution exercise="4.57">
 
 **1. Reuniões de sexta-feira:**
 
@@ -628,7 +628,7 @@ append_to_form(list("a", "b", "c", "d"), null, list("a", "b", "c", "d"))
 
 O sistema de consulta pode parecer exibir bastante inteligência ao usar as regras para deduzir as respostas às consultas acima. Na verdade, como veremos na próxima seção, o sistema está seguindo um algoritmo bem determinado ao desvendar as regras. Infelizmente, embora o sistema funcione de forma impressionante no caso de `append`, os métodos gerais podem falhar em casos mais complexos, como veremos na seção 4.4.3.
 
-<Solution>
+<Solution exercise="4.58">
 
 Cada par aparece **duas vezes** — `(Alyssa, Cy)` e também `(Cy, Alyssa)` — porque a regra `lives_near` é simétrica: o casamento de padrões encontra cada dupla nas duas ordens de vinculação das variáveis.
 
@@ -662,7 +662,7 @@ next_to_in($x, $y, list(1, list(2, 3), 4))
 next_to_in($x, 1, list(2, 1, 3, 1))
 ```
 
-<Solution>
+<Solution exercise="4.59">
 
 **Primeira consulta** — `next_to_in($x, $y, list(1, list(2, 3), 4))`:
 
@@ -694,7 +694,7 @@ Defina regras para implementar a operação `last_pair` do exercício 2.17, que 
 
 Suas regras funcionam corretamente em consultas como `last_pair($x, list(3))`?
 
-<Solution>
+<Solution exercise="4.60">
 
 ```javascript
 rule(last_pair(list($x), list($x)))
@@ -728,9 +728,9 @@ son("Ada", "Jabal")
 son("Ada", "Jubal")
 ```
 
-Formule regras como "Se S é o filho de F, e F é o filho de G, então S é o neto de G" e "Se W é a esposa de M, e S é o filho de W, então S é o filho de M" (o que supostamente era mais verdadeiro em tempos bíblicos do que hoje) que permitirão ao sistema de consulta encontrar o neto de Caim; os filhos de Lamech; os netos de Methushael. (Veja o exercício 4.62 para algumas regras para deduzir relacionamentos mais complicados.)
+Formule regras como "Se S é o filho de F, e F é o filho de G, então S é o neto de G" e "Se W é a esposa de M, e S é o filho de W, então S é o filho de M" (o que supostamente era mais verdadeiro em tempos bíblicos do que hoje) que permitirão ao sistema de consulta encontrar o neto de Caim; os filhos de Lamech; os netos de Methushael. (Veja o exercício 4.67 para algumas regras para deduzir relacionamentos mais complicados.)
 
-<Solution>
+<Solution exercise="4.61">
 
 ```javascript
 rule(grandson($g, $s),

@@ -18,7 +18,7 @@ O processo de avaliar a expressão em um thunk é chamado de **forçamento** (_f
 
 Uma escolha de design que temos disponível é se devemos ou não **memorizar** (_memoize_) thunks, similar à otimização para streams na seção 3.5.1. Com memorização, a primeira vez que um thunk é forçado, ele armazena o valor que é computado. Forçamentos subsequentes simplesmente retornam o valor armazenado sem repetir a computação. Faremos nosso interpretador memorizar, porque isso é mais eficiente para muitas aplicações. No entanto, há considerações delicadas aqui[^3].
 
-[^3]: A avaliação preguiçosa combinada com memorização é às vezes chamada de passagem de argumentos **call-by-need** (chamada por necessidade), em contraste com a passagem de argumentos **call-by-name** (chamada por nome). (Call-by-name, introduzida em Algol 60, é similar à avaliação preguiçosa não memorizada.) Como designers de linguagens, podemos construir nosso avaliador para memorizar, não memorizar, ou deixar isso como uma opção para os programadores (exercício 4.31). Como você pode esperar do capítulo 3, essas escolhas levantam questões que se tornam tanto sutis quanto confusas na presença de atribuições. (Veja os exercícios 4.27 e 4.29.) Um excelente artigo de Clinger (1982) tenta esclarecer as múltiplas dimensões de confusão que surgem aqui.
+[^3]: A avaliação preguiçosa combinada com memorização é às vezes chamada de passagem de argumentos **call-by-need** (chamada por necessidade), em contraste com a passagem de argumentos **call-by-name** (chamada por nome). (Call-by-name, introduzida em Algol 60, é similar à avaliação preguiçosa não memorizada.) Como designers de linguagens, podemos construir nosso avaliador para memorizar, não memorizar, ou deixar isso como uma opção para os programadores (exercício 4.29). Como você pode esperar do capítulo 3, essas escolhas levantam questões que se tornam tanto sutis quanto confusas na presença de atribuições. (Veja os exercícios 4.27 e 4.29.) Um excelente artigo de Clinger (1982) tenta esclarecer as múltiplas dimensões de confusão que surgem aqui.
 
 ## Modificando o avaliador
 
@@ -197,7 +197,7 @@ Note que o mesmo thunk de atraso pode ser forçado mais de uma vez, embora a com
 
 ## Exercícios
 
-### Exercício 4.27
+### Exercício 4.25
 
 Suponha que avaliamos a seguinte sequência de declarações no avaliador preguiçoso:
 
@@ -222,7 +222,7 @@ Após avaliarmos `w`, `count` é 2, porque agora o thunk `id(10)` é forçado pa
 Se avaliarmos `w` novamente, `count` permanece 2, porque o thunk foi memorizado e não será recalculado.
 </details>
 
-<Solution>
+<Solution exercise="4.25">
 
 As respostas, na ordem, com a explicação do estado de `count`:
 
@@ -234,11 +234,11 @@ O quebra-cabeça inteiro está em *quando* cada `id` roda: um na avaliação da 
 
 </Solution>
 
-### Exercício 4.28
+### Exercício 4.26
 
 A função `evaluate` usa `actual_value` em vez de `evaluate` para avaliar a expressão de função antes de passá-la para `apply`, a fim de forçar o valor da expressão de função. Dê um exemplo que demonstre a necessidade desse forçamento.
 
-<Solution>
+<Solution exercise="4.26">
 
 Force a expressão de função quando **ela própria é um argumento adiado**. Exemplo:
 
@@ -255,9 +255,9 @@ Qualquer função de ordem superior dispara o problema — ou seja, praticamente
 
 </Solution>
 
-### Exercício 4.29
+### Exercício 4.27
 
-Exiba um programa que você esperaria que executasse muito mais lentamente sem memorização do que com memorização. Além disso, considere as seguintes interações, onde a função `id` é definida como no exercício 4.27 e `count` começa em 0:
+Exiba um programa que você esperaria que executasse muito mais lentamente sem memorização do que com memorização. Além disso, considere as seguintes interações, onde a função `id` é definida como no exercício 4.25 e `count` começa em 0:
 
 ```javascript
 function square(x) {
@@ -319,7 +319,7 @@ Quanto à diferença no `count`: com memorização, `id(10)` é avaliado uma vez
 Sem memorização, cada referência a `x` força a reavaliação de `id(10)`, então `count` é incrementado duas vezes (uma para cada uso de `x` na multiplicação).
 </details>
 
-<Solution>
+<Solution exercise="4.27">
 
 **Programa muito mais lento sem memoização:** qualquer um com recursão em árvore sobre um argumento adiado —
 
@@ -340,7 +340,7 @@ Sem memoização: `square(id(10))` responde **100**, mas `count` responde **2** 
 
 </Solution>
 
-### Exercício 4.30
+### Exercício 4.28
 
 Cy D. Fect, um programador reformado, está preocupado que alguns efeitos colaterais nunca possam ocorrer, porque o avaliador preguiçoso não força as expressões em uma sequência. Como ele diz, "se a avaliação de uma sequência retorna o valor de sua expressão final, então não há razão para forçar as outras expressões, já que seus valores não serão usados de qualquer forma." Como você acha que sequências devem ser tratadas no avaliador preguiçoso?
 
@@ -352,7 +352,7 @@ Cy D. Fect, um programador reformado, está preocupado que alguns efeitos colate
 
 **d.** Faça as mudanças apropriadas no avaliador para implementar sua escolha em (c).
 
-<Solution>
+<Solution exercise="4.28">
 
 **a. Por que o medo de Cy não se concretiza no caso comum:** numa sequência, cada declaração é *avaliada* — e avaliar uma declaração de expressão que é uma **aplicação** executa a função (só os argumentos ficam adiados). `display(x);` no meio de uma sequência roda o `display` (primitiva estrita, que força seu argumento). O caso do `for_each` do texto funciona exatamente por isso: o corpo é uma aplicação de primitiva.
 
@@ -372,7 +372,7 @@ O argumento `x = 5` chega como thunk; a declaração `e;` avalia o nome `e`… p
 
 </Solution>
 
-### Exercício 4.31
+### Exercício 4.29
 
 A abordagem adotada nesta seção é um tanto sem sutileza, na medida em que trata todos os argumentos de funções da mesma maneira. O autor do programa poderia ter mais controle sobre esse processo. Por exemplo, poderíamos querer que alguns argumentos de uma função fossem avaliados normalmente (modo estrito) e outros fossem atrasados (modo preguiçoso). Modifique o avaliador para permitir que parâmetros de função sejam marcados como preguiçosos ou estritos.
 
@@ -387,7 +387,7 @@ function f(a, lazy b, c, lazy d) {
 
 Implemente isso modificando as funções `apply`, `function_parameters`, e outras conforme necessário.
 
-<Solution>
+<Solution exercise="4.29">
 
 Três mudanças coordenadas:
 
@@ -410,7 +410,7 @@ function apply(fun, arg_exps, env) {
 
 **3. Busca de nomes.** `lookup` continua forçando thunks quando o valor é usado (ou o corpo usa `actual_value` nos pontos de força, como antes) — parâmetros estritos já chegam prontos e não pagam nada.
 
-Com isso, `function f(a, lazy b, c, lazy d)` avalia `a` e `c` na chamada e adia `b` e `d` — o `unless` do exercício 4.25 vira simplesmente `function unless(cond, lazy usual, lazy exceptional)`, e o resto da linguagem permanece estrito e previsível. É o meio-termo entre os mundos: preguiça como *anotação deliberada*, não como regime global.
+Com isso, `function f(a, lazy b, c, lazy d)` avalia `a` e `c` na chamada e adia `b` e `d` — o `unless` do exercício 4.23 vira simplesmente `function unless(cond, lazy usual, lazy exceptional)`, e o resto da linguagem permanece estrito e previsível. É o meio-termo entre os mundos: preguiça como *anotação deliberada*, não como regime global.
 
 </Solution>
 

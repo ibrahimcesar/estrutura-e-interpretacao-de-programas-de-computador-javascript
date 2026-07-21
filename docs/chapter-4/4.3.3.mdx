@@ -399,13 +399,45 @@ const the_global_environment = setup_environment();
 driver_loop(the_global_environment);
 ```
 
-<Exercise id="4.50">
+<Exercise id="4.48">
 
-Implemente uma nova forma sintática `ramb` que é como `amb` exceto que ela pesquisa alternativas em uma ordem aleatória, em vez de da esquerda para a direita. Mostre como isso pode ajudar com o problema de Alyssa no exercício 4.42.
+Implemente uma nova forma sintática `ramb` que é como `amb` exceto que ela pesquisa alternativas em uma ordem aleatória, em vez de da esquerda para a direita. Mostre como isso pode ajudar com o problema de Alyssa no exercício 4.47.
+
+<Solution exercise="4.48">
+
+`ramb` é `amb` com as alternativas embaralhadas no momento da escolha:
+
+```javascript
+function analyze_ramb(component) {
+    const cfuns = map(analyze, amb_choices(component));
+    return (env, succeed, fail) => {
+        function try_next(choices) {
+            return is_null(choices)
+                   ? fail()
+                   : head(choices)(env, succeed,
+                                   () => try_next(tail(choices)));
+        }
+        return try_next(shuffle(cfuns));
+    };
+}
+
+function shuffle(items) {
+    // retira um elemento aleatório e recursa sobre o resto
+    return is_null(items)
+           ? null
+           : pick_and_rest(items, math_floor(math_random() * length(items)));
+}
+```
+
+(onde `pick_and_rest` devolve `pair(escolhido, shuffle(resto))`). O despacho em `analyze` ganha a cláusula `is_ramb`, idêntica à de `amb`.
+
+**Como isso ajuda Alyssa (exercício 4.47):** o gerador ficava preso porque o backtracking sempre revisitava a *mesma* primeira alternativa — sempre "the", sempre "student", sempre estender a última frase preposicional. Com `ramb` nas escolhas de palavras e no `maybe_extend`, cada geração amostra um caminho aleatório da gramática: os substantivos variam, as extensões ora acontecem ora não, e as sentenças saem sortidas em vez de uma torre de "for the student". (A busca continua completa no limite — só a *ordem* de visita muda.)
+
+</Solution>
 
 </Exercise>
 
-<Exercise id="4.51">
+<Exercise id="4.49">
 
 Altere a implementação de atribuição para que ela não seja desfeita após falha. Por exemplo, podemos escolher dois elementos distintos de uma lista e contar o número de tentativas necessárias para fazer uma escolha bem-sucedida da seguinte forma:
 
@@ -438,9 +470,43 @@ amb-evaluate value:
 
 Quais valores teriam sido exibidos se tivéssemos usado o significado original de atribuição em vez de atribuição permanente?
 
+<Solution exercise="4.49">
+
+A atribuição comum do avaliador `amb` guarda o valor antigo e o **restaura ao falhar** — é assim que o backtracking finge que nada aconteceu:
+
+```javascript
+// trecho de analyze_assignment original
+const old_value = lookup_symbol_value(symbol, env);
+assign_symbol_value(symbol, val, env);
+return succeed(val,
+               () => {                       // desfaz antes de falhar
+                   assign_symbol_value(symbol, old_value, env);
+                   return fail2();
+               });
+```
+
+A **atribuição permanente** é a mesma coisa *sem* o embrulho da continuação de falha:
+
+```javascript
+assign_symbol_value(symbol, val, env);
+return succeed(val, fail2);                  // falha passa direto
+```
+
+**Resposta à pergunta:** com a atribuição original (desfeita no retrocesso), cada tentativa fracassada de `require(x !== y)` desfaz o `count = count + 1`. O contador registraria 1 em todo resultado:
+
+```
+["a", ["b", [1, null]]]
+retry
+["a", ["c", [1, null]]]
+```
+
+O programa perderia justamente o que queria medir. A atribuição permanente existe para isso: acumular *informação sobre a própria busca* (contadores, logs, coleções de soluções — veja o exercício 4.51) que deve sobreviver aos retrocessos.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.52">
+<Exercise id="4.50">
 
 Abusaremos horrivelmente da sintaxe para instruções condicionais, implementando uma construção da seguinte forma:
 
@@ -486,17 +552,49 @@ amb-evaluate value:
 
 Implemente esta construção estendendo o avaliador `amb`. Dica: A função `is_amb` mostra como abusar da sintaxe JavaScript existente para implementar uma nova forma sintática.
 
+<Solution exercise="4.50">
+
+A construção captura falha trocando a **continuação de falha** do corpo pela avaliação da alternativa:
+
+```javascript
+function analyze_evaluation_succeeds_take(component) {
+    const body_fun = analyze(take_body(component));
+    const alt_fun = analyze(take_alternative(component));
+    return (env, succeed, fail) =>
+        body_fun(env,
+                 (value, fail2) => succeed(value, fail2),
+                 () => alt_fun(env, succeed, fail));
+}
+```
+
+E, seguindo a dica de `is_amb` (que reconhece a "aplicação" da função fictícia `amb`), reconhecemos o condicional cujo predicado é o nome `evaluation_succeeds_take`:
+
+```javascript
+function is_evaluation_succeeds_take(component) {
+    return is_conditional(component) &&
+           is_name(conditional_predicate(component)) &&
+           symbol_of_name(conditional_predicate(component)) ===
+           "evaluation_succeeds_take";
+}
+```
+
+com a cláusula correspondente em `analyze` **antes** da cláusula de condicionais comuns.
+
+**Por que funciona:** no avaliador `amb`, "falhar" é chamar a continuação `fail`. O corpo roda com uma `fail` que, em vez de propagar o fracasso para escolhas anteriores, avalia a alternativa — a falha virou um valor capturável, um `try/catch` do não determinismo. Note a assimetria: se o corpo *tem sucesso*, um `retry` posterior ainda pode retroceder para dentro dele (via `fail2`); a alternativa só entra quando o corpo esgota todas as possibilidades.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.53">
+<Exercise id="4.51">
 
-Com o novo tipo de atribuição como descrito no exercício 4.51 e a construção
+Com o novo tipo de atribuição como descrito no exercício 4.49 e a construção
 
 ```javascript
 if (evaluation_succeeds_take) { ... } else { ... }
 ```
 
-como no exercício 4.52, qual será o resultado de avaliar
+como no exercício 4.50, qual será o resultado de avaliar
 
 ```javascript
 let pairs = null;
@@ -509,9 +607,23 @@ if (evaluation_succeeds_take) {
 }
 ```
 
+<Solution exercise="4.51">
+
+O programa é o idioma "**colete todas as soluções**": cada sucesso de `prime_sum_pair` é gravado permanentemente em `pairs` e então `amb()` — sem alternativas — força uma falha, mandando a busca de volta por mais. Quando as possibilidades esgotam, a falha chega ao `else`, que devolve o acumulado.
+
+As somas primas de `(1, 3, 5, 8) × (20, 35, 110)`, na ordem em que a busca as encontra: $3+20=23$, $3+110=113$ e $8+35=43$. Cada `pair(p, pairs)` empilha na frente, então o resultado é a ordem inversa da descoberta:
+
+```javascript
+list(list(8, 35), list(3, 110), list(3, 20))
+```
+
+**As duas peças são essenciais:** com atribuição *não* permanente, cada retrocesso desfaria a gravação e `pairs` terminaria `null`; sem o `if (evaluation_succeeds_take)`, a falha final se propagaria ao usuário como "sem mais valores" em vez de entregar a lista. Juntas, elas convertem o gerador um-por-vez do `amb` num coletor de todas as respostas — o mesmo serviço que `stream_to_list` presta aos streams.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.54">
+<Exercise id="4.52">
 
 Se não tivéssemos percebido que `require` poderia ser implementada como uma função comum que usa `amb`, a ser definida pelo usuário como parte de um programa não determinístico, teríamos que implementá-la como uma forma sintática. Isso exigiria funções de sintaxe
 
@@ -543,5 +655,28 @@ function analyze_require(component) {
                   fail);
 }
 ```
+
+<Solution exercise="4.52">
+
+As lacunas testam o predicado e falham quando ele é falso:
+
+```javascript
+function analyze_require(component) {
+    const pfun = analyze(require_predicate(component));
+    return (env, succeed, fail) =>
+             pfun(env,
+                  (pred_value, fail2) =>
+                    is_falsy(pred_value)
+                    ? fail2()
+                    : succeed("ok", fail2),
+                  fail);
+}
+```
+
+**Por que `fail2` e não `fail`:** `fail2` é a continuação de falha *depois* da avaliação do predicado — retroceder por ela dá ao predicado a chance de produzir outro valor se ele próprio contiver escolhas (`require(amb(false, true))` deve ter sucesso na segunda tentativa!). Falhar com `fail` descartaria essas alternativas.
+
+**A diferença para o `require` função:** como função comum, `require(p)` recebe `p` já avaliado e chama `amb()` para falhar — funciona porque a aplicação já sequenciou a avaliação do argumento. Como forma sintática, nós mesmos costuramos as continuações. A versão-função é mais simples e igualmente correta; o exercício mostra o que ela nos poupou de escrever.
+
+</Solution>
 
 </Exercise>

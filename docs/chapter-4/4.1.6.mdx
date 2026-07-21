@@ -42,7 +42,7 @@ function f_3(x, y) {
 
 2. Ao avaliar uma aplicação de função, o avaliador cria dois frames: um para os parâmetros e um para os nomes declarados *diretamente* no bloco corpo da função, em oposição a um bloco interno. Uma vez que todos esses nomes têm o mesmo escopo, uma implementação poderia combinar os dois frames. Altere o avaliador de modo que a avaliação do bloco corpo não crie um novo frame. Você pode assumir que isso não resultará em nomes duplicados no frame (o exercício 4.17 justifica isso).
 
-<Solution>
+<Solution exercise="4.16">
 
 **1. O diagrama.** A aplicação `f_3(3, 4)` (digamos) cria **dois** frames encadeados:
 
@@ -84,7 +84,7 @@ Eva Lu Ator está escrevendo programas nos quais declarações de função e out
 
 3. Além disso, os designers do JavaScript decidiram permitir que o nome declarado por uma declaração de função seja reatribuído usando atribuição. Modifique sua solução de acordo e discuta esta decisão.
 
-<Solution>
+<Solution exercise="4.17">
 
 **1. Içar declarações de função.** Na avaliação de um bloco, além de varrer os nomes declarados (que já viram `"*unassigned*"`), o avaliador percorre a sequência, separa as declarações de função e as **avalia primeiro**, na ordem em que aparecem, antes das demais declarações:
 
@@ -111,7 +111,7 @@ function eval_block(component, env) {
 ## Exercício 4.18
 
 Funções recursivas são obtidas de uma maneira indireta em nosso interpretador: Primeiro declare o nome que se referirá à função recursiva e atribua a ele o valor especial `"*unassigned*"`; depois defina a função recursiva no escopo desse nome; e finalmente atribua a função definida ao nome. Quando a função recursiva é aplicada, quaisquer ocorrências do nome no corpo se referem apropriadamente à função recursiva. Surpreendentemente, é possível especificar funções recursivas sem usar declarações ou atribuição. O programa a seguir calcula 10 fatorial aplicando uma função fatorial recursiva:[^1]
-<Solution>
+<Solution exercise="4.18">
 
 O programa aplica o truque de **passar a função para si mesma**:
 

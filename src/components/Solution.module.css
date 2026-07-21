@@ -43,3 +43,28 @@
   padding: 0.25rem 1rem 0.75rem;
   border-top: 1px solid var(--ifm-color-emphasis-200);
 }
+
+.markRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: -1.4rem 0 2rem;
+  padding: 0.2rem 1rem 0;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-600);
+  cursor: pointer;
+  user-select: none;
+}
+
+.markRow input {
+  accent-color: var(--ifm-color-primary);
+  cursor: pointer;
+}
+
+.markRow:has(input:checked) {
+  color: var(--ifm-color-success-darkest);
+}
+
+[data-theme='dark'] .markRow:has(input:checked) {
+  color: var(--ifm-color-success-lightest);
+}

@@ -169,7 +169,7 @@ O seguinte código de máquina de registradores é ambíguo, porque o rótulo `h
 ```
 
 Com o simulador como escrito, qual será o conteúdo do registrador `a` quando o controle chegar a `there`? Modifique a função `extract_labels` de modo que o montador sinalize um erro se o mesmo nome de rótulo for usado para indicar dois locais diferentes.
-<Solution>
+<Solution exercise="5.8">
 
 Com o montador como está, `extract_labels` constrói a lista de rótulos na ordem do texto e a busca encontra a **primeira** ocorrência — então `go_to(label("here"))` salta para o primeiro `here`, e `a` termina valendo **3**.
 

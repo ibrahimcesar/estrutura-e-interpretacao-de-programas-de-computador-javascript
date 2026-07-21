@@ -286,7 +286,7 @@ Uma sequência é um componente composto consistindo de zero ou mais componentes
 ⟪ component₁ ... componentₙ ⟫ = list(⟪ component₁ ⟫, ..., ⟪ componentₙ ⟫)
 ```
 
-Para sequências, fornecemos um construtor `make_sequence` (usado pela função `cond_to_if` do exercício 4.5), um predicado `is_sequence`, e seletores `sequence_statements`, `is_empty_sequence`, `first_statement`, e `rest_statements`.
+Para sequências, fornecemos um construtor `make_sequence` (usado pela função `switch_to_cond` do exercício adicional sobre `switch`), um predicado `is_sequence`, e seletores `sequence_statements`, `is_empty_sequence`, `first_statement`, e `rest_statements`.
 
 ```javascript
 function make_sequence(stmts) {
@@ -577,47 +577,11 @@ function conditional_expression_to_expression(component) {
 }
 ```
 
-Forms sintáticas que podem ser implementados como transformações sintáticas são chamados de *componentes derivados*. Traduzir uma declaração `switch` (exercício 4.7) em expressões condicionais aninhadas é um exemplo de componente derivado.
+Forms sintáticas que podem ser implementados como transformações sintáticas são chamados de *componentes derivados*. Traduzir uma declaração `switch` (exercício adicional abaixo) em expressões condicionais aninhadas é um exemplo de componente derivado.
 
-## Exercício 4.4
+## Exercício adicional: combinações de operadores
 
-Observe que não podemos dizer se o avaliador metacircular avalia operandos da esquerda para a direita ou da direita para a esquerda. Sua ordem de avaliação é herdada do JavaScript subjacente: Se os argumentos para `pair` em `list_of_values` são avaliados da esquerda para a direita, então `list_of_values` avaliará operandos da esquerda para a direita; e se os argumentos para `pair` são avaliados da direita para a esquerda, então `list_of_values` avaliará operandos da direita para a esquerda.
-
-Escreva uma versão de `list_of_values` que avalia operandos da esquerda para a direita independentemente da ordem de avaliação no JavaScript subjacente. Também escreva uma versão de `list_of_values` que avalia operandos da direita para a esquerda.
-
-<Solution>
-
-O truque é **sequenciar explicitamente** com constantes locais — a ordem de avaliação de declarações `const` numa sequência é garantida, não importa o que o JavaScript subjacente faça com argumentos:
-
-```javascript
-// esquerda → direita
-function list_of_values(exps, env) {
-    if (is_null(exps)) {
-        return null;
-    } else {
-        const first = evaluate(first_operand(exps), env);
-        const rest = list_of_values(rest_operands(exps), env);
-        return pair(first, rest);
-    }
-}
-
-// direita → esquerda: basta trocar a ordem das duas constantes
-function list_of_values_rl(exps, env) {
-    if (is_null(exps)) {
-        return null;
-    } else {
-        const rest = list_of_values_rl(rest_operands(exps), env);
-        const first = evaluate(first_operand(exps), env);
-        return pair(first, rest);
-    }
-}
-```
-
-Na versão original, `pair(evaluate(...), list_of_values(...))` deixava a decisão para a linguagem hospedeira; agora cada `evaluate` acontece numa declaração própria, e declarações executam em ordem.
-
-</Solution>
-
-## Exercício 4.5
+> **Nota da tradução:** este exercício é um adicional desta edição brasileira — não faz parte da numeração da edição JS oficial.
 
 A avaliação de combinações de operadores funciona transformando-as em aplicações de função e depois avaliando-as. Fornecemos essa abordagem para tornar nosso avaliador menos dependente de características específicas do JavaScript. Se quiséssemos estender nosso avaliador metacircular para usar recursos especiais do JavaScript, poderíamos modificar a avaliação de combinações de operadores da seguinte forma:
 
@@ -659,7 +623,7 @@ define_variable("*", make_primitive_function((x, y) => x * y), the_global_enviro
 
 </Solution>
 
-## Exercício 4.6
+## Exercício 4.4
 
 JavaScript inclui os forms sintáticos especiais `&&` e `||`, definidos em termos de avaliação condicional como segue:
 
@@ -668,7 +632,7 @@ JavaScript inclui os forms sintáticos especiais `&&` e `||`, definidos em termo
 
 Implemente `&&` e `||` como novos tipos de componentes, transformando-os em expressões condicionais apropriadas. Alternativamente, mostre como implementar `&&` e `||` como funções derivadas.
 
-<Solution>
+<Solution exercise="4.4">
 
 **Como formas derivadas** — a transformação para expressões condicionais preserva o curto-circuito, porque o ramo não escolhido nunca é avaliado:
 
@@ -695,7 +659,9 @@ com os casos despachados em `evaluate` avaliando a transformação. (Para reprod
 
 </Solution>
 
-## Exercício 4.7
+## Exercício adicional: declarações `switch`
+
+> **Nota da tradução:** este exercício é um adicional desta edição brasileira — não faz parte da numeração da edição JS oficial.
 
 JavaScript possui declarações switch. Considere a seguinte declaração `switch`:
 
@@ -746,7 +712,7 @@ A restrição importante: essa tradução cobre `switch` **com** `break` em cada
 
 </Solution>
 
-## Exercício 4.8
+## Exercício 4.7
 
 Implemente loops `while` para o avaliador tratando-os como componentes derivados que são traduzidos em aplicações de funções. Especificamente, traduza a declaração
 
@@ -759,7 +725,7 @@ em uma aplicação de uma função apropriada definida usando uma declaração d
 1. Implemente uma declaração `break;` que imediatamente termina o loop no qual é avaliado.
 2. Implemente uma declaração `continue;` que termina apenas a iteração do loop na qual é avaliado, e continua avaliando o predicado do loop while.
 
-<Solution>
+<Solution exercise="4.7">
 
 A tradução clássica: o laço vira uma função recursiva de cauda com nome não convencional:
 
@@ -796,7 +762,7 @@ Na tradução do corpo, `break;` vira `return "⟳break"();` e `continue;` vira 
 
 </Solution>
 
-## Exercício 4.9
+## Exercício 4.8
 
 O resultado de avaliar o corpo de uma função é determinado por suas declarações de retorno. Seguindo a nota de rodapé sobre declarações não-value-producing e a avaliação de declarações na seção 4.1.1, este exercício aborda a questão do que deve ser o resultado de avaliar um programa JavaScript que consiste em uma sequência de declarações (declarações, blocos, declarações de expressão e declarações condicionais) *fora de* qualquer corpo de função.
 
@@ -816,7 +782,7 @@ Para tal programa, JavaScript distingue estaticamente entre declarações *value
 
 2. Modifique o avaliador para aderir a esta especificação.
 
-<Solution>
+<Solution exercise="4.8">
 
 **1. Os quatro programas:**
 

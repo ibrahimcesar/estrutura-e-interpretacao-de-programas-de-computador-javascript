@@ -110,7 +110,7 @@ amb-evaluate value:
 [30, [11, null]]
 ```
 
-<Exercise id="4.35">
+<Exercise id="4.33">
 
 Escreva uma função `an_integer_between` que retorna um inteiro entre dois limites dados. Isso pode ser usado para implementar uma função que encontra triplas pitagóricas, isto é, triplas de inteiros $(i,j,k)$ entre os limites dados tal que $i \leq j$ e $i^2 + j^2 =k^2$, da seguinte forma:
 
@@ -124,28 +124,51 @@ function a_pythogorean_triple_between(low, high) {
 }
 ```
 
-**Solução:**
+<Solution exercise="4.33">
 
 ```javascript
 // solução do usuário do GitHub jonathantorres
-
 function an_integer_between(low, high) {
     require(low <= high);
-    return amb(low, an_integer_between(low+1, high));
+    return amb(low, an_integer_between(low + 1, high));
 }
 ```
 
-</Exercise>
+**Por que funciona:** `amb(low, ...)` oferece primeiro `low`; se a busca falhar adiante, o `retry` volta aqui e o segundo ramo oferece `an_integer_between(low + 1, high)` — que por sua vez oferece `low + 1`, e assim por diante. O `require(low <= high)` esgota o ramo quando o intervalo acaba, propagando a falha para a escolha anterior. É o análogo não determinístico de `enumerate_interval`: em vez de construir a lista de candidatos, *torna-se* cada candidato, um por vez, sob demanda do backtracking.
 
-<Exercise id="4.36">
-
-O exercício 3.69 discutiu como gerar o stream de _todas_ as triplas pitagóricas, sem limite superior no tamanho dos inteiros a serem pesquisados. Explique por que simplesmente substituir `an_integer_between` por `an_integer_starting_from` na função do exercício 4.35 não é uma maneira adequada de gerar triplas pitagóricas arbitrárias. Escreva uma função que realmente conseguirá isso. (Isto é, escreva uma função para a qual digitar repetidamente `retry` em princípio eventualmente geraria todas as triplas pitagóricas.)
+</Solution>
 
 </Exercise>
 
-<Exercise id="4.37">
+<Exercise id="4.34">
 
-Ben Bitdiddle afirma que o seguinte método para gerar triplas pitagóricas é mais eficiente que o do exercício 4.35. Ele está correto? (Dica: Considere o número de possibilidades que devem ser exploradas.)
+O exercício 3.69 discutiu como gerar o stream de _todas_ as triplas pitagóricas, sem limite superior no tamanho dos inteiros a serem pesquisados. Explique por que simplesmente substituir `an_integer_between` por `an_integer_starting_from` na função do exercício 4.33 não é uma maneira adequada de gerar triplas pitagóricas arbitrárias. Escreva uma função que realmente conseguirá isso. (Isto é, escreva uma função para a qual digitar repetidamente `retry` em princípio eventualmente geraria todas as triplas pitagóricas.)
+
+<Solution exercise="4.34">
+
+**Por que a substituição ingênua falha:** o backtracking do `amb` é uma busca em profundidade que refaz sempre a **última** escolha. Com `k = an_integer_starting_from(j)`, a primeira falha do `require` faz o sistema tentar `k + 1`, depois `k + 2`, … para sempre — `i` e `j` ficam congelados nos valores iniciais enquanto `k` corre para o infinito por um ramo que quase nunca contém a próxima tripla. A busca é *incompleta*: nunca volta para reconsiderar `i` e `j`. (É o mesmo problema que os streams de 3.69 resolveram com intercalação — profundidade-primeiro não funciona em espaços infinitos.)
+
+**A forma adequada:** deixar infinita apenas a escolha **mais externa**, e finitas todas as internas:
+
+```javascript
+function all_pythagorean_triples() {
+    const k = an_integer_starting_from(1);
+    const i = an_integer_between(1, k);
+    const j = an_integer_between(i, k);
+    require(i * i + j * j === k * k);
+    return list(i, j, k);
+}
+```
+
+**Por que funciona:** para cada `k`, o espaço interno `(i, j)` é finito — o backtracking o esgota por completo e só então avança `k`. Cada tripla $(i, j, k)$ aparece exatamente uma vez, quando seu `k` chega. `retry` repetido enumera, em princípio, todas: 3-4-5, 6-8-10, 5-12-13, …
+
+</Solution>
+
+</Exercise>
+
+<Exercise id="4.35">
+
+Ben Bitdiddle afirma que o seguinte método para gerar triplas pitagóricas é mais eficiente que o do exercício 4.33. Ele está correto? (Dica: Considere o número de possibilidades que devem ser exploradas.)
 
 ```javascript
 function a_pythagorean_triple_between(low, high) {
@@ -159,6 +182,17 @@ function a_pythagorean_triple_between(low, high) {
     return list(i, j, k);
 }
 ```
+
+<Solution exercise="4.35">
+
+**Ben está correto.** Conte as possibilidades exploradas para um intervalo de tamanho $n$:
+
+- **Versão original (4.33):** três escolhas não determinísticas — `i`, `j` e `k` — geram um espaço de busca de ordem $n^3$. O `require` só testa a equação depois que as três escolhas foram feitas; o backtracking varre todas as combinações.
+- **Versão de Ben:** apenas **duas** escolhas, `i` e `j` — o espaço é de ordem $n^2$. Para cada par, `k` não é *procurado*: é **computado** (`math_sqrt(ksq)`) e apenas *verificado* (`is_integer(k)`). Uma operação determinística de custo constante substitui uma dimensão inteira de busca.
+
+**A lição:** no estilo `amb`, cada `require` que roda cedo poda ramos, mas nada poda tanto quanto *eliminar uma escolha* — sempre que um valor é função determinística das escolhas já feitas, compute-o em vez de escolhê-lo. O `require(hsq >= ksq)` ainda ajuda: descarta o par `(i, j)` antes mesmo da raiz quadrada quando $i^2 + j^2$ estoura o limite.
+
+</Solution>
 
 </Exercise>
 

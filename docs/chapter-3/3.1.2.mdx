@@ -119,7 +119,7 @@ Você achará útil ter uma função que retorna um número escolhido aleatoriam
   showLineNumbers={true}
 />
 
-<Solution>
+<Solution exercise="3.5">
 
 **Ideia.** O experimento sorteia um ponto no retângulo e pergunta a `P`; `monte_carlo` devolve a fração de acertos, que multiplicada pela área do retângulo estima a integral.
 
@@ -166,7 +166,7 @@ function random_in_range(low, high) {
 
 É útil poder resetar um gerador de números aleatórios para produzir uma sequência começando de um dado valor. Projete uma nova função `rand` que é chamada com um argumento que é ou a string `"generate"` ou a string `"reset"` e se comporta da seguinte forma: `rand("generate")` produz um novo número aleatório; `rand("reset")(new-value)` reseta a variável de estado interno para o `new-value` designado. Assim, ao resetar o estado, pode-se gerar sequências repetíveis. Estas são muito úteis de ter ao testar e depurar programas que usam números aleatórios.
 
-<Solution>
+<Solution exercise="3.6">
 
 <CodePlayground
   code={`function make_rand() {

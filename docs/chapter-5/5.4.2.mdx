@@ -193,7 +193,7 @@ Sem recursão em cauda, tal função eventualmente ficaria sem espaço na pilha,
 
 Note que nossa implementação JavaScript requer o uso de `return` para ser recursiva em cauda. Como o desfazer dos salvamentos de registradores ocorre em `ev_return`, remover `return` da função `count` acima fará com que ela eventualmente fique sem espaço na pilha. Isso explica o uso de `return` nos laços de driver infinitos no capítulo 4.
 
-### Exercício 5.25
+### Exercício 5.22
 
 Explique como a pilha se acumula se `return` é removido de `count`:
 
@@ -204,7 +204,7 @@ function count(n) {
 }
 ```
 
-<Solution>
+<Solution exercise="5.22">
 
 Sem o `return`, o valor da chamada recursiva de `count` é calculado e **descartado** — mas o avaliador só descobre isso *depois* de voltar. Cada nível empilha o que precisa para continuar a sequência após a chamada (o `continue`, o ambiente da iteração) e nada disso pode ser liberado antes de a recursão inteira descer e subir: a pilha cresce linearmente com o número de iterações, mesmo sendo a função "iterativa" na aparência.
 
@@ -212,13 +212,13 @@ Com `return`, `ev_return` desmonta a pilha até o marcador **antes** de avaliar 
 
 </Solution>
 
-### Exercício 5.26
+### Exercício 5.23
 
 Implemente o equivalente de `push_marker_to_stack` usando `save` em `compound_apply` para armazenar um valor marcador especial na pilha. Implemente o equivalente de `revert_stack_to_marker` em `ev_return` e `return_undefined` como um laço que repetidamente realiza um `restore` até atingir o marcador. Note que isso exigirá restaurar um valor para um registrador diferente daquele do qual foi salvo. (Embora tenhamos cuidado para evitar isso em nosso avaliador, nossa implementação de pilha realmente permite isso. Veja exercício 5.11.) Isso é necessário porque a única maneira de retirar da pilha é restaurando para um registrador.
 
 Dica: Você precisará criar uma constante única para servir como marcador, por exemplo com `const marker = list("marker")`. Como `list` cria um novo par, ele não pode ser `===` a qualquer outra coisa na pilha.
 
-<Solution>
+<Solution exercise="5.23">
 
 Com um marcador impossível de confundir com dados do usuário:
 
@@ -242,10 +242,10 @@ O laço restaura repetidamente para um registrador de rascunho até encontrar o 
 
 </Solution>
 
-### Exercício 5.27
+### Exercício 5.24
 
-Implemente `push_marker_to_stack` e `revert_stack_to_marker` como instruções de máquina de registradores, seguindo a implementação de `save` e `restore` na seção 5.2.1. Adicione funções `push_marker` e `pop_marker` para acessar pilhas, espelhando a implementação de `push` e `pop` na seção 5.2.1. Note que você não precisa realmente inserir um marcador na pilha. Em vez disso, você pode adicionar uma variável de estado local ao modelo de pilha para rastrear a posição do último `save` antes de cada `push_marker_to_stack`. Se você optar por colocar um marcador na pilha, veja a dica no exercício 5.26.
-<Solution>
+Implemente `push_marker_to_stack` e `revert_stack_to_marker` como instruções de máquina de registradores, seguindo a implementação de `save` e `restore` na seção 5.2.1. Adicione funções `push_marker` e `pop_marker` para acessar pilhas, espelhando a implementação de `push` e `pop` na seção 5.2.1. Note que você não precisa realmente inserir um marcador na pilha. Em vez disso, você pode adicionar uma variável de estado local ao modelo de pilha para rastrear a posição do último `save` antes de cada `push_marker_to_stack`. Se você optar por colocar um marcador na pilha, veja a dica no exercício 5.23.
+<Solution exercise="5.24">
 
 A implementação sem marcador físico: a pilha guarda, além dos itens, **a posição do último marcador**:
 
@@ -266,7 +266,7 @@ function make_stack() {
 }
 ```
 
-`push_marker` anota o próprio ponteiro da lista `stack` (a posição); `pop_marker` restaura esse ponteiro, descartando de uma vez tudo que foi empilhado desde então — **O(1)**, sem laço. As instruções de máquina `push_marker_to_stack`/`revert_stack_to_marker` viram chamadas diretas dessas operações no montador, com o mesmo formato de `make_save`/`make_restore`. Comparado ao exercício 5.26: mesma semântica, sem varrer a pilha e sem valor sentinela circulando pelos registradores.
+`push_marker` anota o próprio ponteiro da lista `stack` (a posição); `pop_marker` restaura esse ponteiro, descartando de uma vez tudo que foi empilhado desde então — **O(1)**, sem laço. As instruções de máquina `push_marker_to_stack`/`revert_stack_to_marker` viram chamadas diretas dessas operações no montador, com o mesmo formato de `make_save`/`make_restore`. Comparado ao exercício 5.23: mesma semântica, sem varrer a pilha e sem valor sentinela circulando pelos registradores.
 
 </Solution>
 
@@ -299,7 +299,7 @@ function is_last_argument_expression(arg_expression) {
 
 [^5]: A ordem de avaliação de expressões de argumento pela função `list_of_values` no avaliador metacircular é determinada pela ordem de avaliação dos argumentos para `pair`, que é usado para construir a lista de argumentos. A versão de `list_of_values` na nota de rodapé 6 da seção 4.1 chama `pair` diretamente; a versão no texto usa `map`, que chama `pair`. (Veja exercício 4.1.)
 
-[^6]: As instruções especiais `push_marker_to_stack` e `revert_stack_to_marker` não são estritamente necessárias e poderiam ser implementadas explicitamente empurrando e removendo um valor marcador de e para a pilha. Qualquer coisa que não possa ser confundida com um valor no programa pode ser usada como marcador. Veja exercício 5.26.
+[^6]: As instruções especiais `push_marker_to_stack` e `revert_stack_to_marker` não são estritamente necessárias e poderiam ser implementadas explicitamente empurrando e removendo um valor marcador de e para a pilha. Qualquer coisa que não possa ser confundida com um valor no programa pode ser usada como marcador. Veja exercício 5.23.
 
 [^7]: Vimos na seção 5.1 como implementar tal processo com uma máquina de registradores que não tinha pilha; o estado do processo era armazenado em um conjunto fixo de registradores.
 

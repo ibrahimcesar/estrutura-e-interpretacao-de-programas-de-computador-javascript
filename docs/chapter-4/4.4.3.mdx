@@ -57,9 +57,9 @@ Infelizmente, isso levará o sistema a um loop infinito, da seguinte forma:
 - Uma resposta, `married("Minnie", "Mickey")`, aparece diretamente como uma asserção na base de dados.
 - A regra `married` também é aplicável, então o interpretador novamente avalia o corpo da regra, que desta vez é equivalente a `married("Mickey", $who)`.
 
-O sistema está agora em um loop infinito. De fato, se o sistema encontrará a resposta simples `married("Minnie", "Mickey")` antes de entrar no loop depende de detalhes de implementação referentes à ordem na qual o sistema verifica os itens na base de dados. Este é um exemplo muito simples dos tipos de loops que podem ocorrer. Coleções de regras inter-relacionadas podem levar a loops muito mais difíceis de antecipar, e o aparecimento de um loop pode depender da ordem das cláusulas em um `and` (veja exercício 4.61) ou em detalhes de baixo nível referentes à ordem na qual o sistema processa consultas.[^3]
+O sistema está agora em um loop infinito. De fato, se o sistema encontrará a resposta simples `married("Minnie", "Mickey")` antes de entrar no loop depende de detalhes de implementação referentes à ordem na qual o sistema verifica os itens na base de dados. Este é um exemplo muito simples dos tipos de loops que podem ocorrer. Coleções de regras inter-relacionadas podem levar a loops muito mais difíceis de antecipar, e o aparecimento de um loop pode depender da ordem das cláusulas em um `and` (veja exercício 4.62) ou em detalhes de baixo nível referentes à ordem na qual o sistema processa consultas.[^3]
 
-[^3]: Este não é um problema da lógica, mas da interpretação procedimental da lógica fornecida por nosso interpretador. Poderíamos escrever um interpretador que não cairia em um loop aqui. Por exemplo, poderíamos enumerar todas as provas deriváveis de nossas asserções e nossas regras em uma ordem de busca em largura em vez de uma ordem de busca em profundidade. No entanto, tal sistema torna mais difícil tirar proveito da ordem das deduções em nossos programas. Uma tentativa de construir controle sofisticado em tal programa é descrita em de Kleer et al. 1977. Outra técnica, que não leva a problemas de controle tão sérios, é colocar conhecimento especial, como detectores para tipos particulares de loops (exercício 4.67). No entanto, não pode haver um esquema geral para prevenir confiavelmente um sistema de entrar em caminhos infinitos ao realizar deduções. Imagine uma regra diabólica da forma "Para mostrar que $P(x)$ é verdadeiro, mostre que $P(f(x))$ é verdadeiro," para alguma função $f$ adequadamente escolhida.
+[^3]: Este não é um problema da lógica, mas da interpretação procedimental da lógica fornecida por nosso interpretador. Poderíamos escrever um interpretador que não cairia em um loop aqui. Por exemplo, poderíamos enumerar todas as provas deriváveis de nossas asserções e nossas regras em uma ordem de busca em largura em vez de uma ordem de busca em profundidade. No entanto, tal sistema torna mais difícil tirar proveito da ordem das deduções em nossos programas. Uma tentativa de construir controle sofisticado em tal programa é descrita em de Kleer et al. 1977. Outra técnica, que não leva a problemas de controle tão sérios, é colocar conhecimento especial, como detectores para tipos particulares de loops (exercício 4.65). No entanto, não pode haver um esquema geral para prevenir confiavelmente um sistema de entrar em caminhos infinitos ao realizar deduções. Imagine uma regra diabólica da forma "Para mostrar que $P(x)$ é verdadeiro, mostre que $P(f(x))$ é verdadeiro," para alguma função $f$ adequadamente escolhida.
 
 ## Problemas com `not`
 
@@ -75,7 +75,7 @@ and(not(job($x, list("computer", "programmer"))),
 
 Estas duas consultas não produzem o mesmo resultado. A primeira consulta começa encontrando todas as entradas na base de dados que correspondem a `supervisor($x, $y)`, e então filtra os frames resultantes removendo aqueles nos quais o valor de `$x` satisfaz `job($x, list("computer", "programmer"))`. A segunda consulta começa filtrando os frames de entrada para remover aqueles que podem satisfazer `job($x, list("computer", "programmer"))`. Como o único frame de entrada é vazio, ele verifica a base de dados em busca de padrões que satisfaçam `job($x, list("computer", "programmer"))`. Como geralmente há entradas dessa forma, a cláusula `not` filtra o frame vazio e retorna um stream vazio de frames. Consequentemente, toda a consulta composta retorna um stream vazio.
 
-O problema é que nossa implementação de `not` realmente se destina a servir como um filtro em valores para as variáveis. Se uma cláusula `not` é processada com um frame no qual algumas das variáveis permanecem não vinculadas (como ocorre com `$x` no exemplo acima), o sistema produzirá resultados inesperados. Problemas similares ocorrem com o uso de `javascript_predicate`—o predicado JavaScript não pode funcionar se algumas de suas variáveis não estão vinculadas. Veja exercício 4.65.
+O problema é que nossa implementação de `not` realmente se destina a servir como um filtro em valores para as variáveis. Se uma cláusula `not` é processada com um frame no qual algumas das variáveis permanecem não vinculadas (como ocorre com `$x` no exemplo acima), o sistema produzirá resultados inesperados. Problemas similares ocorrem com o uso de `javascript_predicate`—o predicado JavaScript não pode funcionar se algumas de suas variáveis não estão vinculadas. Veja exercício 4.74.
 
 Há também uma maneira muito mais séria pela qual o `not` da linguagem de consulta difere do `not` da lógica matemática. Na lógica, interpretamos a declaração "not $P$" como significando que $P$ não é verdadeiro. No sistema de consulta, no entanto, "not $P$" significa que $P$ não é dedutível do conhecimento na base de dados. Por exemplo, dada a base de dados de pessoal da seção 4.4.1, o sistema deduziria alegremente todos os tipos de declarações `not`, como que Ben Bitdiddle não é fã de beisebol, que não está chovendo lá fora, e que $2 + 2$ não é 4.[^4] Em outras palavras, o `not` das linguagens de programação lógica reflete a chamada _suposição de mundo fechado_ de que toda a informação relevante foi incluída na base de dados.[^5]
 
@@ -83,7 +83,7 @@ Há também uma maneira muito mais séria pela qual o `not` da linguagem de cons
 
 [^5]: Uma discussão e justificativa deste tratamento de `not` pode ser encontrada no artigo "Negation as Failure" de Clark (1978).
 
-<Exercise id="4.61">
+<Exercise id="4.62">
 
 Louis Reasoner apaga por engano a regra `outranked_by` (seção 4.4.1) da base de dados. Quando percebe isso, rapidamente a reinstala. Infelizmente, ele faz uma pequena mudança na regra e a digita como
 
@@ -102,9 +102,26 @@ outranked_by(list("Bitdiddle", "Ben"), $who)
 
 Após responder, o sistema entra em um loop infinito. Explique por quê.
 
+<Solution exercise="4.62">
+
+Compare com a regra original da seção 4.4.1: lá, o `and` recursivo era
+
+```javascript
+and(supervisor($staff_person, $middle_manager),
+    outranked_by($middle_manager, $boss))
+```
+
+— `supervisor` primeiro. Louis inverteu a ordem dos conjuntos. A diferença é fatal por causa de **como o `and` processa**: o primeiro conjunto roda com o frame corrente, e o segundo recebe os frames estendidos.
+
+Na regra original, `supervisor($staff_person, $middle_manager)` roda primeiro com `$staff_person` vinculado (a Ben) — a base de dados responde com poucos `$middle_manager` concretos, e a recursão desce *ancorada* em pessoas reais, terminando quando chega a quem não tem supervisor.
+
+Na regra de Louis, o primeiro conjunto é `outranked_by($middle_manager, $boss)` — com **ambas as variáveis livres**. Para respondê-lo, o sistema aplica a própria regra `outranked_by` de novo… cujo primeiro conjunto é, de novo, um `outranked_by` com variáveis livres, *idêntico ao anterior a menos de renomeação*. Nenhum fato da base de dados é consultado para ancorar a descida: a cadeia de aplicações de regra cresce para sempre, sem progresso. As respostas que DeWitt vê antes do travamento vêm do primeiro ramo do `or` (os `supervisor` diretos), que o entrelaçamento de streams ainda consegue entregar — o loop está no segundo ramo.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.62">
+<Exercise id="4.63">
 
 Cy D. Fect, ansioso pelo dia em que subirá na organização, faz uma consulta para encontrar todos os mandachuvas (usando a regra `wheel` da seção 4.4.1):
 
@@ -125,9 +142,25 @@ wheel(list("Warbucks", "Oliver"))
 
 Por que Oliver Warbucks está listado quatro vezes?
 
+<Solution exercise="4.63">
+
+O sistema não responde "quem é mandachuva" — ele enumera **derivações**. A regra
+
+```javascript
+rule(wheel($person),
+     and(supervisor($middle_manager, $person),
+         supervisor($x, $middle_manager)))
+```
+
+produz um resultado para **cada par** `($middle_manager, $x)` que a satisfaz. Oliver Warbucks é o chefe de Ben Bitdiddle e de Eben Scrooge; Ben supervisiona três pessoas (Alyssa, Cy e Lem) e Scrooge supervisiona uma (Robert Cratchet). São $3 + 1 = 4$ cadeias distintas `subordinado → gerente-do-meio → Warbucks`, logo quatro frames distintos — e quatro linhas `wheel(list("Warbucks", "Oliver"))`, uma por cadeia. Ben Bitdiddle aparece uma vez: só Louis → Alyssa → Ben.
+
+Os frames são de fato diferentes (variam em `$middle_manager` e `$x`); é a *instanciação da consulta* — que só menciona `$who` — que os torna indistinguíveis na saída. O sistema imprime o padrão instanciado por frame, sem eliminar repetições.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.63">
+<Exercise id="4.64">
 
 Ben tem generalizado o sistema de consulta para fornecer estatísticas sobre a empresa. Por exemplo, para encontrar os salários totais de todos os programadores de computador, será possível dizer
 
@@ -144,27 +177,70 @@ accumulation_function($variable,
                       query-pattern)
 ```
 
-onde `accumulation_function` podem ser coisas como `sum`, `average` ou `maximum`. Ben raciocina que deve ser moleza implementar isso. Ele simplesmente alimentará o padrão de consulta para `evaluate_query`. Isso produzirá um stream de frames. Ele então passará esse stream através de uma função de mapeamento que extrai o valor da variável designada de cada frame no stream e alimentará o stream resultante de valores para a função de acumulação. Assim que Ben completa a implementação e está prestes a testá-la, Cy passa por ali, ainda intrigado com o resultado da consulta `wheel` no exercício 4.62. Quando Cy mostra a Ben a resposta do sistema, Ben geme, "Oh, não, meu esquema simples de acumulação não vai funcionar!"
+onde `accumulation_function` podem ser coisas como `sum`, `average` ou `maximum`. Ben raciocina que deve ser moleza implementar isso. Ele simplesmente alimentará o padrão de consulta para `evaluate_query`. Isso produzirá um stream de frames. Ele então passará esse stream através de uma função de mapeamento que extrai o valor da variável designada de cada frame no stream e alimentará o stream resultante de valores para a função de acumulação. Assim que Ben completa a implementação e está prestes a testá-la, Cy passa por ali, ainda intrigado com o resultado da consulta `wheel` no exercício 4.63. Quando Cy mostra a Ben a resposta do sistema, Ben geme, "Oh, não, meu esquema simples de acumulação não vai funcionar!"
 
 O que Ben acabou de perceber? Delineie um método que ele pode usar para salvar a situação.
 
-</Exercise>
+<Solution exercise="4.64">
 
-<Exercise id="4.64">
+**O que Ben percebeu:** o stream de frames contém uma entrada por *derivação*, não por *fato*. Se somar os salários dos "wheels" da consulta de Cy, o salário de Warbucks entraria **quatro vezes**. Toda `accumulation_function` sobre o stream cru herda essa contagem inflada.
 
-Invente uma maneira de instalar um detector de loop no sistema de consulta para evitar os tipos de loops simples ilustrados no texto e no exercício 4.61. A ideia geral é que o sistema deve manter algum tipo de histórico de sua cadeia atual de deduções e não deve começar a processar uma consulta na qual já está trabalhando. Descreva que tipo de informação (padrões e frames) está incluída neste histórico, e como a verificação deve ser feita. (Depois de estudar os detalhes da implementação do sistema de consulta na seção 4.4.4, você pode querer modificar o sistema para incluir seu detector de loop.)
+**O que não funciona como conserto:** eliminar valores repetidos da variável extraída. Duas pessoas diferentes podem legitimamente ter o mesmo salário — ambas devem contar. O problema não são valores iguais; são *derivações repetidas do mesmo fato*.
+
+**O método que salva a situação:** deduplicar **frames equivalentes do ponto de vista do padrão** antes de extrair valores — instancie o padrão da consulta com cada frame (o que o exibidor de resultados já faz) e descarte instanciações repetidas:
+
+```
+frames → instancia padrão → filtra instâncias já vistas → extrai $variable → acumula
+```
+
+Com isso, as quatro derivações de `wheel(Warbucks)` colapsam numa só, mas dois programadores com salários iguais continuam sendo dois itens — pois suas instanciações diferem em `$x`. (Resta o custo: "já visto" exige memória das instâncias anteriores, e streams infinitos de resultados nunca terminam de acumular — a acumulação só faz sentido sobre consultas finitas.)
+
+</Solution>
 
 </Exercise>
 
 <Exercise id="4.65">
 
-Defina regras para implementar a operação `reverse` do exercício 2.18, que retorna uma lista contendo os mesmos elementos que uma dada lista em ordem reversa. (Dica: Use `append_to_form`.) Suas regras podem responder a consulta `reverse(list(1, 2, 3), $x)` quanto a consulta `reverse($x, list(1, 2, 3))`?
+Invente uma maneira de instalar um detector de loop no sistema de consulta para evitar os tipos de loops simples ilustrados no texto e no exercício 4.62. A ideia geral é que o sistema deve manter algum tipo de histórico de sua cadeia atual de deduções e não deve começar a processar uma consulta na qual já está trabalhando. Descreva que tipo de informação (padrões e frames) está incluída neste histórico, e como a verificação deve ser feita. (Depois de estudar os detalhes da implementação do sistema de consulta na seção 4.4.4, você pode querer modificar o sistema para incluir seu detector de loop.)
+
+<Solution exercise="4.65">
+
+**O histórico:** uma lista — threading pela cadeia *corrente* de deduções, não global — de pares `(padrão da consulta, frame)` das aplicações de regra em andamento: no momento em que `apply_a_rule` vai processar o corpo de uma regra para responder uma consulta, registra o padrão *instanciado com as vinculações já conhecidas* do frame corrente.
+
+**A verificação:** antes de iniciar uma nova aplicação de regra, instancie o padrão da nova consulta com seu frame e compare com cada entrada do histórico da cadeia. Se for **idêntico a menos de renomeação de variáveis livres** (a mesma pergunta, com os mesmos vinculados e liberdade nos mesmos lugares), o sistema está prestes a perguntar algo em cujo processamento já está no meio — corte o ramo, fazendo-o contribuir com o stream vazio.
+
+**Por que isso é seguro para os loops simples:** no exercício 4.62, a recursão gera exatamente a mesma consulta `outranked_by($a, $boss)` com o mesmo (nenhum) vínculo — a comparação a pega na segunda aplicação. Idem para o par `married(Minnie, Mickey)` do texto.
+
+**Por que a comparação precisa ser "a menos de renomeação":** cada aplicação de regra renomeia as variáveis da regra para evitar colisões; textualmente as consultas nunca repetem. E a igualdade deve exigir os *mesmos* vínculos: `outranked_by(Ben, $boss)` dentro de `outranked_by($a, $boss)` é progresso legítimo, não loop. O detector não elimina todos os não-términos possíveis (o exercício 4.62 lembra que isso é o problema da parada — exercício 4.15), mas mata os ciclos de pergunta-idêntica que dominam a prática.
+
+</Solution>
 
 </Exercise>
 
 <Exercise id="4.66">
 
-Vamos modificar a base de dados e as regras do exercício 2.29 para adicionar "great" a uma relação de neto. Isso deve permitir que o sistema deduza que Irad é o bisneto de Adão, ou que Jabal e Jubal são os tataratataranetos de Adão.
+Defina regras para implementar a operação `reverse` do exercício 2.18, que retorna uma lista contendo os mesmos elementos que uma dada lista em ordem reversa. (Dica: Use `append_to_form`.) Suas regras podem responder a consulta `reverse(list(1, 2, 3), $x)` quanto a consulta `reverse($x, list(1, 2, 3))`?
+
+<Solution exercise="4.66">
+
+```javascript
+assert(rule(reverse(null, null)));
+assert(rule(reverse(pair($u, $v), $y),
+            and(reverse($v, $rev_v),
+                append_to_form($rev_v, list($u), $y))));
+```
+
+Lendo: o reverso da lista vazia é a vazia; o reverso de `u ⋅ v` é o reverso de `v` com `u` acrescentado ao final.
+
+**Direcionalidade:** `reverse(list(1, 2, 3), $x)` funciona — a recursão desmonta o primeiro argumento, que está totalmente vinculado, e termina em `null`. Já `reverse($x, list(1, 2, 3))` trava: o subobjetivo `reverse($v, $rev_v)` roda com **ambas as variáveis livres**, e o sistema aplica a regra recursivamente sem nenhum dado para ancorá-la — o mesmo loop de variáveis livres do exercício 4.62. Invertendo a ordem dos conjuntos do `and` (primeiro `append_to_form`, que decompõe `$y`), a regra passa a responder a *segunda* consulta e a travar na primeira. Um único conjunto de regras não serve às duas direções com o avaliador atual; com o detector de loops do exercício 4.65 (ou avaliação justa dos conjuntos), as duas direções poderiam conviver — a beleza declarativa do "o quê" cobrando seu preço no "como".
+
+</Solution>
+
+</Exercise>
+
+<Exercise id="4.67">
+
+Vamos modificar a base de dados e as regras do exercício 4.61 para adicionar "great" a uma relação de neto. Isso deve permitir que o sistema deduza que Irad é o bisneto de Adão, ou que Jabal e Jubal são os tataratataranetos de Adão.
 
 1. Altere as asserções na base de dados de modo que haja apenas um tipo de informação de relacionamento, ou seja, `related`. O primeiro item então descreve o relacionamento. Assim, em vez de `son("Adam", "Cain")`, você escreveria `related("son", "Adam", "Cain")`. Represente o fato sobre Irad, por exemplo, como
    ```javascript
@@ -180,5 +256,43 @@ Vamos modificar a base de dados e as regras do exercício 2.29 para adicionar "g
    onde `$rel` é uma lista que termina em `"grandson"`.
 
 4. Verifique suas regras nas consultas `related(list("great", "grandson"), $g, $ggs)` e `related($relationship, "Adam", "Irad")`.
+
+<Solution exercise="4.67">
+
+**1. A base reformulada** — um único tipo de asserção, com a relação como primeiro item:
+
+```javascript
+assert(related(list("son"), "Adam", "Cain"));
+assert(related(list("son"), "Cain", "Enoch"));
+assert(related(list("son"), "Enoch", "Irad"));
+assert(related(list("son"), "Irad", "Mehujael"));
+// … e as demais; a regra de neto vira:
+assert(rule(related(list("grandson"), $x, $y),
+            and(related(list("son"), $x, $z),
+                related(list("son"), $z, $y))));
+```
+
+(As regras de "esposa⇒filho" da solução do exercício 4.61 são reescritas no mesmo formato.)
+
+**2. Termina em `"grandson"`:**
+
+```javascript
+assert(rule(ends_in_grandson(list("grandson"))));
+assert(rule(ends_in_grandson(pair($first, $rest)),
+            ends_in_grandson($rest)));
+```
+
+**3. A regra do "great":**
+
+```javascript
+assert(rule(related(pair("great", $rel), $x, $y),
+            and(ends_in_grandson($rel),
+                related(list("son"), $x, $z),
+                related($rel, $z, $y))));
+```
+
+**Por que funciona:** `(great ⋅ rel)(x, y)` vale quando `x` tem um filho `z` e `rel(z, y)` — cada `"great"` desloca a relação uma geração para baixo. Para Irad: `son(Adam, Cain)` e `grandson(Cain, Irad)` dão `related(list("great", "grandson"), "Adam", "Irad")` — Irad é bisneto de Adão ✓. Para Jabal e Jubal, quatro `"great"` empilhados descem as gerações até os filhos de Lamech. O `ends_in_grandson` mantém a recursão dentro da família de relações pretendida — sem ele, a regra tentaria dar significado a `pair("great", qualquer-coisa)` e reabriria a porta dos loops de variáveis livres.
+
+</Solution>
 
 </Exercise>

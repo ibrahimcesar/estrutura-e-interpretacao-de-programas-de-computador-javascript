@@ -295,7 +295,7 @@ $$
 
 onde $h = (b-a)/n$, para algum inteiro par $n$, e $y_k = f(a + kh)$. (Aumentar $n$ aumenta a precisão da aproximação.) Declare uma função que recebe como argumentos $f$, $a$, $b$ e $n$ e retorna o valor da integral, calculado usando a Regra de Simpson. Use sua função para integrar `cube` entre 0 e 1 (com $n = 100$ e $n = 1000$), e compare os resultados com os da função `integral` mostrada acima.
 
-<Solution>
+<Solution exercise="1.29">
 
 **Ideia.** O coeficiente de $y_k$ é 1 nas pontas, 4 nos índices ímpares e 2 nos pares — então o termo da soma pode decidir o coeficiente olhando a paridade de $k$, e `sum` faz o resto.
 
@@ -348,7 +348,7 @@ function sum(term, a, next, b) {
 }
 ```
 
-<Solution>
+<Solution exercise="1.30">
 
 <CodePlayground
   code={`function sum(term, a, next, b) {
@@ -384,7 +384,7 @@ $$
 
 **b.** Se sua função `product` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
 
-<Solution>
+<Solution exercise="1.31">
 
 **a. Versão recursiva, `factorial` e a fórmula de Wallis:**
 
@@ -453,7 +453,7 @@ A função `accumulate` recebe como argumentos as mesmas especificações de ter
 
 **b.** Se sua função `accumulate` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
 
-<Solution>
+<Solution exercise="1.32">
 
 **a.** A única diferença entre `sum` e `product` é *como combinar* (`+` vs `*`) e o *valor neutro* (0 vs 1). Abstraia os dois:
 
@@ -513,7 +513,7 @@ Você pode obter uma versão ainda mais geral de `accumulate` (exercício 1.32) 
 
 **b.** o produto de todos os inteiros positivos menores que $n$ que são relativamente primos a $n$ (isto é, todos os inteiros positivos $i < n$ tais que $\text{GCD}(i, n) = 1$).
 
-<Solution>
+<Solution exercise="1.33">
 
 **A abstração:** igual a `accumulate`, mas termos reprovados no filtro entram como se não existissem.
 

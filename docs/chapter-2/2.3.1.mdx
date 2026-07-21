@@ -87,7 +87,7 @@ member("red", list("red", "shoes", "blue", "socks"));`}
   height={350}
 />
 
-<Solution>
+<Solution exercise="2.53">
 
 Na notação de caixas desta edição (execute o bloco acima e confira):
 
@@ -108,7 +108,7 @@ O quinto caso pega muita gente: as *cabeças* daquela lista são **listas** (`li
 
 Duas listas são consideradas `equal` se contêm elementos iguais organizados na mesma ordem. Implemente `equal` como uma função.
 
-<Solution>
+<Solution exercise="2.54">
 
 **Ideia.** Igualdade estrutural: ou os dois são pares com cabeças iguais e caudas iguais, ou são primitivos idênticos.
 
@@ -135,7 +135,7 @@ O caso base cobre strings, números e o `null` do fim das listas de uma vez — 
 
 Explique o que acontece quando você avalia uma string com a função `display` e por que isso difere da avaliação normal.
 
-<Solution>
+<Solution exercise="2.55">
 
 Avaliar uma string sozinha — `"abracadabra";` — faz o interpretador **ecoar o valor** na sua representação de programa: entre aspas, `"abracadabra"`. Já `display("abracadabra")` **imprime o conteúdo** da string, sem aspas, e devolve a string (que o REPL então ecoa com aspas).
 

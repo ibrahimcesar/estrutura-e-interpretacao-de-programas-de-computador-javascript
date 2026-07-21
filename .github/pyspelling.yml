@@ -2,7 +2,7 @@
 matrix:
 - name: markdown
   sources:
-  - '**/*.md|!DNS_CONFIGURATION.md|!**/node_modules/**|!**/build/**'
+  - '**/*.md|!DNS_CONFIGURATION.md|!**/node_modules/**|!**/build/**|!ebooks/**'
   aspell:
     lang: pt_BR
     d: pt_BR

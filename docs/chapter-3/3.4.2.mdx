@@ -9,13 +9,15 @@ import HelpFooter from '@site/src/components/HelpFooter';
 
 Vimos que a dificuldade em lidar com threads concorrentes está enraizada na necessidade de considerar o intercalamento da ordem dos eventos nas diferentes threads. Por exemplo, suponha que temos duas threads, uma com três eventos ordenados $(a,b,c)$ e uma com três eventos ordenados $(x,y,z)$. Se as duas threads executam concorrentemente, sem restrições sobre como sua execução é intercalada, então há 20 ordenações diferentes possíveis para os eventos que são consistentes com as ordenações individuais para as duas threads:
 
-$$\begin{array}{cccc}
+$$
+\begin{array}{cccc}
 (a,b,c,x,y,z) & (a,x,b,y,c,z) & (x,a,b,c,y,z) & (x,a,y,z,b,c)\\
 (a,b,x,c,y,z) & (a,x,b,y,z,c) & (x,a,b,y,c,z) & (x,y,a,b,c,z)\\
 (a,b,x,y,c,z) & (a,x,y,b,c,z) & (x,a,b,y,z,c) & (x,y,a,b,z,c)\\
 (a,b,x,y,z,c) & (a,x,y,b,z,c) & (x,a,y,b,c,z) & (x,y,a,z,b,c)\\
 (a,x,b,c,y,z) & (a,x,y,z,b,c) & (x,a,y,b,z,c) & (x,y,z,a,b,c)
-\end{array}$$
+\end{array}
+$$
 
 Como programadores projetando este sistema, teríamos que considerar os efeitos de cada uma dessas 20 ordenações e verificar que cada comportamento é aceitável. Tal abordagem rapidamente se torna inviável à medida que os números de threads e eventos aumentam.
 
@@ -116,7 +118,7 @@ concurrent_execute(  () => { x = s(() => x * x)(); },
                    s(() => { x = x + 1;             }));
 ```
 
-<Solution>
+<Solution exercise="3.39">
 
 Serializar `x * x` e serializar `x = x + 1` **não** os coloca no mesmo pacote de exclusão: repare que só a *leitura dupla* de `x * x` está protegida (e a atribuição de `x` ficou **fora** do `s(...)` na primeira thread). Das cinco possibilidades do texto restam **três**:
 
@@ -150,7 +152,7 @@ concurrent_execute(s(() => { x = x * x;     }),
                    s(() => { x = x * x * x; }));
 ```
 
-<Solution>
+<Solution exercise="3.40">
 
 **Sem serialização**, cada execução é *ler → ler → … → escrever* e as intercalações produzem: **1.000.000** (qualquer ordem sequencial), **100** ($10^2$, com a escrita do cubo perdida), **1.000** ($10^3$, com a do quadrado perdida), **10.000** ($100^2$: o cubo leu um 10 e um 100…), **100.000** ($10\cdot100^2$ etc. — leituras mistas do cubo com valores antigo e novo).
 
@@ -195,7 +197,7 @@ function make_account(balance) {
 porque permitir acesso não serializado ao saldo bancário pode resultar em comportamento anômalo. Você concorda? Há algum cenário que demonstra a preocupação de Ben?
 
 
-<Solution>
+<Solution exercise="3.41">
 
 A preocupação de Ben é **desnecessária** — a versão sem proteção se comporta igual.
 
@@ -274,7 +276,7 @@ m === "serializer"
 ```
 
 
-<Solution>
+<Solution exercise="3.42">
 
 Ben está **enganado quanto à necessidade, mas a mudança dele é segura** — e a preocupação inversa (de que algo se perca) não se concretiza.
 
@@ -288,7 +290,7 @@ A diferença é só de eficiência (menos criação de objetos-função por mens
 
 Suponha que os saldos em três contas comecem em $10, $20 e $30, e que múltiplas trocas de saldos de conta sejam executadas concorrentemente. Argumente que se os processos são executados sequencialmente, após qualquer número de trocas concorrentes, os saldos de conta devem ser $10, $20 e $30 em alguma ordem. Desenhe um diagrama de temporização como o da Figura 3.29 para mostrar como este requisito pode ser violado se a função `exchange` for usada sem serializar as transações em contas individuais. Por outro lado, argumente que mesmo com essa troca incorreta, a soma dos saldos nas contas será preservada. Desenhe um diagrama de temporização para mostrar como mesmo esta condição seria violada se não serializarmos as transações em contas individuais.
 
-<Solution>
+<Solution exercise="3.43">
 
 **Sequencial preserva o conjunto {10, 20, 30}.** Cada `exchange` troca os saldos de duas contas — uma permutação dos três valores. Composição de permutações é permutação; por indução, após qualquer número de trocas os saldos são 10, 20 e 30 em alguma ordem.
 
@@ -313,7 +315,7 @@ function transfer(from_account, to_account, amount) {
 
 Louis Reasoner afirma que há um problema aqui, e que precisamos usar uma versão serializada mais elaborada, como a função `serialized_exchange`. Ben está certo ou Louis está certo? Explique sua resposta.
 
-<Solution>
+<Solution exercise="3.44">
 
 Ben está **certo desta vez** — para transferências, o problema da troca não existe.
 
@@ -470,7 +472,7 @@ function test_and_set(cell) {
 }
 ```
 
-<Solution>
+<Solution exercise="3.45">
 
 O problema de Louis: `serializer((a, b) => ...)` embrulharia a *troca inteira* no serializador **de qual conta?** Na proposta dele, `serialized_exchange` chama a troca protegida pelos serializadores das duas contas — e cada acesso interno de `exchange` (os `withdraw`/`deposit` via `dispatch`) tentaria **adquirir de novo** um serializador que a própria troca já segura.
 
@@ -495,7 +497,7 @@ function test_and_set(cell) {
 
 Desenhe um diagrama de temporização como o da Figura 3.29 para demonstrar como a implementação de mutex pode falhar permitindo que duas threads adquiram o mutex ao mesmo tempo.
 
-<Solution>
+<Solution exercise="3.46">
 
 Com um `test_and_set` **não atômico**, duas threads podem intercalar assim:
 
@@ -524,7 +526,7 @@ Agora que vimos como implementar serializadores, podemos ver que a serializaçã
 
 Uma forma de evitar o risco de deadlock é dar a cada conta um número de identificação único e reescrever `serialized_exchange` de modo que uma thread sempre tente entrar primeiro na conta de número mais baixo. Embora este método funcione bem para o problema de troca, há outras situações que requerem mecanismos de coordenação mais sofisticados. (Ver exercícios 3.48 e 3.49.)[^6]
 
-<Solution>
+<Solution exercise="3.47">
 
 **a. Semáforo com mutex** — um contador protegido:
 
@@ -592,7 +594,7 @@ A estrutura é a mesma; `test_and_set`/`clear` protegem o contador em vez do mut
 
 Explique em detalhes por que a estratégia de deadlock-avoidance descrita acima, (ou seja, os serializadores de conta são adquiridos primeiro pela conta de número menor) evita deadlock no problema de troca. Reescreva `serialized_exchange` para incorporar esta ideia. (Você também precisará modificar `make_account` de modo que cada conta seja criada com um número, e fornecer uma forma para acessar esse número.)
 
-<Solution>
+<Solution exercise="3.48">
 
 **Por que a ordenação evita o deadlock.** Deadlock exige um *ciclo de espera*: A segura o recurso que B quer e B segura o que A quer. Se todo mundo adquire serializadores **em ordem crescente de número de conta**, uma thread só espera por serializadores de número *maior ou igual* aos que já possui. Num suposto ciclo, siga as setas de espera: os números teriam de crescer estritamente ao longo do ciclo e voltar ao início — impossível. Sem ciclo, sem deadlock.
 
@@ -616,7 +618,7 @@ com `make_account_and_serializer` recebendo/gerando um número de conta (um cont
 
 Dê um cenário onde a estratégia de deadlock-avoidance descrita acima não funciona. (Dica: No problema de troca, cada thread conhece antecipadamente quais contas ela precisará acessar. Considere uma situação onde uma thread deve adquirir alguns recursos compartilhados antes que possa saber quais recursos adicionais compartilhados ela exigirá.)
 
-<Solution>
+<Solution exercise="3.49">
 
 A estratégia pressupõe que a thread **sabe de antemão** todos os recursos de que vai precisar — só assim pode ordená-los antes de adquirir o primeiro.
 

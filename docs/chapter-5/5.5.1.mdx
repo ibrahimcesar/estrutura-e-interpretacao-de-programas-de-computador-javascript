@@ -145,7 +145,7 @@ make_instruction_sequence(list("env", "continue"), list("val"),
 
 As funções para combinar sequências de instruções são mostradas na seção 5.5.4.
 
-## Exercício 5.35
+## Exercício 5.32
 
 Ao avaliar uma aplicação de função, o avaliador de controle explícito sempre salva e restaura o registrador `env` em torno da avaliação da expressão de função, salva e restaura `env` em torno da avaliação de cada expressão de argumento (exceto a final), salva e restaura `argl` em torno da avaliação de cada expressão de argumento, e salva e restaura `fun` em torno da avaliação da sequência de expressão de argumento. Para cada uma das seguintes aplicações, diga quais dessas operações `save` e `restore` são supérfluas e portanto poderiam ser eliminadas pelo mecanismo `preserving` do compilador:
 
@@ -159,7 +159,7 @@ f(g("x"), y)
 f(g("x"), "y")
 ```
 
-<Solution>
+<Solution exercise="5.32">
 
 Regra geral: um `save`/`restore` é supérfluo quando o trecho protegido **não pode alterar** o registrador, ou quando o valor **não será mais usado**.
 
@@ -172,14 +172,14 @@ O padrão que o `preserving` automatiza: literais e nomes não tocam nada; aplic
 
 </Solution>
 
-## Exercício 5.36
+## Exercício 5.33
 
 Usando o mecanismo `preserving`, o compilador evitará salvar e restaurar `env` em torno da avaliação da expressão de função de uma aplicação no caso em que a expressão de função é um nome. Poderíamos também construir tais otimizações no avaliador. De fato, o avaliador de controle explícito da seção 5.4 já realiza uma otimização similar, ao tratar aplicações sem argumentos como um caso especial.
 
 1. Estenda o avaliador de controle explícito para reconhecer como uma classe separada de componentes aplicações cuja expressão de função é um nome, e para tirar proveito desse fato ao avaliar tais componentes.
 
 2. Alyssa P. Hacker sugere que ao estender o avaliador para reconhecer mais e mais casos especiais poderíamos incorporar todas as otimizações do compilador, e que isso eliminaria a vantagem da compilação completamente. O que você acha dessa ideia?
-<Solution>
+<Solution exercise="5.33">
 
 **1.** Um caso novo no despacho: `ev_application_name_fun` — quando `function_expression` é um nome, o controlador pula o `save("env")`/ciclo de avaliação da expressão de função e faz diretamente `assign("fun", op("lookup_symbol_value"), …)`, seguindo para os argumentos. Menos um par de operações de pilha e um desvio por aplicação — a maioria esmagadora das aplicações reais.
 

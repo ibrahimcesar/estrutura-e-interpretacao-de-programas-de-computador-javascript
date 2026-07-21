@@ -55,31 +55,128 @@ list(list("alyssa", 3), list("ben", 2), list("cy", 4),
 
 Embora esta função simples funcione, ela é muito lenta. Os exercícios 4.37 e 4.38 discutem algumas possíveis melhorias.
 
-<Exercise id="4.35">
+<Exercise id="4.36">
 
 Modifique a função de mudança de escritório para omitir a exigência de que o escritório de Louis não seja ao lado do de Cy. Quantas soluções existem para este quebra-cabeça modificado?
 
-</Exercise>
+<Solution exercise="4.36">
 
-<Exercise id="4.36">
+Removendo `require(math_abs(louis - cy) !== 1);`, o quebra-cabeça passa a ter **5 soluções** (Alyssa, Ben, Cy, Lem, Louis):
 
-A ordem das restrições na função de mudança de escritório afeta a resposta? Afeta o tempo para encontrar uma resposta? Se você acha que importa, demonstre um programa mais rápido obtido do dado reordenando as restrições. Se você acha que não importa, argumente seu caso.
+| Alyssa | Ben | Cy | Lem | Louis |
+|---|---|---|---|---|
+| 1 | 2 | 4 | 3 | 5 |
+| 1 | 2 | 4 | 5 | 3 |
+| 1 | 4 | 2 | 5 | 3 |
+| 3 | 2 | 4 | 5 | 1 |
+| 3 | 4 | 2 | 5 | 1 |
+
+A original (Alyssa 3, Ben 2, Cy 4, Lem 5, Louis 1) continua entre elas — as outras quatro eram exatamente as que a restrição de vizinhança Louis–Cy eliminava. Com `amb`, "quantas soluções" é literal: avalie `office_move()` e digite `retry` até a busca esgotar.
+
+</Solution>
 
 </Exercise>
 
 <Exercise id="4.37">
 
-No problema de mudança de escritório, quantos conjuntos de atribuições há de pessoas para escritórios, tanto antes quanto depois da exigência de que as atribuições de escritório sejam distintas? É muito ineficiente gerar todas as atribuições possíveis de pessoas para escritórios e depois deixar para o backtracking eliminá-las. Por exemplo, a maioria das restrições depende de apenas uma ou duas das nomes, pessoa-escritório, e podem assim ser impostas antes que escritórios tenham sido selecionados para todas as pessoas. Escreva e demonstre uma função não determinística muito mais eficiente que resolva este problema baseando-se em gerar apenas as possibilidades que não são já descartadas por restrições anteriores.
+A ordem das restrições na função de mudança de escritório afeta a resposta? Afeta o tempo para encontrar uma resposta? Se você acha que importa, demonstre um programa mais rápido obtido do dado reordenando as restrições. Se você acha que não importa, argumente seu caso.
+
+<Solution exercise="4.37">
+
+**A resposta não muda; o tempo, sim.**
+
+- **Resposta:** os `require` são filtros — cada um descarta as combinações que violam sua condição. O conjunto que sobrevive a todos é a *interseção* dos conjuntos aceitos, e interseção não depende da ordem. Qualquer permutação das restrições produz as mesmas soluções.
+- **Tempo:** nesta formulação, as cinco escolhas já foram feitas quando o primeiro `require` roda; o que a ordem controla é **quanto trabalho é gasto por combinação antes da primeira falha**. Vale a regra: primeiro os testes *baratos e que mais reprovam*, por último os caros. `distinct` é o teste mais caro (percorre a lista com `member`); as comparações são O(1). Reordenando —
+
+```javascript
+require(ben !== 1);
+require(cy !== 5);
+require(cy !== 1);
+require(alyssa !== 5);
+require(lem > ben);
+require(math_abs(cy - ben) !== 1);
+require(math_abs(louis - cy) !== 1);
+require(distinct(list(alyssa, ben, cy, lem, louis)));
+```
+
+— a maioria das 3125 combinações morre num teste O(1) barato e `distinct` só roda para as poucas sobreviventes. O ganho é um fator constante: para reduzir o *número* de combinações explorado, é preciso mudar a estrutura da busca — que é o exercício 4.38.
+
+</Solution>
 
 </Exercise>
 
 <Exercise id="4.38">
 
-Escreva um programa JavaScript comum para resolver o quebra-cabeça de mudança de escritório.
+No problema de mudança de escritório, quantos conjuntos de atribuições há de pessoas para escritórios, tanto antes quanto depois da exigência de que as atribuições de escritório sejam distintas? É muito ineficiente gerar todas as atribuições possíveis de pessoas para escritórios e depois deixar para o backtracking eliminá-las. Por exemplo, a maioria das restrições depende de apenas uma ou duas das nomes, pessoa-escritório, e podem assim ser impostas antes que escritórios tenham sido selecionados para todas as pessoas. Escreva e demonstre uma função não determinística muito mais eficiente que resolva este problema baseando-se em gerar apenas as possibilidades que não são já descartadas por restrições anteriores.
+
+<Solution exercise="4.38">
+
+**Contagem:** sem exigir distinção, cada uma das 5 pessoas escolhe entre 5 escritórios: $5^5 = 3125$ atribuições. Com a exigência de escritórios distintos, sobram as permutações: $5! = 120$. A formulação original explora as 3125 e usa `require(distinct(...))` para jogar fora 3005 delas — depois de já ter feito todas as escolhas.
+
+**A versão eficiente** entrelaça escolhas e restrições, e nem oferece opções que uma restrição unária já proíbe:
+
+```javascript
+function office_move() {
+    const ben = amb(2, 3, 4, 5);            // ben !== 1, já na escolha
+    const cy = amb(2, 3, 4);                // cy !== 1 e cy !== 5
+    require(math_abs(cy - ben) !== 1);      // só ben e cy: teste já!
+    const lem = amb(1, 2, 3, 4, 5);
+    require(lem > ben);
+    const alyssa = amb(1, 2, 3, 4);         // alyssa !== 5
+    const louis = amb(1, 2, 3, 4, 5);
+    require(math_abs(louis - cy) !== 1);
+    require(distinct(list(alyssa, ben, cy, lem, louis)));
+    return list(list("alyssa", alyssa), list("ben", ben),
+                list("cy", cy), list("lem", lem),
+                list("louis", louis));
+}
+```
+
+**Por que funciona:** o backtracking corta um ramo no ponto em que ele falha. Se `require(math_abs(cy - ben) !== 1)` roda logo após as escolhas de `ben` e `cy`, um par ruim é descartado antes que `lem`, `alyssa` e `louis` multipliquem esse ramo por $5^3$ combinações condenadas. Cada restrição deve rodar *assim que suas variáveis existirem* — o princípio que os solucionadores de restrições chamam de propagação.
+
+</Solution>
 
 </Exercise>
 
 <Exercise id="4.39">
+
+Escreva um programa JavaScript comum para resolver o quebra-cabeça de mudança de escritório.
+
+<Solution exercise="4.39">
+
+Laços aninhados fazem o papel do `amb`, e `continue` faz o papel do `require` que falha:
+
+```javascript
+function office_move() {
+    for (let ben = 2; ben <= 5; ben = ben + 1) {
+        for (let cy = 2; cy <= 4; cy = cy + 1) {
+            if (math_abs(cy - ben) === 1) continue;
+            for (let lem = ben + 1; lem <= 5; lem = lem + 1) {
+                for (let alyssa = 1; alyssa <= 4; alyssa = alyssa + 1) {
+                    for (let louis = 1; louis <= 5; louis = louis + 1) {
+                        if (math_abs(louis - cy) !== 1 &&
+                            distinct(list(alyssa, ben, cy, lem, louis))) {
+                            return list(list("alyssa", alyssa),
+                                        list("ben", ben), list("cy", cy),
+                                        list("lem", lem),
+                                        list("louis", louis));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return "sem solução";
+}
+```
+
+**O ponto do exercício:** compare com a versão `amb`. O programa comum *é* a busca — os laços são a enumeração, os `continue` são as podas, e a ordem dos laços é a estratégia. A versão não determinística diz apenas *o que* uma solução satisfaz; quem transforma isso em laços e retrocessos é o avaliador. O preço da conveniência aparece no exercício 4.38: quando a busca automática é ingênua, recuperar a eficiência exige reintroduzir manualmente o entrelaçamento que os laços davam de graça.
+
+</Solution>
+
+</Exercise>
+
+<Exercise id="4.40">
 
 Resolva o seguinte quebra-cabeça "Mentirosos" (adaptado de Phillips 1934):
 
@@ -92,9 +189,42 @@ Resolva o seguinte quebra-cabeça "Mentirosos" (adaptado de Phillips 1934):
 >
 > Qual foi a ordem real em que os cinco comensais receberam suas refeições?
 
+<Solution exercise="4.40">
+
+Cada pessoa recebe uma posição; "uma declaração verdadeira e uma falsa" é um ou-exclusivo:
+
+```javascript
+function xor(p, q) {
+    return (p || q) && !(p && q);
+}
+
+function liars() {
+    const alyssa = amb(1, 2, 3, 4, 5);
+    const cy = amb(1, 2, 3, 4, 5);
+    const eva = amb(1, 2, 3, 4, 5);
+    const lem = amb(1, 2, 3, 4, 5);
+    const louis = amb(1, 2, 3, 4, 5);
+    require(distinct(list(alyssa, cy, eva, lem, louis)));
+    require(xor(lem === 2, alyssa === 3));    // Alyssa
+    require(xor(cy === 1, eva === 2));        // Cy
+    require(xor(eva === 3, cy === 5));        // Eva
+    require(xor(lem === 2, louis === 4));     // Lem
+    require(xor(louis === 4, alyssa === 1));  // Louis
+    return list(list("alyssa", alyssa), list("cy", cy),
+                list("eva", eva), list("lem", lem),
+                list("louis", louis));
+}
+```
+
+**Resposta (única):** Lem chegou em 1º, Eva em 2º, Alyssa em 3º, Louis em 4º e Cy em 5º.
+
+Conferindo: Alyssa disse "Lem 2º" (falso) e "minha 3º" (verdadeiro) ✓; Cy: "minha 1º" (falso), "Eva 2º" (verdadeiro) ✓; Eva: "minha 3º" (falso), "Cy por último" (verdadeiro) ✓; Lem: "minha 2º" (falso), "Louis 4º" (verdadeiro) ✓; Louis: "minha 4º" (verdadeiro), "Alyssa 1º" (falso) ✓ — cada um com exatamente uma verdade, como combinado.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.40">
+<Exercise id="4.41">
 
 Use o avaliador `amb` para resolver o seguinte quebra-cabeça (adaptado de Phillips 1961):
 
@@ -102,11 +232,72 @@ Use o avaliador `amb` para resolver o seguinte quebra-cabeça (adaptado de Phill
 
 Tente escrever o programa para que ele rode eficientemente (veja exercício 4.37). Determine também quantas soluções existem se não nos for dito que Alyssa verifica os exercícios do capítulo "Meta".
 
+<Solution exercise="4.41">
+
+Duas atribuições em jogo: quem **resolve** cada capítulo (toda dada no enunciado: Louis–"Functions", Alyssa–"Data", Cy–"State", Ben–"Register Machines" e, por eliminação, Eva–"Meta") e quem **verifica** — onde só sabemos Alyssa–"Meta" e Louis–"Register Machines". Restam Ben, Cy e Eva verificando "Functions", "Data" e "State", com duas restrições: ninguém verifica o capítulo que resolveu, e *quem verifica "Functions" resolve o capítulo que Eva verifica*.
+
+```javascript
+function chapters() {
+    // verificadores dos três capítulos restantes
+    const funcs = amb("ben", "cy", "eva");
+    const data = amb("ben", "cy", "eva");
+    const state = amb("ben", "cy", "eva");
+    require(distinct(list(funcs, data, state)));
+    require(state !== "cy");                    // Cy resolveu "State"
+    // quem verifica "Functions" resolve o capítulo verificado por Eva
+    const eva_verifica = funcs === "eva" ? "functions"
+                       : data === "eva" ? "data" : "state";
+    const funcs_resolve = funcs === "ben" ? "register machines"
+                        : funcs === "cy" ? "state" : "meta";
+    require(funcs_resolve === eva_verifica);
+    return list("data verificado por", data);
+}
+```
+
+**Resposta: Ben verifica "Data".** A configuração única é Cy–"Functions", Ben–"Data", Eva–"State" (cheque a restrição cruzada: quem verifica "Functions" é Cy, que resolve "State" — exatamente o capítulo que Eva verifica ✓).
+
+Sem a pista de que Alyssa verifica "Meta", a verificação de Alyssa vira uma `amb` a mais e o quebra-cabeça passa a ter **2 soluções**.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.41">
+<Exercise id="4.42">
 
 O exercício 2.42 descreveu o "quebra-cabeça das oito rainhas" de colocar rainhas em um tabuleiro de xadrez de modo que nenhuma duas se ataquem. Escreva um programa não determinístico para resolver este quebra-cabeça.
+
+<Solution exercise="4.42">
+
+A formulação `amb` coloca uma rainha por coluna e valida **a cada escolha** — a lição do exercício 4.38 aplicada ao tabuleiro:
+
+```javascript
+function queens(board_size) {
+    function is_safe(row, placed, dist) {
+        return is_null(placed)
+               ? true
+               : head(placed) !== row &&
+                 math_abs(head(placed) - row) !== dist &&
+                 is_safe(row, tail(placed), dist + 1);
+    }
+    function place(col, placed) {
+        if (col > board_size) {
+            return placed;
+        } else {
+            const row = an_integer_between(1, board_size);
+            require(is_safe(row, placed, 1));
+            return place(col + 1, pair(row, placed));
+        }
+    }
+    return place(1, null);
+}
+queens(8);
+```
+
+`placed` guarda as linhas das colunas anteriores, mais recente primeiro, então a distância horizontal até cada rainha anterior é `1, 2, 3, …` — mesma linha e mesma diagonal caem num único teste.
+
+**Por que o `require` fica dentro do laço de colocação:** validar cada rainha ao colocá-la poda o ramo inteiro na primeira violação; um `require` único no fim (todas as 8 escolhidas) exploraria $8^8 ≈ 16{,}7$ milhões de combinações. É o mesmo programa do exercício 2.42 — mas o backtracking que lá construímos com `flatmap` e `filter` aqui vem de graça do avaliador. `retry` enumera as 92 soluções.
+
+</Solution>
 
 </Exercise>
 
@@ -316,19 +507,47 @@ list("sentence",
                               list("noun", "cat")))))))
 ```
 
-<Exercise id="4.42">
+<Exercise id="4.43">
 
 Com a gramática dada acima, a seguinte sentença pode ser analisada de cinco maneiras diferentes: "The professor lectures to the student in the class with the cat." Forneça as cinco análises e explique as diferenças em nuances de significado entre elas.
 
-</Exercise>
+<Solution exercise="4.43">
 
-<Exercise id="4.43">
+O verbo é `lectures`, seguido de três frases preposicionais — "to the student", "in the class", "with the cat" — e cada uma pode se prender ao **verbo** ou ao **substantivo anterior**. As cinco análises:
 
-Os avaliadores nas seções 4.1.1 e 4.2 não determinam em qual ordem as expressões de argumento são avaliadas. Veremos que o avaliador `amb` as avalia da esquerda para a direita. Explique por que nosso programa de análise não funcionaria se as expressões de argumento fossem avaliadas em alguma outra ordem.
+1. `lectures (to the student) (in the class) (with the cat)` — o professor palestra ao aluno, o faz na sala, e o faz *acompanhado do gato*.
+2. `lectures (to the student) (in the class (with the cat))` — a palestra é ao aluno, *na sala em que fica o gato*.
+3. `lectures (to the student (in the class)) (with the cat)` — o destinatário é *o aluno que está na sala*; o professor palestra com o gato ao lado.
+4. `lectures (to the student (in the class (with the cat)))` — o destinatário é o aluno que está *na sala do gato*.
+5. `lectures (to the student (in the class) (with the cat))` — o destinatário é *o aluno que está na sala e que tem o gato*.
+
+O `retry` do avaliador enumera exatamente essas cinco antes de esgotar a busca — a ambiguidade sintática do inglês vira, literalmente, pontos de escolha do `amb`: cada `maybe_extend` decide se a próxima preposição estende a frase atual ou é devolvida para quem está acima.
+
+</Solution>
 
 </Exercise>
 
 <Exercise id="4.44">
+
+Os avaliadores nas seções 4.1.1 e 4.2 não determinam em qual ordem as expressões de argumento são avaliadas. Veremos que o avaliador `amb` as avalia da esquerda para a direita. Explique por que nosso programa de análise não funcionaria se as expressões de argumento fossem avaliadas em alguma outra ordem.
+
+<Solution exercise="4.44">
+
+O analisador funciona por **efeito colateral sobre a entrada**: cada `parse_word` consome o próximo trecho de `not_yet_parsed`. Numa expressão como
+
+```javascript
+list("sentence", parse_noun_phrase(), parse_verb_phrase())
+```
+
+a corretude depende de `parse_noun_phrase()` rodar **antes** de `parse_verb_phrase()` — a frase nominal vem primeiro *na sentença de entrada*. Se os argumentos fossem avaliados da direita para a esquerda, `parse_verb_phrase()` tentaria casar um verbo com "The", falharia, e nenhuma sentença jamais seria analisada; pior, uma ordem não especificada tornaria o programa dependente do humor do avaliador.
+
+**A ligação com o capítulo 3:** enquanto os programas eram puros, a ordem de avaliação de argumentos era irrelevante (e o exercício 4.1 mostrou que o avaliador metacircular nem se comprometia com uma). Ao introduzir estado — a posição corrente da análise — a ordem virou parte do significado. O avaliador `amb` promete esquerda→direita justamente porque o backtracking precisa desfazer efeitos numa ordem previsível ao retroceder pelos pontos de escolha.
+
+</Solution>
+
+</Exercise>
+
+<Exercise id="4.45">
 
 Louis Reasoner sugere que, já que uma frase verbal é ou um verbo ou uma frase verbal seguida por uma frase preposicional, seria muito mais direto declarar a função `parse_verb_phrase` da seguinte forma (e similarmente para frases nominais):
 
@@ -343,20 +562,94 @@ function parse_verb_phrase() {
 
 Isso funciona? O comportamento do programa muda se intercambiarmos a ordem das expressões no `amb`?
 
+<Solution exercise="4.45">
+
+**Funciona — nesta ordem.** Ao tentar a segunda alternativa do `amb`, a avaliação de `list("verb-phrase", parse_verb_phrase(), parse_prepositional_phrase())` chama `parse_verb_phrase()` recursivamente, que tenta primeiro `parse_word(verbs)` — e **consome um verbo da entrada** antes de qualquer nova recursão. Cada nível desce só depois de comer um pedaço da sentença, então a recursão é limitada pelo tamanho da entrada. As árvores saem aninhadas à direita em vez do formato do `maybe_extend`, e a ordem em que o `retry` produz as análises muda, mas todas aparecem.
+
+**Trocando a ordem das alternativas, o programa entra em recursão infinita.** A primeira alternativa passa a ser a recursiva: para analisar uma frase verbal, avalie `parse_verb_phrase()` — que, para analisar uma frase verbal, avalia `parse_verb_phrase()`… **sem consumir nada da entrada** entre uma chamada e a seguinte. É a armadilha clássica da *recursão à esquerda* em analisadores descendentes: a gramática "frase verbal = frase verbal + frase preposicional" é legítima como definição, mas transcrita diretamente vira um laço sem progresso. O `maybe_extend` do texto existe exatamente para converter essa recursão à esquerda em iteração: analise o núcleo primeiro, depois *estenda* enquanto der.
+
+</Solution>
+
 </Exercise>
 
-<Exercise id="4.45">
+<Exercise id="4.46">
 
 Estenda a gramática dada acima para lidar com sentenças mais complexas. Por exemplo, você poderia estender frases nominais e frases verbais para incluir adjetivos e advérbios, ou poderia lidar com sentenças compostas.[^5]
+
+<Solution exercise="4.46">
+
+Adjetivos, advérbios e conjunções entram como novas listas de palavras e novos nós na gramática:
+
+```javascript
+const adjectives = list("adjective", "brilliant", "lazy", "curious");
+const adverbs = list("adverb", "quickly", "carefully");
+const conjunctions = list("conjunction", "and", "or");
+
+// substantivo pode vir precedido de adjetivos: "the lazy cat"
+function parse_simple_noun_phrase() {
+    return amb(list("simple-noun-phrase",
+                    parse_word(articles), parse_word(nouns)),
+               list("simple-noun-phrase",
+                    parse_word(articles), parse_word(adjectives),
+                    parse_word(nouns)));
+}
+
+// verbo pode vir seguido de advérbio: "studies carefully"
+function parse_simple_verb() {
+    return amb(parse_word(verbs),
+               list("adverbed-verb", parse_word(verbs),
+                    parse_word(adverbs)));
+}
+
+// sentenças compostas: "the cat sleeps and the professor lectures"
+function parse_compound_sentence() {
+    const first = parse_sentence();
+    return amb(first,
+               list("compound-sentence", first,
+                    parse_word(conjunctions), parse_compound_sentence()));
+}
+```
+
+**O cuidado ao estender:** cada alternativa nova deve consumir entrada antes de recursar (a lição do exercício 4.45) — por isso `parse_compound_sentence` analisa `first` *antes* de decidir se procura uma conjunção. Com "The lazy cat sleeps quickly and the brilliant professor lectures.", a gramática estendida produz a análise composta com os dois ramos anotados.
+
+</Solution>
 
 </Exercise>
 
 [^5]: Este tipo de gramática pode se tornar arbitrariamente complexa, mas ela é apenas um brinquedo no que diz respeito à compreensão real de linguagem. A compreensão real de linguagem natural por computador requer uma mistura elaborada de análise sintática e interpretação de significado. Por outro lado, até analisadores de brinquedo podem ser úteis no suporte a linguagens de comando flexíveis para programas como sistemas de recuperação de informação. Winston 1992 discute abordagens computacionais para compreensão de linguagem real e também as aplicações de gramáticas simples a linguagens de comando.
 
-<Exercise id="4.46">
+<Exercise id="4.47">
 
 Alyssa P. Hacker está mais interessada em gerar sentenças interessantes do que em analisá-las. Ela raciocina que simplesmente mudando a função `parse_word` para que ela ignore a "sentença de entrada" e em vez disso sempre tenha sucesso e gere uma palavra apropriada, podemos usar os programas que construímos para análise para fazer geração em vez disso. Implemente a ideia de Alyssa, e mostre a primeira meia dúzia ou mais de sentenças geradas.[^6]
 
+<Solution exercise="4.47">
+
+Basta trocar `parse_word` por uma versão que ignora a entrada e *escolhe* uma palavra da categoria:
+
+```javascript
+function parse_word(word_list) {
+    function an_element_of(items) {
+        require(!is_null(items));
+        return amb(head(items), an_element_of(tail(items)));
+    }
+    return list(head(word_list), an_element_of(tail(word_list)));
+}
+```
+
+Nada mais muda — os mesmos `parse_sentence`, `parse_noun_phrase` etc. agora *geram* em vez de analisar, porque toda pergunta "que palavra vem agora?" virou um ponto de escolha. Pedindo a primeira sentença e digitando `retry`:
+
+```
+The student studies.
+The student studies for the student.
+The student studies for the student for the student.
+The student studies for the student for the student for the student.
+…
+```
+
+**A observação da nota de rodapé, vivida na prática:** o backtracking cronológico refaz sempre a escolha *mais recente* — que, nesta gramática, é o `maybe_extend` da última frase preposicional. O gerador "cai" na recursão das preposições e nunca mais volta para variar o substantivo ou o verbo. As sentenças são gramaticais, mas a amostragem é péssima — é o mesmo defeito do exercício 4.34 (o `k` que corre para o infinito), e a mesma cura: controlar a *ordem* das escolhas, seja reestruturando a gramática, seja com um `amb` de ordem aleatória (o `ramb` do exercício 4.48).
+
+</Solution>
+
 </Exercise>
 
-[^6]: Embora a ideia de Alyssa funcione muito bem (e seja surpreendentemente simples), as sentenças que ela gera são um pouco chatas—elas não amostram as sentenças possíveis desta linguagem de uma maneira muito interessante. Na verdade, a gramática é altamente recursiva em muitos lugares, e a técnica de Alyssa "cai em" uma dessas recursões e fica presa. Veja o exercício 4.50 para uma maneira de lidar com isso.
+[^6]: Embora a ideia de Alyssa funcione muito bem (e seja surpreendentemente simples), as sentenças que ela gera são um pouco chatas—elas não amostram as sentenças possíveis desta linguagem de uma maneira muito interessante. Na verdade, a gramática é altamente recursiva em muitos lugares, e a técnica de Alyssa "cai em" uma dessas recursões e fica presa. Veja o exercício 4.48 para uma maneira de lidar com isso.

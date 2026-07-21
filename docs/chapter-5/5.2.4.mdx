@@ -74,7 +74,7 @@ Os exercícios 5.13 a 5.18 descrevem outros recursos úteis de monitoramento e d
 
 Meça o número de pushes e a profundidade máxima de pilha necessária para calcular *n*! para vários valores pequenos de *n* usando a máquina fatorial mostrada na Figura 5.11. A partir de seus dados, determine fórmulas em termos de *n* para o número total de operações push e a profundidade máxima de pilha usada no cálculo de *n*! para qualquer *n* > 1. Observe que cada uma dessas é uma função linear de *n* e é, portanto, determinada por duas constantes. Para obter as estatísticas impressas, você terá que aumentar a máquina fatorial com instruções para inicializar a pilha e imprimir as estatísticas. Você pode querer também modificar a máquina para que ela leia repetidamente um valor para *n*, calcule o fatorial e imprima o resultado (como fizemos para a máquina MDC na figura 5.4), para que você não tenha que invocar repetidamente `get_register_contents`, `set_register_contents` e `start`.
 
-<Solution>
+<Solution exercise="5.13">
 
 Instrumentando a máquina (com `perform(op("initialize_stack"))` no início e `perform(op("print_stack_statistics"))` antes de `done`) e medindo:
 
@@ -95,7 +95,7 @@ Para o laço de leitura contínua, envolva o controlador em `read`/imprime como 
 
 Adicione *contagem de instruções* à simulação de máquina de registradores. Ou seja, faça o modelo de máquina manter o controle do número de instruções executadas. Estenda a interface do modelo de máquina para aceitar uma nova mensagem que imprima o valor da contagem de instruções e redefine a contagem para zero.
 
-<Solution>
+<Solution exercise="5.14">
 
 Um contador no modelo da máquina, incrementado dentro de `execute`:
 
@@ -125,7 +125,7 @@ O ponto único de passagem (`execute`) faz a contagem valer para qualquer máqui
 
 Aumente o simulador para fornecer *rastreamento de instruções*. Ou seja, antes de cada instrução ser executada, o simulador deve imprimir a instrução. Faça o modelo de máquina aceitar mensagens `trace_on` e `trace_off` para ativar e desativar o rastreamento.
 
-<Solution>
+<Solution exercise="5.15">
 
 Uma flag no modelo e uma impressão condicional no mesmo `execute`:
 
@@ -150,7 +150,7 @@ O montador já guarda o texto de cada instrução (`instruction_text`) exatament
 
 Estenda o rastreamento de instruções do exercício 5.15 de modo que antes de imprimir uma instrução, o simulador imprima quaisquer rótulos que precedem imediatamente essa instrução na sequência do controlador. Tenha cuidado para fazer isso de uma maneira que não interfira com a contagem de instruções (exercício 5.14). Você terá que fazer o simulador reter a informação de rótulo necessária.
 
-<Solution>
+<Solution exercise="5.16">
 
 O montador precisa **reter os rótulos junto às instruções**: em `extract_labels`, quando um rótulo é encontrado, anote-o na *próxima instrução* (a instrução ganha um campo de rótulos que a precedem — pode haver mais de um):
 
@@ -166,7 +166,7 @@ No `execute` com rastreamento, imprima primeiro os rótulos da instrução corre
 
 Modifique a função `make_register` da seção 5.2.1 de modo que os registradores possam ser rastreados. Registradores devem aceitar mensagens que ativam e desativam o rastreamento. Quando um registrador é rastreado, atribuir um valor ao registrador deve imprimir o nome do registrador, o conteúdo antigo do registrador e o novo conteúdo sendo atribuído. Estenda a interface ao modelo de máquina para permitir que você ative e desative o rastreamento para registradores de máquina designados.
 
-<Solution>
+<Solution exercise="5.17">
 
 No próprio `make_register`:
 
@@ -229,7 +229,7 @@ ou remover todos os breakpoints por meio de:
 ```javascript
 cancel_all_breakpoints(machine)
 ```
-<Solution>
+<Solution exercise="5.18">
 
 Breakpoints são pares (rótulo, deslocamento) guardados no modelo; a verificação vive no `execute`:
 

@@ -70,11 +70,11 @@ Declarações de variáveis e constantes são tratadas de maneira similar. Note 
   go_to(reg("continue")),
 ```
 
-## Exercício 5.28
+## Exercício 5.25
 
-Estenda o avaliador para tratar laços `while`, traduzindo-os para aplicações de uma função `while_loop`, conforme mostrado no exercício 4.9. Você pode colar a declaração da função `while_loop` na frente dos programas do usuário. Você pode "trapacear" assumindo que o transformador sintático `while_to_application` está disponível como uma operação de máquina. Consulte o exercício 4.9 para discutir se essa abordagem funciona se instruções `return`, `break` e `continue` são permitidas dentro do laço `while`. Se não, como você pode modificar o avaliador de controle explícito para executar programas com laços `while` que incluem essas instruções?
+Estenda o avaliador para tratar laços `while`, traduzindo-os para aplicações de uma função `while_loop`, conforme mostrado no exercício 4.7. Você pode colar a declaração da função `while_loop` na frente dos programas do usuário. Você pode "trapacear" assumindo que o transformador sintático `while_to_application` está disponível como uma operação de máquina. Consulte o exercício 4.7 para discutir se essa abordagem funciona se instruções `return`, `break` e `continue` são permitidas dentro do laço `while`. Se não, como você pode modificar o avaliador de controle explícito para executar programas com laços `while` que incluem essas instruções?
 
-<Solution>
+<Solution exercise="5.25">
 
 Com a "trapaça" permitida: um caso novo no despacho reconhece o laço e o transforma:
 
@@ -84,16 +84,16 @@ Com a "trapaça" permitida: um caso novo no despacho reconhece o laço e o trans
     go_to(label("ev_application")),
 ```
 
-com a declaração de `while_loop` pré-colada nos programas do usuário (a função recursiva de cauda do exercício 4.9 — que o avaliador de controle explícito, sendo tail-recursive, itera em espaço constante).
+com a declaração de `while_loop` pré-colada nos programas do usuário (a função recursiva de cauda do exercício 4.7 — que o avaliador de controle explícito, sendo tail-recursive, itera em espaço constante).
 
-**E `return`/`break`/`continue` dentro do laço?** A tradução por função quebra: um `return` dentro do corpo retornaria da *função auxiliar do laço*, não da função do usuário — e `break`/`continue` nem têm para onde ir. A discussão do exercício 4.9 se aplica: ou o corpo é traduzido em estilo de passagem de continuações (`break` e `continue` viram funções passadas ao corpo), ou — a rota natural AQUI — o avaliador de controle explícito implementa o laço **diretamente no controlador**, com rótulos: `while_test → corpo → while_test`, em que `break` é um `go_to` para o rótulo de saída, `continue` um `go_to` para o teste, e `return` continua fazendo o que sempre fez (reverter a pilha ao marcador da função). No nível de máquina de registradores, laços e saltos são o idioma nativo — a dificuldade da tradução funcional simplesmente desaparece.
+**E `return`/`break`/`continue` dentro do laço?** A tradução por função quebra: um `return` dentro do corpo retornaria da *função auxiliar do laço*, não da função do usuário — e `break`/`continue` nem têm para onde ir. A discussão do exercício 4.7 se aplica: ou o corpo é traduzido em estilo de passagem de continuações (`break` e `continue` viram funções passadas ao corpo), ou — a rota natural AQUI — o avaliador de controle explícito implementa o laço **diretamente no controlador**, com rótulos: `while_test → corpo → while_test`, em que `break` é um `go_to` para o rótulo de saída, `continue` um `go_to` para o teste, e `return` continua fazendo o que sempre fez (reverter a pilha ao marcador da função). No nível de máquina de registradores, laços e saltos são o idioma nativo — a dificuldade da tradução funcional simplesmente desaparece.
 
 </Solution>
 
-## Exercício 5.29
+## Exercício 5.26
 
 Modifique o avaliador de modo que ele use avaliação em ordem normal, baseado no avaliador preguiçoso da seção 4.2.
-<Solution>
+<Solution exercise="5.26">
 
 As mudanças espelham a seção 4.2 no nível do controlador:
 
