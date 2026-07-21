@@ -140,6 +140,43 @@ A função `count_change` gera um processo recursivo em árvore com redundância
 
 Uma função *f* é definida pelas regras *f(n) = n* se *n < 3* e *f(n) = f(n - 1) + 2f(n - 2) + 3f(n - 3)* se *n ≥ 3*. Escreva uma função JavaScript que calcula *f* por meio de um processo recursivo. Escreva uma função que calcula *f* por meio de um processo iterativo.
 
+<Solution>
+
+**Recursivo** — tradução literal das regras:
+
+<CodePlayground
+  code={`function f(n) {
+    return n < 3
+           ? n
+           : f(n - 1) + 2 * f(n - 2) + 3 * f(n - 3);
+}
+
+f(10);`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+**Iterativo** — a ideia é carregar uma "janela" com os três últimos valores, como fizemos com Fibonacci: `a = f(k)`, `b = f(k-1)`, `c = f(k-2)`, e a cada passo calcular o próximo e deslocar a janela.
+
+<CodePlayground
+  code={`function f(n) {
+    function iter(a, b, c, count) {
+        return count === 0
+               ? c
+               : iter(a + 2 * b + 3 * c, a, b, count - 1);
+    }
+    return iter(2, 1, 0, n);
+}
+
+f(10);`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** `iter` começa com `f(2) = 2`, `f(1) = 1`, `f(0) = 0` e aplica a regra `n` vezes; quando `count` chega a `0`, `c` percorreu exatamente `n` posições da sequência. O processo recursivo refaz os mesmos subproblemas muitas vezes (é uma recursão em árvore, como `fib`); o iterativo faz `n` passos.
+
+</Solution>
+
 ### Exercício 1.12
 
 O seguinte padrão de números é chamado de *triângulo de Pascal*.
@@ -155,8 +192,59 @@ O seguinte padrão de números é chamado de *triângulo de Pascal*.
 
 Os números na borda do triângulo são todos 1, e cada número dentro do triângulo é a soma dos dois números acima dele. Escreva uma função que calcula elementos do triângulo de Pascal por meio de um processo recursivo.
 
+<Solution>
+
+**Ideia.** Trate o elemento pela posição: `pascal(linha, coluna)`, com bordas iguais a 1 e o interior somando os dois de cima — a própria definição do triângulo vira o código.
+
+<CodePlayground
+  code={`function pascal(row, col) {
+    return col === 0 || col === row
+           ? 1
+           : pascal(row - 1, col - 1) + pascal(row - 1, col);
+}
+
+pascal(4, 2);`}
+  height={200}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** É a identidade dos coeficientes binomiais, $\binom{r}{c} = \binom{r-1}{c-1} + \binom{r-1}{c}$ — `pascal(4, 2)` é o `6` no centro da quinta linha. O processo é uma recursão em árvore; experimente `trace("pascal")` para ver a árvore de chamadas.
+
+</Solution>
+
 ### Exercício 1.13
 
 Prove que Fib(n) é o inteiro mais próximo de φⁿ/√5, onde φ = (1 + √5)/2. Dica: Use indução e a definição dos números de Fibonacci para provar que Fib(n) = (φⁿ - ψⁿ)/√5, onde ψ = (1 - √5)/2.
+
+<Solution>
+
+**Ideia.** Seguindo a dica, provamos por indução forte que $\text{Fib}(n) = (\varphi^n - \psi^n)/\sqrt{5}$, e disso o resultado segue porque o termo com $\psi$ é minúsculo.
+
+**Passo 1 — a fórmula fechada.** Base: $\text{Fib}(0) = 0 = (\varphi^0 - \psi^0)/\sqrt{5}$ e $\text{Fib}(1) = 1 = (\varphi - \psi)/\sqrt{5}$, pois $\varphi - \psi = \sqrt{5}$. Indução: tanto $\varphi$ quanto $\psi$ são raízes de $x^2 = x + 1$, logo $\varphi^n = \varphi^{n-1} + \varphi^{n-2}$ e o mesmo para $\psi$. Então
+
+$$\frac{\varphi^n - \psi^n}{\sqrt 5} = \frac{\varphi^{n-1} - \psi^{n-1}}{\sqrt 5} + \frac{\varphi^{n-2} - \psi^{n-2}}{\sqrt 5} = \text{Fib}(n-1) + \text{Fib}(n-2) = \text{Fib}(n).$$
+
+**Passo 2 — o inteiro mais próximo.** Da fórmula, $\text{Fib}(n) - \varphi^n/\sqrt{5} = -\psi^n/\sqrt{5}$. Como $|\psi| = |1-\sqrt5|/2 \approx 0{,}618 < 1$, temos $|\psi^n| \le 1$ para todo $n \ge 0$, e portanto
+
+$$\left|\text{Fib}(n) - \frac{\varphi^n}{\sqrt 5}\right| = \frac{|\psi|^n}{\sqrt 5} \le \frac{1}{\sqrt 5} < \frac{1}{2}.$$
+
+Um inteiro a menos de meia unidade de $\varphi^n/\sqrt 5$ é, por definição, o inteiro mais próximo dele. $\blacksquare$
+
+Verifique numericamente:
+
+<CodePlayground
+  code={`const phi = (1 + math_sqrt(5)) / 2;
+
+function fib(n) {
+    return n < 2 ? n : fib(n - 1) + fib(n - 2);
+}
+
+display(fib(10));
+math_round(math_pow(phi, 10) / math_sqrt(5));`}
+  height={220}
+  showLineNumbers={false}
+/>
+
+</Solution>
 
 <HelpFooter />

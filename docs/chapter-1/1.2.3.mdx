@@ -25,6 +25,34 @@ Ordens de crescimento fornecem apenas uma descrição grosseira do comportamento
 <a name="ex-1-14"></a>
 Desenhe a árvore ilustrando o processo gerado pela função `count_change` da seção 1.2.2 ao fazer troco de 11 centavos. Quais são as ordens de crescimento do espaço e do número de passos usados por este processo à medida que a quantia a ser trocada aumenta?
 
+<Solution>
+
+**A árvore.** Cada chamada `cc(quantia, tipos)` se ramifica em duas: *não usar* a maior moeda (`cc(quantia, tipos - 1)`) e *usá-la uma vez* (`cc(quantia - valor, tipos)`). Para 11 centavos com 5 tipos de moeda, a árvore desce rapidamente para os casos com apenas centavos — desenhe alguns níveis e o padrão fica claro. Você pode gerar a árvore real com o rastreador:
+
+<CodePlayground
+  code={`function first_denomination(kinds) {
+    return kinds === 1 ? 1
+         : kinds === 2 ? 5
+         : kinds === 3 ? 10
+         : kinds === 4 ? 25
+         : 50;
+}
+function cc(amount, kinds) {
+    return amount === 0 ? 1
+         : amount < 0 || kinds === 0 ? 0
+         : cc(amount, kinds - 1)
+           + cc(amount - first_denomination(kinds), kinds);
+}
+trace("cc");
+cc(11, 5);`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+**Ordens de crescimento.** O **espaço** é proporcional à profundidade máxima da árvore — dominada pelo ramo que subtrai 1 centavo por vez —, logo $\Theta(n)$. O **número de passos** cresce como o número de nós da árvore: com 1 tipo de moeda são $\Theta(n)$ passos; cada tipo adicional multiplica por um fator da ordem de $n$, resultando em $\Theta(n^5)$ para os cinco tipos.
+
+</Solution>
+
 ## Exercício 1.15
 
 <a name="ex-1-15"></a>
@@ -58,6 +86,28 @@ function sine(angle) {
 **a.** Quantas vezes a função `p` é aplicada quando `sine(12.15)` é avaliado?
 
 **b.** Qual é a ordem de crescimento no espaço e no número de passos (como uma função de $a$) usados pelo processo gerado pela função `sine` quando `sine(a)` é avaliado?
+
+<Solution>
+
+**a.** A cada aplicação o ângulo é dividido por 3, até ficar com magnitude ≤ 0,1. Procuramos o menor $k$ com $12{,}15/3^k \le 0{,}1$, isto é, $3^k \ge 121{,}5$ — e $3^5 = 243$. Então `p` é aplicada **5 vezes**. Confira com o rastreador:
+
+<CodePlayground
+  code={`function cube(x) { return x * x * x; }
+function p(x) { return 3 * x - 4 * cube(x); }
+function sine(angle) {
+    return ! (math_abs(angle) > 0.1)
+           ? angle
+           : p(sine(angle / 3));
+}
+trace("p");
+sine(12.15);`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+**b.** O número de aplicações é o menor $k$ com $a/3^k \le 0{,}1$, ou seja $k \approx \log_3(10a)$. Tanto o número de passos quanto o espaço (a cadeia de `p`s adiados) crescem com $k$: ambos são $\Theta(\log a)$. Dobrar o ângulo quase não muda o custo — essa é a assinatura do crescimento logarítmico.
+
+</Solution>
 
 ---
 

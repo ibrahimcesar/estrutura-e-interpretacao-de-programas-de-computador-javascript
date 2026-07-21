@@ -1,0 +1,45 @@
+.solution {
+  margin: 1rem 0 2rem;
+  border: 1px dashed var(--ifm-color-emphasis-400);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+}
+
+.summary {
+  cursor: pointer;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-700);
+  user-select: none;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:hover {
+  color: var(--ifm-font-color-base);
+}
+
+.solution[open] {
+  border-style: solid;
+  border-color: var(--ifm-color-primary);
+}
+
+.openLabel {
+  display: none;
+}
+
+.solution[open] .closedLabel {
+  display: none;
+}
+
+.solution[open] .openLabel {
+  display: inline;
+}
+
+.body {
+  padding: 0.25rem 1rem 0.75rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}

@@ -255,6 +255,22 @@ function f(g) {
 
 O que acontece se (perversamente) pedirmos ao interpretador para avaliar a aplicação `f(f)`? Explique.
 
+<Solution>
+
+Avaliar `f(f)` pelo modelo de substituição:
+
+```
+f(f)
+f(2)      // g é f, então g(2) é f(2)
+2(2)      // agora g é 2, e tentamos aplicar 2 como função
+```
+
+O interpretador tenta **aplicar o número 2 como se fosse uma função** — e isso é um erro de tipo. Em JavaScript a mensagem é algo como `TypeError: g is not a function`. Experimente no bloco acima: acrescente `f(f);` e execute.
+
+A pergunta é boa porque força a seguir a substituição *mecanicamente*, sem intuição salvadora: nada quebra no primeiro passo — `f` é um argumento perfeitamente válido — e o erro só aparece quando o `2` chega à posição de função.
+
+</Solution>
+
 ---
 
 ## Notas de Rodapé

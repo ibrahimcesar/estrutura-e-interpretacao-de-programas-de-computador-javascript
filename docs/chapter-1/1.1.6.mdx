@@ -211,6 +211,43 @@ a === 4
 
 Os parênteses ao redor das expressões condicionais nas últimas duas instruções são necessários porque a forma sintática de expressão condicional tem precedência mais baixa que os operadores aritméticos `+` e `*`.
 
+<Solution>
+
+**Ideia.** Basta avaliar na ordem, lembrando que declarações têm valor `undefined` e que os operadores seguem precedência e associatividade usuais.
+
+| Instrução | Valor | Observação |
+|---|---|---|
+| `10;` | `10` | |
+| `5 + 3 + 4;` | `12` | |
+| `9 - 1;` | `8` | |
+| `6 / 2;` | `3` | |
+| `2 * 4 + (4 - 6);` | `6` | `8 + (-2)` |
+| `const a = 3;` | `undefined` | declarações não têm valor |
+| `const b = a + 1;` | `undefined` | agora `b` é `4` |
+| `a + b + a * b;` | `19` | `3 + 4 + 12` |
+| `a === b;` | `false` | |
+| `b > a && b < a * b ? b : a;` | `4` | predicado é `true && true` |
+| `a === 4 ? 6 : b === 4 ? 6 + 7 + a : 25;` | `16` | cai no ramo `b === 4` |
+| `2 + (b > a ? b : a);` | `6` | `2 + 4` |
+| `(a > b ? a : a < b ? b : -1) * (a + 1);` | `16` | `4 * 4` |
+
+Confira executando a sequência (o eco é o valor da última instrução; os demais aparecem com `display`):
+
+<CodePlayground
+  code={`const a = 3;
+const b = a + 1;
+display(a + b + a * b);
+display(a === b);
+display(b > a && b < a * b ? b : a);
+display(a === 4 ? 6 : b === 4 ? 6 + 7 + a : 25);
+display(2 + (b > a ? b : a));
+(a > b ? a : a < b ? b : -1) * (a + 1);`}
+  height={230}
+  showLineNumbers={false}
+/>
+
+</Solution>
+
 ### Exercício 1.2
 
 Traduza a seguinte expressão para JavaScript:
@@ -219,9 +256,53 @@ $$
 \frac{5 + 4 + (2 - (3 - (6 + \frac{4}{5})))}{3(6 - 2)(2 - 7)}
 $$
 
+<Solution>
+
+**Ideia.** É uma tradução direta — o cuidado todo está nos parênteses do numerador e em escrever o denominador como um produto.
+
+<CodePlayground
+  code={`(5 + 4 + (2 - (3 - (6 + 4 / 5))))
+/
+(3 * (6 - 2) * (2 - 7));`}
+  height={140}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** O numerador vale $14{,}8$ e o denominador $3 \cdot 4 \cdot (-5) = -60$, então o resultado é $-\frac{37}{150} \approx -0{,}2467$.
+
+</Solution>
+
 ### Exercício 1.3
 
 Declare uma função que recebe três números como argumentos e retorna a soma dos quadrados dos dois números maiores.
+
+<Solution>
+
+**Ideia.** Somar os quadrados dos dois maiores é o mesmo que *excluir o menor* dos três. Então basta descobrir quem é o menor e somar os quadrados dos outros dois.
+
+<CodePlayground
+  code={`function square(x) {
+    return x * x;
+}
+
+function sum_of_squares_of_two_larger(a, b, c) {
+    return a <= b && a <= c
+           ? square(b) + square(c)
+           : b <= a && b <= c
+           ? square(a) + square(c)
+           : square(a) + square(b);
+}
+
+sum_of_squares_of_two_larger(1, 2, 3);`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Cada ramo do condicional identifica um candidato a menor (`a`, `b` ou `c`) e devolve a soma dos quadrados dos outros dois. Empates não atrapalham: se `a === b`, tanto faz qual dos dois é "excluído". Com `(1, 2, 3)` o resultado é $2^2 + 3^2 = 13$.
+
+**Armadilha comum.** Testar apenas `a < b` (sem o `=`) e esquecer os empates — com desigualdades estritas nos três ramos, entradas como `(2, 2, 5)` podem não casar com ramo nenhum, dependendo de como você organizar os testes.
+
+</Solution>
 
 ### Exercício 1.4
 
@@ -239,6 +320,18 @@ function a_plus_abs_b(a, b) {
   height={250}
   showLineNumbers={false}
 />
+
+<Solution>
+
+**Ideia.** Numa aplicação, a expressão de função também é avaliada — e aqui ela é a expressão condicional `b >= 0 ? plus : minus`, cujo valor é **uma função**.
+
+**Por que funciona.** Se `b >= 0`, a aplicação vira `plus(a, b)`, ou seja `a + b`; caso contrário vira `minus(a, b)`, ou seja `a - b`. Subtrair um número negativo é somar o seu valor absoluto — então, nos dois casos, o resultado é
+
+$$a + |b|$$
+
+O exercício mostra que funções são valores como quaisquer outros: podem ser o resultado de uma expressão condicional e aplicadas em seguida.
+
+</Solution>
 
 ### Exercício 1.5
 
@@ -268,5 +361,16 @@ Que comportamento Ben observará com um interpretador que usa avaliação de ord
 <a name="footnote-1"></a> [[1]](#footnote-link-1) Condicionais em JavaScript completo aceitam qualquer valor, não apenas um booleano, como resultado da avaliação da expressão do _predicado_. Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
 
 <a name="footnote-2"></a> [[2]](#footnote-link-2) "Interpretado como verdadeiro ou falso" significa isto: Em JavaScript completo, condicionais podem aceitar qualquer valor como resultado da avaliação da expressão predicado (veja a nota de rodapé na seção 4.1.2 para detalhes). Os programas neste livro usam apenas valores booleanos como predicados de condicionais.
+
+<Solution>
+
+**Ideia.** A definição `function p() { return p(); }` só causa problema se `p()` for de fato *avaliada* — e é exatamente nisso que os dois regimes diferem.
+
+- **Ordem aplicativa** (o que o JavaScript faz): os argumentos são avaliados *antes* de aplicar a função. Avaliar `test(0, p())` exige avaliar `p()`, que chama `p()`, que chama `p()`… — o interpretador entra em recursão infinita e nunca responde. Experimente no bloco acima: acrescente `test(0, p());` e execute — aqui no playground você verá um `RangeError` (estouro de pilha) ou a interrupção pelos 5 segundos, que são as formas práticas de "nunca responde".
+- **Ordem normal**: os argumentos só seriam avaliados *quando necessários*. `test(0, p())` expandiria para `0 === 0 ? 0 : p()`; o predicado é verdadeiro, o ramo `p()` nunca é avaliado, e o resultado é `0`.
+
+**Por que o teste funciona.** `p()` é um argumento que diverge se avaliado. A ordem aplicativa o avalia sempre; a ordem normal, nunca (neste caso). O comportamento observável — travar versus responder `0` — denuncia o regime do interpretador.
+
+</Solution>
 
 <HelpFooter />

@@ -420,6 +420,7 @@ const sidebars = {
       },
       items: [
         'guia-traducao',
+        'solucoes',
         'como-contribuir',
       ],
     },

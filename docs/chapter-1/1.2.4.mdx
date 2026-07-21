@@ -110,6 +110,37 @@ A diferença entre crescimento $\Theta(\log n)$ e crescimento $\Theta(n)$ torna-
 <a name="ex-1-16"></a>
 Projete uma função que evolui um processo de exponenciação iterativo que usa sucessivas elevações ao quadrado e usa um número logarítmico de passos, assim como `fast_expt`. (Dica: Usando a observação de que $(b^{n/2})^2 =(b^2)^{n/2}$, mantenha, junto com o expoente $n$ e a base $b$, uma variável de estado adicional $a$, e defina a transformação de estado de tal forma que o produto $a b^n$ não mude de estado para estado. No início do processo, $a$ é tomado como 1, e a resposta é dada pelo valor de $a$ no final do processo. Em geral, a técnica de definir uma *quantidade invariante* que permanece inalterada de estado para estado é uma maneira poderosa de pensar sobre o projeto de algoritmos iterativos.)
 
+<Solution>
+
+**Ideia.** O invariante é $a \cdot b^n = \text{constante}$ (o valor final da potência). A cada passo, transformamos o estado sem quebrá-lo: com $n$ par, $b \leftarrow b^2,\; n \leftarrow n/2$; com $n$ ímpar, $a \leftarrow a\,b,\; n \leftarrow n - 1$. Quando $n = 0$, o invariante diz que $a$ *é* a resposta.
+
+<CodePlayground
+  code={`function is_even(n) {
+    return n % 2 === 0;
+}
+function square(x) {
+    return x * x;
+}
+function expt_iter(b, n, a) {
+    return n === 0
+           ? a
+           : is_even(n)
+           ? expt_iter(square(b), n / 2, a)
+           : expt_iter(b, n - 1, a * b);
+}
+function fast_expt(b, n) {
+    return expt_iter(b, n, 1);
+}
+
+fast_expt(2, 10);`}
+  height={380}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Nos dois ramos, $a \cdot b^n$ não muda: $(a)(b^2)^{n/2} = a\,b^n$ e $(a b)\,b^{n-1} = a\,b^n$. Cada passo par corta $n$ pela metade, então o processo é iterativo e $\Theta(\log n)$.
+
+</Solution>
+
 ## Exercício 1.17
 
 <a name="ex-1-17"></a>
@@ -125,10 +156,65 @@ function times(a, b) {
 
 Este algoritmo leva um número de passos que é linear em `b`. Agora suponha que incluímos, junto com adição, as operações `double`, que dobra um inteiro, e `halve`, que divide um inteiro (par) por 2. Usando estas, projete um algoritmo de multiplicação análogo a `fast_expt` que usa um número logarítmico de passos.
 
+<Solution>
+
+**Ideia.** É o mesmo esqueleto de `fast_expt`, trocando "multiplicar" por "somar": $a \cdot b = 2\,(a \cdot (b/2))$ quando $b$ é par, e $a \cdot b = a + a \cdot (b - 1)$ quando é ímpar.
+
+<CodePlayground
+  code={`function double(x) { return x + x; }
+function halve(x) { return x / 2; }
+function is_even(n) { return n % 2 === 0; }
+
+function fast_times(a, b) {
+    return b === 0
+           ? 0
+           : is_even(b)
+           ? double(fast_times(a, halve(b)))
+           : a + fast_times(a, b - 1);
+}
+
+fast_times(7, 12);`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+O processo é recursivo (o `double` fica adiado na volta), mas o número de passos é $\Theta(\log b)$.
+
+</Solution>
+
 ## Exercício 1.18
 
 <a name="ex-1-18"></a>
 Usando os resultados dos exercícios 1.16 e 1.17, desenvolva uma função que gera um processo iterativo para multiplicar dois inteiros em termos de adicionar, dobrar e dividir pela metade e usa um número logarítmico de passos.
+
+<Solution>
+
+**Ideia.** Igual ao exercício 1.16, com o invariante aditivo $r + a \cdot b = \text{constante}$: com $b$ par, dobramos $a$ e dividimos $b$ ao meio; com $b$ ímpar, movemos um $a$ para o acumulador.
+
+<CodePlayground
+  code={`function double(x) { return x + x; }
+function halve(x) { return x / 2; }
+function is_even(n) { return n % 2 === 0; }
+
+function times_iter(a, b, r) {
+    return b === 0
+           ? r
+           : is_even(b)
+           ? times_iter(double(a), halve(b), r)
+           : times_iter(a, b - 1, r + a);
+}
+function fast_times(a, b) {
+    return times_iter(a, b, 0);
+}
+
+fast_times(7, 12);`}
+  height={360}
+  showLineNumbers={false}
+/>
+
+Este é o método clássico do "camponês russo" de multiplicação — iterativo, espaço constante, $\Theta(\log b)$ passos.
+
+</Solution>
 
 ## Exercício 1.19
 
@@ -155,6 +241,49 @@ function fib_iter(a, b, p, q, count) {
                       count - 1);
 }
 ```
+
+<Solution>
+
+**Calculando $T_{pq}$ duas vezes.** Aplicando $a \leftarrow bq + aq + ap$ e $b \leftarrow bp + aq$ ao resultado de si mesma e agrupando os termos:
+
+$$b'' = (bp + aq)p + (bq + aq + ap)q = b(p^2 + q^2) + a(2pq + q^2)$$
+
+que tem a mesma forma com
+
+$$p' = p^2 + q^2 \qquad q' = 2pq + q^2$$
+
+(a componente $a''$ confere com os mesmos $p'$ e $q'$ — vale a pena fazer a conta).
+
+<CodePlayground
+  code={`function is_even(n) { return n % 2 === 0; }
+
+function fib(n) {
+    return fib_iter(1, 0, 0, 1, n);
+}
+function fib_iter(a, b, p, q, count) {
+    return count === 0
+           ? b
+           : is_even(count)
+           ? fib_iter(a,
+                      b,
+                      p * p + q * q,
+                      2 * p * q + q * q,
+                      count / 2)
+           : fib_iter(b * q + a * q + a * p,
+                      b * p + a * q,
+                      p,
+                      q,
+                      count - 1);
+}
+
+fib(50);`}
+  height={430}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Quando `count` é par, em vez de aplicar $T_{pq}$ duas vezes, aplicamos $T_{p'q'}$ uma vez "de graça" — exatamente a elevação ao quadrado de `fast_expt`, agora sobre transformações em vez de números. `fib(50)` responde `12586269025` em cerca de uma dúzia de passos.
+
+</Solution>
 
 ---
 

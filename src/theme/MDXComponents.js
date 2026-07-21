@@ -4,6 +4,7 @@ import MDXComponents from '@theme-original/MDXComponents';
 import Figure from '@site/src/components/Figure';
 import Exercise from '@site/src/components/Exercise';
 import MemoryDiagram from '@site/src/components/MemoryDiagram';
+import Solution from '@site/src/components/Solution';
 
 export default {
   // Re-use the default mapping
@@ -12,4 +13,5 @@ export default {
   Figure,
   Exercise,
   MemoryDiagram,
+  Solution,
 };

@@ -172,6 +172,42 @@ A existência de testes para os quais se pode provar que a chance de erro torna-
 <a name="ex-1-21"></a>
 Use a função `smallest_divisor` para encontrar o menor divisor de cada um dos seguintes números: 199, 1999, 19999.
 
+<Solution>
+
+<CodePlayground
+  code={`display(smallest_divisor(199));
+display(smallest_divisor(1999));
+smallest_divisor(19999);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function smallest_divisor(n) {
+    return find_divisor(n, 2);
+}
+function find_divisor(n, test_divisor) {
+    return square(test_divisor) > n
+           ? n
+           : divides(test_divisor, n)
+           ? test_divisor
+           : find_divisor(n, test_divisor + 1);
+}
+function divides(a, b) {
+    return b % a === 0;
+}
+function is_prime(n) {
+    return n === smallest_divisor(n);
+}
+function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={160}
+  showLineNumbers={false}
+/>
+
+**Resultados:** `199` e `1999` são primos (o menor divisor é o próprio número); já `19999 = 7 × 2857`, então seu menor divisor é **7**.
+
+</Solution>
+
 ## Exercício 1.22
 
 <a name="ex-1-22"></a>
@@ -219,15 +255,154 @@ function is_prime(n) {
 
 Usando esta função, escreva uma função `search_for_primes` que verifica a primalidade de inteiros ímpares consecutivos em um intervalo especificado. Use sua função para encontrar os três menores primos maiores que 1000; maiores que 10.000; maiores que 100.000; maiores que 1.000.000. Observe o tempo necessário para testar cada primo. Como o algoritmo de teste tem ordem de crescimento de $\Theta(\sqrt{n})$, você deve esperar que testar primos em torno de 10.000 leve cerca de $\sqrt{10}$ vezes mais tempo do que testar primos em torno de 1000. Seus dados de temporização confirmam isso? Quão bem os dados para 100.000 e 1.000.000 suportam a previsão de $\sqrt{n}$? Seu resultado é compatível com a noção de que programas em sua máquina executam em tempo proporcional ao número de passos necessários para o cálculo?
 
+<Solution>
+
+**Ideia.** Caminhar só pelos ímpares, decrementando o contador a cada primo encontrado.
+
+<CodePlayground
+  code={`function timed_prime_test(n) {
+    display(n);
+    return start_prime_test(n, get_time());
+}
+function start_prime_test(n, start_time) {
+    return is_prime(n)
+           ? report_prime(get_time() - start_time)
+           : false;
+}
+function report_prime(elapsed_time) {
+    display(" *** ");
+    display(elapsed_time);
+    return true;
+}
+function search_for_primes(start, count) {
+    return count === 0
+           ? "concluído"
+           : is_even(start)
+           ? search_for_primes(start + 1, count)
+           : timed_prime_test(start)
+           ? search_for_primes(start + 2, count - 1)
+           : search_for_primes(start + 2, count);
+}
+
+search_for_primes(1000, 3);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function smallest_divisor(n) {
+    return find_divisor(n, 2);
+}
+function find_divisor(n, test_divisor) {
+    return square(test_divisor) > n
+           ? n
+           : divides(test_divisor, n)
+           ? test_divisor
+           : find_divisor(n, test_divisor + 1);
+}
+function divides(a, b) {
+    return b % a === 0;
+}
+function is_prime(n) {
+    return n === smallest_divisor(n);
+}
+function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={420}
+  showLineNumbers={false}
+/>
+
+**Os primos:** 1009, 1013, 1019; 10007, 10009, 10037; 100003, 100019, 100043; 1000003, 1000033, 1000037.
+
+**Sobre os tempos.** Em máquinas atuais, todos esses testes levam praticamente 0 ms — o exercício foi escrito quando computadores eram milhões de vezes mais lentos. Para *ver* a razão $\sqrt{10} \approx 3{,}16$, procure primos perto de $10^{10}$, $10^{11}$ e $10^{12}$ (ainda dentro da precisão dos números de JavaScript, $2^{53}$): as razões entre tempos consecutivos se aproximam de $\sqrt{10}$, confirmando que o tempo de execução acompanha o número de passos, $\Theta(\sqrt n)$.
+
+</Solution>
+
 ## Exercício 1.23
 
 <a name="ex-1-23"></a>
 A função `smallest_divisor` mostrada no início desta seção faz muitos testes desnecessários: Depois que ela verifica se o número é divisível por 2, não há sentido em verificar se ele é divisível por qualquer número par maior. Isso sugere que os valores usados para `test_divisor` não deveriam ser 2, 3, 4, 5, 6, ... mas sim 2, 3, 5, 7, 9, ... Para implementar esta mudança, declare uma função `next` que retorna 3 se sua entrada for igual a 2 e caso contrário retorna sua entrada mais 2. Modifique a função `smallest_divisor` para usar `next(test_divisor)` em vez de `test_divisor + 1`. Com `timed_prime_test` incorporando esta versão modificada de `smallest_divisor`, execute o teste para cada um dos 12 primos encontrados no exercício 1.22. Como esta modificação reduz pela metade o número de passos de teste, você deve esperar que execute cerca de duas vezes mais rápido. Esta expectativa é confirmada? Se não, qual é a razão observada das velocidades dos dois algoritmos, e como você explica o fato de que ela é diferente de 2?
 
+<Solution>
+
+<CodePlayground
+  code={`function next(n) {
+    return n === 2 ? 3 : n + 2;
+}
+function find_divisor(n, test_divisor) {
+    return square(test_divisor) > n
+           ? n
+           : divides(test_divisor, n)
+           ? test_divisor
+           : find_divisor(n, next(test_divisor));
+}
+function smallest_divisor(n) {
+    return find_divisor(n, 2);
+}
+function is_prime(n) {
+    return n === smallest_divisor(n);
+}
+
+is_prime(1000037);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function divides(a, b) {
+    return b % a === 0;
+}`}
+  height={380}
+  showLineNumbers={false}
+/>
+
+**A expectativa se confirma?** Só em parte. Metade dos candidatos é testada, mas cada passo ficou mais caro: `next` é uma chamada de função com um teste condicional, no lugar de uma soma direta. Na prática a razão observada fica tipicamente entre 1,5 e 2 — o número de *passos* caiu pela metade, mas passos não têm todos o mesmo custo. É um bom lembrete de que $\Theta$ esconde constantes que a medição revela.
+
+</Solution>
+
 ## Exercício 1.24
 
 <a name="ex-1-24"></a>
 Modifique a função `timed_prime_test` do exercício 1.22 para usar `fast_is_prime` (o método de Fermat), e teste cada um dos 12 primos que você encontrou naquele exercício. Como o teste de Fermat tem crescimento $\Theta(\log n)$, como você esperaria que o tempo para testar primos perto de 1.000.000 se comparasse com o tempo necessário para testar primos perto de 1000? Seus dados confirmam isso? Você pode explicar qualquer discrepância que encontrar?
+
+<Solution>
+
+**Ideia.** Trocar `is_prime` por `fast_is_prime` (teste de Fermat) na mesma estrutura de medição:
+
+<CodePlayground
+  code={`function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? square(expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}
+function fermat_test(n) {
+    function try_it(a) {
+        return expmod(a, n, n) === a;
+    }
+    return try_it(1 + math_floor(math_random() * (n - 1)));
+}
+function fast_is_prime(n, times) {
+    return times === 0
+           ? true
+           : fermat_test(n)
+           ? fast_is_prime(n, times - 1)
+           : false;
+}
+
+display(fast_is_prime(1009, 10));
+fast_is_prime(1000037, 10);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={430}
+  showLineNumbers={false}
+/>
+
+**Expectativa.** Com crescimento $\Theta(\log n)$, testar primos perto de $1.000.000$ deveria custar cerca de **o dobro** de testar perto de $1.000$ ($\log 10^6 = 2 \log 10^3$). Na prática a razão medida costuma ficar perto disso, mas não exatamente: o custo de cada multiplicação não é constante, o número de repetições do teste e o gerador aleatório adicionam ruído, e para números tão pequenos o tempo é dominado por sobrecustos fixos do interpretador.
+
+</Solution>
 
 ## Exercício 1.25
 
@@ -241,6 +416,16 @@ function expmod(base, exp, m) {
 ```
 
 Ela está correta? Esta função serviria tão bem para nosso testador de primos rápido? Explique.
+
+<Solution>
+
+**Alyssa está errada** — a função dela é matematicamente correta, mas inútil na prática.
+
+`expmod` reduz módulo `m` **a cada passo**, então os números intermediários nunca passam de $m^2$. A versão de Alyssa calcula primeiro $b^e$ *por inteiro*: para um teste de Fermat com $n$ perto de um milhão, isso é um número com milhões de dígitos. Em uma linguagem com inteiros exatos, isso torna cada multiplicação lentíssima; em JavaScript é pior — números perdem precisão acima de $2^{53}$ e viram `Infinity` por volta de $10^{308}$, então o resultado do `%` final é simplesmente **errado**. Experimente: `fast_expt(999999, 999999)` é `Infinity`, e `Infinity % m` é `NaN`.
+
+A lição é a da nota de rodapé 3: reduzir módulo $m$ cedo e sempre não é uma otimização opcional — é o que mantém o cálculo dentro do mundo dos números representáveis.
+
+</Solution>
 
 ## Exercício 1.26
 
@@ -260,15 +445,110 @@ function expmod(base, exp, m) {
 
 "Não vejo que diferença isso poderia fazer", diz Louis. "Eu vejo", diz Eva. "Ao escrever a função dessa forma, você transformou o processo $\Theta(\log n)$ em um processo $\Theta(n)$." Explique.
 
+<Solution>
+
+Na versão de Louis, o argumento de `square` virou **duas chamadas idênticas**: cada nível de recursão com expoente par dispara *duas* subárvores completas em vez de uma. A recursão que antes era uma *corrente* de comprimento $\log n$ virou uma *árvore binária* de profundidade $\log n$ — e uma árvore binária com essa profundidade tem da ordem de $2^{\log_2 n} = n$ nós.
+
+Formalmente: $T(e) = 2\,T(e/2) + \Theta(1)$ resolve para $T(e) = \Theta(e)$, enquanto com `square` era $T(e) = T(e/2) + \Theta(1) = \Theta(\log e)$. A avaliação em ordem aplicativa avalia o operando **uma vez** quando ele é argumento de `square`, mas avalia **as duas ocorrências** quando Louis as escreve explicitamente.
+
+</Solution>
+
 ## Exercício 1.27
 
 <a name="ex-1-27"></a>
 Demonstre que os números de Carmichael listados na nota de rodapé 4 realmente enganam o teste de Fermat. Isto é, escreva uma função que recebe um inteiro $n$ e testa se $a^n$ é congruente a $a$ módulo $n$ para todo $a < n$, e tente sua função nos números de Carmichael dados.
 
+<Solution>
+
+**Ideia.** Testar a congruência $a^n \equiv a \pmod n$ para *todos* os $a < n$:
+
+<CodePlayground
+  code={`function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? square(expmod(base, exp / 2, m)) % m
+           : (base * expmod(base, exp - 1, m)) % m;
+}
+function fools_fermat(n) {
+    function test_all(a) {
+        return a >= n
+               ? true
+               : expmod(a, n, n) === a % n
+               ? test_all(a + 1)
+               : false;
+    }
+    return test_all(1);
+}
+
+display(fools_fermat(561));
+display(fools_fermat(1105));
+display(fools_fermat(1729));
+fools_fermat(15);`}
+  hiddenCode={`function square(x) {
+    return x * x;
+}
+function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={430}
+  showLineNumbers={false}
+/>
+
+**Resultado.** Os números de Carmichael 561, 1105 e 1729 passam no teste para *todas* as bases — indistinguíveis de primos aos olhos de Fermat — enquanto um composto comum como 15 falha imediatamente. (O 1729 é o famoso "número de táxi" de Hardy e Ramanujan.)
+
+</Solution>
+
 ## Exercício 1.28
 
 <a name="ex-1-28"></a>
 Uma variante do teste de Fermat que não pode ser enganada é chamada de *teste de Miller-Rabin* (Miller 1976; Rabin 1980). Este começa de uma forma alternativa do Pequeno Teorema de Fermat, que afirma que se $n$ é um número primo e $a$ é qualquer inteiro positivo menor que $n$, então $a$ elevado à $(n-1)$-ésima potência é congruente a 1 módulo $n$. Para testar a primalidade de um número $n$ pelo teste de Miller-Rabin, escolhemos um número aleatório $a < n$ e elevamos $a$ à $(n-1)$-ésima potência módulo $n$ usando a função `expmod`. No entanto, sempre que realizamos o passo de elevação ao quadrado em `expmod`, verificamos se descobrimos uma "raiz quadrada não trivial de 1 módulo $n$", isto é, um número diferente de 1 ou $n-1$ cujo quadrado é igual a 1 módulo $n$. É possível provar que se tal raiz quadrada não trivial de 1 existir, então $n$ não é primo. Também é possível provar que se $n$ é um número ímpar que não é primo, então, para pelo menos metade dos números $a < n$, calcular $a^{n-1}$ desta forma revelará uma raiz quadrada não trivial de 1 módulo $n$. (É por isso que o teste de Miller-Rabin não pode ser enganado.) Modifique a função `expmod` para sinalizar se ela descobrir uma raiz quadrada não trivial de 1, e use isso para implementar o teste de Miller-Rabin com uma função análoga a `fermat_test`. Verifique sua função testando vários primos e não-primos conhecidos. Dica: Uma maneira conveniente de fazer `expmod` sinalizar é fazê-la retornar 0.
+
+<Solution>
+
+**Ideia.** No passo de elevação ao quadrado, sinalizar (retornando 0) quando encontramos uma raiz quadrada não trivial de 1 módulo $n$ — um $x \neq 1, n-1$ com $x^2 \equiv 1 \pmod n$:
+
+<CodePlayground
+  code={`function square_check(x, m) {
+    return x !== 1 && x !== m - 1 && (x * x) % m === 1
+           ? 0
+           : (x * x) % m;
+}
+function expmod(base, exp, m) {
+    return exp === 0
+           ? 1
+           : is_even(exp)
+           ? square_check(expmod(base, exp / 2, m), m)
+           : (base * expmod(base, exp - 1, m)) % m;
+}
+function miller_rabin_test(n) {
+    function try_it(a) {
+        return expmod(a, n - 1, n) === 1;
+    }
+    return try_it(2 + math_floor(math_random() * (n - 3)));
+}
+function fast_is_prime(n, times) {
+    return times === 0
+           ? true
+           : miller_rabin_test(n)
+           ? fast_is_prime(n, times - 1)
+           : false;
+}
+
+display(fast_is_prime(1009, 20));   // primo
+display(fast_is_prime(561, 20));    // Carmichael!
+display(fast_is_prime(6601, 20));   // Carmichael!
+fast_is_prime(1000037, 20);`}
+  hiddenCode={`function is_even(n) {
+    return n % 2 === 0;
+}`}
+  height={480}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** O 0 é "pegajoso": uma vez sinalizado, propaga-se até o topo (qualquer coisa ao quadrado ou multiplicada módulo $m$ continua 0) e faz `expmod(a, n-1, n) === 1` falhar. Note os números de Carmichael que enganavam Fermat no exercício 1.27 sendo desmascarados — como pelo menos metade das bases revela uma raiz não trivial quando $n$ é composto, vinte rodadas dão confiança de mais de $1 - 2^{-20}$.
+
+</Solution>
 
 ---
 

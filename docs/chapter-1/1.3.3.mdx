@@ -325,10 +325,73 @@ Com essa modificação, a função de raiz quadrada funciona. Na verdade, se des
 <a name="ex-1-35"></a>
 Mostre que a razão áurea $\phi$ (seção 1.2.2) é um ponto fixo da transformação $x \mapsto 1 + 1/x$, e use isso para calcular $\phi$ por meio da função `fixed_point`.
 
+<Solution>
+
+**A demonstração.** $\phi$ satisfaz $\phi^2 = \phi + 1$ (é a raiz positiva dessa equação, por definição). Dividindo os dois lados por $\phi$: $\phi = 1 + 1/\phi$ — ou seja, $\phi$ é exatamente um ponto fixo de $x \mapsto 1 + 1/x$.
+
+<CodePlayground
+  code={`fixed_point(x => 1 + 1 / x, 1);`}
+  hiddenCode={`const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return math_abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
+}`}
+  height={110}
+  showLineNumbers={false}
+/>
+
+O resultado, $\approx 1{,}6180$, é a razão áurea.
+
+</Solution>
+
 ## Exercício 1.36
 
 <a name="ex-1-36"></a>
 Modifique `fixed_point` para que ela imprima a sequência de aproximações que gera, usando a função primitiva `display` mostrada no exercício 1.22. Então encontre uma solução de $x^x = 1000$ encontrando um ponto fixo de $x \mapsto \log(1000)/\log(x)$. (Use a função primitiva `math_log` do JavaScript, que calcula logaritmos naturais.) Compare o número de passos necessários com e sem amortecimento médio. (Observe que você não pode iniciar `fixed_point` com um palpite de 1, pois isso causaria divisão por $\log(1) = 0$.)
+
+<Solution>
+
+**Versão com impressão** e a busca por $x^x = 1000$:
+
+<CodePlayground
+  code={`const tolerance = 0.00001;
+function fixed_point(f, first_guess) {
+    function close_enough(x, y) {
+        return math_abs(x - y) < tolerance;
+    }
+    function try_with(guess) {
+        display(guess);
+        const next = f(guess);
+        return close_enough(guess, next)
+               ? next
+               : try_with(next);
+    }
+    return try_with(first_guess);
+}
+
+// sem amortecimento:
+fixed_point(x => math_log(1000) / math_log(x), 2);`}
+  height={430}
+  showLineNumbers={false}
+/>
+
+Sem amortecimento a sequência oscila e leva **cerca de 34 passos**. Com amortecimento médio — troque a última linha por
+
+```javascript
+fixed_point(x => (x + math_log(1000) / math_log(x)) / 2, 2);
+```
+
+— converge em **cerca de 9 passos** para $x \approx 4{,}5555$. O amortecimento não muda o ponto fixo (a média de $x$ com $f(x)$ coincide com $x$ exatamente quando $f(x) = x$), só doma a oscilação.
+
+</Solution>
 
 ## Exercício 1.37
 
@@ -355,10 +418,81 @@ para valores sucessivos de `k`. Quão grande você tem que fazer `k` para obter 
 
 **b.** Se sua função `cont_frac` gera um processo recursivo, escreva uma que gere um processo iterativo. Se ela gera um processo iterativo, escreva uma que gere um processo recursivo.
 
+<Solution>
+
+**a. Recursivo** — contando do termo $k$ para dentro:
+
+<CodePlayground
+  code={`function cont_frac(n, d, k) {
+    function frac(i) {
+        return i > k
+               ? 0
+               : n(i) / (d(i) + frac(i + 1));
+    }
+    return frac(1);
+}
+
+cont_frac(i => 1, i => 1, 12);`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+Com $1/\phi \approx 0{,}6180$, a precisão de 4 casas decimais chega com **k = 11 ou 12**.
+
+**b. Iterativo** — construindo de trás para frente, do termo $k$ até o 1:
+
+<CodePlayground
+  code={`function cont_frac(n, d, k) {
+    function iter(i, result) {
+        return i === 0
+               ? result
+               : iter(i - 1, n(i) / (d(i) + result));
+    }
+    return iter(k, 0);
+}
+
+cont_frac(i => 1, i => 1, 12);`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+A fração contínua se "enrola" naturalmente de dentro para fora, então a versão iterativa começa pelo último termo — um caso em que pensar na ordem de construção é o coração do exercício.
+
+</Solution>
+
 ## Exercício 1.38
 
 <a name="ex-1-38"></a>
 Em 1737, o matemático suíço Leonhard Euler publicou um artigo *De Fractionibus Continuis*, que incluía uma expansão em fração contínua para $e - 2$, onde $e$ é a base dos logaritmos naturais. Nesta fração, os $N_i$ são todos 1, e os $D_i$ são sucessivamente 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, ... Escreva um programa que usa sua função `cont_frac` do exercício 1.37 para aproximar $e$, baseado na expansão de Euler.
+
+<Solution>
+
+**Ideia.** Só precisamos descrever a sequência de denominadores $1, 2, 1, 1, 4, 1, 1, 6, \ldots$: nas posições $2, 5, 8, \ldots$ (isto é, $i \equiv 2 \pmod 3$) o valor é $\frac{2(i+1)}{3}$; nas demais é 1.
+
+<CodePlayground
+  code={`function cont_frac(n, d, k) {
+    function iter(i, result) {
+        return i === 0
+               ? result
+               : iter(i - 1, n(i) / (d(i) + result));
+    }
+    return iter(k, 0);
+}
+
+function euler_d(i) {
+    return i % 3 === 2
+           ? 2 * (i + 1) / 3
+           : 1;
+}
+
+2 + cont_frac(i => 1, euler_d, 20);`}
+  height={340}
+  showLineNumbers={false}
+/>
+
+Com 20 termos o resultado já é $e \approx 2{,}718281828$ com todas as casas mostradas corretas.
+
+</Solution>
 
 ## Exercício 1.39
 
@@ -370,6 +504,36 @@ $$
 $$
 
 onde $x$ está em radianos. Declare uma função `tan_cf(x, k)` que calcula uma aproximação da função tangente baseada na fórmula de Lambert. A constante `k` especifica o número de termos a calcular, como no exercício 1.37.
+
+<Solution>
+
+**Ideia.** Na fórmula de Lambert, $N_1 = x$ e os demais $N_i = -x^2$ (o sinal de menos da fórmula vira sinal do numerador); os denominadores são os ímpares $1, 3, 5, \ldots$
+
+<CodePlayground
+  code={`function cont_frac(n, d, k) {
+    function iter(i, result) {
+        return i === 0
+               ? result
+               : iter(i - 1, n(i) / (d(i) + result));
+    }
+    return iter(k, 0);
+}
+
+function tan_cf(x, k) {
+    return cont_frac(i => i === 1 ? x : - x * x,
+                     i => 2 * i - 1,
+                     k);
+}
+
+display(tan_cf(1, 10));
+math_tan(1);`}
+  height={340}
+  showLineNumbers={false}
+/>
+
+Com $k = 10$, `tan_cf(1, 10)` coincide com `math_tan(1)` $\approx 1{,}5574$ em todas as casas exibidas — a fração de Lambert converge rápido.
+
+</Solution>
 
 ---
 

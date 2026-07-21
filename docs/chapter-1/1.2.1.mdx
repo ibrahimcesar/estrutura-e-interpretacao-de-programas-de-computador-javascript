@@ -121,6 +121,57 @@ function dec(x) {
 
 Usando o modelo de substituição, ilustre o processo gerado por cada função ao avaliar `plus(4, 5)`. Esses processos são iterativos ou recursivos?
 
+<Solution>
+
+**Primeira versão** — `inc(plus(dec(a), b))`. Pelo modelo de substituição:
+
+```
+plus(4, 5)
+inc(plus(3, 5))
+inc(inc(plus(2, 5)))
+inc(inc(inc(plus(1, 5))))
+inc(inc(inc(inc(plus(0, 5)))))
+inc(inc(inc(inc(5))))
+inc(inc(inc(6)))
+inc(inc(7))
+inc(8)
+9
+```
+
+A cadeia de `inc`s adiados cresce e depois se contrai: é um **processo recursivo** (linear).
+
+**Segunda versão** — `plus(dec(a), inc(b))`:
+
+```
+plus(4, 5)
+plus(3, 6)
+plus(2, 7)
+plus(1, 8)
+plus(0, 9)
+9
+```
+
+Todo o estado vive nos argumentos; nada fica adiado: é um **processo iterativo** (linear).
+
+Você pode *ver* a diferença com o rastreador. Na versão recursiva, cada nível retorna um valor intermediário diferente (ainda há trabalho a fazer na volta); na iterativa, todos os níveis retornam o mesmo `9` — a resposta já está pronta quando o fundo é atingido:
+
+<CodePlayground
+  code={`function inc(x) { return x + 1; }
+function dec(x) { return x - 1; }
+
+function plus(a, b) {
+    return a === 0 ? b : inc(plus(dec(a), b));
+}
+trace("plus");
+plus(4, 5);`}
+  height={220}
+  showLineNumbers={false}
+/>
+
+Troque o corpo por `plus(dec(a), inc(b))`, execute de novo e compare as duas árvores.
+
+</Solution>
+
 ## Exercício 1.10
 
 <a name="ex-1-10"></a>
@@ -220,6 +271,24 @@ function k(n) {
 />
 
 Dê definições matemáticas concisas para as funções calculadas pelas funções `f`, `g` e `h` para valores inteiros positivos de $n$. Por exemplo, `k(n)` calcula $5n^2$.
+
+<Solution>
+
+**Valores.**
+
+- `A(1, 10)` = $2^{10}$ = **1024**
+- `A(2, 4)` = $2^{2^{2^{2}}}$ = **65536**
+- `A(3, 3)` = `A(2, A(3, 2))` = `A(2, 4)` = **65536**
+
+**As funções.** Para $n$ inteiro positivo:
+
+- `f(n)` = `A(0, n)` calcula $2n$ — é o caso `x === 0`.
+- `g(n)` = `A(1, n)` calcula $2^n$: `A(1, n) = A(0, A(1, n-1)) = 2 · A(1, n-1)`, com `A(1, 1) = 2`.
+- `h(n)` = `A(2, n)` calcula a **torre de expoentes** $2^{2^{\cdot^{\cdot^{2}}}}$ com $n$ dois — a *tetração* $2 \uparrow\uparrow n$: `A(2, n) = A(1, A(2, n-1)) = 2^{A(2, n-1)}`, com `A(2, 1) = 2`. Assim `h(1) = 2`, `h(2) = 4`, `h(3) = 16`, `h(4) = 65536`, e `h(5)` já é $2^{65536}$ — um número de quase vinte mil dígitos.
+
+**Armadilha comum.** Tentar `A(3, 4)` ou `h(5)` no playground: o valor não cabe em nenhum lugar razoável — a função de Ackermann cresce mais rápido que qualquer torre fixa de expoentes.
+
+</Solution>
 
 ---
 

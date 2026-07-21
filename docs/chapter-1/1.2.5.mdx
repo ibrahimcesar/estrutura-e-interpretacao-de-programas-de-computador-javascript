@@ -50,6 +50,28 @@ Podemos usar este teorema para obter uma estimativa de ordem de crescimento para
 <a name="ex-1-20"></a>
 O processo que uma função gera é, claro, dependente das regras usadas pelo interpretador. Como exemplo, considere a função iterativa `gcd` dada acima. Suponha que fôssemos interpretar esta função usando avaliação em ordem normal, como discutido na seção 1.1.5. (A regra de avaliação em ordem normal para expressões condicionais é descrita no exercício 1.5.) Usando o método de substituição (para ordem normal), ilustre o processo gerado ao avaliar `gcd(206, 40)` e indique as operações `%` (resto) que são realmente realizadas. Quantas operações de resto são realmente realizadas na avaliação em ordem normal de `gcd(206, 40)`? Na avaliação em ordem aplicativa?
 
+<Solution>
+
+**Ordem normal.** Os argumentos são substituídos *sem avaliar*, então as expressões de resto se acumulam dentro dos predicados. Expandindo `gcd(206, 40)`, cada teste `b === 0` força a avaliação do `b` acumulado:
+
+- 1º teste: avalia `40 % ...`? Não — `b` é `40`, ainda sem resto. Testes seguintes avaliam expressões cada vez maiores: **1 + 2 + 4 + 7 = 14 avaliações de `%` nos predicados**, até o teste dar verdadeiro.
+- No final, o `a` retornado é `206 % 40 % ...` acumulado, custando mais **4** avaliações.
+
+Total em ordem normal: **18 operações de resto**.
+
+**Ordem aplicativa.** Cada chamada avalia o resto uma única vez ao construir os argumentos:
+
+```
+gcd(206, 40) → gcd(40, 206 % 40 = 6) → gcd(6, 40 % 6 = 4)
+             → gcd(4, 6 % 4 = 2)     → gcd(2, 4 % 2 = 0) → 2
+```
+
+Total: **4 operações de resto**.
+
+**Moral.** O mesmo texto de programa gera processos com custos muito diferentes conforme a regra de avaliação — em ordem normal, a expressão não avaliada de `b` é *duplicada* pela substituição e paga várias vezes.
+
+</Solution>
+
 ---
 
 ## Notas de Rodapé
