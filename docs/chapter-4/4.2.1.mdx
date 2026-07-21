@@ -72,10 +72,53 @@ Quando avaliado em modo padrão ('estrito'), o código passa por redução de or
 Quando avaliado em modo preguiçoso, o código passa por redução de ordem normal. Ele produz a saída correta porque a função `unless` é aplicada antes que seus argumentos sejam avaliados.
 </details>
 
+<Solution>
+
+Em ordem aplicativa, `factorial(5)` **nunca termina**. Antes de `unless` sequer decidir alguma coisa, seus três argumentos são avaliados — inclusive `n * factorial(n - 1)`, que chama `factorial(n - 1)`, que avalia `n * factorial(n - 2)`… A recursão desce sem freio: o caso base `n === 1` existe, mas mora dentro de um argumento que é avaliado *antes* de o teste importar. (Na prática: estouro de pilha.)
+
+Em **ordem normal**, funciona: os argumentos chegam adiados, `unless` escolhe qual usar, e no caso base o argumento recursivo é simplesmente descartado sem nunca ser avaliado — exatamente como um `?:` se comporta. A moral: condicionais precisam de avaliação seletiva, e em ordem aplicativa isso exige *sintaxe*, não função.
+
+</Solution>
+
 ### Exercício 4.26
 
 Ben Bitdiddle e Alyssa P. Hacker discordam sobre a importância da avaliação preguiçosa para implementar coisas como `unless`. Ben aponta que é possível implementar `unless` em ordem aplicativa como uma forma sintática. Alyssa contra-argumenta que, se fizéssemos isso, `unless` seria meramente sintaxe, não uma função que poderia ser usada em conjunto com funções de ordem superior.
 
 Preencha os detalhes de ambos os lados do argumento. Mostre como implementar `unless` como um componente derivado (como combinação de operadores), capturando em `evaluate` aplicações cuja expressão de função é o nome `unless`. Dê um exemplo de uma situação onde pode ser útil ter `unless` disponível como uma função, ao invés de uma forma sintática.
+
+<Solution>
+
+**O lado de Ben — `unless` como forma derivada:** intercepte aplicações cujo operador é o nome `unless` e traduza para a expressão condicional:
+
+```javascript
+// em evaluate:
+: is_application(component) &&
+  is_name(function_expression(component)) &&
+  symbol_of_name(function_expression(component)) === "unless"
+? evaluate(unless_to_conditional(component), env)
+: …
+
+function unless_to_conditional(component) {
+    const args = arg_expressions(component);
+    return make_conditional_expression(
+               head(args),                 // condição
+               head(tail(tail(args))),     // valor excepcional
+               head(tail(args)));          // valor usual
+}
+```
+
+Curto-circuito garantido — e nenhuma avaliação preguiçosa necessária.
+
+**O lado de Alyssa:** assim, `unless` deixa de ser um valor. Não dá para escrever
+
+```javascript
+map(unless, conditions, usuals, exceptionals);
+```
+
+nem passar `unless` para uma função de ordem superior que combine estratégias, nem guardá-lo numa estrutura de dados. Qualquer uso de primeira classe — o superpoder do capítulo 1 — está vedado a formas sintáticas. Exemplo concreto: processar uma tabela de regras `list(condição, então, senão)` aplicando `unless` a cada linha via `map` funciona com o `unless`-função preguiçoso e é impossível com o `unless`-sintaxe.
+
+Os dois têm razão — e é por isso que a avaliação preguiçosa é interessante: ela deixa `unless` ser *função* sem perder a seletividade.
+
+</Solution>
 
 <HelpFooter />

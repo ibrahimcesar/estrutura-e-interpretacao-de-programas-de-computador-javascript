@@ -145,7 +145,7 @@ make_instruction_sequence(list("env", "continue"), list("val"),
 
 As funções para combinar sequências de instruções são mostradas na seção 5.5.4.
 
-## Exercício 5.31
+## Exercício 5.35
 
 Ao avaliar uma aplicação de função, o avaliador de controle explícito sempre salva e restaura o registrador `env` em torno da avaliação da expressão de função, salva e restaura `env` em torno da avaliação de cada expressão de argumento (exceto a final), salva e restaura `argl` em torno da avaliação de cada expressão de argumento, e salva e restaura `fun` em torno da avaliação da sequência de expressão de argumento. Para cada uma das seguintes aplicações, diga quais dessas operações `save` e `restore` são supérfluas e portanto poderiam ser eliminadas pelo mecanismo `preserving` do compilador:
 
@@ -159,10 +159,31 @@ f(g("x"), y)
 f(g("x"), "y")
 ```
 
-## Exercício 5.32
+<Solution>
+
+Regra geral: um `save`/`restore` é supérfluo quando o trecho protegido **não pode alterar** o registrador, ou quando o valor **não será mais usado**.
+
+- **`f("x", "y")`** — todos supérfluos: a expressão de função é um nome (avaliá-la não toca `env`), os argumentos são literais (não tocam `env` nem precisam de `argl` protegido), e nada perturba `fun`.
+- **`f()("x", "y")`** — a expressão de função é `f()`, uma aplicação: o `save`/`restore` de `env` em torno **dela** é necessário (a chamada pode fazer qualquer coisa)… a menos que os argumentos sejam literais, que não usam `env` — então só o `save` de `fun` em torno da avaliação dos argumentos permanece necessário se estes contivessem aplicações; com `"x"`/`"y"` literais, **todos** podem cair também, exceto nada: literais não avaliam nada. Resta apenas a mecânica da aplicação interna.
+- **`f(g("x"))`** — aqui `g("x")` é uma aplicação como argumento: preservar `env` em torno da expressão de função `f` é desnecessário (nome), mas `fun` precisa ser preservado durante a avaliação de `g("x")` (a chamada de `g` sobrescreve `fun`), e `argl` durante ela também se houvesse argumentos anteriores.
+- **`f("x", g("y"))`** — como acima, e adicionalmente `argl` (já contendo `"x"`) precisa sobreviver à chamada `g("y")` — este é o caso em que o `save("argl")` trabalha de verdade; `env` só precisaria ser preservado se algum argumento *posterior* fosse avaliado depois de `g("y")` — não há, então dispensável.
+
+O padrão que o `preserving` automatiza: literais e nomes não tocam nada; aplicações internas tocam tudo — salve exatamente ao redor delas, e apenas para registradores cujo valor ainda será consumido.
+
+</Solution>
+
+## Exercício 5.36
 
 Usando o mecanismo `preserving`, o compilador evitará salvar e restaurar `env` em torno da avaliação da expressão de função de uma aplicação no caso em que a expressão de função é um nome. Poderíamos também construir tais otimizações no avaliador. De fato, o avaliador de controle explícito da seção 5.4 já realiza uma otimização similar, ao tratar aplicações sem argumentos como um caso especial.
 
 1. Estenda o avaliador de controle explícito para reconhecer como uma classe separada de componentes aplicações cuja expressão de função é um nome, e para tirar proveito desse fato ao avaliar tais componentes.
 
 2. Alyssa P. Hacker sugere que ao estender o avaliador para reconhecer mais e mais casos especiais poderíamos incorporar todas as otimizações do compilador, e que isso eliminaria a vantagem da compilação completamente. O que você acha dessa ideia?
+<Solution>
+
+**1.** Um caso novo no despacho: `ev_application_name_fun` — quando `function_expression` é um nome, o controlador pula o `save("env")`/ciclo de avaliação da expressão de função e faz diretamente `assign("fun", op("lookup_symbol_value"), …)`, seguindo para os argumentos. Menos um par de operações de pilha e um desvio por aplicação — a maioria esmagadora das aplicações reais.
+
+**2.** Alyssa está enxergando o caminho certo e a conclusão errada. Cada caso especial adicionado ao avaliador é uma análise que passa a ser feita **em tempo de execução, a cada avaliação do mesmo componente** — o avaliador re-descobre a cada passagem que a expressão de função é um nome. O compilador faz a mesma análise **uma vez**, e o resultado fica gravado no código objeto. Levando a ideia de Alyssa ao limite — reconhecer estruturas cada vez maiores e emitir o melhor código para cada uma — o "avaliador" teria de percorrer o programa inteiro decidindo tudo antes de executar… e isso *é* um compilador. A vantagem da compilação não desaparece; ela é redescoberta.
+
+</Solution>
+

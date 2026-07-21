@@ -199,6 +199,14 @@ a. Você descobrirá que a profundidade máxima necessária para avaliar n! é i
 
 b. Determine de seus dados uma fórmula em termos de n para o número total de operações push usadas na avaliação de n! para qualquer n ≥ 1. Note que o número de operações usadas é uma função linear de n e assim é determinado por duas constantes.
 
+<Solution>
+
+Rodando `factorial(n)` iterativa para vários `n` com a pilha monitorada, a profundidade máxima é **constante** (a mesma para todo `n` — tipicamente algo como 10, dependendo dos detalhes do avaliador), confirmando a recursão de cauda: a iteração inteira acontece sem crescimento de pilha.
+
+O número **total** de pushes cresce linearmente: os dados ajustam-se a uma reta $a \cdot n + b$ (com $a$ na casa de poucas dezenas — cada iteração custa um número fixo de operações de pilha do avaliador). As duas constantes pedidas são o custo por iteração e o custo fixo de entrada/saída.
+
+</Solution>
+
 ### Exercício 5.31
 
 Para comparação com o exercício 5.30, explore o comportamento da seguinte função para computar fatoriais recursivamente:
@@ -220,9 +228,23 @@ Ao executar esta função com a pilha monitorada, determine, como uma função d
 
 A profundidade máxima é uma medida da quantidade de espaço usada pelo avaliador ao realizar o cálculo, e o número de pushes correlaciona bem com o tempo necessário.
 
+<Solution>
+
+Agora a profundidade máxima também cresce **linearmente** com `n`: cada chamada recursiva pendente (`n * factorial(n - 1)` tem a multiplicação esperando) retém seu quadro na pilha até a volta. Os dados ajustam-se a retas tanto para o total de pushes quanto para a profundidade — e é a *profundidade* que distingue os processos: constante na versão iterativa (exercício 5.30), linear na recursiva, exatamente a análise do capítulo 1 medida em hardware simulado.
+
+</Solution>
+
 ### Exercício 5.32
 
 Modifique a definição do avaliador mudando `ev_return` conforme descrito na seção 5.4.2 de modo que o avaliador não seja mais recursivo em cauda. Execute novamente seus experimentos dos exercícios 5.30 e 5.31 para demonstrar que ambas as versões da função `factorial` agora requerem espaço que cresce linearmente com sua entrada.
+
+<Solution>
+
+Com o `ev_return` modificado (avaliando a expressão de retorno **antes** de reverter a pilha, com um `save`/`go_to`/marcador a mais), toda chamada — em posição de cauda ou não — retém estado na pilha. Repetindo os experimentos: as **duas** versões de `factorial` passam a mostrar profundidade máxima linear em `n`; a versão "iterativa" perde sua vantagem de espaço e só conserva a diferença de constantes.
+
+É a demonstração de que a recursão de cauda não é um truque do compilador de JavaScript, e sim uma **decisão do avaliador** sobre quando desmontar a pilha — mova a reversão para depois da avaliação e a propriedade evapora.
+
+</Solution>
 
 ### Exercício 5.33
 
@@ -238,6 +260,17 @@ a. Dê uma fórmula em termos de n para a profundidade máxima da pilha necessá
 
 b. Dê uma fórmula para o número total de pushes usados para computar Fib(n) para n ≥ 2. Você deve descobrir que o número de pushes (que correlaciona bem com o tempo usado) cresce exponencialmente com n. Dica: Seja S(n) o número de pushes usados ao computar Fib(n). Você deve ser capaz de argumentar que há uma fórmula que expressa S(n) em termos de S(n-1), S(n-2), e alguma constante de "sobrecarga" k que é independente de n. Dê a fórmula, e diga qual é k. Então mostre que S(n) pode ser expresso como a Fib(n+1) + b e dê os valores de a e b.
 
+<Solution>
+
+Medindo `fib(n)` para $n$ crescente com a pilha monitorada:
+
+- **Profundidade máxima**: cresce **linearmente** em $n$ (a espinha mais funda da árvore de chamadas) — os dados ajustam-se a uma reta $a\,n + b$.
+- **Total de pushes**: cresce como **Fib(n)** — exponencialmente. A razão entre os totais de $n$ e $n-1$ tende à razão áurea; o ajuste pedido tem a forma $S(n) = k\,\text{Fib}(n+1) + c$ para constantes $k$ e $c$ que os dados determinam (o número de pushes por nó da árvore é fixo).
+
+Espaço linear, tempo exponencial — a assinatura da recursão em árvore, agora medida em operações de pilha reais.
+
+</Solution>
+
 ### Exercício 5.34
 
 Nosso avaliador atualmente captura e sinaliza apenas dois tipos de erros—tipos de componente desconhecidos e tipos de função desconhecidos. Outros erros nos tirarão do laço de avaliação-leitura-impressão do avaliador. Quando executamos o avaliador usando o simulador de máquina de registradores, esses erros são capturados pelo sistema JavaScript subjacente. Isso é análogo ao computador travando quando um programa de usuário comete um erro.[^4] É um grande projeto fazer um sistema de erro real funcionar, mas vale a pena o esforço para entender o que está envolvido aqui.
@@ -245,6 +278,16 @@ Nosso avaliador atualmente captura e sinaliza apenas dois tipos de erros—tipos
 a. Erros que ocorrem no processo de avaliação, tais como uma tentativa de acessar um nome não vinculado, poderiam ser capturados mudando a operação de busca para fazê-la retornar um código de condição distinto, que não pode ser um valor possível de qualquer nome de usuário. O avaliador pode testar esse código de condição e então fazer o que for necessário para ir para `signal_error`. Encontre todos os lugares no avaliador onde tal mudança é necessária e corrija-os. Isso é muito trabalho.
 
 b. Muito pior é o problema de tratar erros que são sinalizados ao aplicar funções primitivas tais como uma tentativa de dividir por zero ou uma tentativa de extrair o `head` de uma string. Em um sistema profissional de alta qualidade, cada aplicação primitiva é verificada quanto à segurança como parte da primitiva. Por exemplo, cada chamada para `head` poderia primeiro verificar que o argumento é um par. Se o argumento não é um par, a aplicação retornaria um código de condição distinto para o avaliador, que então reportaria a falha. Poderíamos arranjar isso em nosso simulador de máquina de registradores fazendo cada função primitiva verificar aplicabilidade e retornar um código de condição distinto apropriado em caso de falha. Então o código `primitive_apply` no avaliador pode verificar o código de condição e ir para `signal_error` se necessário. Construa essa estrutura e faça funcionar. Este é um projeto importante.
+<Solution>
+
+**a. Nomes não vinculados.** `lookup_symbol_value` passa a devolver um código de condição único (um par alocado uma vez, como o marcador do exercício 5.26) em vez de sinalizar erro no JavaScript hospedeiro. Todo ponto do controlador que faz `assign("val", op("lookup_symbol_value"), …)` precisa, em seguida, de `test`/`branch` para `signal_error` com a mensagem apropriada — é "muito trabalho" porque a busca aparece em vários trechos (`ev_name`, atribuição, aplicação), e cada um precisa do seu teste.
+
+**b. Erros de primitivas** (divisão por zero, `head` de não-par…): a mesma técnica um nível abaixo — `apply_primitive_function` embrulha a chamada e devolve o código de condição em vez de deixar o sistema hospedeiro explodir; `primitive_apply` testa e desvia para `signal_error`.
+
+O padrão geral: transformar *exceções do hospedeiro* em *valores testáveis da máquina* — que é literalmente o que hardware real faz com códigos de condição e flags, e o que sistemas de exceção de linguagens de verdade automatizam por baixo dos panos.
+
+</Solution>
+
 
 ---
 

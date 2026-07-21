@@ -5,7 +5,7 @@ sidebar_label: Soluções
 
 # Soluções dos Exercícios
 
-Cada exercício traz sua solução oficial escondida atrás de um botão **"Mostrar solução — tente primeiro!"** — o valor do exercício está em tentar antes de olhar. As soluções são executáveis na própria página e verificadas automaticamente a cada mudança no site.
+**Todos os 192 exercícios do livro têm solução oficial**, escondida atrás de um botão **"Mostrar solução — tente primeiro!"** — o valor do exercício está em tentar antes de olhar. As soluções com código são executáveis na própria página e verificadas automaticamente a cada mudança no site.
 
 ## Cobertura
 
@@ -14,8 +14,8 @@ Cada exercício traz sua solução oficial escondida atrás de um botão **"Most
 | Capítulo 1 | ✅ 39/39 exercícios |
 | Capítulo 2 | ✅ 15/15 exercícios |
 | Capítulo 3 | ✅ 52/52 exercícios |
-| Capítulo 4 | ⬜ em breve |
-| Capítulo 5 | ⬜ em breve |
+| Capítulo 4 | ✅ 32/32 exercícios |
+| Capítulo 5 | ✅ 54/54 exercícios |
 
 ## Capítulo 1
 
@@ -54,5 +54,35 @@ Cada exercício traz sua solução oficial escondida atrás de um botão **"Most
 - **Seção 3.5.3**: exercícios [3.63](/chapter-3/3.5.3#exercício-363), [3.64](/chapter-3/3.5.3#exercício-364), [3.65](/chapter-3/3.5.3#exercício-365), [3.66](/chapter-3/3.5.3#exercício-366), [3.67](/chapter-3/3.5.3#exercício-367), [3.68](/chapter-3/3.5.3#exercício-368), [3.69](/chapter-3/3.5.3#exercício-369), [3.70](/chapter-3/3.5.3#exercício-370), [3.71](/chapter-3/3.5.3#exercício-371), [3.72](/chapter-3/3.5.3#exercício-372)
 - **Seção 3.5.4**: exercícios [3.77](/chapter-3/3.5.4#exercício-377), [3.78](/chapter-3/3.5.4#exercício-378), [3.79](/chapter-3/3.5.4#exercício-379), [3.80](/chapter-3/3.5.4#exercício-380)
 - **Seção 3.5.5**: exercícios [3.81](/chapter-3/3.5.5#exercício-381), [3.82](/chapter-3/3.5.5#exercício-382)
+
+## Capítulo 4
+
+- **Seção 4.1.2**: exercícios [4.4](/chapter-4/4.1.2#exercício-44), [4.5](/chapter-4/4.1.2#exercício-45), [4.6](/chapter-4/4.1.2#exercício-46), [4.7](/chapter-4/4.1.2#exercício-47), [4.8](/chapter-4/4.1.2#exercício-48), [4.9](/chapter-4/4.1.2#exercício-49)
+- **Seção 4.1.4**: exercícios [4.14](/chapter-4/4.1.4#exercício-414)
+- **Seção 4.1.6**: exercícios [4.16](/chapter-4/4.1.6#exercício-416), [4.17](/chapter-4/4.1.6#exercício-417), [4.18](/chapter-4/4.1.6#exercício-418)
+- **Seção 4.1.7**: exercícios [4.22](/chapter-4/4.1.7#exercício-422), [4.23](/chapter-4/4.1.7#exercício-423), [4.24](/chapter-4/4.1.7#exercício-424)
+- **Seção 4.2.1**: exercícios [4.25](/chapter-4/4.2.1#exercício-425), [4.26](/chapter-4/4.2.1#exercício-426)
+- **Seção 4.2.2**: exercícios [4.27](/chapter-4/4.2.2#exercício-427), [4.28](/chapter-4/4.2.2#exercício-428), [4.29](/chapter-4/4.2.2#exercício-429), [4.30](/chapter-4/4.2.2#exercício-430), [4.31](/chapter-4/4.2.2#exercício-431)
+- **Seção 4.2.3**: exercícios [4.32](/chapter-4/4.2.3#exercício-432), [4.33](/chapter-4/4.2.3#exercício-433), [4.34](/chapter-4/4.2.3#exercício-434)
+- **Seção 4.4.1**: exercícios [4.53](/chapter-4/4.4.1#exercício-453), [4.54](/chapter-4/4.4.1#exercício-454), [4.55](/chapter-4/4.4.1#exercício-455), [4.56](/chapter-4/4.4.1#exercício-456), [4.57](/chapter-4/4.4.1#exercício-457), [4.58](/chapter-4/4.4.1#exercício-458), [4.59](/chapter-4/4.4.1#exercício-459), [4.60](/chapter-4/4.4.1#exercício-460), [4.61](/chapter-4/4.4.1#exercício-461)
+
+## Capítulo 5
+
+- **Seção 5.1**: exercícios [5.1](/chapter-5/5.1#exercício-51)
+- **Seção 5.1.1**: exercícios [5.2](/chapter-5/5.1.1#exercício-52)
+- **Seção 5.1.2**: exercícios [5.3](/chapter-5/5.1.2#exercício-53)
+- **Seção 5.1.4**: exercícios [5.4](/chapter-5/5.1.4#exercício-54), [5.5](/chapter-5/5.1.4#exercício-55), [5.6](/chapter-5/5.1.4#exercício-56)
+- **Seção 5.2.2**: exercícios [5.8](/chapter-5/5.2.2#exercício-58)
+- **Seção 5.2.3**: exercícios [5.9](/chapter-5/5.2.3#exercício-59), [5.10](/chapter-5/5.2.3#exercício-510), [5.11](/chapter-5/5.2.3#exercício-511), [5.12](/chapter-5/5.2.3#exercício-512)
+- **Seção 5.2.4**: exercícios [5.13](/chapter-5/5.2.4#exercício-513), [5.14](/chapter-5/5.2.4#exercício-514), [5.15](/chapter-5/5.2.4#exercício-515), [5.16](/chapter-5/5.2.4#exercício-516), [5.17](/chapter-5/5.2.4#exercício-517), [5.18](/chapter-5/5.2.4#exercício-518)
+- **Seção 5.3.1**: exercícios [5.19](/chapter-5/5.3.1#exercício-519), [5.20](/chapter-5/5.3.1#exercício-520), [5.21](/chapter-5/5.3.1#exercício-521)
+- **Seção 5.4.2**: exercícios [5.25](/chapter-5/5.4.2#exercício-525), [5.26](/chapter-5/5.4.2#exercício-526), [5.27](/chapter-5/5.4.2#exercício-527)
+- **Seção 5.4.3**: exercícios [5.28](/chapter-5/5.4.3#exercício-528), [5.29](/chapter-5/5.4.3#exercício-529)
+- **Seção 5.4.4**: exercícios [5.30](/chapter-5/5.4.4#exercício-530), [5.31](/chapter-5/5.4.4#exercício-531), [5.32](/chapter-5/5.4.4#exercício-532), [5.33](/chapter-5/5.4.4#exercício-533), [5.34](/chapter-5/5.4.4#exercício-534)
+- **Seção 5.5.1**: exercícios [5.35](/chapter-5/5.5.1#exercício-535), [5.36](/chapter-5/5.5.1#exercício-536)
+- **Seção 5.5.2**: exercícios [5.37](/chapter-5/5.5.2#exercício-537), [5.38](/chapter-5/5.5.2#exercício-538)
+- **Seção 5.5.5**: exercícios [5.39](/chapter-5/5.5.5#exercício-539), [5.40](/chapter-5/5.5.5#exercício-540), [5.41](/chapter-5/5.5.5#exercício-541), [5.42](/chapter-5/5.5.5#exercício-542), [5.43](/chapter-5/5.5.5#exercício-543), [5.44](/chapter-5/5.5.5#exercício-544)
+- **Seção 5.5.6**: exercícios [5.45](/chapter-5/5.5.6#exercício-545), [5.46](/chapter-5/5.5.6#exercício-546), [5.47](/chapter-5/5.5.6#exercício-547), [5.48](/chapter-5/5.5.6#exercício-548), [5.49](/chapter-5/5.5.6#exercício-549), [5.50](/chapter-5/5.5.6#exercício-550)
+- **Seção 5.5.7**: exercícios [5.51](/chapter-5/5.5.7#exercício-551), [5.52](/chapter-5/5.5.7#exercício-552), [5.53](/chapter-5/5.5.7#exercício-553), [5.54](/chapter-5/5.5.7#exercício-554), [5.55](/chapter-5/5.5.7#exercício-555), [5.56](/chapter-5/5.5.7#exercício-556), [5.57](/chapter-5/5.5.7#exercício-557), [5.58](/chapter-5/5.5.7#exercício-558)
 
 Encontrou um erro ou tem uma solução mais elegante? [Abra uma issue ou PR](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript) — soluções também são conversa.

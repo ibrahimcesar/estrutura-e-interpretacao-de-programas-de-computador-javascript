@@ -74,9 +74,37 @@ Declarações de variáveis e constantes são tratadas de maneira similar. Note 
 
 Estenda o avaliador para tratar laços `while`, traduzindo-os para aplicações de uma função `while_loop`, conforme mostrado no exercício 4.9. Você pode colar a declaração da função `while_loop` na frente dos programas do usuário. Você pode "trapacear" assumindo que o transformador sintático `while_to_application` está disponível como uma operação de máquina. Consulte o exercício 4.9 para discutir se essa abordagem funciona se instruções `return`, `break` e `continue` são permitidas dentro do laço `while`. Se não, como você pode modificar o avaliador de controle explícito para executar programas com laços `while` que incluem essas instruções?
 
+<Solution>
+
+Com a "trapaça" permitida: um caso novo no despacho reconhece o laço e o transforma:
+
+```
+"ev_while",
+    assign("comp", list(op("while_to_application"), reg("comp"))),
+    go_to(label("ev_application")),
+```
+
+com a declaração de `while_loop` pré-colada nos programas do usuário (a função recursiva de cauda do exercício 4.9 — que o avaliador de controle explícito, sendo tail-recursive, itera em espaço constante).
+
+**E `return`/`break`/`continue` dentro do laço?** A tradução por função quebra: um `return` dentro do corpo retornaria da *função auxiliar do laço*, não da função do usuário — e `break`/`continue` nem têm para onde ir. A discussão do exercício 4.9 se aplica: ou o corpo é traduzido em estilo de passagem de continuações (`break` e `continue` viram funções passadas ao corpo), ou — a rota natural AQUI — o avaliador de controle explícito implementa o laço **diretamente no controlador**, com rótulos: `while_test → corpo → while_test`, em que `break` é um `go_to` para o rótulo de saída, `continue` um `go_to` para o teste, e `return` continua fazendo o que sempre fez (reverter a pilha ao marcador da função). No nível de máquina de registradores, laços e saltos são o idioma nativo — a dificuldade da tradução funcional simplesmente desaparece.
+
+</Solution>
+
 ## Exercício 5.29
 
 Modifique o avaliador de modo que ele use avaliação em ordem normal, baseado no avaliador preguiçoso da seção 4.2.
+<Solution>
+
+As mudanças espelham a seção 4.2 no nível do controlador:
+
+- **Aplicações**: em vez de avaliar os argumentos (`ev_operand_loop`), construir a lista de **thunks** — cada operando vira `list("thunk", expressão, ambiente)` sem passar pelo avaliador; só a expressão de função é forçada (`actual_value`).
+- **Forçamento**: um novo trecho `force_it` no controlador: se `val` é um thunk, empurra o estado, avalia a expressão do thunk no ambiente do thunk (reentrando em `eval_dispatch`) e, com memoização, sobrescreve o thunk com o valor.
+- **Pontos estritos**: onde o valor é *usado* — o teste do condicional (`ev_conditional` força `val` antes do `branch`), aplicação de primitivas (força cada argumento antes de `apply_primitive_function`), e o driver ao imprimir.
+
+Funções compostas recebem os thunks sem forçar — é exatamente o `delay_it` da seção 4.2 transcrito para registradores, com o detalhe novo de que "chamar o avaliador recursivamente para forçar" vira `save`/`go_to eval_dispatch`/`restore` explícitos no controlador.
+
+</Solution>
+
 
 ---
 

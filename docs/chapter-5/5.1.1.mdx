@@ -77,7 +77,7 @@ Esta forma de descrição é mais fácil de ler do que o tipo ilustrado na Figur
 
 Apesar dessas desvantagens, usaremos esta linguagem de máquina de registradores ao longo deste capítulo, porque estaremos mais preocupados em entender controladores do que em entender os elementos e conexões nos caminhos de dados. Devemos ter em mente, no entanto, que o projeto do caminho de dados é crucial no projeto de máquinas reais.
 
-## Exercício 5.5
+## Exercício 5.2
 
 Use a linguagem de máquina de registradores para descrever a máquina de fatorial iterativa do exercício 5.1.
 
@@ -118,3 +118,25 @@ controller(
 ---
 
 <a name="footnote-1"></a>[1] Esta suposição omite uma grande quantidade de complexidade. A implementação de leitura e impressão requer esforço significativo, por exemplo, para lidar com codificações de caracteres para diferentes idiomas.
+<Solution>
+
+```javascript
+controller(
+  list(
+    assign("product", constant(1)),
+    assign("counter", constant(1)),
+    "test_counter",
+    test(list(op(">"), reg("counter"), reg("n"))),
+    branch(label("fact_done")),
+    assign("product",
+           list(op("*"), reg("counter"), reg("product"))),
+    assign("counter",
+           list(op("+"), reg("counter"), constant(1))),
+    go_to(label("test_counter")),
+    "fact_done"))
+```
+
+Tradução direta do laço do exercício 5.1: o teste decide a saída, as duas atribuições são o corpo, e o `go_to` fecha o ciclo.
+
+</Solution>
+

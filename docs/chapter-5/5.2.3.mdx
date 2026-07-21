@@ -380,6 +380,25 @@ A função de simulação é encontrada procurando o nome da operação na tabel
 
 O tratamento de operações de máquina acima permite que elas operem em rótulos bem como em constantes e conteúdo de registradores. Modifique as funções de processamento de expressão para impor a condição de que operações só podem ser usadas com registradores e constantes.
 
+<Solution>
+
+Em `make_operation_exp`, os operandos hoje passam por `make_primitive_exp`, que aceita constantes, registradores **e rótulos**. Restrinja no ponto de construção:
+
+```javascript
+function make_operation_exp(exp, machine, labels, operations) {
+    const op = lookup_prim(operation_exp_op(exp), operations);
+    const afuns = map(e => is_label_exp(e)
+                          ? error(e, "operação sobre rótulo não permitida -- assemble")
+                          : make_primitive_exp(e, machine, labels),
+                      operation_exp_operands(exp));
+    return () => apply_in_underlying_javascript(op, map(f => f(), afuns));
+}
+```
+
+Rótulos continuam válidos onde fazem sentido (`go_to`, destinos de salto em `assign`) — só deixam de ser operandos de operações, onde seriam um vazamento da representação interna para a aritmética da máquina.
+
+</Solution>
+
 ## Exercício 5.10
 
 Quando introduzimos `save` e `restore` na seção 5.1.4, não especificamos o que aconteceria se você tentasse restaurar um registrador que não era o último salvo, como na sequência:
@@ -398,6 +417,28 @@ Há várias possibilidades razoáveis para o significado de `restore`:
 
 3. `restore(y)` coloca em `y` o último valor salvo de `y` independentemente de quais outros registradores foram salvos depois de `y` e não restaurados. Modifique o simulador para se comportar desta maneira. Você terá que associar uma pilha separada com cada registrador. Você deve fazer a operação `initialize_stack` inicializar todas as pilhas de registradores.
 
+<Solution>
+
+Três semânticas possíveis, em ordem de rigor:
+
+1. **Como está** (pilha única): `restore("y")` entrega o último valor salvo, *seja de quem for* — no exemplo, `y` recebe o valor salvo de `x`. Nenhum erro; resultados silenciosamente estranhos.
+2. **Pilha única com verificação**: `save` empilha o par (nome, valor) e `restore` confere o nome:
+
+```javascript
+// save: push(stack, pair(reg_name, get_contents(reg)))
+// restore:
+const top = pop(stack);
+head(top) === reg_name
+? set_contents(reg, tail(top))
+: error(reg_name, "restore de registrador que não é o último salvo");
+```
+
+3. **Uma pilha por registrador**: a máquina mantém uma tabela nome → pilha; `save`/`restore` usam a pilha do próprio registrador. `restore("y")` só devolve valores de `y`, em qualquer ordem relativa aos outros — uma disciplina diferente, que a máquina de Fibonacci aceitaria sem mudanças, mas que deixa de detectar certos erros de emparelhamento.
+
+O exercício quer que se perceba que isso é uma **escolha de projeto** da máquina, não uma fatalidade.
+
+</Solution>
+
 ## Exercício 5.11
 
 O simulador pode ser usado para ajudar a determinar os caminhos de dados necessários para implementar uma máquina com um dado controlador. Estenda o montador para armazenar a seguinte informação no modelo de máquina:
@@ -409,6 +450,42 @@ O simulador pode ser usado para ajudar a determinar os caminhos de dados necess�
 
 Estenda a interface de passagem de mensagens para a máquina para fornecer acesso a esta nova informação. Para testar seu analisador, defina a máquina de Fibonacci da figura 5.12 e examine as listas que você construiu.
 
+<Solution>
+
+Na montagem, além das funções de execução, o montador acumula quatro tabelas no modelo (expostas por novas mensagens do `dispatch`):
+
+```javascript
+sorted_instructions   // instruções únicas, agrupadas por tipo
+entry_points          // registradores usados em go_to(reg(...))
+stack_registers       // registradores que aparecem em save/restore
+register_sources      // nome → lista de fontes de assign
+```
+
+A coleta é um percurso pelas instruções: classifique cada uma pelo tipo (`assign`, `test`, `branch`, `go_to`, `save`, `restore`, `perform`), registre o que interessa e elimine duplicatas com `member` antes de inserir.
+
+O uso prometido: essas listas são a especificação dos **caminhos de dados** — quais botões existem (fontes de cada registrador), onde a pilha se conecta, quais registradores alimentam saltos. O simulador vira ferramenta de projeto de hardware.
+
+</Solution>
+
 ## Exercício 5.12
 
 Modifique o simulador de modo que ele use a sequência do controlador para determinar quais registradores a máquina tem em vez de exigir uma lista de registradores como argumento para `make_machine`. Em vez de pré-alocar os registradores em `make_machine`, você pode alocá-los um de cada vez quando eles são vistos pela primeira vez durante a montagem das instruções.
+<Solution>
+
+Troque a pré-alocação por alocação preguiçosa — `get_register` vira o criador:
+
+```javascript
+function lookup_register(name) {
+    const val = assoc(name, register_table);
+    if (is_undefined(val)) {
+        allocate_register(name);          // primeiro uso: cria
+        return lookup_register(name);
+    }
+    return tail(val);
+}
+```
+
+Como toda referência a registrador passa por `get_register` durante a montagem (em `make_primitive_exp`, `make_save`, `make_restore`, `advance_pc`…), cada registrador nasce no primeiro momento em que o controlador o menciona. `make_machine` fica com dois argumentos (operações e controlador) — e o simulador perde uma fonte de dessincronia entre a lista declarada e a máquina real.
+
+</Solution>
+

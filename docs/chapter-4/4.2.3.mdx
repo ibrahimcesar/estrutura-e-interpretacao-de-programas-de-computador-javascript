@@ -154,6 +154,19 @@ function first_non_null(list1, list2) {
 ```
 </details>
 
+<Solution>
+
+Nos streams do capítulo 3, só a **cauda** é adiada — a cabeça é avaliada na construção. Nas listas preguiçosas desta seção, `pair` é uma função composta do avaliador preguiçoso, então **os dois lados** chegam como thunks.
+
+Diferenças observáveis:
+
+- `pair(1 / 0, 2)` (ou uma cabeça que diverge): explode na construção com streams; nas listas preguiçosas, constrói normalmente — só falha se alguém pedir a cabeça.
+- Estruturas definidas "para trás": nas listas extra-preguiçosas dá para construir um par cujo head depende de computações que só ficam prontas depois — a rede de restrições de dados parciais.
+
+**A vantagem prática** aparece na seção: `integral`/`solve` funcionam **sem nenhum cuidado especial com atrasos** — nada de `() => dy` explícito nem da versão "delayed argument" do exercício 3.77. A preguiça uniforme do avaliador engole os loops de dependência sozinha: o programa do usuário volta a ser a matemática, e a maquinaria de atraso desce para a linguagem.
+
+</Solution>
+
 ### Exercício 4.33
 
 Ben Bitdiddle testa a implementação de lista preguiçosa dada acima avaliando a expressão:
@@ -173,6 +186,26 @@ Você precisará modificar como a função primitiva `list` é implementada. Uma
 
 Alternativamente, você poderia modificar o avaliador para detectar aplicações de `list` e tratá-las especialmente, construindo a lista resultante usando `pair` preguiçoso.
 </details>
+
+<Solution>
+
+O problema: `list("a", "b", "c")` é avaliada pela **primitiva** `list`, que constrói pares do sistema hospedeiro — mas `head` agora é a função composta que espera os pares-função do avaliador preguiçoso. Os dois "tipos de par" não se entendem.
+
+A correção é traduzir na fronteira: quando o avaliador encontra uma aplicação da primitiva `list` (ou um literal de lista), converte o resultado para pares preguiçosos — por exemplo, transformando `list(a, b, c)` na aplicação aninhada `pair(a, pair(b, pair(c, null)))` **antes** de avaliar, de modo que o `pair` usado seja o composto:
+
+```javascript
+function list_to_nested_pairs(args) {
+    return is_null(args)
+           ? make_literal(null)
+           : make_application(make_name("pair"),
+                              list(head(args),
+                                   list_to_nested_pairs(tail(args))));
+}
+```
+
+Com a tradução instalada em `evaluate`, `head(list("a", "b", "c"))` devolve `"a"` — e todas as listas do programa do usuário vivem no mesmo mundo preguiçoso.
+
+</Solution>
 
 ### Exercício 4.34
 
@@ -205,5 +238,29 @@ L-evaluate value:
 
 Você precisará modificar `user_print` e possivelmente adicionar funções auxiliares para detectar e imprimir listas preguiçosas de forma inteligente.
 </details>
+
+<Solution>
+
+Duas mudanças:
+
+**1. Pares preguiçosos identificáveis.** Faça o `pair` composto devolver um valor **etiquetado** — por exemplo, o avaliador representa o resultado como `list("lazy_pair", thunk_do_head, thunk_do_tail)` em vez de uma função anônima. A aplicação de `head`/`tail` despacha pela etiqueta; nada mais muda para o usuário.
+
+**2. Impressão limitada no driver.** Ao exibir um resultado etiquetado como par preguiçoso, o driver força a estrutura **até um limite** (de profundidade e de comprimento) e imprime reticências além dele:
+
+```javascript
+function user_print(object) {
+    return is_lazy_pair(object)
+           ? print_lazy(object, 10)     // no máximo 10 elementos
+           : display(object);
+}
+function print_lazy(p, budget) {
+    // força head; segue o tail enquanto houver orçamento;
+    // ao esgotar, imprime "…" em vez de continuar
+}
+```
+
+Sobre listas infinitas: **não há teste geral de terminação** — o limite de impressão é a única resposta honesta. `integers` imprime `[1, 2, 3, …]` e para; quem quiser ver mais, pede mais orçamento. (É a mesma decisão do inspetor de streams deste site: materializar sob demanda, nunca por inteiro.)
+
+</Solution>
 
 <HelpFooter />

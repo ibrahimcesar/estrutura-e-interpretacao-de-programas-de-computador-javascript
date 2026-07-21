@@ -75,7 +75,7 @@ controller(
 
 **Figura 5.11:** Uma máquina de fatorial recursiva.
 
-Embora em princípio o cálculo de fatorial exija uma máquina infinita, a máquina na Figura 5.11 é na verdade finita, exceto pela pilha, que é potencialmente ilimitada. Qualquer implementação física particular de uma pilha, no entanto, será de tamanho finito, e isso limitará a profundidade de chamadas recursivas que podem ser manipuladas pela máquina. Esta implementação de fatorial ilustra a estratégia geral para realizar algoritmos recursivos como máquinas de registradores comuns aumentadas por pilhas. Quando um subproblema recursivo é encontrado, salvamos na pilha os registradores cujos valores atuais serão necessários após o subproblema ser resolvido, resolvemos o subproblema recursivo, depois restauramos os registradores salvos e continuamos a execução no problema principal. O registrador `continue` deve sempre ser salvo. Se há outros registradores que precisam ser salvos depende da máquina particular, pois nem todos os cálculos recursivos precisam dos valores originais de registradores que são modificados durante a solução do subproblema (veja exercício 5.7).
+Embora em princípio o cálculo de fatorial exija uma máquina infinita, a máquina na Figura 5.11 é na verdade finita, exceto pela pilha, que é potencialmente ilimitada. Qualquer implementação física particular de uma pilha, no entanto, será de tamanho finito, e isso limitará a profundidade de chamadas recursivas que podem ser manipuladas pela máquina. Esta implementação de fatorial ilustra a estratégia geral para realizar algoritmos recursivos como máquinas de registradores comuns aumentadas por pilhas. Quando um subproblema recursivo é encontrado, salvamos na pilha os registradores cujos valores atuais serão necessários após o subproblema ser resolvido, resolvemos o subproblema recursivo, depois restauramos os registradores salvos e continuamos a execução no problema principal. O registrador `continue` deve sempre ser salvo. Se há outros registradores que precisam ser salvos depende da máquina particular, pois nem todos os cálculos recursivos precisam dos valores originais de registradores que são modificados durante a solução do subproblema (veja exercício 5.4).
 
 ## Uma recursão dupla
 
@@ -133,7 +133,7 @@ controller(
 
 **Figura 5.12:** Controlador para uma máquina para calcular números de Fibonacci.
 
-## Exercício 5.7
+## Exercício 5.4
 
 Especifique máquinas de registradores que implementam cada uma das seguintes funções. Para cada máquina, escreva uma sequência de instruções do controlador e desenhe um diagrama mostrando os caminhos de dados.
 
@@ -166,11 +166,84 @@ b. Exponenciação iterativa:
   showLineNumbers={true}
 />
 
-## Exercício 5.8
+<Solution>
+
+**a. Exponenciação recursiva** — precisa de pilha e `continue`, como a máquina de fatorial do texto:
+
+```
+   assign("continue", label("expt_done")),
+"expt_loop",
+   test(list(op("==="), reg("n"), constant(0))),
+   branch(label("base_case")),
+   save("continue"),
+   assign("n", list(op("-"), reg("n"), constant(1))),
+   assign("continue", label("after_expt")),
+   go_to(label("expt_loop")),
+"after_expt",
+   restore("continue"),
+   assign("val", list(op("*"), reg("b"), reg("val"))),
+   go_to(reg("continue")),
+"base_case",
+   assign("val", constant(1)),
+   go_to(reg("continue")),
+"expt_done"
+```
+
+(Só `continue` precisa ser salvo: `b` não muda e `n` não é usado na volta.) Os caminhos de dados incluem a pilha, o decrementador de `n` e o multiplicador `b · val`.
+
+**b. Exponenciação iterativa** — sem pilha; o estado vive em `counter` e `product`:
+
+```
+   assign("counter", reg("n")),
+   assign("product", constant(1)),
+"expt_iter_loop",
+   test(list(op("==="), reg("counter"), constant(0))),
+   branch(label("expt_iter_done")),
+   assign("counter", list(op("-"), reg("counter"), constant(1))),
+   assign("product", list(op("*"), reg("b"), reg("product"))),
+   go_to(label("expt_iter_loop")),
+"expt_iter_done"
+```
+
+Lado a lado, as duas máquinas *materializam* a distinção do capítulo 1: o processo recursivo precisa de memória auxiliar crescente (a pilha); o iterativo, de um número fixo de registradores.
+
+</Solution>
+
+## Exercício 5.5
 
 Simule manualmente as máquinas de fatorial e Fibonacci, usando alguma entrada não trivial (requerendo execução de pelo menos uma chamada recursiva). Mostre os conteúdos da pilha em cada ponto significativo na execução.
 
-## Exercício 5.9
+<Solution>
+
+**Fatorial de 3** (máquina recursiva do texto). A pilha guarda pares (`continue`, `n`) a caminho da base e os consome na volta:
+
+```
+chamada        pilha (topo à esquerda)          ação
+fact(3)        —                                salva continue=done, n=3
+fact(2)        [done, 3]                        salva continue=after, n=2
+fact(1)        [after, 2, done, 3]              caso base: val ← 1
+volta n=2      [done, 3]                        val ← 2 · 1 = 2
+volta n=3      —                                val ← 3 · 2 = 6
+```
+
+Profundidade máxima da pilha: 4 itens (dois pares).
+
+**Fibonacci de 3**:
+
+```
+fib(3): salva continue, n → calcula fib(2)
+  fib(2): salva → calcula fib(1) = 1
+          restaura; salva n (com fib(1) em val) → calcula fib(0) = 0
+          restaura; val ← 1 + 0 = 1
+restaura; salva val=1, n → calcula fib(1) = 1
+restaura; val ← 1 + 1 = 2
+```
+
+O que observar: em Fibonacci a pilha guarda, além de `continue`/`n`, o **resultado parcial** de Fib(n−1) enquanto Fib(n−2) é computado — a "operação adiada" da recursão em árvore aparecendo como conteúdo concreto de pilha.
+
+</Solution>
+
+## Exercício 5.6
 
 Ben Bitdiddle observa que a sequência do controlador da máquina de Fibonacci tem um `save` extra e um `restore` extra, que podem ser removidos para fazer uma máquina mais rápida. Onde estão essas instruções?
 
@@ -179,3 +252,11 @@ Ben Bitdiddle observa que a sequência do controlador da máquina de Fibonacci t
 <a name="footnote-1"></a>[1] Pode-se argumentar que não precisamos salvar o `n` antigo; depois de decrementá-lo e resolver o subproblema, poderíamos simplesmente incrementá-lo para recuperar o valor antigo. Embora esta estratégia funcione para fatorial, ela não pode funcionar em geral, pois o valor antigo de um registrador nem sempre pode ser calculado a partir do novo.
 
 <a name="footnote-2"></a>[2] Na seção 5.3 veremos como implementar uma pilha em termos de operações mais primitivas.
+<Solution>
+
+Estão no trecho `afterfib_n_1`: ao voltar do cálculo de Fib(n−1), o controlador faz `restore("continue")` e, logo em seguida — sem que `continue` tenha sido usado ou alterado — `save("continue")` de novo, antes de partir para Fib(n−2).
+
+Como o valor restaurado é imediatamente salvo de volta, o par `restore`/`save` é um não-op: pode ser removido, deixando o valor simplesmente **na pilha** durante o cálculo de Fib(n−2). A máquina fica mais rápida — duas operações de pilha a menos por nó de uma árvore de chamadas com um número exponencial de nós.
+
+</Solution>
+

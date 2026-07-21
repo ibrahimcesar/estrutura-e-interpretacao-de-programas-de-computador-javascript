@@ -134,7 +134,7 @@ Com os programas nesta seção, agora podemos experimentar com as estratégias a
 
 As alternativas de interpretação e compilação também levam a diferentes estratégias para portar linguagens para novos computadores. Suponha que desejamos implementar JavaScript para uma nova máquina. Uma estratégia é começar com o avaliador de controle explícito da seção 5.4 e traduzir suas instruções para instruções para a nova máquina. Uma estratégia diferente é começar com o compilador e mudar os geradores de código de modo que eles gerem código para a nova máquina. A segunda estratégia nos permite executar qualquer programa JavaScript na nova máquina primeiro compilando-o com o compilador rodando em nosso sistema JavaScript original, e ligando-o com uma versão compilada da biblioteca de tempo de execução.<sup>[6](#footnote-6)</sup> Melhor ainda, podemos compilar o próprio compilador, e executá-lo na nova máquina para compilar outros programas JavaScript.<sup>[7](#footnote-7)</sup> Ou podemos compilar um dos interpretadores da seção 4.1 para produzir um interpretador que roda na nova máquina.
 
-## Exercício 5.48
+## Exercício 5.51
 
 Comparando as operações de pilha usadas por código compilado às operações de pilha usadas pelo avaliador para a mesma computação, podemos determinar a extensão na qual o compilador otimiza o uso da pilha, tanto em velocidade (reduzindo o número total de operações de pilha) quanto em espaço (reduzindo a profundidade máxima da pilha). Comparar este uso otimizado da pilha ao desempenho de uma máquina de propósito especial para a mesma computação dá alguma indicação da qualidade do compilador.
 
@@ -146,9 +146,23 @@ a. O exercício 5.27 pediu que você determinasse, como uma função de *n*, o n
 
 b. Você pode sugerir melhorias ao compilador que o ajudariam a gerar código que se aproximaria em desempenho da versão feita à mão?
 
-## Exercício 5.49
+<Solution>
 
-Realize uma análise como aquela no exercício 5.48 para determinar a eficácia de compilar a função Fibonacci recursiva em árvore:
+A tabela que emerge das três medições, para `factorial(n)` recursiva:
+
+| | pushes totais | profundidade máxima |
+|---|---|---|
+| Máquina dedicada (ex. 5.13) | $2(n-1)$ | $2(n-1)$ |
+| Avaliador (ex. 5.31) | $\approx 30n$ | $\approx 5n + c$ (linear, constante grande) |
+| **Código compilado** | $\approx 6n$ | $\approx 2n + c$ |
+
+(As constantes exatas dependem dos detalhes da versão; as razões são o que interessa.) O compilado usa da ordem de **5× menos** operações que o avaliador — eliminou o custo interpretativo de decodificar sintaxe a cada passo — e chega a um fator pequeno (2–3×) da máquina de propósito especial, cuja vantagem restante vem de conhecer o problema (não carrega ambiente, `argl`, teste primitiva/composta). "Qualidade do compilador" é exatamente essa fração: quanto do abismo avaliador→hardware dedicado ele atravessa.
+
+</Solution>
+
+## Exercício 5.52
+
+Realize uma análise como aquela no exercício 5.51 para determinar a eficácia de compilar a função Fibonacci recursiva em árvore:
 
 ```javascript
 function fib(n) {
@@ -158,7 +172,21 @@ function fib(n) {
 
 comparada à eficácia de usar a máquina Fibonacci de propósito especial da Figura 5.12. (Para medida do desempenho interpretado, veja o exercício 5.29.) Para Fibonacci, o recurso de tempo usado não é linear em *n*; portanto as razões de operações de pilha não se aproximarão de um valor limite que seja independente de *n*.
 
-## Exercício 5.50
+<Solution>
+
+Para `fib(n)` em árvore, as três curvas têm a mesma forma — pushes proporcionais a $\text{Fib}(n+1)$ (exponencial), profundidade linear em $n$ — mudando só as constantes:
+
+| | pushes por "nó" | profundidade por nível |
+|---|---|---|
+| Máquina dedicada (fig. 5.12) | menor | menor |
+| Avaliador | dezenas | ~5 |
+| Compilado | poucas unidades | ~2 |
+
+A conclusão espelha o 5.51 com um agravante instrutivo: como o trabalho cresce exponencialmente, as **constantes** dominam o tempo real — compilar não muda a ordem de crescimento (nada muda; o algoritmo é exponencial), mas divide o tempo por um fator constante substancial. Otimização de compilador melhora coeficientes; escolher o algoritmo certo (a `fib` logarítmica do exercício 1.19!) muda a curva.
+
+</Solution>
+
+## Exercício 5.53
 
 Esta seção descreveu como modificar o avaliador de controle explícito para que código interpretado possa chamar funções compiladas. Mostre como modificar o compilador para que funções compiladas possam chamar não apenas funções primitivas e compiladas, mas também funções interpretadas. Isso requer modificar `compile_function_call` para manipular o caso de funções compostas (interpretadas). Certifique-se de manipular todas as mesmas combinações de `target` e `linkage` como em `compile_fun_appl`. Para fazer a aplicação real da função, o código precisa pular para o ponto de entrada `compound_apply` do avaliador. Este rótulo não pode ser referenciado diretamente em código objeto (já que o montador requer que todos os rótulos referenciados pelo código que ele está montando sejam definidos lá), então adicionaremos um registrador chamado `compapp` à máquina avaliadora para conter este ponto de entrada, e adicionaremos uma instrução para inicializá-lo:
 
@@ -171,7 +199,28 @@ Esta seção descreveu como modificar o avaliador de controle explícito para qu
 
 Para testar seu código, comece declarando uma função `f` que chama uma função `g`. Use `compile_and_go` para compilar a declaração de `f` e iniciar o avaliador. Agora, digitando no avaliador, declare `g` e tente chamar `f`.
 
-## Exercício 5.51
+<Solution>
+
+Em `compile_function_call`, o teste vira de três vias — primitiva, compilada, **composta (interpretada)**:
+
+```
+test(op("is_compound_function"), reg("fun")),
+branch(label("compound_branch")),
+…
+"compound_branch",
+    // como compile_fun_appl, mas o alvo do salto é o avaliador:
+    assign("continue", label(after_call)),     // conforme target/linkage
+    save("continue"),
+    go_to(reg("compapp")),                     // entra em compound_apply
+```
+
+com as mesmas quatro combinações de `target`/`linkage` de `compile_fun_appl`: alvo `val` com linkage `return` salta direto com o `continue` restaurado; alvo `val` com rótulo arma `continue` para o rótulo; alvo ≠ `val` exige o trampolim que move o resultado e segue. O registrador `compapp`, inicializado no arranque da máquina com o rótulo `compound_apply`, é a ponte — o código objeto não pode nomear rótulos do avaliador, mas pode saltar para onde um registrador aponta.
+
+Com o 5.47 do texto (interpretado→compilado) e este (compilado→interpretado), os dois mundos se chamam livremente — a condição para o sistema misto do exercício 5.54.
+
+</Solution>
+
+## Exercício 5.54
 
 A interface `compile_and_go` implementada nesta seção é desajeitada, já que o compilador pode ser chamado apenas uma vez (quando a máquina avaliadora é iniciada). Aumente a interface compilador-interpretador fornecendo uma primitiva `compile_and_run` que pode ser chamada de dentro do avaliador de controle explícito da seguinte forma:
 
@@ -203,21 +252,94 @@ EC-Eval value:
 120
 ```
 
-## Exercício 5.52
+<Solution>
 
-Como uma alternativa a usar o loop read-evaluate-print do avaliador de controle explícito, projete uma máquina de registradores que realiza um loop read-compile-execute-print. Ou seja, a máquina deve executar um loop que lê um programa, compila-o, monta e executa o código resultante, e imprime o resultado. Esta é fácil de executar em nossa configuração simulada, já que podemos arranjar para chamar as funções `compile` e `assemble` como "operações de máquina de registradores".
+`compile_and_run` entra como **primitiva** do avaliador:
 
-## Exercício 5.53
+```javascript
+function compile_and_run(string) {
+    const insts = assemble(
+        statements(compile(parse(string), "val", "return")),
+        eceval);
+    // emendar: fazer o avaliador executar insts e voltar ao driver
+    set_register_contents(eceval, "val", insts);
+    // saltar para um trecho do controlador que faz go_to(reg("val"))
+}
+```
 
-Use o compilador para compilar o avaliador metacircular da seção 4.1 e execute este programa usando o simulador de máquina de registradores. Como o parser toma uma string como entrada, você precisará converter o programa em uma string. A forma mais simples de fazer isso é usar as crases (`` ` ``), como fizemos para as entradas de exemplo para `compile_and_go` e `compile_and_run`. O interpretador resultante executará muito lentamente por causa dos múltiplos níveis de interpretação, mas fazer todos os detalhes funcionarem é um exercício instrutivo.
+com um rótulo auxiliar no controlador (`external_entry`-style) que recebe o código montado, arma `continue` para `print_result` e salta para as instruções. A montagem acontece **dentro da mesma máquina** (compile e assemble são operações disponíveis), então o código novo convive com o ambiente global corrente — declarações compiladas ficam visíveis para o interpretador e vice-versa. O REPL ganha um botão de turbo: trechos quentes podem ser recompilados sem reiniciar a máquina.
 
-## Exercício 5.54
-
-Desenvolva uma implementação rudimentar de JavaScript em C (ou alguma outra linguagem de baixo nível de sua escolha) traduzindo o avaliador de controle explícito da seção 5.4 para C. Para executar este código você precisará também fornecer rotinas apropriadas de alocação de armazenamento e outro suporte de tempo de execução.
+</Solution>
 
 ## Exercício 5.55
 
-Como um contraponto ao exercício 5.54, modifique o compilador para que ele compile funções JavaScript em sequências de instruções C. Compile o avaliador metacircular da seção 4.1 para produzir um interpretador JavaScript escrito em C.
+Como uma alternativa a usar o loop read-evaluate-print do avaliador de controle explícito, projete uma máquina de registradores que realiza um loop read-compile-execute-print. Ou seja, a máquina deve executar um loop que lê um programa, compila-o, monta e executa o código resultante, e imprime o resultado. Esta é fácil de executar em nossa configuração simulada, já que podemos arranjar para chamar as funções `compile` e `assemble` como "operações de máquina de registradores".
+
+<Solution>
+
+O controlador do laço ler-compilar-executar-imprimir:
+
+```
+"read_compile_execute_print_loop",
+    perform(op("initialize_stack")),
+    assign("exp", op("read")),
+    assign("val", list(op("compile_to_instructions"), reg("exp"))),
+    assign("continue", label("print_result")),
+    go_to(reg("val")),
+"print_result",
+    perform(list(op("user_print"), reg("val"))),
+    go_to(label("read_compile_execute_print_loop")),
+```
+
+onde `compile_to_instructions` é a operação de máquina que roda `compile` + `assemble` sobre o programa lido e devolve o ponto de entrada. Diferenças em relação ao REPL interpretador: não há `eval_dispatch` — **todo** programa passa pelo compilador antes de executar, e o "interpretador" se reduz ao laço de leitura mais o suporte de tempo de execução (ambiente global, primitivas, pilha). É, em miniatura, a arquitetura de um sistema JIT: a fronteira ler/compilar/executar do nosso simulador é a mesma de um motor JavaScript real.
+
+</Solution>
+
+## Exercício 5.56
+
+Use o compilador para compilar o avaliador metacircular da seção 4.1 e execute este programa usando o simulador de máquina de registradores. Como o parser toma uma string como entrada, você precisará converter o programa em uma string. A forma mais simples de fazer isso é usar as crases (`` ` ``), como fizemos para as entradas de exemplo para `compile_and_go` e `compile_and_run`. O interpretador resultante executará muito lentamente por causa dos múltiplos níveis de interpretação, mas fazer todos os detalhes funcionarem é um exercício instrutivo.
+
+<Solution>
+
+O experimento em três camadas: o **simulador** (JavaScript hospedeiro) executa o **avaliador metacircular compilado**, que interpreta **o programa do usuário**. Passos: envolver o texto do avaliador da seção 4.1 em crases, `compile_and_go` nele, e usar o `driver_loop` que emerge para digitar programas.
+
+O que se aprende fazendo funcionar: (1) o avaliador da 4.1 depende de primitivas (`parse`, `pair`, `error`, …) que precisam estar no ambiente global da máquina compilada — a lista de primitivas é a "interface de sistema" do avaliador; (2) a lentidão é multiplicativa: se cada camada custa um fator $k$ (digamos, dezenas), duas camadas custam $k^2$ — um `fib(10)` já se arrasta; (3) e o ponto conceitual que fecha o livro: **não há diferença de natureza** entre as camadas — o mesmo texto que era "o avaliador" vira "programa de usuário" ao descer um nível. Torres de interpretadores são só isso: a mesma máquina, dobrada sobre si mesma.
+
+</Solution>
+
+## Exercício 5.57
+
+Desenvolva uma implementação rudimentar de JavaScript em C (ou alguma outra linguagem de baixo nível de sua escolha) traduzindo o avaliador de controle explícito da seção 5.4 para C. Para executar este código você precisará também fornecer rotinas apropriadas de alocação de armazenamento e outro suporte de tempo de execução.
+
+<Solution>
+
+Um roteiro para a tradução do avaliador de controle explícito para C:
+
+1. **Registradores** viram variáveis globais (`exp`, `env`, `val`, `fun`, `argl`, `continue`, `unev`); o `continue` guarda *rótulos* — em C, ponteiros de função ou um `enum` + `switch` num laço (o clássico *trampoline*), já que `goto` não atravessa funções.
+2. **Dados etiquetados**: uma união etiquetada (`struct value { enum tag; union {...} }`) para números, strings, pares, funções; os pares apontam para um heap de vetores `the_heads`/`the_tails` — a seção 5.3 é literalmente o projeto do alocador.
+3. **Pilha**: um vetor com índice de topo; `save`/`restore` são incremento/decremento com escrita.
+4. **O controlador**: cada rótulo do avaliador vira um `case`; o laço central despacha pelo "rótulo corrente". O texto da seção 5.4 traduz-se quase linha a linha.
+5. **Suporte**: um leitor/parser (a parte mais trabalhosa), impressão, e o coletor de lixo stop-and-copy da seção 5.3.2 para quando o heap enche.
+
+O resultado — alguns milhares de linhas de C — é um interpretador JavaScript rudimentar mas genuíno, e a experiência ensina o que os capítulos afirmaram: um interpretador é uma máquina de registradores; C é só uma notação portátil para descrevê-la.
+
+</Solution>
+
+## Exercício 5.58
+
+Como um contraponto ao exercício 5.57, modifique o compilador para que ele compile funções JavaScript em sequências de instruções C. Compile o avaliador metacircular da seção 4.1 para produzir um interpretador JavaScript escrito em C.
+<Solution>
+
+O contraponto do 5.57: em vez de *traduzir o avaliador* para C, ensinar o **compilador** a emitir C. As mudanças:
+
+1. **Alvo de código**: as sequências de instruções deixam de ser dados para o montador e viram texto C — cada `assign`/`test`/`branch`/`go_to` tem um molde (`val = lookup(...);`, `if (is_falsy(val)) goto L12;`); rótulos viram rótulos C dentro de uma grande função (aí `goto` local basta).
+2. **Ligação e chamadas**: `save`/`restore` usam a pilha do runtime; chamadas compostas empurram o rótulo de retorno como valor (o trampoline outra vez) — o `preserving` continua decidindo o que salvar.
+3. **Runtime compartilhado com o 5.57**: heap, pares, primitivas, GC — o mesmo suporte serve aos dois caminhos.
+
+Compilando o avaliador metacircular da seção 4.1 com esse compilador, o produto é um **interpretador JavaScript escrito em C** — funcionalmente o mesmo artefato do exercício 5.57, obtido pelo caminho oposto. Essa é a última lição do livro: interpretar e compilar são duas rotas entre os mesmos pontos, e um sistema real (como os motores JavaScript de verdade) caminha pelas duas ao mesmo tempo.
+
+</Solution>
+
 
 ---
 
@@ -252,7 +374,7 @@ function user_print(string, object) {
 }
 ```
 
-<a name="footnote-4"></a>[4] Podemos fazer ainda melhor estendendo o compilador para permitir que código compilado chame funções interpretadas. Veja o exercício 5.50.
+<a name="footnote-4"></a>[4] Podemos fazer ainda melhor estendendo o compilador para permitir que código compilado chame funções interpretadas. Veja o exercício 5.53.
 
 <a name="footnote-5"></a>[5] Independente da estratégia de execução, incorremos em overhead significativo se insistirmos que erros encontrados na execução de um programa do usuário sejam detectados e sinalizados, ao invés de serem permitidos matar o sistema ou produzir respostas erradas. Por exemplo, uma referência de array fora dos limites pode ser detectada verificando a validade da referência antes de realizá-la. O overhead de verificação, no entanto, pode ser muitas vezes o custo da própria referência de array, e um programador deve pesar velocidade contra segurança ao determinar se tal verificação é desejável. Um bom compilador deve ser capaz de produzir código com tais verificações, deve evitar verificações redundantes, e deve permitir que programadores controlem a extensão e tipo de verificação de erros no código compilado.
 

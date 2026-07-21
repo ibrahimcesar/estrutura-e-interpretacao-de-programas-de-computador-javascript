@@ -326,6 +326,23 @@ and(salary($person, $amount), javascript_predicate($amount > 50000))
 
 [^2]: Uma consulta deve usar `javascript_predicate` apenas para executar uma operação não fornecida na linguagem de consulta. Em particular, `javascript_predicate` não deve ser usado para testar igualdade (já que isso é o que a correspondência na linguagem de consulta foi projetada para fazer) ou desigualdade (já que isso pode ser feito com a regra `same` mostrada abaixo).
 
+<Solution>
+
+```javascript
+// 1. supervisionados por Ben
+supervisor($person, list("Bitdiddle", "Ben"))
+
+// 2. nomes e cargos da contabilidade
+job($person, pair("accounting", $type))
+
+// 3. nomes e endereços de quem mora em Slumerville
+address($person, pair("Slumerville", $rest))
+```
+
+O segredo dos itens 2 e 3 é casar **o prefixo** da lista com `pair`: qualquer cargo cuja lista comece com `"accounting"`, qualquer endereço cuja lista comece com `"Slumerville"`.
+
+</Solution>
+
 ### Exercício 4.54
 
 Formule consultas compostas que recuperem as seguintes informações:
@@ -400,6 +417,29 @@ rule(outranked_by($staff_person, $boss),
 
 diz que uma pessoa da equipe é superada por um chefe na organização se o chefe é o supervisor da pessoa ou (recursivamente) se o supervisor da pessoa é superado pelo chefe.
 
+<Solution>
+
+```javascript
+// 1. supervisionados por Ben, com endereços
+and(supervisor($person, list("Bitdiddle", "Ben")),
+    address($person, $address))
+
+// 2. salário menor que o de Ben, com os dois salários
+and(salary(list("Bitdiddle", "Ben"), $ben_salary),
+    and(salary($person, $amount),
+        javascript_predicate($amount < $ben_salary)))
+
+// 3. supervisionados por alguém fora da computação,
+//    com nome e cargo do supervisor
+and(supervisor($person, $boss),
+    and(not(job($boss, pair("computer", $type))),
+        job($boss, $boss_job)))
+```
+
+No item 2, a ordem importa: o salário de Ben precisa estar vinculado **antes** do `javascript_predicate` — filtros só funcionam sobre variáveis já instanciadas. No item 3, o `not` funciona como filtro pela mesma razão: `$boss` já chega vinculado pelo `supervisor`.
+
+</Solution>
+
 ### Exercício 4.55
 
 Defina uma regra que diga que a pessoa 1 pode substituir a pessoa 2 se a pessoa 1 faz o mesmo trabalho que a pessoa 2 ou alguém que faz o trabalho da pessoa 1 também pode fazer o trabalho da pessoa 2, e se a pessoa 1 e a pessoa 2 não são a mesma pessoa. Usando sua regra, forneça consultas que encontrem o seguinte:
@@ -407,9 +447,46 @@ Defina uma regra que diga que a pessoa 1 pode substituir a pessoa 2 se a pessoa 
 1. todas as pessoas que podem substituir Cy D. Fect;
 2. todas as pessoas que podem substituir alguém que está sendo pago mais do que elas, juntamente com os dois salários.
 
+<Solution>
+
+```javascript
+rule(can_replace($person_1, $person_2),
+     and(job($person_1, $job_1),
+         and(job($person_2, $job_2),
+             and(or(same($job_1, $job_2),
+                    can_do_job($job_1, $job_2)),
+                 not(same($person_1, $person_2))))))
+
+// 1. quem pode substituir Cy D. Fect
+can_replace($person, list("Fect", "Cy", "D"))
+
+// 2. quem pode substituir alguém que ganha mais, com os salários
+and(can_replace($person_1, $person_2),
+    and(salary($person_1, $salary_1),
+        and(salary($person_2, $salary_2),
+            javascript_predicate($salary_1 < $salary_2))))
+```
+
+(com a regra auxiliar `rule(same($x, $x))` do texto). A consulta 1 encontra Alyssa — programadores podem fazer o trabalho de técnicos; a 2 revela a injustiça de que ela ganha menos que Cy podendo substituí-lo.
+
+</Solution>
+
 ### Exercício 4.56
 
 Defina uma regra que diga que uma pessoa é um "grande chefe" em uma divisão se a pessoa trabalha na divisão mas não tem um supervisor que trabalhe na divisão.
+
+<Solution>
+
+```javascript
+rule(big_shot($person, $division),
+     and(job($person, pair($division, $rest)),
+         not(and(supervisor($person, $boss),
+                 job($boss, pair($division, $boss_rest))))))
+```
+
+Uma pessoa é "grande chefe" na divisão se trabalha nela e **não** existe supervisor dela que também trabalhe nela — o que cobre tanto quem não tem supervisor nenhum (Oliver Warbucks) quanto quem responde a alguém de outra divisão (Ben, cujo chefe é da administração).
+
+</Solution>
 
 ### Exercício 4.57
 
@@ -437,6 +514,36 @@ meeting("whole-company", list("Wednesday", "4pm"))
    ```
 
 3. Alyssa chega ao trabalho na quarta-feira de manhã e se pergunta quais reuniões ela tem para participar naquele dia. Tendo definido a regra acima, que consulta ela deve fazer para descobrir isso?
+
+<Solution>
+
+**1. Reuniões de sexta-feira:**
+
+```javascript
+meeting($division, pair("Friday", $time))
+```
+
+**2. A regra de Alyssa:**
+
+```javascript
+rule(meeting_time($person, $day_and_time),
+     or(meeting("whole-company", $day_and_time),
+        and(job($person, pair($division, $rest)),
+            meeting($division, $day_and_time))))
+```
+
+As reuniões de alguém são as da empresa inteira **ou** as da divisão descoberta pelo seu cargo.
+
+**3. As reuniões de Alyssa na quarta:**
+
+```javascript
+meeting_time(list("Hacker", "Alyssa", "P"),
+             pair("Wednesday", $time))
+```
+
+que encontra duas: a da divisão de computação (3pm) e a da empresa toda (4pm).
+
+</Solution>
 
 ### Exercício 4.58
 
@@ -521,6 +628,21 @@ append_to_form(list("a", "b", "c", "d"), null, list("a", "b", "c", "d"))
 
 O sistema de consulta pode parecer exibir bastante inteligência ao usar as regras para deduzir as respostas às consultas acima. Na verdade, como veremos na próxima seção, o sistema está seguindo um algoritmo bem determinado ao desvendar as regras. Infelizmente, embora o sistema funcione de forma impressionante no caso de `append`, os métodos gerais podem falhar em casos mais complexos, como veremos na seção 4.4.3.
 
+<Solution>
+
+Cada par aparece **duas vezes** — `(Alyssa, Cy)` e também `(Cy, Alyssa)` — porque a regra `lives_near` é simétrica: o casamento de padrões encontra cada dupla nas duas ordens de vinculação das variáveis.
+
+Para listar cada par só uma vez, quebre a simetria impondo uma **ordem** entre os dois nomes — por exemplo, exigir que o primeiro venha lexicograficamente antes do segundo:
+
+```javascript
+and(lives_near($person_1, $person_2),
+    javascript_predicate(stringify($person_1) < stringify($person_2)))
+```
+
+Qualquer critério total e antissimétrico serve; a string da representação é o mais simples disponível no sistema. (Sem um predicado assim não há como fazê-lo só com padrões: o casador não tem noção de "menor que".)
+
+</Solution>
+
 ### Exercício 4.59
 
 As seguintes regras implementam uma relação `next_to_in` que encontra elementos adjacentes de uma lista:
@@ -540,6 +662,28 @@ next_to_in($x, $y, list(1, list(2, 3), 4))
 next_to_in($x, 1, list(2, 1, 3, 1))
 ```
 
+<Solution>
+
+**Primeira consulta** — `next_to_in($x, $y, list(1, list(2, 3), 4))`:
+
+```javascript
+next_to_in(1, list(2, 3), list(1, list(2, 3), 4))
+next_to_in(list(2, 3), 4, list(1, list(2, 3), 4))
+```
+
+os dois pares adjacentes da lista — a sublista `list(2, 3)` é um *elemento* como outro qualquer.
+
+**Segunda consulta** — `next_to_in($x, 1, list(2, 1, 3, 1))`: quem vem imediatamente **antes** de um 1:
+
+```javascript
+next_to_in(2, 1, list(2, 1, 3, 1))
+next_to_in(3, 1, list(2, 1, 3, 1))
+```
+
+A primeira regra casa o começo da lista; a segunda desce recursivamente pela cauda — juntas, enumeram todas as adjacências.
+
+</Solution>
+
 ### Exercício 4.60
 
 Defina regras para implementar a operação `last_pair` do exercício 2.17, que retorna uma lista contendo o último elemento de uma lista não vazia. Verifique suas regras nas seguintes consultas:
@@ -549,6 +693,24 @@ Defina regras para implementar a operação `last_pair` do exercício 2.17, que 
 - `last_pair(list(2, $x), list(3))`
 
 Suas regras funcionam corretamente em consultas como `last_pair($x, list(3))`?
+
+<Solution>
+
+```javascript
+rule(last_pair(list($x), list($x)))
+rule(last_pair(pair($u, $v), $z),
+     last_pair($v, $z))
+```
+
+Base: o último par de uma lista unitária é ela mesma. Passo: o último par de `pair($u, $v)` é o último par de `$v`.
+
+- `last_pair(list(3), $x)` → `$x = list(3)`
+- `last_pair(list(1, 2, 3), $x)` → `$x = list(3)`
+- `last_pair(list(2, $x), list(3))` → `$x = 3` — as regras funcionam "de trás para frente"!
+
+**E `last_pair($x, list(3))`?** O sistema encontra `list(3)`, `list($u, 3)`, `list($u, $v, 3)`, … — **infinitas** respostas, cada vez com mais variáveis não vinculadas na frente. A consulta não termina de enumerar; regras lógicas não têm direção preferida, e perguntas "abertas demais" geram espaços de busca infinitos.
+
+</Solution>
 
 ### Exercício 4.61
 
@@ -567,5 +729,25 @@ son("Ada", "Jubal")
 ```
 
 Formule regras como "Se S é o filho de F, e F é o filho de G, então S é o neto de G" e "Se W é a esposa de M, e S é o filho de W, então S é o filho de M" (o que supostamente era mais verdadeiro em tempos bíblicos do que hoje) que permitirão ao sistema de consulta encontrar o neto de Caim; os filhos de Lamech; os netos de Methushael. (Veja o exercício 4.62 para algumas regras para deduzir relacionamentos mais complicados.)
+
+<Solution>
+
+```javascript
+rule(grandson($g, $s),
+     and(son($g, $f),
+         son($f, $s)))
+
+rule(son($m, $s),
+     and(wife($m, $w),
+         son($w, $s)))
+```
+
+A primeira é a definição direta de neto; a segunda estende a relação `son`: os filhos da esposa contam como filhos do marido — e, crucialmente, a regra *alimenta a si mesma e à de neto*, porque o `son($f, $s)` dentro de `grandson` também pode ser satisfeito via esposa.
+
+- `grandson("Cain", $x)` → Irad
+- `son("Lamech", $x)` → Jabal e Jubal (via Ada)
+- `grandson("Methushael", $x)` → Jabal e Jubal (Lamech é filho de Methushael; os filhos de Lamech vêm pela regra da esposa)
+
+</Solution>
 
 <HelpFooter />

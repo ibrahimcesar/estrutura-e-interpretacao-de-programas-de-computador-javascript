@@ -125,6 +125,26 @@ const y = list(x, x);`}
 
 com o ponteiro `free` inicialmente `p1`. Qual é o valor final de `free`? Que ponteiros representam os valores de `x` e `y`?
 
+<Solution>
+
+Para `list(1, 2, 3)` construída como `pair(1, pair(2, pair(3, null)))`, com os pares alocados de dentro para fora nos índices 1, 2, 3:
+
+**Caixas e ponteiros:** três células; a primeira contém 1 e aponta para a segunda (2), que aponta para a terceira (3), cujo tail é `null`.
+
+**Vetores de memória** (`p3` = ponteiro para o índice 3 etc., `n1` = número 1, `e0` = null):
+
+```
+índice        1    2    3
+the_heads    n3   n2   n1
+the_tails    e0   p1   p2
+```
+
+A lista é o ponteiro `p3`. Cada `pair` consumiu um índice novo — a estrutura *compartilhada* apareceria como dois ponteiros para o mesmo índice, e é exatamente isso que a representação vetorial torna visível e a de caixas esconde no desenho.
+
+(Os índices exatos dependem da ordem de alocação assumida; o que importa é o padrão: heads com os números, tails encadeando os índices.)
+
+</Solution>
+
 ## Exercício 5.20
 
 Implemente máquinas de registradores para as seguintes funções. Assuma que as operações de memória de estrutura de lista estão disponíveis como primitivas da máquina.
@@ -164,9 +184,79 @@ b. `count_leaves` recursiva com contador explícito:
   showLineNumbers={true}
 />
 
+<Solution>
+
+**a. `count_leaves` recursiva** — a máquina espelha a de Fibonacci (duas chamadas recursivas por nó):
+
+```
+count_loop
+   se is_null(tree): val ← 0, vá para continue
+   se ¬ is_pair(tree): val ← 1, vá para continue
+   save continue, save tree
+   tree ← head(tree); continue ← after_head
+   vá para count_loop
+after_head
+   restore tree; tree ← tail(tree)
+   save val                      ← guarda contagem da cabeça
+   continue ← after_tail
+   vá para count_loop
+after_tail
+   restore val→temp; restore continue
+   val ← temp + val
+   vá para continue
+```
+
+**b. com contador explícito** (`count_iter(tree, n)`): a chamada para a cabeça já carrega o `n` acumulado; ainda há pilha (a segunda perna precisa esperar a primeira), mas o somador desaparece da volta:
+
+```
+   save tree; tree ← head(tree); continue ← after_head …
+after_head
+   restore tree; tree ← tail(tree)   // n já vem atualizado em n
+   vá para count_loop (cauda!)
+```
+
+A perna do `tail` vira chamada em posição de cauda — só a do `head` empilha. As operações de memória (`head`, `tail`, `is_pair`) entram como primitivas `vector_ref` sobre `the_heads`/`the_tails`, como na seção.
+
+</Solution>
+
 ## Exercício 5.21
 
 O exercício 3.12 da seção 3.3.1 apresentou uma função `append` que anexa duas listas para formar uma nova lista e uma função `append_mutator` que junta duas listas. Projete uma máquina de registradores para implementar cada uma dessas funções. Assuma que as operações de memória de estrutura de lista estão disponíveis como operações primitivas.
+<Solution>
+
+**`append` (funcional)** — recursiva pela primeira lista; a pilha guarda as cabeças a costurar na volta:
+
+```
+append_loop
+   se is_null(x): val ← y, vá para continue
+   save continue; save head(x)         // guarda a cabeça
+   x ← tail(x); continue ← after_append
+   vá para append_loop
+after_append
+   restore temp; restore continue
+   val ← pair(temp, val)               // cons na volta
+   vá para continue
+```
+
+`pair` aqui é a operação primitiva de alocação (`free`, `the_heads`, `the_tails` da seção).
+
+**`append_mutator`** — sem alocação nenhuma: percorre `x` até o último par e emenda:
+
+```
+   t ← x
+last_loop
+   se is_null(tail(t)): vá para set_it
+   t ← tail(t)
+   vá para last_loop
+set_it
+   set_tail(t, y)
+   val ← x
+```
+
+Iterativa, espaço constante, e destrutiva — o contraste entre as duas máquinas é o mesmo do exercício 3.12, agora visível em termos de `pair` alocando células versus `set_tail` sobrescrevendo um vetor.
+
+</Solution>
+
 
 ---
 

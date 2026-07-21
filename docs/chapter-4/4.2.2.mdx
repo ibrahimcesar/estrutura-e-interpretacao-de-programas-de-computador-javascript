@@ -222,9 +222,38 @@ Após avaliarmos `w`, `count` é 2, porque agora o thunk `id(10)` é forçado pa
 Se avaliarmos `w` novamente, `count` permanece 2, porque o thunk foi memorizado e não será recalculado.
 </details>
 
+<Solution>
+
+As respostas, na ordem, com a explicação do estado de `count`:
+
+- Após `const w = id(id(10));` → **`count` é 1**: a aplicação externa de `id` executa (é a expressão da declaração), incrementando `count`; mas seu argumento `id(10)` vira um *thunk* — a aplicação interna ainda não aconteceu.
+- `w` → **10**: o driver força o valor de `w`; isso força o thunk, executando o `id` interno.
+- `count` → **2**: o forçamento acima incrementou o contador.
+
+O quebra-cabeça inteiro está em *quando* cada `id` roda: um na avaliação da declaração, o outro só quando alguém finalmente olha para `w`. Efeitos colaterais + preguiça = cronologia contraintuitiva — o tema dos exercícios seguintes.
+
+</Solution>
+
 ### Exercício 4.28
 
 A função `evaluate` usa `actual_value` em vez de `evaluate` para avaliar a expressão de função antes de passá-la para `apply`, a fim de forçar o valor da expressão de função. Dê um exemplo que demonstre a necessidade desse forçamento.
+
+<Solution>
+
+Force a expressão de função quando **ela própria é um argumento adiado**. Exemplo:
+
+```javascript
+function apply_twice(f, x) {
+    return f(f(x));
+}
+apply_twice(x => x + 1, 5);
+```
+
+Dentro de `apply_twice`, o parâmetro `f` está vinculado a um *thunk* (todo argumento chega adiado). Na aplicação `f(x)`, a expressão de função é o nome `f`, cujo valor é o thunk — se o avaliador usasse `evaluate` em vez de `actual_value`, tentaria aplicar **um thunk** e falharia ("unknown procedure type"). O `actual_value` desfaz o embrulho e revela a função de verdade antes do `apply`.
+
+Qualquer função de ordem superior dispara o problema — ou seja, praticamente qualquer programa interessante deste livro.
+
+</Solution>
 
 ### Exercício 4.29
 
@@ -290,6 +319,27 @@ Quanto à diferença no `count`: com memorização, `id(10)` é avaliado uma vez
 Sem memorização, cada referência a `x` força a reavaliação de `id(10)`, então `count` é incrementado duas vezes (uma para cada uso de `x` na multiplicação).
 </details>
 
+<Solution>
+
+**Programa muito mais lento sem memoização:** qualquer um com recursão em árvore sobre um argumento adiado —
+
+```javascript
+function fib(n) {
+    return n < 2 ? n : fib(n - 1) + fib(n - 2);
+}
+fib(25);
+```
+
+Sem memoização, cada uso de `n` dentro de `fib` reavalia o thunk do argumento, e os thunks se aninham a cada nível: o custo explode exponencialmente além do já exponencial `fib`. Com memoização, cada thunk é forçado uma vez.
+
+**As interações com `id`:**
+
+Com memoização: `square(id(10))` responde **100** e `count` responde **1** — o thunk de `x` é forçado no primeiro uso dentro de `x * x` e o segundo uso reaproveita o valor lembrado.
+
+Sem memoização: `square(id(10))` responde **100**, mas `count` responde **2** — `x * x` força o thunk duas vezes, e `id` roda de novo a cada forçamento.
+
+</Solution>
+
 ### Exercício 4.30
 
 Cy D. Fect, um programador reformado, está preocupado que alguns efeitos colaterais nunca possam ocorrer, porque o avaliador preguiçoso não força as expressões em uma sequência. Como ele diz, "se a avaliação de uma sequência retorna o valor de sua expressão final, então não há razão para forçar as outras expressões, já que seus valores não serão usados de qualquer forma." Como você acha que sequências devem ser tratadas no avaliador preguiçoso?
@@ -301,6 +351,26 @@ Cy D. Fect, um programador reformado, está preocupado que alguns efeitos colate
 **c.** Como você acha que sequências devem ser tratadas no avaliador preguiçoso? Você gosta da abordagem no texto, ou prefere exigir que sequências sejam forçadas, ou deve a avaliação de sequências depender de sintaxe (como em Scheme)?
 
 **d.** Faça as mudanças apropriadas no avaliador para implementar sua escolha em (c).
+
+<Solution>
+
+**a. Por que o medo de Cy não se concretiza no caso comum:** numa sequência, cada declaração é *avaliada* — e avaliar uma declaração de expressão que é uma **aplicação** executa a função (só os argumentos ficam adiados). `display(x);` no meio de uma sequência roda o `display` (primitiva estrita, que força seu argumento). O caso do `for_each` do texto funciona exatamente por isso: o corpo é uma aplicação de primitiva.
+
+**b. As exceções reais:** efeitos escondidos *dentro de um thunk que ninguém força*. O exemplo clássico:
+
+```javascript
+function f(e) {
+    e;            // ← declaração de expressão que é só um nome
+    return "pronto";
+}
+f(x = 5);
+```
+
+O argumento `x = 5` chega como thunk; a declaração `e;` avalia o nome `e`… para o próprio thunk, **sem forçá-lo** — a atribuição nunca acontece, e `x` continua com o valor antigo. Qualquer expressão-declaração cujo valor é um thunk não-forçado (um nome, uma condicional que devolve argumento adiado…) engole seus efeitos.
+
+**c. O que fazer:** as opções são (1) manter como está — sequências não forçam, e efeitos em thunks se perdem silenciosamente; (2) forçar toda declaração não-final com `actual_value` — sequências recuperam a leitura imperativa, ao custo de forçar coisas possivelmente caras ou infinitas; (3) distinguir sintaticamente. Numa linguagem *preguiçosa com atribuição*, a opção 2 é a menos traiçoeira: quem escreve uma declaração de expressão no meio de uma sequência quase sempre quer o efeito. Mas a resposta honesta do exercício é a do livro: misturar preguiça com efeitos colaterais é intrinsecamente escorregadio — os capítulos 3 e 4 puxam em direções opostas.
+
+</Solution>
 
 ### Exercício 4.31
 
@@ -316,5 +386,32 @@ function f(a, lazy b, c, lazy d) {
 ```
 
 Implemente isso modificando as funções `apply`, `function_parameters`, e outras conforme necessário.
+
+<Solution>
+
+Três mudanças coordenadas:
+
+**1. Sintaxe.** O parser marca cada parâmetro com seu modo; a lista de parâmetros vira pares `(nome, modo)`, com `"strict"` como padrão e `"lazy"` para os anotados.
+
+**2. `apply`.** Em vez de adiar todos os argumentos, decida por parâmetro:
+
+```javascript
+function apply(fun, arg_exps, env) {
+    …
+    const params = function_parameters(fun);
+    const args = map_2((param, exp) =>
+                           parameter_mode(param) === "lazy"
+                           ? delay_it(exp, env)
+                           : actual_value(exp, env),
+                       params, arg_exps);
+    return … extend_environment(map(parameter_name, params), args, …);
+}
+```
+
+**3. Busca de nomes.** `lookup` continua forçando thunks quando o valor é usado (ou o corpo usa `actual_value` nos pontos de força, como antes) — parâmetros estritos já chegam prontos e não pagam nada.
+
+Com isso, `function f(a, lazy b, c, lazy d)` avalia `a` e `c` na chamada e adia `b` e `d` — o `unless` do exercício 4.25 vira simplesmente `function unless(cond, lazy usual, lazy exceptional)`, e o resto da linguagem permanece estrito e previsível. É o meio-termo entre os mundos: preguiça como *anotação deliberada*, não como regime global.
+
+</Solution>
 
 <HelpFooter />

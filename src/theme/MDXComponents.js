@@ -5,6 +5,7 @@ import Figure from '@site/src/components/Figure';
 import Exercise from '@site/src/components/Exercise';
 import MemoryDiagram from '@site/src/components/MemoryDiagram';
 import Solution from '@site/src/components/Solution';
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
 
 export default {
   // Re-use the default mapping
@@ -14,4 +15,5 @@ export default {
   Exercise,
   MemoryDiagram,
   Solution,
+  CodePlayground,
 };

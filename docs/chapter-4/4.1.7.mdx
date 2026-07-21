@@ -209,6 +209,23 @@ Nosso novo avaliador usa as mesmas estruturas de dados, funções de sintaxe e o
 
 Estenda o avaliador de análise sintática nesta seção para suportar a forma sintática especial derivada `let` (do exercício 4.6).
 
+<Solution>
+
+Como `let` é uma forma derivada, o avaliador de análise só precisa **transformar antes de analisar** — o caso novo em `analyze` delega para a análise da tradução:
+
+```javascript
+function analyze(component) {
+    return …
+         : is_let(component)
+         ? analyze(let_to_application(component))
+         : …;
+}
+```
+
+onde `let_to_application` é a mesma transformação do avaliador original (o `let` vira a aplicação imediata de uma lambda aos inicializadores). O trabalho de tradução acontece **uma única vez**, na análise — nas execuções seguintes roda direto a função de execução da aplicação, que é o ponto da seção.
+
+</Solution>
+
 ## Exercício 4.23
 
 Alyssa P. Hacker não entende por que `analyze_sequence` precisa ser tão complicada. Tudo o que outras funções de análise fazem é analisar seus componentes e retornar uma função de execução. Ela o reescreve como:
@@ -236,8 +253,31 @@ Eva Lu Ator explica a Alyssa que a versão no texto faz mais da análise na fase
 
 Compare as duas versões de `analyze_sequence`. Por exemplo, considere o caso comum (típico de corpos de função) onde a sequência tem apenas uma declaração. Que trabalho a função de execução produzida pelo programa de Alyssa fará? E quanto à função de execução produzida pelo programa no texto acima? Como as duas versões se comparam para uma sequência com duas expressões?
 
+<Solution>
+
+As duas versões produzem os mesmos resultados; a diferença é **quanto trabalho sobra para a execução**.
+
+Na versão do texto, `analyze_sequence` *combina as funções de execução durante a análise*: uma sequência de duas declarações vira uma única função `env => { f1(env); return f2(env); }`, construída uma vez. Executá-la é só chamar funções já costuradas.
+
+Na versão de Alyssa, a análise devolve uma função que, **a cada execução**, percorre a lista das funções analisadas (`execute_sequence` itera sobre `funs` com testes de `is_null`, `head`, `tail`). A análise ficou mais simples exatamente porque parte do trabalho — o percurso e o encadeamento da sequência — foi adiada para o tempo de execução, e é paga de novo em toda chamada.
+
+Para uma sequência dentro de uma função chamada em um laço, a versão do texto percorre a lista **uma vez** (na análise); a de Alyssa a percorre **uma vez por chamada**. É a distinção do capítulo inteiro em miniatura: análise é o que você paga uma vez; execução é o que você paga sempre.
+
+</Solution>
+
 ## Exercício 4.24
 
 Projete e realize alguns experimentos para comparar a velocidade do avaliador metacircular original com a versão nesta seção. Use seus resultados para estimar a fração de tempo que é gasto em análise versus execução para várias funções.
+
+<Solution>
+
+Um experimento honesto compara os dois avaliadores sobre o mesmo programa, variando a razão análise/execução:
+
+- **Programas ricos em reexecução** — `fib(20)` recursivo, um laço executado milhares de vezes: o corpo é analisado uma vez e executado milhões; o avaliador com análise costuma ficar **várias vezes mais rápido** (fatores de 2× a 10× são típicos), porque o original re-desmonta a sintaxe do corpo a cada chamada.
+- **Programas de execução única** — uma sequência longa de declarações simples rodada uma vez: os dois empatam, ou o de análise perde por uma margem pequena (paga a construção das funções de execução sem amortizá-la).
+
+Estimando a fração análise/execução: meça $t_1$ (original) e $t_2$ (com análise) para um programa com $n$ grande de reexecuções. No original, cada execução carrega o custo de análise embutido; com análise, ele quase some. A fração do tempo original gasta em análise é aproximadamente $(t_1 - t_2)/t_1$ — para funções recursivas pequenas como `fib`, tipicamente na casa de **metade ou mais** do tempo total, o que explica por que a separação análise/execução foi um passo tão importante rumo à compilação (capítulo 5).
+
+</Solution>
 
 <HelpFooter />

@@ -74,21 +74,129 @@ Os exercícios 5.13 a 5.18 descrevem outros recursos úteis de monitoramento e d
 
 Meça o número de pushes e a profundidade máxima de pilha necessária para calcular *n*! para vários valores pequenos de *n* usando a máquina fatorial mostrada na Figura 5.11. A partir de seus dados, determine fórmulas em termos de *n* para o número total de operações push e a profundidade máxima de pilha usada no cálculo de *n*! para qualquer *n* > 1. Observe que cada uma dessas é uma função linear de *n* e é, portanto, determinada por duas constantes. Para obter as estatísticas impressas, você terá que aumentar a máquina fatorial com instruções para inicializar a pilha e imprimir as estatísticas. Você pode querer também modificar a máquina para que ela leia repetidamente um valor para *n*, calcule o fatorial e imprima o resultado (como fizemos para a máquina MDC na figura 5.4), para que você não tenha que invocar repetidamente `get_register_contents`, `set_register_contents` e `start`.
 
+<Solution>
+
+Instrumentando a máquina (com `perform(op("initialize_stack"))` no início e `perform(op("print_stack_statistics"))` antes de `done`) e medindo:
+
+| n | pushes | profundidade máxima |
+|---|---|---|
+| 2 | 2 | 2 |
+| 3 | 4 | 4 |
+| 4 | 6 | 6 |
+| 5 | 8 | 8 |
+
+As fórmulas, para $n > 1$: **pushes $= 2(n-1)$** e **profundidade máxima $= 2(n-1)$** — a cada nível recursivo antes da base, a máquina salva `continue` e `n` (2 pushes), e nada é consumido até a volta, então o pico coincide com o total. As "duas constantes" pedidas: coeficiente 2 e deslocamento −2.
+
+Para o laço de leitura contínua, envolva o controlador em `read`/imprime como a máquina de MDC da figura 5.4: rótulo inicial que faz `assign("n", op("read"))`, corpo do fatorial, `perform(op("print"), reg("val"))` e `go_to` de volta.
+
+</Solution>
+
 ## Exercício 5.14
 
 Adicione *contagem de instruções* à simulação de máquina de registradores. Ou seja, faça o modelo de máquina manter o controle do número de instruções executadas. Estenda a interface do modelo de máquina para aceitar uma nova mensagem que imprima o valor da contagem de instruções e redefine a contagem para zero.
+
+<Solution>
+
+Um contador no modelo da máquina, incrementado dentro de `execute`:
+
+```javascript
+// em make_new_machine:
+let instruction_count = 0;
+function execute() {
+    const insts = get_contents(pc);
+    if (is_null(insts)) { return "done"; }
+    instruction_count = instruction_count + 1;
+    instruction_execution_fun(head(insts))();
+    return execute();
+}
+// no dispatch:
+: message === "instruction-count"
+? () => { const n = instruction_count;
+          instruction_count = 0;
+          display(n);
+          return n; }
+```
+
+O ponto único de passagem (`execute`) faz a contagem valer para qualquer máquina simulada, sem tocar no montador.
+
+</Solution>
 
 ## Exercício 5.15
 
 Aumente o simulador para fornecer *rastreamento de instruções*. Ou seja, antes de cada instrução ser executada, o simulador deve imprimir a instrução. Faça o modelo de máquina aceitar mensagens `trace_on` e `trace_off` para ativar e desativar o rastreamento.
 
+<Solution>
+
+Uma flag no modelo e uma impressão condicional no mesmo `execute`:
+
+```javascript
+let tracing = false;
+function execute() {
+    const insts = get_contents(pc);
+    if (is_null(insts)) { return "done"; }
+    if (tracing) {
+        display(instruction_text(head(insts)));
+    }
+    …
+}
+// no dispatch: "trace_on" liga, "trace_off" desliga
+```
+
+O montador já guarda o texto de cada instrução (`instruction_text`) exatamente para diagnósticos assim — a instrução impressa é a fonte, não a função de execução.
+
+</Solution>
+
 ## Exercício 5.16
 
 Estenda o rastreamento de instruções do exercício 5.15 de modo que antes de imprimir uma instrução, o simulador imprima quaisquer rótulos que precedem imediatamente essa instrução na sequência do controlador. Tenha cuidado para fazer isso de uma maneira que não interfira com a contagem de instruções (exercício 5.14). Você terá que fazer o simulador reter a informação de rótulo necessária.
 
+<Solution>
+
+O montador precisa **reter os rótulos junto às instruções**: em `extract_labels`, quando um rótulo é encontrado, anote-o na *próxima instrução* (a instrução ganha um campo de rótulos que a precedem — pode haver mais de um):
+
+```javascript
+// instrução vira: pair(texto, pair(rótulos_precedentes, fun_execução))
+```
+
+No `execute` com rastreamento, imprima primeiro os rótulos da instrução corrente, depois o texto dela. Como os rótulos **não** são instruções, o contador do exercício 5.14 não é tocado — imprimir rótulos não passa pelo incremento. O cuidado pedido pelo enunciado é só esse: manter a impressão fora do caminho da contagem.
+
+</Solution>
+
 ## Exercício 5.17
 
 Modifique a função `make_register` da seção 5.2.1 de modo que os registradores possam ser rastreados. Registradores devem aceitar mensagens que ativam e desativam o rastreamento. Quando um registrador é rastreado, atribuir um valor ao registrador deve imprimir o nome do registrador, o conteúdo antigo do registrador e o novo conteúdo sendo atribuído. Estenda a interface ao modelo de máquina para permitir que você ative e desative o rastreamento para registradores de máquina designados.
+
+<Solution>
+
+No próprio `make_register`:
+
+```javascript
+function make_register(name) {
+    let contents = "*unassigned*";
+    let tracing = false;
+    function dispatch(message) {
+        return message === "get"
+               ? contents
+               : message === "set"
+               ? value => {
+                     if (tracing) {
+                         display(name);
+                         display("  antigo: " + stringify(contents));
+                         display("  novo:   " + stringify(value));
+                     }
+                     contents = value;
+                 }
+               : message === "trace_on" ? () => { tracing = true; }
+               : message === "trace_off" ? () => { tracing = false; }
+               : error(message, "unknown request -- register");
+    }
+    return dispatch;
+}
+```
+
+e no modelo da máquina, mensagens `trace_register_on`/`off` que localizam o registrador pelo nome (via `get_register`) e repassam. Toda atribuição — venha de `assign`, `restore` ou inicialização — passa por `"set"`, então o rastreamento cobre tudo por construção.
+
+</Solution>
 
 ## Exercício 5.18
 
@@ -121,3 +229,20 @@ ou remover todos os breakpoints por meio de:
 ```javascript
 cancel_all_breakpoints(machine)
 ```
+<Solution>
+
+Breakpoints são pares (rótulo, deslocamento) guardados no modelo; a verificação vive no `execute`:
+
+```javascript
+set_breakpoint(machine, label, n)     // pára antes da n-ésima instrução após label
+proceed_machine(machine)              // continua do ponto parado
+cancel_breakpoint(machine, label, n)
+cancel_all_breakpoints(machine)
+```
+
+Implementação: com os rótulos retidos nas instruções (exercício 5.16), o montador consegue anotar em cada instrução sua posição "rótulo + deslocamento"; `execute` compara a posição da instrução corrente com a lista de breakpoints e, havendo casamento, **retorna** sem executá-la (deixando `pc` como está) após imprimir o estado. `proceed_machine` executa a instrução corrente uma vez "por fora" e retoma o `execute` normal; os `cancel_*` só editam a lista.
+
+Parar *antes* de executar e manter `pc` intacto é o que permite a Alyssa inspecionar registradores com `get_register_contents` e retomar sem perder nada — o simulador inteiro continua sendo uma função pura de seu estado.
+
+</Solution>
+
