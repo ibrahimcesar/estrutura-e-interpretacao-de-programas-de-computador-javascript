@@ -138,7 +138,6 @@ pandoc \
     --toc-depth=3 \
     --number-sections \
     --highlight-style=tango \
-    --listings \
     -V geometry:margin=1.5in \
     -V fontsize=11pt \
     -V linestretch=1.15 \
@@ -204,7 +203,6 @@ pandoc \
     --toc-depth=3 \
     --number-sections \
     --highlight-style=monochrome \
-    --listings \
     --standalone
 
 if [ -f "$PDF_PRINT" ]; then

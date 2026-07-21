@@ -41,6 +41,10 @@ function convert(text) {
   text = text.replace(/src="\/img\//g, 'src="static/img/');
   // mermaid: pandoc não renderiza; vira nota
   text = text.replace(/```mermaid[\s\S]*?```/g, '*(diagrama disponível na versão web)*');
+  // align* dentro de $$ é válido no KaTeX, mas aninhamento errôneo no LaTeX;
+  // aligned funciona nos dois
+  text = text.replace(/\\begin\{align\*?\}/g, '\\begin{aligned}');
+  text = text.replace(/\\end\{align\*?\}/g, '\\end{aligned}');
   return text;
 }
 
