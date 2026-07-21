@@ -34,6 +34,17 @@ export default function ReadingProgressBar() {
     location.pathname.startsWith(page + '/')
   );
 
+  // Confete apenas ao terminar a ÚLTIMA seção de cada capítulo — concluir
+  // um capítulo é a conquista; nas demais páginas fica só a barra.
+  const chapterFinalPages = [
+    '/pt_BR/chapter-1/1.3.4',
+    '/pt_BR/chapter-2/2.5.3',
+    '/pt_BR/chapter-3/3.5.5',
+    '/pt_BR/chapter-4/4.4.4',
+    '/pt_BR/chapter-5/5.5.7',
+  ];
+  const isChapterEnd = chapterFinalPages.includes(location.pathname.replace(/\/$/, ''));
+
   useEffect(() => {
     const calculateProgress = () => {
       // Get the main content area (excluding footer)
@@ -68,7 +79,7 @@ export default function ReadingProgressBar() {
       setProgress(newProgress);
 
       // Trigger confetti when reaching 100% for the first time
-      if (newProgress >= 99.5 && !hasConfettied) {
+      if (newProgress >= 99.5 && !hasConfettied && isChapterEnd) {
         setHasConfettied(true);
         triggerConfetti();
       }
@@ -96,7 +107,7 @@ export default function ReadingProgressBar() {
       window.removeEventListener('scroll', scrollListener);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [hasConfettied]);
+  }, [hasConfettied, isChapterEnd]);
 
   // Reset confetti flag when navigating to a new page
   useEffect(() => {
