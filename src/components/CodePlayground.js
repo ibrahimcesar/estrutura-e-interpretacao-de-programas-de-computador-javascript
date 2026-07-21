@@ -109,6 +109,9 @@ export default function CodePlayground({
   const [traceData, setTraceData] = useState(null);
   const [showTrace, setShowTrace] = useState(false);
   const [streamActive, setStreamActive] = useState(false);
+  const [envData, setEnvData] = useState(null);
+  const [showEnv, setShowEnv] = useState(false);
+  const [envTreeName, setEnvTreeName] = useState(null);
   const pullTimerRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
@@ -257,6 +260,9 @@ export default function CodePlayground({
     setTraceData(null);
     setShowTrace(false);
     setStreamActive(false);
+    setEnvData(null);
+    setShowEnv(false);
+    setEnvTreeName(null);
     clearTimeout(pullTimerRef.current);
     checkStatsRef.current = { pass: 0, fail: 0 };
     errorSeenRef.current = false;
@@ -267,8 +273,12 @@ export default function CodePlayground({
       if (prefix) parts.push(prefix);
     }
     if (hiddenCode) parts.push(hiddenCode);
+    const prefixText = parts.join('\n');
     parts.push(editorCode);
     const source = parts.join('\n');
+    // linha em que começa o código do próprio bloco (para o painel Ambiente
+    // distinguir vinculações herdadas da sessão/hiddenCode)
+    const envOwnLine = prefixText ? prefixText.split('\n').length : 0;
 
     const handleMessage = (worker) => (msg) => {
       if (runnerRef.current == null || runnerRef.current.worker !== worker) return;
@@ -288,6 +298,10 @@ export default function CodePlayground({
           break;
         case 'trace':
           setTraceData({ roots: msg.roots, truncated: msg.truncated });
+          break;
+        case 'env':
+          setEnvData(msg);
+          setShowEnv(true);
           break;
         case 'streamElement':
           clearTimeout(pullTimerRef.current);
@@ -361,7 +375,7 @@ export default function CodePlayground({
     };
 
     const worker = createRunner(
-      { source, checks: checks || [] },
+      { source, checks: checks || [], envOwnLine },
       (msg) => handleMessage(worker)(msg)
     );
     const timer = setTimeout(() => {
@@ -397,6 +411,21 @@ export default function CodePlayground({
       });
       setStreamActive(false);
     }, 5000);
+  };
+
+  const toggleEnv = () => {
+    if (showEnv) {
+      setShowEnv(false);
+      return;
+    }
+    if (envData) {
+      setShowEnv(true);
+      return;
+    }
+    const runner = runnerRef.current;
+    if (!runner) return;
+    track('env_open');
+    runner.worker.postMessage({ envRequest: true });
   };
 
   const reset = () => {
@@ -560,9 +589,72 @@ export default function CodePlayground({
               Puxar próximo elemento do stream
             </button>
           )}
+          {status === 'done' && !timedOut && (
+            <button
+              type="button"
+              className={`button button--secondary button--outline button--sm ${styles.retryButton}`}
+              onClick={toggleEnv}
+              title="Nomes declarados pelo programa e seus valores atuais — o quadro global do modelo de ambientes (seção 3.2)"
+            >
+              {showEnv ? 'Esconder ambiente' : 'Ver ambiente'}
+            </button>
+          )}
           {showDiagram && lastTree && <BoxPointerDiagram tree={lastTree} />}
           {showTrace && traceData && (
             <CallTreeDiagram roots={traceData.roots} truncated={traceData.truncated} />
+          )}
+          {showEnv && envData && (
+            <div className={styles.envPanel}>
+              {envData.error ? (
+                <div className={styles.entryError}>
+                  Não foi possível inspecionar o ambiente: {envData.error}
+                </div>
+              ) : !envData.bindings || envData.bindings.length === 0 ? (
+                <div className={styles.entryStatus}>
+                  Nenhum nome declarado no nível do programa — declare com{' '}
+                  <code>const</code>, <code>let</code> ou <code>function</code> e
+                  execute de novo.
+                </div>
+              ) : (
+                <>
+                  <div className={styles.envTitle}>
+                    Ambiente global do programa (seção 3.2: cada linha é uma
+                    vinculação nome → valor no quadro global)
+                  </div>
+                  {envData.bindings.map((b) => (
+                    <React.Fragment key={b.name}>
+                      <div className={styles.envRow}>
+                        <span className={styles.envKind}>{b.kind}</span>
+                        <span className={styles.envName}>{b.name}</span>
+                        <span className={styles.envValue}>{b.text}</span>
+                        {b.inherited && (
+                          <span
+                            className={styles.envInherited}
+                            title="Declarado em um bloco anterior desta sessão (ou no código auxiliar oculto)"
+                          >
+                            ⛓ sessão
+                          </span>
+                        )}
+                        {b.tree && (
+                          <button
+                            type="button"
+                            className={styles.envTreeButton}
+                            onClick={() =>
+                              setEnvTreeName(envTreeName === b.name ? null : b.name)
+                            }
+                          >
+                            {envTreeName === b.name ? 'esconder' : 'diagrama'}
+                          </button>
+                        )}
+                      </div>
+                      {envTreeName === b.name && b.tree && (
+                        <BoxPointerDiagram tree={b.tree} />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}

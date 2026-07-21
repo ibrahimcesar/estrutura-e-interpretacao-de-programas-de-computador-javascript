@@ -28,6 +28,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             pandoc \
+            librsvg2-bin \
             texlive-xetex \
             texlive-fonts-recommended \
             texlive-fonts-extra \

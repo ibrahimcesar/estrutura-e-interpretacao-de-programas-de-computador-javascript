@@ -244,8 +244,86 @@ self.addEventListener('unhandledrejection', function (e) {
 });
 var streamCursor = undefined; // stream do último resultado, para inspeção
 var streamIndex = 0;
+var lastSource = null; // programa da última execução, para o painel Ambiente
+var lastOwnLine = 0; // linha em que começa o código do próprio bloco (resto = sessão/hiddenCode)
+
+// Nomes declarados no nível do programa (coluna 0 — declarações aninhadas
+// são indentadas no estilo do livro). Guarda a linha para distinguir o que
+// veio da sessão do que o próprio bloco declarou.
+function topLevelNames(source) {
+  var names = [];
+  var seen = Object.create(null);
+  var lines = source.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var m = /^(const|let|var|function)\s+([A-Za-z_$][A-Za-z0-9_$]*)/.exec(lines[i]);
+    if (m && !seen[m[2]]) {
+      seen[m[2]] = true;
+      names.push({ name: m[2], kind: m[1], line: i });
+    }
+  }
+  return names;
+}
+
+function functionParams(fn) {
+  var s = String(fn);
+  var open = s.indexOf('(');
+  var close = s.indexOf(')');
+  if (open === -1 || close === -1 || close < open) return '';
+  return s.slice(open + 1, close).replace(/\s+/g, ' ').trim();
+}
+
+function handleEnvRequest() {
+  if (lastSource === null) {
+    post('env', { bindings: [] });
+    return;
+  }
+  var decls = topLevelNames(lastSource);
+  if (decls.length === 0) {
+    post('env', { bindings: [] });
+    return;
+  }
+  // Mesmo truque das verificações: const/let de um eval indireto não viram
+  // globais, então reexecutamos o programa (silenciado) com um repórter no
+  // fim, que enxerga o escopo por estar no mesmo programa.
+  var reporter =
+    '\n;[' +
+    decls.map(function (d) { return '["' + d.name + '", ' + d.name + ']'; }).join(', ') +
+    '];';
+  var rows;
+  muted = true;
+  try {
+    rows = (0, eval)(lastSource + reporter);
+  } catch (errEnv) {
+    muted = false;
+    post('env', { error: (errEnv && errEnv.message) || String(errEnv) });
+    return;
+  }
+  muted = false;
+  var bindings = decls.map(function (d, i) {
+    var value = rows[i][1];
+    var isFn = typeof value === 'function';
+    var text = fmtResult(value);
+    if (text.length > 160) text = text.slice(0, 157) + '...';
+    var tree = null;
+    try { tree = toTree(value); } catch (ignored) { tree = null; }
+    return {
+      name: d.name,
+      kind: d.kind,
+      type: value === null ? 'null' : isFn ? 'função' : self.is_pair(value) ? 'par' : typeof value,
+      text: isFn ? 'função(' + functionParams(value) + ')' : text,
+      tree: tree,
+      inherited: d.line < lastOwnLine,
+    };
+  });
+  post('env', { bindings: bindings });
+}
 
 self.onmessage = function (e) {
+  // Pedido do painel "Ambiente"
+  if (e.data && e.data.envRequest) {
+    handleEnvRequest();
+    return;
+  }
   // Pedido de "puxar próximo elemento" do inspetor de streams
   if (e.data && e.data.streamNext) {
     if (!self.is_pair(streamCursor)) {
@@ -268,6 +346,8 @@ self.onmessage = function (e) {
   }
 
   var checks = e.data.checks || [];
+  lastSource = e.data.source;
+  lastOwnLine = e.data.envOwnLine || 0;
   traceRoots = [];
   traceStack = [];
   traceCount = 0;

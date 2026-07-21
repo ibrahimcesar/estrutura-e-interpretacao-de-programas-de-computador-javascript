@@ -236,3 +236,82 @@
 .diagramDot {
   fill: currentColor;
 }
+
+/* ---- Painel "Ambiente" (modelo de ambientes, seção 3.2) ---- */
+
+.envPanel {
+  margin-top: 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+  background: var(--ifm-background-color);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+}
+
+.envTitle {
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.78rem;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 0.5rem;
+}
+
+.envRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.15rem 0;
+  border-top: 1px dashed var(--ifm-color-emphasis-200);
+}
+
+.envRow:first-of-type {
+  border-top: none;
+}
+
+.envKind {
+  flex: 0 0 4.2em;
+  color: var(--ifm-color-emphasis-500);
+  font-size: 0.78rem;
+}
+
+.envName {
+  font-weight: 700;
+  color: var(--ifm-color-primary-darkest);
+}
+
+[data-theme='dark'] .envName {
+  color: var(--ifm-color-primary-lightest);
+}
+
+.envValue {
+  flex: 1;
+  overflow-wrap: anywhere;
+  color: var(--ifm-font-color-base);
+}
+
+.envInherited {
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-600);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 999px;
+  padding: 0 0.45em;
+  white-space: nowrap;
+}
+
+.envTreeButton {
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.72rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 999px;
+  background: none;
+  color: var(--ifm-color-emphasis-700);
+  cursor: pointer;
+  padding: 0 0.5em;
+  white-space: nowrap;
+}
+
+.envTreeButton:hover {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}

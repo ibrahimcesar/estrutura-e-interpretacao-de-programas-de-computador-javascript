@@ -156,6 +156,57 @@ let extra = 0;
   if (!ok) { failures += 1; console.error('FAIL stream inspector:', JSON.stringify([p1, p2, p3]).slice(0, 200)); }
 }
 
+// Painel "Ambiente": vinculações do nível do programa via reexecução muda
+{
+  extra += 1;
+  const w = makeWorker();
+  w.run('const size = 2;\nlet total = size * 3;\nfunction square(x) { return x * x; }\nconst p = pair(1, pair(2, null));\nsquare(size);');
+  const m = w.send({ envRequest: true });
+  const env = m.find((x) => x.type === 'env');
+  const by = Object.fromEntries((env?.bindings || []).map((b) => [b.name, b]));
+  const ok = env && env.bindings.length === 4 &&
+    by.size.kind === 'const' && by.size.text === '2' && by.size.type === 'number' && by.size.inherited === false &&
+    by.total.kind === 'let' && by.total.text === '6' &&
+    by.square.kind === 'function' && by.square.text === 'função(x)' && by.square.type === 'função' &&
+    by.p.type === 'par' && by.p.tree && by.p.tree.k === 'pair';
+  if (!ok) { failures += 1; console.error('FAIL env:', JSON.stringify(env).slice(0, 300)); }
+}
+{
+  // herdado da sessão: declarações antes de envOwnLine ganham inherited
+  extra += 1;
+  const w = makeWorker();
+  const prefix = 'const herdado = 10;';
+  const own = 'const proprio = herdado + 1;\nproprio;';
+  const source = prefix + '\n' + own;
+  w.send({ source, checks: [], envOwnLine: 1 });
+  const m = w.send({ envRequest: true });
+  const env = m.find((x) => x.type === 'env');
+  const by = Object.fromEntries((env?.bindings || []).map((b) => [b.name, b]));
+  const ok = env && by.herdado.inherited === true && by.proprio.inherited === false && by.proprio.text === '11';
+  if (!ok) { failures += 1; console.error('FAIL env sessão:', JSON.stringify(env).slice(0, 300)); }
+}
+{
+  // estado mutado persiste na reexecução (mesma semântica dos checks)
+  extra += 1;
+  const w = makeWorker();
+  w.run('let saldo = 100;\nfunction saque(v) { saldo = saldo - v; return saldo; }\nsaque(30);');
+  const m = w.send({ envRequest: true });
+  const env = m.find((x) => x.type === 'env');
+  const by = Object.fromEntries((env?.bindings || []).map((b) => [b.name, b]));
+  const ok = env && by.saldo.text === '70';
+  if (!ok) { failures += 1; console.error('FAIL env estado:', JSON.stringify(env).slice(0, 300)); }
+}
+{
+  // programa sem declarações de nível superior
+  extra += 1;
+  const w = makeWorker();
+  w.run('1 + 1;');
+  const m = w.send({ envRequest: true });
+  const env = m.find((x) => x.type === 'env');
+  const ok = env && Array.isArray(env.bindings) && env.bindings.length === 0;
+  if (!ok) { failures += 1; console.error('FAIL env vazio:', JSON.stringify(env).slice(0, 200)); }
+}
+
 if (failures) {
   console.error(`\n${failures}/${cases.length + extra} testes falharam`);
   process.exit(1);

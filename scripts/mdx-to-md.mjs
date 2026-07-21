@@ -36,6 +36,9 @@ function convert(text) {
   text = text.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
   // âncoras/HTML residuais simples
   text = text.replace(/<a name="[^"]*"><\/a>/g, '');
+  // imagens com caminho absoluto do site -> caminho do repositório
+  text = text.replace(/\]\(\/img\//g, '](static/img/');
+  text = text.replace(/src="\/img\//g, 'src="static/img/');
   // mermaid: pandoc não renderiza; vira nota
   text = text.replace(/```mermaid[\s\S]*?```/g, '*(diagrama disponível na versão web)*');
   return text;
