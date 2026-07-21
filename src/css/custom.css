@@ -4,9 +4,6 @@
  * Este arquivo contém estilos customizados para o tema do Docusaurus.
  */
 
-/* Importar estilos do modo leitura */
-@import './read-mode.css';
-
 :root {
   /* Cores primárias */
   --ifm-color-primary: #f7df1e;
@@ -163,6 +160,11 @@
   text-decoration: none;
 }
 
+.pagination-nav__link:hover .pagination-nav__sublabel,
+.pagination-nav__link:hover .pagination-nav__label {
+  color: #1c1e21;
+}
+
 /* Sidebar */
 .theme-doc-sidebar-container {
   border-right: 1px solid var(--ifm-toc-border-color);
@@ -298,4 +300,77 @@ div[class*='announcementBar'] a:hover {
 .footer__title {
   font-weight: 600;
   margin-bottom: 1rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Modo de leitura focado (botão "Modo Leitura" na navbar)                */
+/* O ReadingModeToggle alterna a classe `reading-mode` no <body>.        */
+
+.reading-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin-right: 8px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ifm-navbar-link-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.reading-mode-toggle:hover {
+  background: var(--ifm-color-emphasis-100);
+  border-color: var(--ifm-color-emphasis-400);
+  color: var(--ifm-navbar-link-hover-color);
+}
+
+.reading-mode-toggle:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 996px) {
+  .reading-mode-text {
+    display: none;
+  }
+}
+
+/* Sem distrações: esconde a sidebar do livro e o sumário lateral,
+   e centraliza o texto numa medida confortável de leitura. */
+body.reading-mode .theme-doc-sidebar-container {
+  display: none;
+}
+
+body.reading-mode .theme-doc-toc-desktop,
+body.reading-mode main .col.col--3 {
+  display: none;
+}
+
+body.reading-mode main[class*='docMainContainer'] {
+  /* o tema reserva 300px para a sidebar mesmo escondida */
+  max-width: 100% !important;
+}
+
+body.reading-mode main .col {
+  --ifm-col-width: 100%;
+  flex-basis: 100%;
+  max-width: 100% !important;
+}
+
+body.reading-mode article {
+  max-width: 760px;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+body.reading-mode nav.theme-doc-breadcrumbs {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
 }

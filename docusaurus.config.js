@@ -131,6 +131,22 @@ const config = {
                 label: 'Capítulo 1',
                 to: '/chapter-1/1.0',
               },
+              {
+                label: 'Capítulo 2',
+                to: '/chapter-2/2.0',
+              },
+              {
+                label: 'Capítulo 3',
+                to: '/chapter-3/3.0',
+              },
+              {
+                label: 'Capítulo 4',
+                to: '/chapter-4/4.0',
+              },
+              {
+                label: 'Capítulo 5',
+                to: '/chapter-5/5.0',
+              },
             ],
           },
           {
