@@ -89,6 +89,77 @@ function integral(integrand, initial_value, dt) {
 
 Quando usada em sistemas com loops, esta função tem o mesmo problema que nossa versão original de `integral`. Modifique a função para que ela espere o `integrand` como um argumento atrasado e, portanto, possa ser usada na função `solve` mostrada acima.
 
+<Solution>
+
+Basta adiar também o `integrand` nesta formulação, chamando-o quando a cauda for construída:
+
+<CodePlayground
+  code={`function integral(delayed_integrand, initial_value, dt) {
+    return pair(initial_value,
+                memo(() => {
+                    const integrand = delayed_integrand();
+                    return is_null(integrand)
+                           ? null
+                           : integral(() => stream_tail(integrand),
+                                      dt * head(integrand)
+                                      + initial_value,
+                                      dt);
+                }));
+}
+
+function solve(f, y0, dt) {
+    const y = integral(() => dy, y0, dt);
+    const dy = stream_map(f, y);
+    return y;
+}
+
+// e^1 ≈ resolvendo dy/dt = y, y(0) = 1
+stream_ref(solve(y => y, 1, 0.001), 1000);`}
+  hiddenCode={`function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function stream_ref(s, n) {
+    let cur = s;
+    let k = n;
+    while (k > 0) {
+        cur = stream_tail(cur);
+        k = k - 1;
+    }
+    return head(cur);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}`}
+  height={520}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Cada passo da recursão recebe o integrando *ainda embrulhado* (`delayed_integrand`) e só o abre dentro da cauda adiada — assim `solve` pode definir `y` e `dy` mutuamente sem que nenhum dos dois precise existir primeiro. O resultado ($\approx 2{,}7169$) aproxima $e$.
+
+</Solution>
+
 ## Exercício 3.78
 
 Considere o problema de projetar um sistema de processamento de sinais para estudar a equação diferencial linear homogênea de segunda ordem
@@ -103,9 +174,152 @@ O stream de saída, modelando $y$, é gerado por uma rede que contém um loop. I
 
 Escreva uma função `solve_2nd` que recebe como argumentos as constantes $a$, $b$ e $dt$ e os valores iniciais $y_0$ e $dy_0$ para $y$ e $dy/dt$ e gera o stream de valores sucessivos de $y$.
 
+<Solution>
+
+Seguindo o diagrama: `ddy` é a combinação `a·dy + b·y`, e `dy` e `y` são integrais encadeadas de `ddy`:
+
+<CodePlayground
+  code={`function solve_2nd(a, b, y0, dy0, dt) {
+    const y = integral(() => dy, y0, dt);
+    const dy = integral(() => ddy, dy0, dt);
+    const ddy = add_streams(scale_stream(dy, a),
+                            scale_stream(y, b));
+    return y;
+}
+
+// d²y/dt² = y  (a = 0, b = 1), y(0) = 1, y'(0) = 1  →  y = e^t
+stream_ref(solve_2nd(0, 1, 1, 1, 0.001), 1000);`}
+  hiddenCode={`function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function stream_ref(s, n) {
+    let cur = s;
+    let k = n;
+    while (k > 0) {
+        cur = stream_tail(cur);
+        k = k - 1;
+    }
+    return head(cur);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function integral(delayed_integrand, initial_value, dt) {
+    return pair(initial_value,
+                memo(() => {
+                    const integrand = delayed_integrand();
+                    return is_null(integrand)
+                           ? null
+                           : integral(() => stream_tail(integrand),
+                                      dt * head(integrand) + initial_value,
+                                      dt);
+                }));
+}`}
+  height={440}
+  showLineNumbers={false}
+/>
+
+As três funções são mutuamente recursivas e nenhuma executa nada até o stream ser puxado — a rede com loop do diagrama vira, literalmente, três declarações que se referenciam. Com $a = 0, b = 1$ a solução é $e^t$, e o valor em $t = 1$ sai $\approx 2{,}717$.
+
+</Solution>
+
 ## Exercício 3.79
 
 Generalize a função `solve_2nd` do exercício 3.78 para que ela possa ser usada para resolver equações diferenciais de segunda ordem gerais $d^2y/dt^2 = f(dy/dt, y)$.
+
+<Solution>
+
+A generalização troca a combinação linear fixa por uma função arbitrária de `dy` e `y`:
+
+<CodePlayground
+  code={`function solve_2nd_general(f, y0, dy0, dt) {
+    const y = integral(() => dy, y0, dt);
+    const dy = integral(() => ddy, dy0, dt);
+    const ddy = stream_map_2(f, dy, y);
+    return y;
+}
+
+// o caso do exercício 3.78 é a instância f = (dy, y) => a·dy + b·y:
+stream_ref(solve_2nd_general((dy, y) => 0 * dy + 1 * y,
+                             1, 1, 0.001),
+           1000);`}
+  hiddenCode={`function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function stream_ref(s, n) {
+    let cur = s;
+    let k = n;
+    while (k > 0) {
+        cur = stream_tail(cur);
+        k = k - 1;
+    }
+    return head(cur);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function integral(delayed_integrand, initial_value, dt) {
+    return pair(initial_value,
+                memo(() => {
+                    const integrand = delayed_integrand();
+                    return is_null(integrand)
+                           ? null
+                           : integral(() => stream_tail(integrand),
+                                      dt * head(integrand) + initial_value,
+                                      dt);
+                }));
+}`}
+  height={440}
+  showLineNumbers={false}
+/>
+
+`stream_map_2(f, dy(), y())` alimenta $f$ com os valores correntes de $dy/dt$ e $y$ — qualquer equação $d^2y/dt^2 = f(dy/dt, y)$, linear ou não, entra na mesma rede.
+
+</Solution>
 
 ## Exercício 3.80
 
@@ -144,6 +358,85 @@ Escreva uma função `RLC` que recebe como argumentos os parâmetros $R$, $L$ e 
 Os exemplos nesta seção ilustram como a avaliação atrasada fornece grande flexibilidade de programação, mas os mesmos exemplos também mostram como isso pode tornar nossos programas mais complexos. Nossa nova função `integral`, por exemplo, nos dá o poder de modelar sistemas com loops, mas devemos agora lembrar que `integral` deve ser chamada com um integrando atrasado, e cada função que usa `integral` deve estar ciente disso. Em efeito, criamos duas classes de funções: funções ordinárias e funções que recebem argumentos atrasados. Em geral, criar classes separadas de funções nos força a criar classes separadas de funções de ordem superior também.[^2]
 
 Uma maneira de evitar a necessidade de duas classes diferentes de funções é fazer todas as funções receberem argumentos atrasados. Poderíamos adotar um modelo de avaliação no qual todos os argumentos para funções são automaticamente atrasados e os argumentos são forçados apenas quando são realmente necessários (por exemplo, quando são exigidos por uma operação primitiva). Isso transformaria nossa linguagem para usar avaliação em ordem normal, que descrevemos pela primeira vez quando introduzimos o modelo de substituição para avaliação na seção 1.1.5. Converter para avaliação em ordem normal fornece uma maneira uniforme e elegante de simplificar o uso de avaliação atrasada, e esta seria uma estratégia natural a adotar se estivéssemos preocupados apenas com o processamento de streams. Na seção 4.2, após estudarmos o avaliador, veremos como transformar nossa linguagem exatamente dessa maneira. Infelizmente, incluir atrasos em chamadas de função causa estragos com nossa capacidade de projetar programas que dependem da ordem de eventos, como programas que usam atribuição, mutam dados ou executam entrada ou saída. Mesmo um único atraso no tail de um par pode causar grande confusão, como ilustrado pelos exercícios 3.51 e 3.52. Até onde se sabe, mutabilidade e avaliação atrasada não se misturam bem em linguagens de programação.
+
+<Solution>
+
+Das leis do circuito: $\dfrac{dv_C}{dt} = -\dfrac{i_L}{C}$ e $\dfrac{di_L}{dt} = \dfrac{v_C}{L} - \dfrac{R}{L} i_L$ — duas integrais acopladas:
+
+<CodePlayground
+  code={`function RLC(R, L, C, dt) {
+    return (vC0, iL0) => {
+        const vC = integral(() => dvC, vC0, dt);
+        const iL = integral(() => diL, iL0, dt);
+        const dvC = scale_stream(iL, -1 / C);
+        const diL = add_streams(scale_stream(vC, 1 / L),
+                                scale_stream(iL, -R / L));
+        return pair(vC, () => iL);
+    };
+}
+
+const circuit = RLC(1, 1, 0.2, 0.1);
+const state = circuit(10, 0);
+// primeiros valores de vC e de iL:
+display(stream_ref(head(state), 0));
+display(stream_ref(head(state), 1));
+display(stream_ref(stream_tail(state), 0));
+stream_ref(stream_tail(state), 1);`}
+  hiddenCode={`function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function stream_ref(s, n) {
+    let cur = s;
+    let k = n;
+    while (k > 0) {
+        cur = stream_tail(cur);
+        k = k - 1;
+    }
+    return head(cur);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function integral(delayed_integrand, initial_value, dt) {
+    return pair(initial_value,
+                memo(() => {
+                    const integrand = delayed_integrand();
+                    return is_null(integrand)
+                           ? null
+                           : integral(() => stream_tail(integrand),
+                                      dt * head(integrand) + initial_value,
+                                      dt);
+                }));
+}`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+`RLC(1, 1, 0.2, 0.1)` devolve o *gerador* de circuitos pedido; aplicado às condições iniciais $v_{C_0} = 10$, $i_{L_0} = 0$, produz o par de streams: $v_C$ começa em 10 e decai; $i_L$ começa em 0, sobe para 1 no passo seguinte ($di_L/dt = 10/1$ com $dt = 0{,}1$) e passa a oscilar amortecido.
+
+</Solution>
 
 [^1]: Para completar em tempo razoável, este cálculo requer o uso da otimização de memoização da seção 3.5.1 em `integral` e na função `add_streams` usada em `integral` (usando a função `stream_map_2_optimized` como sugerido no exercício 3.50).
 

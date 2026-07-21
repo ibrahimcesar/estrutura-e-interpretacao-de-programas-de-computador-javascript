@@ -143,6 +143,26 @@ const W2 = make_withdraw(100);`}
 
 Mostre que as duas versões de `make_withdraw` criam objetos com o mesmo comportamento. Como as estruturas de ambiente diferem para as duas versões?
 
+<Solution>
+
+As duas versões criam objetos com **exatamente o mesmo comportamento** — a diferença está na estrutura de ambientes.
+
+Avaliar `const W1 = make_withdraw(100);` na versão com lambda invocada imediatamente cria **dois** ambientes: primeiro o da chamada de `make_withdraw`, com `initial_amount = 100`; depois, ao aplicar a lambda `balance => ...` a `initial_amount`, um segundo ambiente com `balance = 100`, encadeado ao primeiro. A função devolvida (o objeto-saque) fecha sobre esse segundo ambiente:
+
+```
+global
+  ↑
+E1: initial_amount = 100      (chamada de make_withdraw)
+  ↑
+E2: balance = 100             (aplicação da lambda) ← W1 fecha aqui
+```
+
+`W1(50)` cria `E3: amount = 50` apontando para `E2` e a atribuição muda `balance` em `E2` — `initial_amount` em `E1` permanece 100 para sempre. Na versão original, há um único ambiente com `balance` fazendo os dois papéis.
+
+`W2 = make_withdraw(100)` cria uma cadeia `E1'/E2'` inteiramente nova — os dois objetos não compartilham estado, como antes.
+
+</Solution>
+
 -----
 
 [^1]: Se `W1` e `W2` compartilham o mesmo código físico armazenado no computador, ou se cada um mantém uma cópia do código, é um detalhe da implementação. Para o interpretador que implementamos no capítulo 4, o código é de fato compartilhado.

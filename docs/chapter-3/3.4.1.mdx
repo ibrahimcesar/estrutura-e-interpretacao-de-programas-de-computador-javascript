@@ -70,6 +70,30 @@ a. Liste todos os diferentes valores possíveis para `balance` após essas três
 
 b. Quais são alguns outros valores que poderiam ser produzidos se o sistema permitir que as threads sejam intercaladas? Desenhe diagramas de temporização como o da Figura 3.29 para explicar como esses valores podem ocorrer.
 
+<Solution>
+
+**a. Execução sequencial.** As seis ordens dão quatro valores finais:
+
+| Ordem | Resultado |
+|---|---|
+| Peter, Paul, Mary | $(100+10-20)/2 = $ **45** |
+| Peter, Mary, Paul | $110/2 - 20 = $ **35** |
+| Paul, Peter, Mary | $(100-20+10)/2 = $ **45** |
+| Paul, Mary, Peter | $80/2 + 10 = $ **50** |
+| Mary, Peter, Paul | $50 + 10 - 20 = $ **40** |
+| Mary, Paul, Peter | $50 - 20 + 10 = $ **40** |
+
+Valores possíveis: **35, 40, 45 e 50**.
+
+**b. Com intercalação**, cada comando é internamente uma sequência *ler → calcular → escrever*, e leituras podem usar valores obsoletos. Exemplos:
+
+- Peter e Paul leem `balance = 100` ao mesmo tempo; Peter escreve 110, Paul escreve 80 por cima (o depósito de Peter se perde); Mary então deixa **40** — mas também são possíveis finais como **55** (Paul e Mary perdidos ficam por conta da ordem das escritas) ou **110** (as duas retiradas sobrescritas pelo depósito de Peter).
+- Mary lê `balance = 100` duas vezes em momentos diferentes do seu cálculo `balance - balance/2` enquanto os outros escrevem no meio, produzindo estados como **30** ou **80**.
+
+O diagrama de temporização de cada caso é o da Figura 3.29: duas colunas de "lê/escreve" cujas setas se cruzam — sempre que uma *escrita* se apoia numa *leitura* anterior à escrita de outra thread, um efeito é perdido.
+
+</Solution>
+
 -----
 
 [^1]: Para citar um grafite visto em um muro de edifício em Cambridge, Massachusetts: "Tempo é um dispositivo que foi inventado para impedir que tudo aconteça ao mesmo tempo."

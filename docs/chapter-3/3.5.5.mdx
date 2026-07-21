@@ -67,9 +67,174 @@ Há considerável modularidade nesta abordagem, porque ainda podemos formular um
 
 O exercício 3.6 discutiu generalizar o gerador de números aleatórios para permitir redefinir a sequência de números aleatórios de modo a produzir sequências repetíveis de números "aleatórios". Produza uma formulação de stream deste mesmo gerador que opera em um stream de entrada de solicitações para `"generate"` um novo número aleatório ou para `"reset"` a sequência para um valor especificado e que produz o stream desejado de números aleatórios. Não use atribuição em sua solução.
 
+<Solution>
+
+Sem atribuição: o estado (o valor corrente do gerador) viaja como argumento na própria recursão do stream:
+
+<CodePlayground
+  code={`function random_numbers_from(init, requests) {
+    return is_null(requests)
+           ? null
+           : head(requests) === "generate"
+           ? make_next(rand_update(init), stream_tail(requests))
+           : make_next(head(tail(head(requests))),
+                       stream_tail(requests));
+}
+function make_next(value, rest) {
+    return pair(value,
+                memo(() => random_numbers_from(value, rest)));
+}
+
+// pedidos: gerar, gerar, reset para 42, gerar, gerar, reset 42, gerar
+const requests =
+    stream("generate", "generate",
+           list("reset", 42),
+           "generate", "generate",
+           list("reset", 42),
+           "generate");
+
+first_n(random_numbers_from(random_init, requests), 7);`}
+  hiddenCode={`function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function stream_ref(s, n) {
+    let cur = s;
+    let k = n;
+    while (k > 0) {
+        cur = stream_tail(cur);
+        k = k - 1;
+    }
+    return head(cur);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+const random_init = 7;
+function rand_update(x) {
+    return (16807 * x) % 2147483647;
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={520}
+  showLineNumbers={false}
+/>
+
+Um pedido `"generate"` produz `rand_update` do valor anterior; um pedido `list("reset", v)` faz o stream continuar a partir de `v`. Repare nas saídas após os dois resets para 42: as subsequências coincidem — reprodutibilidade sem nenhuma variável mutável, porque o "estado" é só o argumento que flui pela recursão.
+
+</Solution>
+
 ## Exercício 3.82
 
 Refaça o exercício 3.5 sobre integração de Monte Carlo em termos de streams. A versão de stream de `estimate_integral` não terá um argumento dizendo quantas tentativas realizar. Em vez disso, ela produzirá um stream de estimativas baseadas em sucessivamente mais tentativas.
+
+<Solution>
+
+<CodePlayground
+  code={`function random_in_range(low, high) {
+    return low + math_random() * (high - low);
+}
+
+function monte_carlo_stream(experiment_stream, passed, failed) {
+    function next(passed, failed) {
+        return pair(passed / (passed + failed),
+                    memo(() => monte_carlo_stream(
+                        stream_tail(experiment_stream),
+                        passed, failed)));
+    }
+    return head(experiment_stream)
+           ? next(passed + 1, failed)
+           : next(passed, failed + 1);
+}
+
+function estimate_integral_stream(P, x1, x2, y1, y2) {
+    function experiments() {
+        return pair(P(random_in_range(x1, x2),
+                      random_in_range(y1, y2)),
+                    () => experiments());
+    }
+    return scale_stream(
+        monte_carlo_stream(experiments(), 0, 0),
+        (x2 - x1) * (y2 - y1));
+}
+
+const pi_stream = estimate_integral_stream(
+    (x, y) => x * x + y * y <= 1, -1, 1, -1, 1);
+
+stream_ref(pi_stream, 10000);`}
+  hiddenCode={`function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function stream_ref(s, n) {
+    let cur = s;
+    let k = n;
+    while (k > 0) {
+        cur = stream_tail(cur);
+        k = k - 1;
+    }
+    return head(cur);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+Em vez de um número fixo de tentativas, o resultado é o **stream de estimativas**: o elemento $n$ usa $n+1$ experimentos. `stream_ref(pi_stream, 10000)` dá $\pi$ com uma casa ou duas; puxe mais fundo e a estimativa refina — o leitor decide quanta precisão quer *depois* de o stream existir, que é exatamente o luxo que a avaliação preguiçosa compra.
+
+</Solution>
 
 ## Uma visão de programação funcional do tempo
 

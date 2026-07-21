@@ -116,6 +116,18 @@ concurrent_execute(  () => { x = s(() => x * x)(); },
                    s(() => { x = x + 1;             }));
 ```
 
+<Solution>
+
+Serializar `x * x` e serializar `x = x + 1` **não** os coloca no mesmo pacote de exclusão: repare que só a *leitura dupla* de `x * x` está protegida (e a atribuição de `x` ficou **fora** do `s(...)` na primeira thread). Das cinco possibilidades do texto restam **três**:
+
+- **101**: o quadrado (100) é escrito, depois o incremento → 101.
+- **121**: o incremento acontece antes → 11² = 121.
+- **100**: a primeira thread lê `x * x = 100`, o incremento inteiro se intercala antes da *escrita* de `x` (que ficou fora do serializador), e o 100 sobrescreve o 11.
+
+Eliminadas ficam as intercalações que dependiam de ler `x` *entre* os dois acessos de `x * x` (que davam 110 e 11) — é exatamente isso que `s(() => x * x)` agora impede.
+
+</Solution>
+
 ## Exercício 3.40
 
 Dê todos os valores possíveis de `x` que podem resultar da execução de
@@ -137,6 +149,16 @@ const s = make_serializer();
 concurrent_execute(s(() => { x = x * x;     }),
                    s(() => { x = x * x * x; }));
 ```
+
+<Solution>
+
+**Sem serialização**, cada execução é *ler → ler → … → escrever* e as intercalações produzem: **1.000.000** (qualquer ordem sequencial), **100** ($10^2$, com a escrita do cubo perdida), **1.000** ($10^3$, com a do quadrado perdida), **10.000** ($100^2$: o cubo leu um 10 e um 100…), **100.000** ($10\cdot100^2$ etc. — leituras mistas do cubo com valores antigo e novo).
+
+Ao todo: **100, 1.000, 10.000, 100.000 e 1.000.000**.
+
+**Com as duas funções serializadas** pelo mesmo serializador, as execuções não se intercalam: as duas ordens sequenciais dão o mesmo resultado, e sobra apenas **1.000.000**.
+
+</Solution>
 
 ## Exercício 3.41
 
@@ -171,6 +193,17 @@ function make_account(balance) {
 ```
 
 porque permitir acesso não serializado ao saldo bancário pode resultar em comportamento anômalo. Você concorda? Há algum cenário que demonstra a preocupação de Ben?
+
+
+<Solution>
+
+A preocupação de Ben é **desnecessária** — a versão sem proteção se comporta igual.
+
+Consultar o saldo é **uma única leitura** da variável `balance`, e leituras individuais são atômicas no nosso modelo: não existe "meio de uma leitura" para outra thread se intercalar. Qualquer execução concorrente com a consulta desprotegida corresponde a lê-la ou *antes* ou *depois* de cada operação serializada — e esses dois resultados já eram possíveis com a versão de Ben (a serialização apenas escolheria um deles). Não há estado intermediário observável, porque `withdraw` e `deposit` fazem sua única *escrita* em `balance` de uma vez.
+
+A proteção seria necessária se a consulta fizesse **duas** leituras relacionadas (como a `exchange` faz com dois saldos) — aí sim um valor inconsistente "do meio" poderia ser observado.
+
+</Solution>
 
 ## Exercício 3.42
 
@@ -240,9 +273,32 @@ m === "serializer"
 :
 ```
 
+
+<Solution>
+
+Ben está **enganado quanto à necessidade, mas a mudança dele é segura** — e a preocupação inversa (de que algo se perca) não se concretiza.
+
+Na versão original, cada mensagem cria `protect(withdraw)` de novo; na de Ben, as versões protegidas `protected_withdraw` e `protected_deposit` são criadas uma única vez. O que garante a exclusão mútua não é *qual* embrulho serializado se executa, e sim *qual serializador* ele usa — e nas duas versões todas as operações da conta passam pelo mesmo serializador daquela conta. O conjunto de intercalações permitidas é, portanto, **o mesmo**: nunca duas operações da mesma conta ao mesmo tempo.
+
+A diferença é só de eficiência (menos criação de objetos-função por mensagem). É uma mudança segura.
+
+</Solution>
+
 ## Exercício 3.43
 
 Suponha que os saldos em três contas comecem em $10, $20 e $30, e que múltiplas trocas de saldos de conta sejam executadas concorrentemente. Argumente que se os processos são executados sequencialmente, após qualquer número de trocas concorrentes, os saldos de conta devem ser $10, $20 e $30 em alguma ordem. Desenhe um diagrama de temporização como o da Figura 3.29 para mostrar como este requisito pode ser violado se a função `exchange` for usada sem serializar as transações em contas individuais. Por outro lado, argumente que mesmo com essa troca incorreta, a soma dos saldos nas contas será preservada. Desenhe um diagrama de temporização para mostrar como mesmo esta condição seria violada se não serializarmos as transações em contas individuais.
+
+<Solution>
+
+**Sequencial preserva o conjunto {10, 20, 30}.** Cada `exchange` troca os saldos de duas contas — uma permutação dos três valores. Composição de permutações é permutação; por indução, após qualquer número de trocas os saldos são 10, 20 e 30 em alguma ordem.
+
+**Só serializar contas individuais quebra isso.** `exchange` calcula `difference` com *leituras* e depois faz o saque e o depósito como transações separadas. Intercalando duas trocas — digamos, troca A↔B (diferença $-10$) e troca A↔C (diferença $-20$) calculadas ambas sobre os saldos originais — as quatro operações serializadas executam sobre estados que já mudaram, e pode-se terminar, por exemplo, com contas em 20, 20 e 20: valores que **não** são permutação de {10, 20, 30}. (Diagrama: as duas leituras de diferença acontecem antes de qualquer escrita; depois as quatro escritas se aplicam em qualquer ordem.)
+
+**Mas a soma se preserva mesmo assim**: cada `exchange` executa exatamente um `withdraw(d)` e um `deposit(d)` com o *mesmo* `d`, e cada uma dessas operações, sendo serializada na sua conta, soma-se corretamente — o total muda $-d + d = 0$.
+
+**Sem serializar nem as contas individuais**, até a soma cai: um `deposit` e um `withdraw` concorrentes na mesma conta podem ambos ler o mesmo saldo e uma escrita engolir a outra — dinheiro criado ou destruído. (Diagrama: duas leituras do mesmo `balance` seguidas de duas escritas.)
+
+</Solution>
 
 ## Exercício 3.44
 
@@ -256,6 +312,16 @@ function transfer(from_account, to_account, amount) {
 ```
 
 Louis Reasoner afirma que há um problema aqui, e que precisamos usar uma versão serializada mais elaborada, como a função `serialized_exchange`. Ben está certo ou Louis está certo? Explique sua resposta.
+
+<Solution>
+
+Ben está **certo desta vez** — para transferências, o problema da troca não existe.
+
+A diferença essencial: `exchange` primeiro *observa* os dois saldos (para calcular a diferença) e depois *age* com base na observação — entre observar e agir, o mundo pode mudar. `transfer` não observa nada: a quantia é um dado de entrada. O `withdraw` serializado debita `amount` corretamente não importa o que aconteça em volta, e o `deposit` serializado credita `amount` corretamente. Transferências concorrentes se intercalam entre essas duas operações à vontade, mas cada centavo sai de uma conta e entra na outra exatamente uma vez.
+
+O que pode acontecer é um estado *transitório* em que o dinheiro saiu de uma conta e ainda não entrou na outra — a soma instantânea observável fica temporariamente menor. Para a correção final das contas, isso é inofensivo.
+
+</Solution>
 
 ## Exercício 3.45
 
@@ -404,6 +470,14 @@ function test_and_set(cell) {
 }
 ```
 
+<Solution>
+
+O problema de Louis: `serializer((a, b) => ...)` embrulharia a *troca inteira* no serializador **de qual conta?** Na proposta dele, `serialized_exchange` chama a troca protegida pelos serializadores das duas contas — e cada acesso interno de `exchange` (os `withdraw`/`deposit` via `dispatch`) tentaria **adquirir de novo** um serializador que a própria troca já segura.
+
+Com a implementação de serializadores desta seção, uma função serializada que chama outra função *do mesmo serializador* fica esperando por si mesma: o mutex já está adquirido e nunca será liberado — **deadlock imediato**, mesmo sem nenhuma concorrência de verdade. É a armadilha clássica de travas não reentrantes: quem projeta a serialização precisa decidir em *um único* nível onde ela acontece.
+
+</Solution>
+
 ## Exercício 3.46
 
 Suponha que implementamos `test_and_set` usando uma verificação ordinária de uma variável, seguida de definir a variável, da seguinte forma:
@@ -421,6 +495,21 @@ function test_and_set(cell) {
 
 Desenhe um diagrama de temporização como o da Figura 3.29 para demonstrar como a implementação de mutex pode falhar permitindo que duas threads adquiram o mutex ao mesmo tempo.
 
+<Solution>
+
+Com um `test_and_set` **não atômico**, duas threads podem intercalar assim:
+
+```
+Thread A: get_content(cell) → false
+Thread B: get_content(cell) → false      (antes da escrita de A!)
+Thread A: set_content(cell, true) → adquire
+Thread B: set_content(cell, true) → adquire TAMBÉM
+```
+
+As duas veem a célula "livre" e as duas entram na região crítica ao mesmo tempo — o mutex deixou de excluir exatamente no cenário para o qual existe. Por isso `test_and_set` precisa ser **atômico**: o teste e a escrita têm de acontecer como uma operação indivisível (com suporte do hardware ou desabilitando interrupções), sem janela entre ler e marcar.
+
+</Solution>
+
 ## Exercício 3.47
 
 Um semáforo (de tamanho $n$) é uma generalização de um mutex. Como um mutex, um semáforo suporta operações de aquisição e liberação, mas é mais geral na medida em que até $n$ threads podem adquirir em qualquer tempo. Tentativas adicionais de adquirir o semáforo devem esperar pela liberação até que uma operação de aquisição seja bem-sucedida.
@@ -435,13 +524,107 @@ Agora que vimos como implementar serializadores, podemos ver que a serializaçã
 
 Uma forma de evitar o risco de deadlock é dar a cada conta um número de identificação único e reescrever `serialized_exchange` de modo que uma thread sempre tente entrar primeiro na conta de número mais baixo. Embora este método funcione bem para o problema de troca, há outras situações que requerem mecanismos de coordenação mais sofisticados. (Ver exercícios 3.48 e 3.49.)[^6]
 
+<Solution>
+
+**a. Semáforo com mutex** — um contador protegido:
+
+```javascript
+function make_semaphore(n) {
+    let count = 0;
+    const mutex = make_mutex();
+    function the_semaphore(m) {
+        if (m === "acquire") {
+            mutex("acquire");
+            if (count < n) {
+                count = count + 1;
+                mutex("release");
+            } else {
+                mutex("release");
+                the_semaphore("acquire");   // tenta de novo (busy waiting)
+            }
+        } else if (m === "release") {
+            mutex("acquire");
+            count = count - 1;
+            mutex("release");
+        }
+    }
+    return the_semaphore;
+}
+```
+
+O mutex protege só a *consulta e atualização* do contador; quem encontra o semáforo cheio solta o mutex e tenta de novo — sem isso, seguraria o mutex e ninguém conseguiria liberar.
+
+**b. Com `test_and_set` direto** — a célula faz o papel do mutex:
+
+```javascript
+function make_semaphore(n) {
+    let count = 0;
+    const cell = list(false);
+    function the_semaphore(m) {
+        if (m === "acquire") {
+            if (test_and_set(cell)) {
+                the_semaphore("acquire");        // célula ocupada: repete
+            } else if (count < n) {
+                count = count + 1;
+                clear(cell);
+            } else {
+                clear(cell);
+                the_semaphore("acquire");        // cheio: repete
+            }
+        } else if (m === "release") {
+            if (test_and_set(cell)) {
+                the_semaphore("release");
+            } else {
+                count = count - 1;
+                clear(cell);
+            }
+        }
+    }
+    return the_semaphore;
+}
+```
+
+A estrutura é a mesma; `test_and_set`/`clear` protegem o contador em vez do mutex.
+
+</Solution>
+
 ## Exercício 3.48
 
 Explique em detalhes por que a estratégia de deadlock-avoidance descrita acima, (ou seja, os serializadores de conta são adquiridos primeiro pela conta de número menor) evita deadlock no problema de troca. Reescreva `serialized_exchange` para incorporar esta ideia. (Você também precisará modificar `make_account` de modo que cada conta seja criada com um número, e fornecer uma forma para acessar esse número.)
 
+<Solution>
+
+**Por que a ordenação evita o deadlock.** Deadlock exige um *ciclo de espera*: A segura o recurso que B quer e B segura o que A quer. Se todo mundo adquire serializadores **em ordem crescente de número de conta**, uma thread só espera por serializadores de número *maior ou igual* aos que já possui. Num suposto ciclo, siga as setas de espera: os números teriam de crescer estritamente ao longo do ciclo e voltar ao início — impossível. Sem ciclo, sem deadlock.
+
+**A reescrita:**
+
+```javascript
+function serialized_exchange(account1, account2) {
+    const serializer1 = account1("serializer");
+    const serializer2 = account2("serializer");
+    return account1("number") < account2("number")
+           ? serializer1(serializer2(exchange))(account1, account2)
+           : serializer2(serializer1(exchange))(account1, account2);
+}
+```
+
+com `make_account_and_serializer` recebendo/gerando um número de conta (um contador global `let next_account_number = 1;` incrementado a cada criação) e respondendo à mensagem `"number"`.
+
+</Solution>
+
 ## Exercício 3.49
 
 Dê um cenário onde a estratégia de deadlock-avoidance descrita acima não funciona. (Dica: No problema de troca, cada thread conhece antecipadamente quais contas ela precisará acessar. Considere uma situação onde uma thread deve adquirir alguns recursos compartilhados antes que possa saber quais recursos adicionais compartilhados ela exigirá.)
+
+<Solution>
+
+A estratégia pressupõe que a thread **sabe de antemão** todos os recursos de que vai precisar — só assim pode ordená-los antes de adquirir o primeiro.
+
+Cenário em que isso falha: um banco de dados de contas em que a operação é *"saque da conta A e deposite na conta indicada DENTRO de A"* (uma conta que aponta para outra — pense em débito automático). A thread precisa **adquirir A e ler seu conteúdo** para descobrir que a segunda conta é B. Se B tem número menor que A, a regra mandaria adquirir B primeiro — tarde demais: A já está adquirida. Duas threads em situação espelhada (uma partindo de A→B, outra de B→A) adquirem A e B respectivamente e entram em deadlock esperando uma pela outra.
+
+Em geral: qualquer protocolo em que a posse de um recurso é necessária para *descobrir* o próximo recurso quebra a hipótese da ordenação global prévia.
+
+</Solution>
 
 ## Concorrência, tempo e comunicação
 
@@ -462,20 +645,6 @@ O fenômeno da comunicação não instantânea está intimamente relacionado à 
 Assim, a complexidade de lidar com tempo e estado em nossos modelos computacionais reflete diretamente a complexidade de tempo e estado no mundo físico. Essa complexidade surge sempre que temos sistemas computacionais que modelam sistemas físicos que estão compostos de partes separadamente evoluindo que devem se comunicar para coordenar suas ações. O fato central aqui é que, por razões fundamentais físicas, não pode haver "agora" instantaneamente compartilhado. A noção de tempo em sistemas concorrentes deve ser intimamente ligada à comunicação.[^7]
 
 Felizmente, nossa compreensão dos problemas envolvidos na programação concorrente está evoluindo. Há desenvolvimentos em andamento de novos modelos de programação concorrente, e desenvolvimentos correspondentes em linguagens de programação e sistemas de execução, que podem oferecer abordagens mais claras e mais eficientes para programação concorrente.
-
-## Exercício 3.50
-
-Implemente uma versão concorrente de `map` chamada `parallel_map`. A função `parallel_map` deve ter a mesma assinatura que `map`, mas deve dividir o trabalho de mapear sobre a lista de entrada entre múltiplas threads. Você pode assumir que há uma função `make_thread` que cria uma nova thread e retorna um identificador para essa thread, e uma função `join` que espera por uma thread completar.
-
-## Exercício 3.51
-
-Considere o seguinte modelo simplificado de um pool de threads. Um pool de threads mantém um conjunto de worker threads que estão disponíveis para executar tarefas. Quando uma tarefa é submetida ao pool, ela é adicionada a uma fila. Um worker thread que está livre pega uma tarefa da fila e a executa.
-
-a. Implemente um pool de threads usando as primitivas de concorrência que discutimos.
-
-b. Discuta possíveis problemas de desempenho com sua implementação. Como você poderia melhorá-la?
-
------
 
 [^1]: A função `concurrent_execute` não é parte do padrão JavaScript, mas os exemplos nesta seção podem ser implementados em ECMAScript 2020.
 

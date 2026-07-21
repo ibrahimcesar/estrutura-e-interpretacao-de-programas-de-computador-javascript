@@ -337,6 +337,29 @@ Um *acumulador* é uma função que é chamada repetidamente com um único argum
 25
 ```
 
+<Solution>
+
+**Ideia.** O próprio parâmetro `sum` serve de variável de estado: a função devolvida fecha sobre ele e o atualiza a cada chamada.
+
+<CodePlayground
+  code={`function make_accumulator(sum) {
+    return amount => {
+        sum = sum + amount;
+        return sum;
+    };
+}
+
+const a = make_accumulator(5);
+display(a(10));
+a(10);`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+Cada chamada a `make_accumulator` cria um ambiente novo com seu próprio `sum` — dois acumuladores nunca interferem um no outro. (Cole a definição no bloco do exercício acima e veja as verificações passarem.)
+
+</Solution>
+
 ## Exercício 3.2
 
 Em aplicações de teste de software, é útil poder contar o número de vezes que uma determinada função é chamada durante o curso de uma computação. Escreva uma função `make_monitored` que recebe como entrada uma função, `f`, que ela mesma recebe uma entrada. O resultado retornado por `make_monitored` é uma terceira função, digamos `mf`, que mantém o controle do número de vezes que foi chamada mantendo um contador interno. Se a entrada para `mf` é a string `"how many calls"`, então `mf` retorna o valor do contador. Se a entrada é a string `"reset count"`, então `mf` redefine o contador para zero. Para qualquer outra entrada, `mf` retorna o resultado de chamar `f` nessa entrada e incrementa o contador. Por exemplo, poderíamos fazer uma versão monitorada da função `sqrt`:
@@ -370,6 +393,38 @@ Em aplicações de teste de software, é útil poder contar o número de vezes q
 ```
 1
 ```
+
+<Solution>
+
+<CodePlayground
+  code={`function make_monitored(f) {
+    let count = 0;
+    function mf(m) {
+        if (m === "how many calls") {
+            return count;
+        } else if (m === "reset count") {
+            count = 0;
+            return count;
+        } else {
+            count = count + 1;
+            return f(m);
+        }
+    }
+    return mf;
+}
+
+const s = make_monitored(math_sqrt);
+display(s(100));
+display(s("how many calls"));
+display(s(16));
+s("how many calls");`}
+  height={440}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** `count` vive no ambiente criado pela chamada de `make_monitored`; `mf` fecha sobre ele. As strings especiais são interceptadas *antes* de chegar a `f` — repare que perguntar `"how many calls"` não conta como chamada.
+
+</Solution>
 
 ## Exercício 3.3
 
@@ -407,9 +462,104 @@ O objeto de conta resultante deve processar uma solicitação apenas se ela for 
 "Incorrect password"
 ```
 
+<Solution>
+
+**Ideia.** `dispatch` ganha um primeiro argumento de senha; a checagem vem antes de qualquer outra coisa. Para manter o contrato (o resultado de `acc(...)` é sempre uma função a ser aplicada à quantia), a recusa também é uma função — que ignora a quantia e devolve a reclamação.
+
+<CodePlayground
+  code={`function make_account(balance, password) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(p, m) {
+        return p !== password
+               ? () => "Incorrect password"
+               : m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}
+
+const acc = make_account(100, "secret password");
+display(acc("secret password", "withdraw")(40));
+acc("some other password", "deposit")(50);`}
+  height={520}
+  showLineNumbers={false}
+/>
+
+</Solution>
+
 ## Exercício 3.4
 
 Modifique a função `make_account` do exercício 3.3 adicionando outra variável de estado local de modo que, se uma conta for acessada mais de sete vezes consecutivas com uma senha incorreta, ela invoque a função `call_the_cops`.
+
+<Solution>
+
+**Ideia.** Mais uma variável de estado local, `consecutive_wrong`, zerada a cada acesso correto.
+
+<CodePlayground
+  code={`function call_the_cops() {
+    return "☎ Chamando a polícia!";
+}
+
+function make_account(balance, password) {
+    let consecutive_wrong = 0;
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(p, m) {
+        if (p !== password) {
+            consecutive_wrong = consecutive_wrong + 1;
+            return consecutive_wrong > 7
+                   ? () => call_the_cops()
+                   : () => "Incorrect password";
+        } else {
+            consecutive_wrong = 0;
+            return m === "withdraw"
+                   ? withdraw
+                   : m === "deposit"
+                   ? deposit
+                   : error(m, "unknown request -- make_account");
+        }
+    }
+    return dispatch;
+}
+
+const acc = make_account(100, "senha");
+let i = 0;
+while (i < 8) {
+    display(acc("errada", "withdraw")(10));
+    i = i + 1;
+}
+acc("senha", "withdraw")(10);`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+Na oitava tentativa errada consecutiva, a polícia é chamada; um acesso correto zera o contador e a conta volta ao normal.
+
+</Solution>
 
 -----
 

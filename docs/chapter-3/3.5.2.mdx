@@ -168,6 +168,64 @@ Sem executar o programa, descreva os elementos do stream definido por
 const s = pair(1, () => add_streams(s, s));
 ```
 
+<Solution>
+
+Sem executar: a cabeça é 1, e cada elemento seguinte é a soma do stream consigo mesmo — ou seja, **o dobro do anterior**. O stream é o das potências de 2: `1, 2, 4, 8, 16, …`
+
+<CodePlayground
+  code={`const s = pair(1, () => add_streams(s, s));
+first_n(s, 8);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={130}
+  showLineNumbers={false}
+/>
+
+</Solution>
+
 ## Exercício 3.54
 
 Defina uma função `mul_streams`, análoga a `add_streams`, que produz o produto elemento por elemento de seus dois streams de argumento de entrada. Use isso juntamente com o stream `integers` para completar a seguinte definição do stream cujos elementos são os fatoriais:
@@ -176,9 +234,137 @@ Defina uma função `mul_streams`, análoga a `add_streams`, que produz o produt
 const factorials = pair(1, () => mul_streams(..., ...));
 ```
 
+<Solution>
+
+<CodePlayground
+  code={`function mul_streams(s1, s2) {
+    return stream_map_2((a, b) => a * b, s1, s2);
+}
+
+const factorials =
+    pair(1, () => mul_streams(stream_tail(integers),
+                              factorials));
+
+first_n(factorials, 7);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** O $n$-ésimo fatorial é o $(n-1)$-ésimo vezes $n+1$… melhor dizendo: `factorials[k] = factorials[k-1] * (k+1)`, e é exatamente isso que multiplicar `factorials` pelos inteiros a partir de 2, elemento a elemento, produz: 1, 2, 6, 24, 120, …
+
+</Solution>
+
 ## Exercício 3.55
 
 Defina uma função `partial_sums` que recebe como argumento um stream $S$ e retorna o stream cujos elementos são $S_0$, $S_0 + S_1$, $S_0 + S_1 + S_2$, ... Por exemplo, `partial_sums(integers)` deve ser o stream 1, 3, 6, 10, 15, ...
+
+<Solution>
+
+<CodePlayground
+  code={`function partial_sums(s) {
+    return pair(head(s),
+                memo(() => add_streams(stream_tail(s),
+                                       partial_sums(s))));
+}
+
+first_n(partial_sums(integers), 6);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={220}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** O $k$-ésimo elemento de `partial_sums(S)` é o $(k-1)$-ésimo mais $S_k$ — somar `stream_tail(s)` com o próprio `partial_sums(s)` desloca e acumula. O `memo` evita que `partial_sums(s)` seja reconstruído a cada elemento (sem ele o custo vira quadrático).
+
+</Solution>
 
 ## Exercício 3.56
 
@@ -197,9 +383,95 @@ const S = pair(1, () => merge(..., merge(..., ...)));
 
 Complete a definição de `S` preenchendo as partes faltantes na definição da função `merge` e fornecendo as expressões faltantes nas lacunas.
 
+<Solution>
+
+<CodePlayground
+  code={`function merge(s1, s2) {
+    if (is_null(s1)) { return s2; }
+    if (is_null(s2)) { return s1; }
+    const h1 = head(s1);
+    const h2 = head(s2);
+    return h1 < h2
+           ? pair(h1, () => merge(stream_tail(s1), s2))
+           : h2 < h1
+           ? pair(h2, () => merge(s1, stream_tail(s2)))
+           : pair(h1, () => merge(stream_tail(s1),
+                                  stream_tail(s2)));
+}
+
+const S = pair(1, () => merge(scale_stream(S, 2),
+                              merge(scale_stream(S, 3),
+                                    scale_stream(S, 5))));
+
+first_n(S, 15);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={460}
+  showLineNumbers={false}
+/>
+
+O caso de igualdade avança **os dois** streams — é o que elimina as repetições (12 = 2·6 = 3·4 aparece uma vez só). Os primeiros quinze: 1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24.
+
+</Solution>
+
 ## Exercício 3.57
 
 Quantas adições são realizadas quando computamos o $n$-ésimo número de Fibonacci usando a definição de `fibs` baseada em `add_streams`? Mostre que o número de adições seria exponencialmente maior se tivéssemos implementado `add_streams` sem usar a otimização de memoização fornecida pela função `memo` (exercício 3.50).
+
+<Solution>
+
+**Com memoização**, o $n$-ésimo Fibonacci custa $n - 1$ adições: cada elemento do stream é computado uma única vez, e computar o elemento $k$ faz exatamente uma adição sobre dois elementos já lembrados.
+
+**Sem memoização**, cada acesso à cauda reconstrói os dois streams operandos do `add_streams`. O número de adições $A(n)$ para materializar o elemento $n$ satisfaz
+
+$$A(n) = A(n-1) + A(n-2) + 1$$
+
+— a mesma recorrência de `fib` em árvore do capítulo 1. Como $A(n) + 1 = (A(n-1) + 1) + (A(n-2) + 1)$, temos $A(n) + 1 \ge \text{Fib}(n+1)$, que cresce como $\varphi^n$: **exponencial**. A memoização é o que separa a definição elegante de uma definição utilizável.
+
+</Solution>
 
 ## Exercício 3.58
 
@@ -219,6 +491,71 @@ expand(1, 7, 10);
 expand(3, 8, 10);
 ```
 
+<Solution>
+
+`expand(num, den, radix)` produz **os dígitos da expansão de `num/den` na base `radix`**, depois da vírgula: cada passo multiplica o resto por `radix`, tira o dígito inteiro e continua com o novo resto — o algoritmo escolar de divisão contínua.
+
+<CodePlayground
+  code={`function expand(num, den, radix) {
+    return pair(math_trunc((num * radix) / den),
+                () => expand((num * radix) % den, den, radix));
+}
+
+display(first_n(expand(1, 7, 10), 12));
+first_n(expand(3, 8, 10), 6);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={240}
+  showLineNumbers={false}
+/>
+
+`expand(1, 7, 10)` dá `1 4 2 8 5 7 1 4 …` — o período de $1/7 = 0{,}\overline{142857}$; `expand(3, 8, 10)` dá `3 7 5 0 0 0 …` — pois $3/8 = 0{,}375$.
+
+</Solution>
+
 ## Exercício 3.59
 
 Na seção 2.5.3 vimos como implementar uma aritmética de polinômios representando polinômios como listas de coeficientes. Aqui trabalharemos com *séries de potências infinitas*, que também podem ser representadas como streams infinitos. Representaremos a série de potências $a_0 + a_1 x + a_2 x^2 + a_3 x^3 + \cdots$ como o stream de coeficientes $(a_0, a_1, a_2, a_3, \ldots)$.
@@ -235,6 +572,81 @@ $$\frac{de^x}{dx} = e^x$$
 
 com $e^0 = 1$. Gere o stream de séries de potências para $e^x$.
 
+<Solution>
+
+<CodePlayground
+  code={`// a. integrar termo a termo: divide o k-ésimo coeficiente por k
+function integrate_series(s) {
+    return stream_map_2((c, n) => c / n, s, integers);
+}
+
+// b. exponencial: e^x é sua própria derivada
+const exp_series =
+    pair(1, memo(() => integrate_series(exp_series)));
+
+// seno e cosseno: cada um é (±) a integral do outro
+const cosine_series =
+    pair(1, memo(() => scale_stream(
+                           integrate_series(sine_series), -1)));
+const sine_series =
+    pair(0, memo(() => integrate_series(cosine_series)));
+
+display(first_n(exp_series, 5));
+display(first_n(cosine_series, 6));
+first_n(sine_series, 6);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={480}
+  showLineNumbers={false}
+/>
+
+Os coeficientes conferem com as séries de Taylor: $e^x$: $1, 1, \tfrac12, \tfrac16, \tfrac1{24}$; cosseno: $1, 0, -\tfrac12, 0, \tfrac1{24}, 0$; seno: $0, 1, 0, -\tfrac16, 0, \tfrac1{120}$ — as definições mutuamente recursivas funcionam porque a cabeça de cada série está disponível *antes* de a cauda ser exigida.
+
+</Solution>
+
 ## Exercício 3.60
 
 Com séries de potências representadas como streams de coeficientes como na série do exercício 3.59, adicionar séries é implementado por `add_streams`. Complete a definição da seguinte função para multiplicar séries:
@@ -247,6 +659,80 @@ function mul_series(s1, s2) {
 ```
 
 Você pode testar sua função verificando que $\sin^2 x + \cos^2 x = 1$, usando as séries do exercício 3.59.
+
+<Solution>
+
+<CodePlayground
+  code={`function mul_series(s1, s2) {
+    return pair(head(s1) * head(s2),
+                memo(() => add_streams(
+                    scale_stream(stream_tail(s2), head(s1)),
+                    mul_series(stream_tail(s1), s2))));
+}
+
+// verificação: sin²x + cos²x = 1
+const one = add_streams(mul_series(sine_series, sine_series),
+                        mul_series(cosine_series, cosine_series));
+first_n(one, 6);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function integrate_series(s) {
+    return stream_map_2((c, n) => c / n, s, integers);
+}
+const cosine_series =
+    pair(1, memo(() => scale_stream(integrate_series(sine_series), -1)));
+const sine_series =
+    pair(0, memo(() => integrate_series(cosine_series)));`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** $(a_0 + S_1)(b_0 + S_2) = a_0 b_0 + \big(a_0 S_2 + S_1 \cdot (b_0 + S_2)\big)$: a cabeça é o produto das cabeças; a cauda soma "$a_0$ vezes o resto de $s_2$" com "o resto de $s_1$ vezes $s_2$ inteiro". A verificação imprime $1, 0, 0, 0, 0, 0$ — a identidade pitagórica, coeficiente a coeficiente.
+
+</Solution>
 
 ## Exercício 3.61
 
@@ -261,9 +747,178 @@ X &= 1 - S_R \cdot X
 
 Em outras palavras, $X$ é a série de potências cujo termo constante é 1 e cujos termos de ordem superior são o negativo de $S_R$ vezes $X$. Use esta ideia para escrever uma função `invert_unit_series` que computa $1/S$ para uma série de potências $S$ com termo constante 1. Você precisará usar `mul_series` do exercício 3.60.
 
+<Solution>
+
+A dedução do enunciado vira código diretamente — $X = 1 - S_R \cdot X$:
+
+<CodePlayground
+  code={`function invert_unit_series(s) {
+    return pair(1,
+                memo(() => scale_stream(
+                    mul_series(stream_tail(s),
+                               invert_unit_series(s)),
+                    -1)));
+}
+
+// verificação: S · (1/S) = 1, com S = série do cosseno
+first_n(mul_series(cosine_series,
+                   invert_unit_series(cosine_series)), 6);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function integrate_series(s) {
+    return stream_map_2((c, n) => c / n, s, integers);
+}
+const cosine_series =
+    pair(1, memo(() => scale_stream(integrate_series(sine_series), -1)));
+const sine_series =
+    pair(0, memo(() => integrate_series(cosine_series)));
+function mul_series(s1, s2) {
+    return pair(head(s1) * head(s2),
+                memo(() => add_streams(
+                    scale_stream(stream_tail(s2), head(s1)),
+                    mul_series(stream_tail(s1), s2))));
+}`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+A definição parece circular — `invert_unit_series(s)` aparece no próprio corpo — mas a cabeça (1) está pronta antes de qualquer cauda ser pedida, e cada coeficiente novo só depende dos anteriores. O produto verifica: $1, 0, 0, 0, \ldots$
+
+</Solution>
+
 ## Exercício 3.62
 
 Use os resultados dos exercícios 3.60 e 3.61 para definir uma função `div_series` que divide duas séries de potências. A função `div_series` deve funcionar para qualquer duas séries, desde que o denominador comece com um termo constante não zero. (Se o denominador tiver um termo constante zero, então `div_series` deve sinalizar um erro.) Mostre como usar `div_series` juntamente com os resultados do exercício 3.59 para gerar a série de potências para a tangente.
+
+<Solution>
+
+<CodePlayground
+  code={`function div_series(num, den) {
+    const c = head(den);
+    return c === 0
+           ? error("denominador com termo constante zero -- div_series")
+           : scale_stream(
+                 mul_series(num,
+                            invert_unit_series(scale_stream(den, 1 / c))),
+                 1 / c);
+}
+
+// tangente = seno / cosseno
+first_n(div_series(sine_series, cosine_series), 8);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), () => stream_map(f, stream_tail(s)));
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function scale_stream(s, factor) {
+    return stream_map(x => x * factor, s);
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function integrate_series(s) {
+    return stream_map_2((c, n) => c / n, s, integers);
+}
+const cosine_series =
+    pair(1, memo(() => scale_stream(integrate_series(sine_series), -1)));
+const sine_series =
+    pair(0, memo(() => integrate_series(cosine_series)));
+function mul_series(s1, s2) {
+    return pair(head(s1) * head(s2),
+                memo(() => add_streams(
+                    scale_stream(stream_tail(s2), head(s1)),
+                    mul_series(stream_tail(s1), s2))));
+}
+function invert_unit_series(s) {
+    return pair(1,
+                memo(() => scale_stream(
+                    mul_series(stream_tail(s), invert_unit_series(s)),
+                    -1)));
+}`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Normalizamos o denominador para termo constante 1 (dividindo por $c$), invertemos com o exercício 3.61, multiplicamos pelo numerador e desfazemos a normalização. A tangente sai $0, 1, 0, \tfrac13, 0, \tfrac2{15}, 0, \tfrac{17}{315}$ — os coeficientes clássicos.
+
+</Solution>
 
 [^1]: Eratóstenes, um filósofo grego alexandrino do século III aC, é famoso por dar a primeira estimativa precisa da circunferência da Terra, que ele computou observando sombras lançadas ao meio-dia no dia do solstício de verão. O método de crivo de Eratóstenes, embora antigo, formou a base para "crivos" de hardware de propósito especial que, até os anos 1970, eram as ferramentas mais poderosas existentes para localizar grandes primos. Desde então, no entanto, esses métodos foram suplantados por derivações das técnicas probabilísticas discutidas na seção 1.2.6.
 

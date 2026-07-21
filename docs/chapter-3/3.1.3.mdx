@@ -373,9 +373,85 @@ const peter_acc = make_account(100, "open sesame");`}
 
 permitirá que se faça transações em `peter_acc` usando o nome `paul_acc` e a senha `"rosebud"`. Você pode desejar modificar sua solução do exercício 3.3 para acomodar este novo recurso.
 
+<Solution>
+
+**Ideia.** A conta conjunta é só um *tradutor de senhas*: se a nova senha confere, delega à conta original com a senha original.
+
+<CodePlayground
+  code={`function make_joint(account, password, new_password) {
+    return (p, m) => p === new_password
+                     ? account(password, m)
+                     : () => "Incorrect password";
+}
+
+const paul_acc = make_joint(peter_acc, "open sesame", "rosebud");
+
+display(paul_acc("rosebud", "withdraw")(10));
+peter_acc("open sesame", "withdraw")(10);`}
+  hiddenCode={`function make_account(balance, password) {
+    function withdraw(amount) {
+        if (balance >= amount) {
+            balance = balance - amount;
+            return balance;
+        } else {
+            return "Insufficient funds";
+        }
+    }
+    function deposit(amount) {
+        balance = balance + amount;
+        return balance;
+    }
+    function dispatch(p, m) {
+        return p !== password
+               ? () => "Incorrect password"
+               : m === "withdraw"
+               ? withdraw
+               : m === "deposit"
+               ? deposit
+               : error(m, "unknown request -- make_account");
+    }
+    return dispatch;
+}
+
+const peter_acc = make_account(100, "open sesame");`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** `paul_acc` e `peter_acc` compartilham o MESMO objeto de conta — o saque de Paul deixa 90, e o saque seguinte de Peter parte dos 90 e deixa 80. É a "conta conjunta" da discussão de identidade desta seção, construída sem tocar em `make_account`.
+
+</Solution>
+
 ## Exercício 3.8
 
 Quando definimos o modelo de avaliação na seção 1.1.3, dissemos que o primeiro passo na avaliação de uma expressão é avaliar suas subexpressões. Mas nunca especificamos a ordem na qual as subexpressões devem ser avaliadas (por exemplo, da esquerda para a direita ou da direita para a esquerda). Quando introduzimos atribuição, a ordem na qual os operandos de uma combinação de operadores são avaliados pode fazer diferença no resultado. Defina uma função simples `f` tal que avaliar `f(0) + f(1)` retornará 0 se os operandos de `+` forem avaliados da esquerda para a direita, mas retornará 1 se os operandos forem avaliados da direita para a esquerda.
+
+<Solution>
+
+**Ideia.** Precisamos de uma `f` cujo resultado dependa da *ordem* das chamadas — ou seja, com estado. Uma que devolve o argumento na primeira chamada e 0 nas seguintes resolve:
+
+<CodePlayground
+  code={`let first = true;
+function f(x) {
+    if (first) {
+        first = false;
+        return x;
+    } else {
+        return 0;
+    }
+}
+
+f(0) + f(1);`}
+  height={300}
+  showLineNumbers={false}
+/>
+
+- **Esquerda → direita:** `f(0)` responde 0 (primeira chamada) e `f(1)` responde 0 → soma **0**.
+- **Direita → esquerda:** `f(1)` responde 1 e `f(0)` responde 0 → soma **1**.
+
+O resultado 0 que você vê acima confirma que o JavaScript avalia operandos da esquerda para a direita (isso é fixado pela especificação da linguagem). A moral do exercício: com atribuição, até o `+` deixa de ser inocente — expressões passam a ter *história*.
+
+</Solution>
 
 -----
 

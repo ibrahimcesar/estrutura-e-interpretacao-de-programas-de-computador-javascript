@@ -89,6 +89,32 @@ function fact_iter(product, counter, max_count) {
 
 Mostre as estruturas de ambiente criadas pela avaliação de `factorial(6)` usando cada versão da função `factorial`.[^1]
 
+<Solution>
+
+**Versão recursiva.** Avaliar `factorial(6)` cria seis ambientes encadeados ao global, um por chamada, cada um com um único vínculo de `n`:
+
+```
+global ← E1: n = 6 ← E2: n = 5 ← E3: n = 4 ← E4: n = 3 ← E5: n = 2 ← E6: n = 1
+```
+
+(Cada seta indica o ambiente envolvente; todos os `Ei` apontam diretamente para o global, pois `factorial` foi declarada lá — o encadeamento acima mostra a ordem de criação.) Cada ambiente fica vivo até sua multiplicação pendente `n * factorial(n - 1)` ser concluída.
+
+**Versão iterativa.** `factorial(6)` cria um ambiente com `n = 6` e então `fact_iter` cria sete ambientes, todos apontando para o global, um por chamada:
+
+```
+E1: product = 1,   counter = 1, max_count = 6
+E2: product = 1,   counter = 2, max_count = 6
+E3: product = 2,   counter = 3, max_count = 6
+E4: product = 6,   counter = 4, max_count = 6
+E5: product = 24,  counter = 5, max_count = 6
+E6: product = 120, counter = 6, max_count = 6
+E7: product = 720, counter = 7, max_count = 6   → retorna 720
+```
+
+A distinção dos *processos* (capítulo 1) não aparece no *número* de ambientes — ambos criam uma cadeia linear deles —, e sim no fato de que, na versão iterativa, nenhum ambiente precisa ser lembrado depois que sua chamada devolve o controle.
+
+</Solution>
+
 -----
 
 [^1]: O modelo de ambiente não esclarecerá nossa afirmação na seção 1.2.1 de que o interpretador pode executar uma função como `fact_iter` em uma quantidade constante de espaço usando recursão de cauda. Discutiremos recursão de cauda quando lidarmos com a estrutura de controle do interpretador na seção 5.4.

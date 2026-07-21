@@ -173,6 +173,16 @@ function sqrt_stream(x) {
 
 Alyssa P. Hacker responde que esta versão da função é consideravelmente menos eficiente porque ela realiza computações redundantes. Explique a resposta de Alyssa. A resposta dela seria diferente se nossa implementação de avaliação atrasada não usasse a otimização de memoização fornecida pela função `memo`?
 
+<Solution>
+
+A diferença está na **memoização compartilhada**. Na versão do texto, o nome local `guesses` faz o stream referir-se *a si mesmo*: cada elemento é computado uma vez e lembrado, e o elemento $n$ custa um passo sobre o $n-1$ já pronto — custo total linear.
+
+Na versão de Louis, a cauda chama `sqrt_stream(x)` de novo — que constrói um stream **novo**, sem nada em comum com o anterior. As memoizações nunca são reaproveitadas: para chegar ao elemento $n$, recomputa-se o prefixo inteiro a cada passo, e o custo vira quadrático.
+
+Se `stream_map`/as caudas **não** usassem `memo`, as duas versões seriam igualmente ineficientes — sem memoização, referir-se a si mesmo não economiza nada, pois cada percurso recomputa de qualquer forma.
+
+</Solution>
+
 ## Exercício 3.64
 
 Escreva uma função `stream_limit` que recebe como argumentos um stream e um número (a tolerância). Ela deve examinar o stream até encontrar dois elementos sucessivos que diferem em valor absoluto por menos que a tolerância, e retornar o segundo dos dois elementos. Usando isso, podemos computar raízes quadradas até uma dada tolerância por
@@ -183,6 +193,97 @@ function sqrt(x, tolerance) {
 }
 ```
 
+<Solution>
+
+<CodePlayground
+  code={`function stream_limit(s, tolerance) {
+    const s1 = head(s);
+    const s2 = head(stream_tail(s));
+    return math_abs(s2 - s1) < tolerance
+           ? s2
+           : stream_limit(stream_tail(s), tolerance);
+}
+
+function sqrt(x, tolerance) {
+    return stream_limit(sqrt_stream(x), tolerance);
+}
+
+sqrt(2, 0.000001);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function average(a, b) {
+    return (a + b) / 2;
+}
+function sqrt_improve(guess, x) {
+    return average(guess, x / guess);
+}
+function sqrt_stream(x) {
+    const guesses = pair(1, memo(() => stream_map(
+        guess => sqrt_improve(guess, x),
+        guesses)));
+    return guesses;
+}`}
+  height={330}
+  showLineNumbers={false}
+/>
+
+Cada passo compara vizinhos e avança; quando a diferença cai abaixo da tolerância, devolvemos o segundo — o mais refinado dos dois.
+
+</Solution>
+
 ## Exercício 3.65
 
 Use a série
@@ -191,13 +292,217 @@ $$\ln 2 = 1 - \frac{1}{2} + \frac{1}{3} - \frac{1}{4} + \cdots$$
 
 para computar três streams de aproximações para o logaritmo natural de 2, de maneiras análogas às que usamos acima para computar $\pi$. Quão rapidamente esses streams convergem?
 
+<Solution>
+
+As três acelerações do texto, aplicadas à série de $\ln 2$:
+
+<CodePlayground
+  code={`function ln2_summands(n) {
+    return pair(1 / n,
+                () => stream_map(x => -x, ln2_summands(n + 1)));
+}
+const ln2_stream = partial_sums(ln2_summands(1));
+
+display("série pura:");
+display(stream_ref(ln2_stream, 9));
+display("euler:");
+display(stream_ref(euler_transform(ln2_stream), 9));
+display("tableau:");
+display(stream_ref(accelerated_sequence(euler_transform,
+                                        ln2_stream), 8));
+math_log(2);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function stream_map_2(f, s1, s2) {
+    return is_null(s1) || is_null(s2)
+           ? null
+           : pair(f(head(s1), head(s2)),
+                  memo(() => stream_map_2(f, stream_tail(s1), stream_tail(s2))));
+}
+function add_streams(s1, s2) {
+    return stream_map_2((a, b) => a + b, s1, s2);
+}
+function partial_sums(s) {
+    return pair(head(s),
+                memo(() => add_streams(stream_tail(s), partial_sums(s))));
+}
+function square(x) { return x * x; }
+function euler_transform(s) {
+    const s0 = stream_ref(s, 0);
+    const s1 = stream_ref(s, 1);
+    const s2 = stream_ref(s, 2);
+    return pair(s2 - square(s2 - s1) / (s0 - 2 * s1 + s2),
+                memo(() => euler_transform(stream_tail(s))));
+}
+function make_tableau(transform, s) {
+    return pair(s, () => make_tableau(transform, transform(s)));
+}
+function accelerated_sequence(transform, s) {
+    return stream_map(head, make_tableau(transform, s));
+}`}
+  height={420}
+  showLineNumbers={false}
+/>
+
+**Convergência** (valor verdadeiro $\ln 2 \approx 0{,}693147$): a série pura, alternada com termos $1/n$, erra na **segunda casa** mesmo após 10 termos (erro $\sim 1/2n$); a transformação de Euler acerta ~4 casas com os mesmos 10 termos; o *tableau* acerta o limite da precisão de ponto flutuante com 8 ou 9 — cada linha ganha casas decimais em progressão dramática. (Um pouco além disso o tableau degenera em `NaN` por cancelamento numérico — aceleração tem preço.)
+
+</Solution>
+
 ## Exercício 3.66
 
 Examine o stream `pairs(integers, integers)`. Você pode fazer uma estimativa geral de quantos pares precedem o par (1,100)? o par (99,100)? o par (100,100)? (Se você puder fazer uma estimativa precisa da matemática, ainda melhor. Mas a parte importante é você ter uma boa intuição.)
 
+<Solution>
+
+Empiricamente (conte você mesmo com `pairs(integers, integers)`!): os pares $(1, n)$ ocupam metade do stream — $(1, n)$ está no índice $2n - 3$ (para $n \ge 2$); os pares $(n, n)$ estão no índice $2^n - 2$; e $(n, n+1)$ no índice $3 \cdot 2^{n-1} - 2$.
+
+Logo:
+
+- $(1, 100)$: precedido por **197 pares** — perfeitamente alcançável.
+- $(99, 100)$: precedido por $3 \cdot 2^{98} - 2 \approx 9{,}5 \times 10^{29}$ pares.
+- $(100, 100)$: precedido por $2^{100} - 2 \approx 1{,}3 \times 10^{30}$ pares.
+
+**A intuição:** a cada "camada" que o `interleave` desce, os pares daquela camada passam a aparecer com metade da frequência da camada anterior. A linha 1 recebe metade das posições, a linha 2 um quarto, e assim por diante — pares "profundos" na diagonal são exponencialmente raros no stream, ainda que todos eventualmente apareçam.
+
+</Solution>
+
 ## Exercício 3.67
 
 Modifique a função `pairs` para que `pairs(integers, integers)` produza o stream de *todos* os pares de inteiros positivos $(i,j)$ (sem a condição $i \leq j$). Dica: Você precisará misturar um stream adicional.
+
+<Solution>
+
+**Ideia.** Além da primeira linha (pares $(S_0, t)$) e do resto recursivo, misture também a primeira **coluna** (pares $(s, T_0)$):
+
+<CodePlayground
+  code={`function all_pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x),
+                               stream_tail(t)),
+                    interleave(
+                        stream_map(x => list(x, head(t)),
+                                   stream_tail(s)),
+                        all_pairs(stream_tail(s),
+                                  stream_tail(t))))));
+}
+
+first_n(all_pairs(integers, integers), 12);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={380}
+  showLineNumbers={false}
+/>
+
+Cada par $(i, j)$ agora aparece exatamente uma vez: os com $i = 1$ vêm da linha, os com $j = 1$ (e $i > 1$) da coluna, e o resto da recursão.
+
+</Solution>
 
 ## Exercício 3.68
 
@@ -213,9 +518,172 @@ function pairs(s, t) {
 
 Isso funciona? Considere o que acontece se avaliarmos `pairs(integers, integers)` usando a definição de Louis.
 
+<Solution>
+
+A versão de Louis **não funciona**: entra em recursão infinita antes de produzir o primeiro par.
+
+Na versão do texto, a chamada recursiva `pairs(stream_tail(s), stream_tail(t))` está *dentro* de uma função adiada (`() => …`) — só roda quando alguém pede a cauda. Na versão de Louis, ela é **argumento direto de `interleave`**, e a ordem aplicativa avalia argumentos antes de aplicar a função: para construir `pairs(s, t)` é preciso antes construir `pairs(tail s, tail t)`, que precisa de `pairs(tail tail s, …)`… sem nenhum par jamais emergir.
+
+Experimente — nosso executor mostra o estouro de pilha:
+
+<CodePlayground
+  code={`function pairs_louis(s, t) {
+    return interleave(
+        stream_map(x => list(head(s), x), t),
+        pairs_louis(stream_tail(s), stream_tail(t)));
+}
+
+head(pairs_louis(integers, integers));`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={260}
+  showLineNumbers={false}
+/>
+
+O `pair(cabeça, cauda-adiada)` explícito não é burocracia: é o que dá ao stream um pedaço *pronto* atrás do qual o infinito pode se esconder.
+
+</Solution>
+
 ## Exercício 3.69
 
 Escreva uma função `triples` que recebe três streams infinitos, $S$, $T$ e $U$, e produz o stream de triplas $(S_i,T_j,U_k)$ tais que $i \leq j \leq k$. Use `triples` para gerar o stream de todos os triplos pitagóricos de inteiros positivos, isto é, as triplas $(i,j,k)$ tais que $i \leq j$ e $i^2 + j^2 = k^2$.
+
+<Solution>
+
+<CodePlayground
+  code={`function triples(s, t, u) {
+    return pair(list(head(s), head(t), head(u)),
+                memo(() => interleave(
+                    stream_map(p => pair(head(s), p),
+                               stream_tail(pairs(t, u))),
+                    triples(stream_tail(s),
+                            stream_tail(t),
+                            stream_tail(u)))));
+}
+
+function square(x) { return x * x; }
+
+const pythagorean = stream_filter(
+    t => square(head(t)) + square(head(tail(t)))
+         === square(head(tail(tail(t)))),
+    triples(integers, integers, integers));
+
+first_n(pythagorean, 2);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={440}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Uma tripla $(S_i, T_j, U_k)$ com $i \le j \le k$ é a cabeça $S_0$ pregada em um *par* $(T_j, U_k)$ com $j \le k$ — que é exatamente o que `pairs(t, u)` fornece — misturada com as triplas que não usam $S_0$. Os primeiros pitagóricos: $(3, 4, 5)$ e $(6, 8, 10)$; os seguintes, como $(5, 12, 13)$, estão muito fundo no entrelaçamento — o exercício 3.70 resolve essa dor com ordenação por peso.
+
+</Solution>
 
 ## Exercício 3.70
 
@@ -225,12 +693,306 @@ a. o stream de todos os pares de inteiros positivos $(i,j)$ com $i \leq j$ orden
 
 b. o stream de todos os pares de inteiros positivos $(i,j)$ com $i \leq j$, onde nem $i$ nem $j$ são divisíveis por 2, 3 ou 5, e os pares são ordenados de acordo com a soma $2i + 3j + 5ij$.
 
+<Solution>
+
+<CodePlayground
+  code={`function merge_weighted(s1, s2, weight) {
+    return weight(head(s1)) <= weight(head(s2))
+           ? pair(head(s1),
+                  memo(() => merge_weighted(stream_tail(s1), s2, weight)))
+           : pair(head(s2),
+                  memo(() => merge_weighted(s1, stream_tail(s2), weight)));
+}
+
+function weighted_pairs(s, t, weight) {
+    return pair(list(head(s), head(t)),
+                memo(() => merge_weighted(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    weighted_pairs(stream_tail(s), stream_tail(t), weight),
+                    weight)));
+}
+
+// a. pares ordenados por i + j
+const by_sum = weighted_pairs(integers, integers,
+                              p => head(p) + head(tail(p)));
+
+// b. i, j sem fatores 2, 3, 5, ordenados por 2i + 3j + 5ij
+function ok(n) {
+    return n % 2 !== 0 && n % 3 !== 0 && n % 5 !== 0;
+}
+const special = weighted_pairs(
+    stream_filter(ok, integers),
+    stream_filter(ok, integers),
+    p => {
+        const i = head(p);
+        const j = head(tail(p));
+        return 2 * i + 3 * j + 5 * i * j;
+    });
+
+display(first_n(by_sum, 8));
+first_n(special, 5);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+Diferente do `merge` do exercício 3.56, aqui **não** eliminamos "empates": pesos iguais não significam pares iguais (e o exercício 3.71 depende exatamente de vê-los lado a lado).
+
+</Solution>
+
 ## Exercício 3.71
 
 Números que podem ser expressos como a soma de dois cubos de mais de uma maneira são às vezes chamados de *números de Ramanujan*, em homenagem ao matemático Srinivasa Ramanujan.[^1] Os streams ordenados de pares fornecem uma maneira elegante de computar esses números. Para encontrar um número que pode ser escrito como a soma de dois cubos de duas maneiras diferentes, precisamos apenas gerar o stream de pares de inteiros $(i,j)$ ponderados de acordo com a soma $i^3 + j^3$, então procurar por dois pares consecutivos com o mesmo peso. Escreva uma função para gerar os números de Ramanujan. O primeiro desses números é 1.729. Quais são os próximos cinco?
 
+<Solution>
+
+<CodePlayground
+  code={`function cube(x) { return x * x * x; }
+function cube_weight(p) {
+    return cube(head(p)) + cube(head(tail(p)));
+}
+
+const by_cubes = weighted_pairs(integers, integers, cube_weight);
+
+function ramanujan_numbers(s) {
+    const w1 = cube_weight(head(s));
+    const rest = stream_tail(s);
+    return w1 === cube_weight(head(rest))
+           ? pair(w1, memo(() => ramanujan_numbers(stream_tail(rest))))
+           : ramanujan_numbers(rest);
+}
+
+first_n(ramanujan_numbers(by_cubes), 6);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function merge_weighted(s1, s2, weight) {
+    return weight(head(s1)) <= weight(head(s2))
+           ? pair(head(s1), memo(() => merge_weighted(stream_tail(s1), s2, weight)))
+           : pair(head(s2), memo(() => merge_weighted(s1, stream_tail(s2), weight)));
+}
+function weighted_pairs(s, t, weight) {
+    return pair(list(head(s), head(t)),
+                memo(() => merge_weighted(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    weighted_pairs(stream_tail(s), stream_tail(t), weight),
+                    weight)));
+}`}
+  height={400}
+  showLineNumbers={false}
+/>
+
+No stream ordenado por $i^3 + j^3$, uma soma que aparece **duas vezes seguidas** é um número de Ramanujan. Depois do 1729 (o número do táxi de Hardy): **4104, 13832, 20683, 32832 e 39312**.
+
+</Solution>
+
 ## Exercício 3.72
 
 De maneira similar ao exercício 3.71, gere um stream de todos os números que podem ser escritos como a soma de dois quadrados de três maneiras diferentes (mostrando como eles podem ser escritos assim).
+
+<Solution>
+
+Mesma técnica, com peso $i^2 + j^2$ e **três** pesos consecutivos iguais:
+
+<CodePlayground
+  code={`function square(x) { return x * x; }
+function sq_weight(p) {
+    return square(head(p)) + square(head(tail(p)));
+}
+
+const by_squares = weighted_pairs(integers, integers, sq_weight);
+
+function three_ways(s) {
+    const a = head(s);
+    const b = head(stream_tail(s));
+    const c = head(stream_tail(stream_tail(s)));
+    return sq_weight(a) === sq_weight(b) && sq_weight(b) === sq_weight(c)
+           ? pair(list(sq_weight(a), a, b, c),
+                  memo(() => three_ways(
+                      stream_tail(stream_tail(stream_tail(s))))))
+           : three_ways(stream_tail(s));
+}
+
+first_n(three_ways(by_squares), 3);`}
+  hiddenCode={`function stream_ref(s, n) {
+    return n === 0 ? head(s) : stream_ref(stream_tail(s), n - 1);
+}
+function stream_map(f, s) {
+    return is_null(s)
+           ? null
+           : pair(f(head(s)), memo(() => stream_map(f, stream_tail(s))));
+}
+function stream_filter(pred, s) {
+    let cur = s;
+    while (!is_null(cur) && !pred(head(cur))) {
+        cur = stream_tail(cur);
+    }
+    const found = cur;
+    return is_null(found)
+           ? null
+           : pair(head(found),
+                  memo(() => stream_filter(pred, stream_tail(found))));
+}
+function integers_starting_from(n) {
+    return pair(n, () => integers_starting_from(n + 1));
+}
+const integers = integers_starting_from(1);
+function memo(fun) {
+    let already_run = false;
+    let result;
+    return () => {
+        if (!already_run) {
+            result = fun();
+            already_run = true;
+        }
+        return result;
+    };
+}
+function interleave(s1, s2) {
+    return is_null(s1)
+           ? s2
+           : pair(head(s1), memo(() => interleave(s2, stream_tail(s1))));
+}
+function pairs(s, t) {
+    return pair(list(head(s), head(t)),
+                memo(() => interleave(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    pairs(stream_tail(s), stream_tail(t)))));
+}
+function first_n(s, n) {
+    let cur = s;
+    let i = 0;
+    while (i < n && !is_null(cur)) {
+        display(head(cur));
+        cur = stream_tail(cur);
+        i = i + 1;
+    }
+    return "…";
+}
+function merge_weighted(s1, s2, weight) {
+    return weight(head(s1)) <= weight(head(s2))
+           ? pair(head(s1), memo(() => merge_weighted(stream_tail(s1), s2, weight)))
+           : pair(head(s2), memo(() => merge_weighted(s1, stream_tail(s2), weight)));
+}
+function weighted_pairs(s, t, weight) {
+    return pair(list(head(s), head(t)),
+                memo(() => merge_weighted(
+                    stream_map(x => list(head(s), x), stream_tail(t)),
+                    weighted_pairs(stream_tail(s), stream_tail(t), weight),
+                    weight)));
+}`}
+  height={460}
+  showLineNumbers={false}
+/>
+
+Cada elemento traz o número e suas três decomposições: $325 = 1^2{+}18^2 = 6^2{+}17^2 = 10^2{+}15^2$; depois $425$ e $650$.
+
+</Solution>
 
 [^1]: Ramanujan era um matemático autodidata indiano que trabalhou no início do século 20. Ele é famoso por suas contribuições profundas à teoria dos números, apesar de não ter educação formal. A história de 1729 é famosa: Quando Hardy veio visitá-lo no hospital, ele comentou que havia chegado em um táxi numerado 1729 e que isso parecia um número bastante sem interesse. Ao que Ramanujan replicou: "Não, é um número muito interessante. É o menor número expresso como a soma de dois cubos de duas maneiras diferentes."

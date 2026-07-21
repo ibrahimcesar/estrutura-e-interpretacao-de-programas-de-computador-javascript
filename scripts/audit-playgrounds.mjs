@@ -18,10 +18,13 @@ import vm from 'node:vm';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WORKER_BODY = readFileSync(join(ROOT, 'src/components/playgroundWorker.js'), 'utf8');
 
-// página → nomes de exercício cuja ausência é intencional (o leitor implementa)
+// página → trechos de erro esperados: stubs de exercício (o leitor implementa)
+// e demonstrações intencionais de falha (ex. 3.68: o pairs de Louis estoura
+// a pilha de propósito)
 const EXPECTED_FAILURES = {
   'chapter-3/3.1.1.mdx': ['make_accumulator', 'make_monitored', 'make_account'],
   'chapter-3/3.1.3.mdx': ['make_joint'],
+  'chapter-3/3.5.3.mdx': ['Maximum call stack size exceeded'],
 };
 
 function runProgram(source) {
@@ -92,10 +95,11 @@ for (const file of mdxFiles(join(ROOT, 'docs'))) {
     }
     if (block.hidden) parts.push(block.hidden);
     parts.push(block.code);
+    if (process.env.AUDIT_TRACE) console.error(`… ${rel}:${block.line}`);
     const err = runProgram(parts.join('\n'));
     if (!err) return;
     const allowed = EXPECTED_FAILURES[rel] ?? [];
-    if (err.startsWith('ReferenceError') && allowed.some((name) => err.includes(name))) {
+    if (allowed.some((pattern) => err.includes(pattern))) {
       expected += 1;
       return;
     }

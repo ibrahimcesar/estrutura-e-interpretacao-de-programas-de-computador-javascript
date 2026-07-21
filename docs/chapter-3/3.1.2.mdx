@@ -54,14 +54,15 @@ function dirichlet_test() {
     return gcd(rand(), rand()) === 1;
 }
 function monte_carlo(trials, experiment) {
-    function iter(trials_remaining, trials_passed) {
-        return trials_remaining === 0
-               ? trials_passed / trials
-               : experiment()
-               ? iter(trials_remaining - 1, trials_passed + 1)
-               : iter(trials_remaining - 1, trials_passed);
+    let trials_remaining = trials;
+    let trials_passed = 0;
+    while (trials_remaining > 0) {
+        if (experiment()) {
+            trials_passed = trials_passed + 1;
+        }
+        trials_remaining = trials_remaining - 1;
     }
-    return iter(trials, 0);
+    return trials_passed / trials;
 }`}
   height={400}
   showLineNumbers={true}
@@ -118,9 +119,92 @@ Você achará útil ter uma função que retorna um número escolhido aleatoriam
   showLineNumbers={true}
 />
 
+<Solution>
+
+**Ideia.** O experimento sorteia um ponto no retângulo e pergunta a `P`; `monte_carlo` devolve a fração de acertos, que multiplicada pela área do retângulo estima a integral.
+
+<CodePlayground
+  code={`function estimate_integral(P, x1, x2, y1, y2, trials) {
+    function experiment() {
+        const x = random_in_range(x1, x2);
+        const y = random_in_range(y1, y2);
+        return P(x, y);
+    }
+    return monte_carlo(trials, experiment)
+           * (x2 - x1) * (y2 - y1);
+}
+
+function in_unit_circle(x, y) {
+    return x * x + y * y <= 1;
+}
+
+estimate_integral(in_unit_circle, -1, 1, -1, 1, 100000);`}
+  hiddenCode={`function monte_carlo(trials, experiment) {
+    let trials_remaining = trials;
+    let trials_passed = 0;
+    while (trials_remaining > 0) {
+        if (experiment()) {
+            trials_passed = trials_passed + 1;
+        }
+        trials_remaining = trials_remaining - 1;
+    }
+    return trials_passed / trials;
+}
+function random_in_range(low, high) {
+    const range = high - low;
+    return low + math_random() * range;
+}`}
+  height={420}
+  showLineNumbers={false}
+/>
+
+**Por que estima π.** O círculo unitário tem área $\pi$ e o quadrado $[-1,1]^2$ tem área 4; a fração de pontos dentro tende a $\pi/4$, e multiplicada por 4 dá $\pi$. Com 100.000 tentativas o valor oscila em torno de 3,14 — execute algumas vezes e observe a variação, que é a assinatura do método.
+
+</Solution>
+
 ## Exercício 3.6
 
 É útil poder resetar um gerador de números aleatórios para produzir uma sequência começando de um dado valor. Projete uma nova função `rand` que é chamada com um argumento que é ou a string `"generate"` ou a string `"reset"` e se comporta da seguinte forma: `rand("generate")` produz um novo número aleatório; `rand("reset")(new-value)` reseta a variável de estado interno para o `new-value` designado. Assim, ao resetar o estado, pode-se gerar sequências repetíveis. Estas são muito úteis de ter ao testar e depurar programas que usam números aleatórios.
+
+<Solution>
+
+<CodePlayground
+  code={`function make_rand() {
+    let x = random_init;
+    function rand(m) {
+        if (m === "generate") {
+            x = rand_update(x);
+            return x;
+        } else if (m === "reset") {
+            return new_value => {
+                x = new_value;
+                return x;
+            };
+        } else {
+            return error(m, "unknown request -- rand");
+        }
+    }
+    return rand;
+}
+const rand = make_rand();
+
+rand("reset")(42);
+display(rand("generate"));
+display(rand("generate"));
+rand("reset")(42);
+display(rand("generate"));
+rand("generate");`}
+  hiddenCode={`const random_init = 7;
+function rand_update(x) {
+    return (16807 * x) % 2147483647;
+}`}
+  height={520}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** O estado `x` é local ao gerador; `"generate"` avança e `"reset"` devolve *uma função* que sobrescreve o estado — repare no formato `rand("reset")(new_value)` pedido pelo enunciado. Após dois resets para 42, as sequências geradas são idênticas: exatamente o que se quer para reproduzir um teste.
+
+</Solution>
 
 -----
 

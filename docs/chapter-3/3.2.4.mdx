@@ -158,6 +158,23 @@ Equipados com uma maneira de lidar com declarações dentro de blocos, podemos r
 
 Dissemos que o corpo de um bloco é avaliado em um ambiente que contém todos os nomes declarados diretamente no corpo do bloco. Um nome declarado localmente é colocado no ambiente quando o bloco é entrado, mas sem um valor associado. A avaliação de sua declaração durante a avaliação do corpo do bloco então atribui ao nome o resultado de avaliar a expressão à direita do `=`, como se a declaração fosse uma atribuição. Como a adição do nome ao ambiente é separada da avaliação da declaração, e todo o bloco está no escopo do nome, um programa errôneo poderia tentar acessar o valor de um nome antes que sua declaração seja avaliada; a avaliação de um nome não atribuído sinaliza um erro.[^1]
 
+<Solution>
+
+`const acc = make_account(50);` cria o ambiente `E1` com `balance = 50` e os vínculos de `withdraw`, `deposit` e `dispatch` — os três objetos-função apontam para `E1` como ambiente de criação. `acc` é o `dispatch`.
+
+`acc("deposit")(40)`:
+
+1. Aplicar `dispatch` cria `E2: m = "deposit"` → `E1`; devolve o objeto `deposit`.
+2. Aplicar `deposit` cria `E3: amount = 40` → `E1` (o ambiente de *criação* de `deposit`, não `E2`!); a atribuição encontra `balance` em `E1` e o muda para 90.
+
+`acc("withdraw")(60)` repete o padrão com dois novos ambientes e deixa `balance = 30` em `E1`.
+
+**Onde está o estado local de `acc`?** Inteiramente em `E1` — o ambiente criado pela chamada `make_account(50)`.
+
+**`acc` e `acc2` como se mantêm distintos?** `acc2 = make_account(100)` cria um `E1'` separado, com seu próprio `balance` e suas próprias funções `withdraw`/`deposit`/`dispatch` fechando sobre `E1'`. Nada é compartilhado entre as duas contas — exceto, numa implementação eficiente, o *código* (o texto das funções), já que só os ambientes precisam diferir.
+
+</Solution>
+
 -----
 
 [^1]: Isso explica por que o programa na nota de rodapé 33 do capítulo 1 dá errado. O tempo entre criar a vinculação para um nome e avaliar a declaração do nome é chamado de *zona morta temporal* (TDZ, do inglês temporal dead zone).
