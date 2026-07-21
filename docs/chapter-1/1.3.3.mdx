@@ -12,6 +12,7 @@ O *método da metade do intervalo* é uma técnica simples mas poderosa para enc
 Aqui está uma função que implementa esta estratégia:
 
 <CodePlayground
+  session="1.3.3"
   code={`function search(f, neg_point, pos_point) {
     const midpoint = average(neg_point, pos_point);
     if (close_enough(neg_point, pos_point)) {
@@ -46,6 +47,7 @@ Assumimos que inicialmente recebemos a função $f$ juntamente com pontos nos qu
 Para testar se os pontos finais estão "próximos o suficiente", podemos usar uma função similar à usada na seção 1.1.7 para calcular raízes quadradas:[<sup>1</sup>](#footnote-1)
 
 <CodePlayground
+  session="1.3.3"
   code={`function close_enough(x, y) {
     return abs(x - y) < 0.001;
 }`}
@@ -60,6 +62,7 @@ Para testar se os pontos finais estão "próximos o suficiente", podemos usar um
 A função `search` é complicada para usar diretamente, porque podemos acidentalmente fornecer pontos nos quais os valores de $f$ não têm o sinal necessário, caso em que obteríamos uma resposta errada. Em vez disso, usaremos `search` por meio da seguinte função, que verifica quais dos pontos finais tem um valor de função negativo e qual tem um valor positivo, e chama a função `search` de acordo. Se a função tiver o mesmo sinal nos dois pontos dados, o método da metade do intervalo não pode ser usado, caso em que a função sinaliza um erro.[<sup>2</sup>](#footnote-2)
 
 <CodePlayground
+  session="1.3.3"
   code={`function half_interval_method(f, a, b) {
     const a_value = f(a);
     const b_value = f(b);
@@ -103,6 +106,7 @@ function error(msg) {
 O exemplo a seguir usa o método da metade do intervalo para aproximar $\pi$ como a raiz entre 2 e 4 de $\sin x = 0$:
 
 <CodePlayground
+  session="1.3.3"
   code={`half_interval_method(math_sin, 2, 4);`}
   hiddenCode={`function average(x, y) {
     return (x + y) / 2;
@@ -148,6 +152,7 @@ const math_sin = Math.sin;`}
 Aqui está outro exemplo, usando o método da metade do intervalo para procurar uma raiz da equação $x^3 - 2x - 3 = 0$ entre 1 e 2:
 
 <CodePlayground
+  session="1.3.3"
   code={`half_interval_method(x => x * x * x - 2 * x - 3, 1, 2);`}
   hiddenCode={`function average(x, y) {
     return (x + y) / 2;
@@ -223,6 +228,7 @@ function fixed_point(f, first_guess) {
 Por exemplo, podemos usar este método para aproximar o ponto fixo do cosseno, começando com 1 como palpite inicial:<a name="footnote-link-3"></a>[<sup>3</sup>](#footnote-3)
 
 <CodePlayground
+  session="1.3.3"
   code={`fixed_point(math_cos, 1);`}
   hiddenCode={`const math_cos = Math.cos;
 function abs(x) {

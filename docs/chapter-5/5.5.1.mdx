@@ -13,6 +13,7 @@ A função `compile` é o despacho de nível superior no compilador. Ela corresp
 [^1]: Note, no entanto, que nosso compilador é um programa JavaScript, e as funções de sintaxe que ele usa para manipular expressões são as funções JavaScript reais usadas com o avaliador metacircular. Para o avaliador de controle explícito, em contraste, assumimos que operações de sintaxe equivalentes estavam disponíveis como operações para a máquina de registradores. (Claro, quando simulamos a máquina de registradores em JavaScript, usamos as funções JavaScript reais em nossa simulação de máquina de registradores.)
 
 <CodePlayground
+  session="5.5.1"
   code={`function compile(component, target, linkage) {
     return is_literal(component)
            ? compile_literal(component, target, linkage)
@@ -125,6 +126,7 @@ Uma sequência de instruções conterá três pedaços de informação:
 Representaremos uma sequência de instruções como uma lista de suas três partes. O construtor para sequências de instruções é, portanto,
 
 <CodePlayground
+  session="5.5.1"
   code={`function make_instruction_sequence(needs, modifies, instructions) {
     return list(needs, modifies, instructions);
 }`}

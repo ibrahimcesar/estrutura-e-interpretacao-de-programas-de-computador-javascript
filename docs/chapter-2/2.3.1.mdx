@@ -10,6 +10,7 @@ import HelpFooter from '@site/src/components/HelpFooter';
 Em JavaScript, strings (delimitadas por aspas duplas `"` ou aspas simples `'`) permitem que programadores tratem texto como dados literais ao invés de código a ser avaliado. Por exemplo, `"z"` denota uma string de caractere, enquanto `z` sem aspas refere-se ao valor de uma variável.
 
 <CodePlayground
+  session="2.3.1"
   code={`const a = 1;
 const b = 2;
 
@@ -24,6 +25,7 @@ list("a", b);        // mistura string e valor`}
 Podemos formar listas compostas de strings e números:
 
 <CodePlayground
+  session="2.3.1"
   code={`const one_two_three = list(1, 2, 3);
 
 const one_two = list(1, 2);
@@ -41,6 +43,7 @@ head(tail(head(tail(tail(list_of_lists)))));`}
 Para implementar a manipulação de dados simbólicos, precisamos de uma função `member` que verifica se um item está presente em uma lista:
 
 <CodePlayground
+  session="2.3.1"
   code={`function member(item, x) {
     return is_null(x)
            ? null
@@ -62,6 +65,7 @@ A função `member` retorna a sublista começando com a primeira ocorrência do 
 O que seria impresso pelo interpretador em resposta à avaliação de cada uma das seguintes expressões?
 
 <CodePlayground
+  session="2.3.1"
   code={`list("a", "b", "c");
 
 list(list("george"));

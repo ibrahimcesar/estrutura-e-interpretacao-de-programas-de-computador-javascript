@@ -14,6 +14,7 @@ Nesta edição, você pode executar o código JavaScript diretamente na página:
 Um tipo de instrução que você pode digitar é uma instrução de *expressão*, que consiste em uma expressão seguida por um ponto e vírgula. Um tipo de expressão primitiva é um número. (Mais precisamente, a expressão que você digita consiste nos numerais que representam o número na base 10.) Se você pedir ao interpretador para avaliar a instrução de expressão
 
 <CodePlayground
+  session="1.1.1"
   code={`486;`}
   height={150}
   showLineNumbers={false}
@@ -24,30 +25,35 @@ ele responderá exibindo o valor resultante. Pressione "Executar" na instrução
 Expressões que representam números podem ser combinadas com operadores (como `+` ou `*`) para formar uma expressão composta que representa a aplicação de uma função primitiva correspondente a esses números. Por exemplo, avalie qualquer uma das seguintes instruções de expressão:
 
 <CodePlayground
+  session="1.1.1"
   code={`137 + 349;`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="1.1.1"
   code={`1000 - 334;`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="1.1.1"
   code={`5 * 99;`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="1.1.1"
   code={`10 / 4;`}
   height={150}
   showLineNumbers={false}
 />
 
 <CodePlayground
+  session="1.1.1"
   code={`2.7 + 10;`}
   height={150}
   showLineNumbers={false}
@@ -58,6 +64,7 @@ Expressões como essas, que contêm outras expressões como componentes, são ch
 A convenção de colocar o operador entre os operandos é conhecida como *notação infixa*. Ela segue a notação matemática com a qual você provavelmente está familiarizado na escola e na vida cotidiana. Como na matemática, as combinações de operadores podem ser *aninhadas*, ou seja, podem ter operandos que são combinações de operadores:
 
 <CodePlayground
+  session="1.1.1"
   code={`(3 * 5) + (10 - 6);`}
   height={150}
   showLineNumbers={false}
@@ -66,6 +73,7 @@ A convenção de colocar o operador entre os operandos é conhecida como *notaç
 Como de costume, os parênteses são usados para agrupar combinações de operadores a fim de evitar ambiguidades. JavaScript também segue as convenções usuais quando os parênteses são omitidos: multiplicação e divisão se ligam mais fortemente do que adição e subtração. Por exemplo,
 
 <CodePlayground
+  session="1.1.1"
   code={`3 * 5 + 10 / 2;`}
   height={150}
   showLineNumbers={false}
@@ -74,6 +82,7 @@ Como de costume, os parênteses são usados para agrupar combinações de operad
 significa
 
 <CodePlayground
+  session="1.1.1"
   code={`(3 * 5) + (10 / 2);`}
   height={150}
   showLineNumbers={false}
@@ -82,6 +91,7 @@ significa
 Dizemos que \* e / têm *precedência maior* que + e -. As sequências de adições e subtrações são lidas da esquerda para a direita, assim como as sequências de multiplicações e divisões. Assim,
 
 <CodePlayground
+  session="1.1.1"
   code={`1 - 5 / 2 * 4 + 3;`}
   height={150}
   showLineNumbers={false}
@@ -90,6 +100,7 @@ Dizemos que \* e / têm *precedência maior* que + e -. As sequências de adiç�
 significa
 
 <CodePlayground
+  session="1.1.1"
   code={`(1 - ((5 / 2) * 4)) + 3;`}
   height={150}
   showLineNumbers={false}
@@ -100,6 +111,7 @@ Dizemos que os operadores +, -, \* e / são *associativos à esquerda*.
 Não há limite (em princípio) para a profundidade desse aninhamento e para a complexidade geral das expressões que o interpretador JavaScript pode avaliar. Somos nós, humanos, que podemos ficar confusos com expressões ainda relativamente simples, como
 
 <CodePlayground
+  session="1.1.1"
   code={`3 * 2 * (3 - 5 + 4) + 27 / 6 * 10;`}
   height={150}
   showLineNumbers={false}
@@ -108,6 +120,7 @@ Não há limite (em princípio) para a profundidade desse aninhamento e para a c
 que o interpretador avaliaria prontamente como sendo 57. Podemos nos ajudar escrevendo tal expressão na forma
 
 <CodePlayground
+  session="1.1.1"
   code={`3 * 2 * (3 - 5 + 4)
 +
 27 / 6 * 10;`}

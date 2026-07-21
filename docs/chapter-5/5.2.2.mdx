@@ -15,6 +15,7 @@ Antes de poder gerar as funções de execução de instrução, o montador deve 
 A função `assemble` é o ponto de entrada principal para o montador. Ela recebe a sequência do controlador e o modelo de máquina como argumentos e retorna a sequência de instruções a ser armazenada no modelo. A função `assemble` chama `extract_labels` para construir a lista de instruções inicial e a tabela de rótulos a partir da sequência do controlador fornecida. O segundo argumento para `extract_labels` é uma função a ser chamada para processar esses resultados: Esta função usa `update_insts` para gerar as funções de execução de instrução e inseri-las na lista de instruções, e retorna a lista modificada.
 
 <CodePlayground
+  session="5.2.2"
   code={`function assemble(controller, machine) {
     return extract_labels(controller,
                           (insts, labels) => {
@@ -29,6 +30,7 @@ A função `assemble` é o ponto de entrada principal para o montador. Ela receb
 A função `extract_labels` recebe uma lista `controller` e uma função `receive` como argumentos. A função `receive` será chamada com dois valores: (1) uma lista `insts` de estruturas de dados de instrução, cada uma contendo uma instrução de `controller`; e (2) uma tabela chamada `labels`, que associa cada rótulo de `controller` com a posição na lista `insts` que o rótulo designa.
 
 <CodePlayground
+  session="5.2.2"
   code={`function extract_labels(controller, receive) {
     return is_null(controller)
            ? receive(null, null)
@@ -85,6 +87,7 @@ A função `extract_labels` funciona varrendo sequencialmente os elementos do `c
 A função `update_insts` modifica a lista de instruções, que inicialmente contém apenas as instruções do controlador, para incluir as funções de execução correspondentes:
 
 <CodePlayground
+  session="5.2.2"
   code={`function update_insts(insts, labels, machine) {
     const pc = get_register(machine, "pc");
     const flag = get_register(machine, "flag");
@@ -105,6 +108,7 @@ A função `update_insts` modifica a lista de instruções, que inicialmente con
 A estrutura de dados de instrução de máquina simplesmente emparelha a instrução do controlador com a função de execução correspondente. A função de execução não está ainda disponível quando `extract_labels` constrói a instrução, e é inserida mais tarde por `update_insts`.
 
 <CodePlayground
+  session="5.2.2"
   code={`function make_inst(inst_controller_instruction) {
     return pair(inst_controller_instruction, null);
 }
@@ -126,6 +130,7 @@ A instrução do controlador não é usada por nosso simulador, mas é útil man
 Elementos da tabela de rótulos são pares:
 
 <CodePlayground
+  session="5.2.2"
   code={`function make_label_entry(label_name, insts) {
     return pair(label_name, insts);
 }`}
@@ -136,6 +141,7 @@ Elementos da tabela de rótulos são pares:
 Entradas serão procuradas na tabela com:
 
 <CodePlayground
+  session="5.2.2"
   code={`function lookup_label(labels, label_name) {
     const val = assoc(label_name, labels);
     return is_undefined(val)

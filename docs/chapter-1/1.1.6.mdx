@@ -17,6 +17,7 @@ $$
 Esse construto é uma _análise de caso_ e pode ser escrito em JavaScript usando uma _expressão condicional_ como:[<sup>1</sup>](#footnote-1)
 
 <CodePlayground
+  session="1.1.6"
   code={`function abs(x) {
     return x >= 0 ? x : - x;
 }`}
@@ -53,6 +54,7 @@ $$
 Em JavaScript, expressamos uma análise de caso com múltiplos casos aninhando expressões condicionais como expressões alternativas dentro de outras expressões condicionais:
 
 <CodePlayground
+  session="1.1.6"
   code={`function abs(x) {
     return x > 0
            ? x
@@ -116,6 +118,7 @@ A forma sintática `&&` tem precedência mais baixa que os operadores de compara
 Como outro exemplo, podemos declarar um predicado para testar se um número é maior ou igual a outro como:
 
 <CodePlayground
+  session="1.1.6"
   code={`function maior_ou_igual(x, y) {
     return x > y || x === y;
 }`}
@@ -126,6 +129,7 @@ Como outro exemplo, podemos declarar um predicado para testar se um número é m
 ou alternativamente como:
 
 <CodePlayground
+  session="1.1.6"
   code={`function maior_ou_igual(x, y) {
     return ! (x < y);
 }`}
@@ -224,6 +228,7 @@ Declare uma função que recebe três números como argumentos e retorna a soma 
 Observe que nosso modelo de avaliação permite aplicações cujas expressões de função são expressões compostas. Use esta observação para descrever o comportamento de `a_plus_abs_b`:
 
 <CodePlayground
+  session="1.1.6"
   code={`function plus(a, b) { return a + b; }
 
 function minus(a, b) { return a - b; }
@@ -240,6 +245,7 @@ function a_plus_abs_b(a, b) {
 Ben Bitdiddle inventou um teste para determinar se o interpretador com o qual ele está lidando está usando avaliação de ordem aplicativa ou avaliação de ordem normal. Ele declara as seguintes duas funções:
 
 <CodePlayground
+  session="1.1.6"
   code={`function p() { return p(); }
 
 function test(x, y) {

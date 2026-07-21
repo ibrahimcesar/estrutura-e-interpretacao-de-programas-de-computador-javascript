@@ -6,6 +6,7 @@ import HelpFooter from '@site/src/components/HelpFooter';
 Ao usar `sum` como na seção 1.3.1, parece terrivelmente inconveniente ter que declarar funções triviais como `pi_term` e `pi_next` apenas para poder usá-las como argumentos para nossa função de ordem superior. Em vez de declarar `pi_next` e `pi_term`, seria mais conveniente ter uma forma de especificar diretamente "a função que retorna sua entrada incrementada em 4" e "a função que retorna o recíproco de sua entrada vezes sua entrada mais 2". Podemos fazer isso introduzindo a *expressão lambda* como uma forma sintática para criar funções. Usando expressões lambda, podemos descrever o que queremos como
 
 <CodePlayground
+  session="1.3.2"
   code={`x => x + 4`}
   height={100}
   showLineNumbers={false}
@@ -14,6 +15,7 @@ Ao usar `sum` como na seção 1.3.1, parece terrivelmente inconveniente ter que 
 e
 
 <CodePlayground
+  session="1.3.2"
   code={`x => 1 / (x * (x + 2))`}
   height={100}
   showLineNumbers={false}
@@ -94,6 +96,7 @@ Podemos ler uma expressão lambda da seguinte forma:
 Como qualquer expressão que tem uma função como seu valor, uma expressão lambda pode ser usada como a expressão de função em uma aplicação, como em
 
 <CodePlayground
+  session="1.3.2"
   code={`((x, y, z) => x + y + square(z))(1, 2, 3);`}
   hiddenCode={`function square(x) {
     return x * x;
@@ -228,6 +231,7 @@ Suponha que declaramos
 Então temos
 
 <CodePlayground
+  session="1.3.2"
   code={`f(square);`}
   hiddenCode={`function square(x) {
     return x * x;
@@ -240,6 +244,7 @@ function f(g) {
 />
 
 <CodePlayground
+  session="1.3.2"
   code={`f(z => z * (z + 1));`}
   hiddenCode={`function f(g) {
    return g(2);

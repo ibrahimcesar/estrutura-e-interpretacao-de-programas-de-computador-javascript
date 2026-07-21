@@ -13,7 +13,7 @@ import styles from './CodePlayground.module.css';
  * @param {() => void} props.onRun - Disparado por Ctrl/Cmd+Enter
  * @param {boolean} props.isDark
  * @param {boolean} props.showLineNumbers
- * @param {number} props.height
+ * @param {number} props.maxHeight - Altura máxima; a altura real acompanha o código
  */
 export default function PlaygroundEditor({
   code,
@@ -21,7 +21,7 @@ export default function PlaygroundEditor({
   onRun,
   isDark,
   showLineNumbers,
-  height,
+  maxHeight,
 }) {
   const textareaRef = useRef(null);
   // Depois de Esc, o próximo Tab volta a mover o foco (convenção de
@@ -77,7 +77,7 @@ export default function PlaygroundEditor({
       {({ tokens, getLineProps, getTokenProps, style }) => (
         <div
           className={styles.editorScroll}
-          style={{ height, backgroundColor: style.backgroundColor }}
+          style={{ maxHeight, backgroundColor: style.backgroundColor }}
         >
           <div className={styles.editorInner}>
             <pre

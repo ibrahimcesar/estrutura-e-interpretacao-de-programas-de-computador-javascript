@@ -16,8 +16,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const runnerSrc = readFileSync(join(ROOT, 'src/components/playgroundRunner.js'), 'utf8');
-const WORKER_BODY = runnerSrc.match(/const WORKER_SOURCE = `\n([\s\S]*?)\n`;/)[1];
+const WORKER_BODY = readFileSync(join(ROOT, 'src/components/playgroundWorker.js'), 'utf8');
 
 // página → nomes de exercício cuja ausência é intencional (o leitor implementa)
 const EXPECTED_FAILURES = {

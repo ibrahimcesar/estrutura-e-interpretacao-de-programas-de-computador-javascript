@@ -15,6 +15,7 @@ $$
 que se traduz prontamente na função
 
 <CodePlayground
+  session="1.2.4"
   code={`function expt(b, n) {
     return n === 0
            ? 1
@@ -27,6 +28,7 @@ que se traduz prontamente na função
 Este é um processo recursivo linear, que requer $\Theta(n)$ passos e $\Theta(n)$ espaço. Assim como com o fatorial, podemos prontamente formular uma iteração linear equivalente:
 
 <CodePlayground
+  session="1.2.4"
   code={`function expt(b, n) {
     return expt_iter(b, n, 1);
 }
@@ -70,6 +72,7 @@ $$
 Podemos expressar este método como uma função:[<sup>1</sup>](#footnote-1)
 
 <CodePlayground
+  session="1.2.4"
   code={`function fast_expt(b, n) {
     return n === 0
            ? 1
@@ -90,6 +93,7 @@ function square(x) {
 onde o predicado para testar se um inteiro é par é definido em termos do operador `%`, que calcula o resto após a divisão de inteiros, por
 
 <CodePlayground
+  session="1.2.4"
   code={`function is_even(n) {
     return n % 2 === 0;
 }`}

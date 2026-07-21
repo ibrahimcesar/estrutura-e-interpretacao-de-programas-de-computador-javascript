@@ -14,6 +14,7 @@ Ignoramos uma questão importante ao implementar as operações aritméticas gen
 Uma maneira de lidar com operações entre tipos é projetar um procedimento diferente para cada combinação possível de tipos. Por exemplo, poderíamos ter:
 
 <CodePlayground
+  session="2.5.2"
   code={`// Definindo operação específica para complex + javascript_number
 put("add", list("complex", "javascript_number"),
     (z, x) => make_complex_from_real_imag(
@@ -29,6 +30,7 @@ No entanto, este enfoque rapidamente se torna inviável à medida que adicionamo
 Uma maneira mais geral de lidar com operações entre tipos é usar *coerção*. Muitas vezes podemos ver um tipo como um caso especial de outro tipo. Por exemplo, um número inteiro pode ser visto como um número racional cujo denominador é 1, ou um número ordinário pode ser visto como um número complexo cuja parte imaginária é zero.
 
 <CodePlayground
+  session="2.5.2"
   code={`function javascript_number_to_complex(n) {
     return make_complex_from_real_imag(contents(n), 0);
 }
@@ -42,6 +44,7 @@ put_coercion("javascript_number", "complex",
 Agora podemos modificar `apply_generic` para tentar coerção se não houver operação direta disponível:
 
 <CodePlayground
+  session="2.5.2"
   code={`function apply_generic(op, args) {
     const type_tags = map(type_tag, args);
     const fun = get(op, type_tags);
@@ -81,6 +84,7 @@ inteiro → racional → real → complexo
 Nessa hierarquia, podemos simplificar a coerção "elevando" sucessivamente tipos até que ambos os argumentos estejam no mesmo nível:
 
 <CodePlayground
+  session="2.5.2"
   code={`function apply_generic(op, args) {
     const type_tags = map(type_tag, args);
     const fun = get(op, type_tags);

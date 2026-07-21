@@ -10,6 +10,7 @@ import HelpFooter from '@site/src/components/HelpFooter';
 Quando introduzimos o modelo de substituição na seção 1.1.5, mostramos como a aplicação `f(5)` avalia para 136, dadas as seguintes declarações de função:
 
 <CodePlayground
+  session="3.2.2"
   code={`function square(x) {
     return x * x;
 }
@@ -58,6 +59,7 @@ Depois que as subexpressões são avaliadas, os resultados são retornados. Os v
 Na seção 1.2.1 usamos o modelo de substituição para analisar duas funções para computar fatoriais, uma versão recursiva
 
 <CodePlayground
+  session="3.2.2"
   code={`function factorial(n) {
     return n === 1
            ? 1
@@ -70,6 +72,7 @@ Na seção 1.2.1 usamos o modelo de substituição para analisar duas funções 
 e uma versão iterativa
 
 <CodePlayground
+  session="3.2.2"
   code={`function factorial(n) {
     return fact_iter(1, 1, n);
 }

@@ -37,7 +37,8 @@
     "@docusaurus/types": "^3.9.2",
     "glob": "^11.1.0",
     "markdown-link-check": "^3.14.1",
-    "markdownlint-cli": "^0.49.1"
+    "markdownlint-cli": "^0.49.1",
+    "raw-loader": "^4.0.2"
   },
   "overrides": {
     "glob": "^11.1.0",

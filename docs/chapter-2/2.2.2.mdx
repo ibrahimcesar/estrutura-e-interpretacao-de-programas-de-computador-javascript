@@ -10,6 +10,7 @@ import HelpFooter from '@site/src/components/HelpFooter';
 A representação de sequências em termos de listas generaliza-se naturalmente para representar sequências cujos elementos podem ser eles mesmos sequências. Por exemplo, podemos considerar o objeto construído por:
 
 <CodePlayground
+  session="2.2.2"
   code={`pair(list(1, 2), list(3, 4));`}
   height={120}
 />
@@ -23,6 +24,7 @@ Outra maneira de pensar sobre sequências cujos elementos são sequências é co
 A recursão é uma ferramenta natural para lidar com estruturas de árvore, já que podemos frequentemente reduzir operações em árvores a operações em seus ramos. Como um exemplo, considere a operação de contar as folhas de uma árvore:
 
 <CodePlayground
+  session="2.2.2"
   code={`function count_leaves(x) {
     return is_null(x)
            ? 0
@@ -45,6 +47,7 @@ count_leaves(list(x, x));`}
 Assim como `map` é uma abstração poderosa para lidar com sequências, `tree_map` é uma abstração poderosa para lidar com árvores:
 
 <CodePlayground
+  session="2.2.2"
   code={`function scale_tree(tree, factor) {
     return is_null(tree)
            ? null
@@ -61,6 +64,7 @@ scale_tree(list(1, list(2, list(3, 4), 5), list(6, 7)), 10);`}
 Podemos abstrair isso usando `map` junto com recursão:
 
 <CodePlayground
+  session="2.2.2"
   code={`function tree_map(fun, tree) {
     return map(sub_tree =>
                    !is_pair(sub_tree)

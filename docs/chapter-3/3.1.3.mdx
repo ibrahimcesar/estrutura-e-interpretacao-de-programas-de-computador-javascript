@@ -340,7 +340,8 @@ Considere os objetos de conta bancária criados por `make_account`, com a modifi
 
 <CodePlayground
   code={`const paul_acc = make_joint(peter_acc, "open sesame", "rosebud");`}
-  hiddenCode={`function make_account(balance) {
+  checks={[{expression: 'paul_acc("rosebud", "withdraw")(10)', expected: '90'}]}
+  hiddenCode={`function make_account(balance, password) {
     function withdraw(amount) {
         if (balance >= amount) {
             balance = balance - amount;
@@ -353,8 +354,10 @@ Considere os objetos de conta bancária criados por `make_account`, com a modifi
         balance = balance + amount;
         return balance;
     }
-    function dispatch(m) {
-        return m === "withdraw"
+    function dispatch(p, m) {
+        return p !== password
+               ? () => "Incorrect password"
+               : m === "withdraw"
                ? withdraw
                : m === "deposit"
                ? deposit
@@ -363,7 +366,7 @@ Considere os objetos de conta bancária criados por `make_account`, com a modifi
     return dispatch;
 }
 
-const peter_acc = make_account(100);`}
+const peter_acc = make_account(100, "open sesame");`}
   height={150}
   showLineNumbers={false}
 />

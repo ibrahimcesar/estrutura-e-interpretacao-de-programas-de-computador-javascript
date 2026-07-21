@@ -18,6 +18,7 @@ $$
 Assim, podemos calcular $n!$ calculando $(n-1)!$ e multiplicando o resultado por $n$. Se adicionarmos a estipulação de que $1!$ é igual a 1, essa observação se traduz diretamente em uma função de computador:
 
 <CodePlayground
+  session="1.2.1"
   code={`function factorial(n) {
     return n === 1
            ? 1
@@ -48,6 +49,7 @@ e estipulando que $n!$ é o valor do produto quando o contador excede $n$.
 Mais uma vez, podemos reformular nossa descrição como uma função para calcular fatoriais:[<sup>1</sup>](#footnote-1)
 
 <CodePlayground
+  session="1.2.1"
   code={`function factorial(n) {
     return fact_iter(1, 1, n);
 }
@@ -88,6 +90,7 @@ Uma razão pela qual a distinção entre processo e função pode ser confusa é
 Cada uma das duas funções a seguir define um método para adicionar dois inteiros positivos em termos das funções `inc`, que incrementa seu argumento em 1, e `dec`, que decrementa seu argumento em 1.
 
 <CodePlayground
+  session="1.2.1"
   code={`function plus(a, b) {
     return a === 0 ? b : inc(plus(dec(a), b));
 }`}
@@ -102,6 +105,7 @@ function dec(x) {
 />
 
 <CodePlayground
+  session="1.2.1"
   code={`function plus(a, b) {
     return a === 0 ? b : plus(dec(a), inc(b));
 }`}
@@ -123,6 +127,7 @@ Usando o modelo de substituição, ilustre o processo gerado por cada função a
 A função a seguir calcula uma função matemática chamada função de Ackermann.
 
 <CodePlayground
+  session="1.2.1"
   code={`function A(x, y) {
     return y === 0
            ? 0
@@ -139,6 +144,7 @@ A função a seguir calcula uma função matemática chamada função de Ackerma
 Quais são os valores das seguintes expressões?
 
 <CodePlayground
+  session="1.2.1"
   code={`A(1, 10);`}
   hiddenCode={`function A(x, y) {
     return y === 0
@@ -154,6 +160,7 @@ Quais são os valores das seguintes expressões?
 />
 
 <CodePlayground
+  session="1.2.1"
   code={`A(2, 4);`}
   hiddenCode={`function A(x, y) {
     return y === 0
@@ -169,6 +176,7 @@ Quais são os valores das seguintes expressões?
 />
 
 <CodePlayground
+  session="1.2.1"
   code={`A(3, 3);`}
   hiddenCode={`function A(x, y) {
     return y === 0

@@ -116,6 +116,7 @@ Essas operações podem ser expandidas ainda mais em termos das operações de v
 Desenhe a representação de caixas e ponteiros e a representação de vetor de memória (como na figura 5.14) da estrutura de lista produzida por
 
 <CodePlayground
+  session="5.3.1"
   code={`const x = pair(1, 2);
 const y = list(x, x);`}
   height={100}
@@ -131,6 +132,7 @@ Implemente máquinas de registradores para as seguintes funções. Assuma que as
 a. `count_leaves` recursiva:
 
 <CodePlayground
+  session="5.3.1"
   code={`function count_leaves(tree) {
     return is_null(tree)
            ? 0
@@ -146,6 +148,7 @@ a. `count_leaves` recursiva:
 b. `count_leaves` recursiva com contador explícito:
 
 <CodePlayground
+  session="5.3.1"
   code={`function count_leaves(tree) {
     function count_iter(tree, n) {
         return is_null(tree)

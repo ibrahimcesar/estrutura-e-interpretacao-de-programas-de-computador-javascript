@@ -14,6 +14,7 @@ Uma das estruturas de dados úteis que podemos construir com pares é uma *sequ�
 O head de cada par é o item correspondente na cadeia, e o tail do par é o próximo par na cadeia. O tail do par final sinaliza o fim da sequência apontando para um valor distinto de qualquer par, que representamos na diagrama de box-and-pointer como um símbolo diagonal e em programas como o valor de `null`. A sequência inteira é construída por operações `pair` aninhadas:
 
 <CodePlayground
+  session="2.2.1"
   code={`pair(1,
      pair(2,
           pair(3,
@@ -24,6 +25,7 @@ O head de cada par é o item correspondente na cadeia, e o tail do par é o pró
 Tal sequência de pares é chamada de *lista*, e JavaScript fornece uma função primitiva chamada `list` para ajudar a construir listas. A definição acima é equivalente a:
 
 <CodePlayground
+  session="2.2.1"
   code={`list(1, 2, 3, 4);`}
   height={120}
 />
@@ -31,6 +33,7 @@ Tal sequência de pares é chamada de *lista*, e JavaScript fornece uma função
 Podemos pensar em `head` como selecionando o primeiro item na lista, e `tail` como selecionando a sublista consistindo de todos, exceto o primeiro item.
 
 <CodePlayground
+  session="2.2.1"
   code={`const one_through_four = list(1, 2, 3, 4);
 
 head(one_through_four);`}
@@ -49,6 +52,7 @@ tail(one_through_four);`}
 O uso de pares para representar sequências de elementos como listas é acompanhado por técnicas convencionais de programação para manipular listas através de operações sucessivas de `head` e `tail`. Por exemplo, a função `list_ref` pega como argumentos uma lista e um número n e retorna o n-ésimo item da lista (convenção: o primeiro item é o item zero):
 
 <CodePlayground
+  session="2.2.1"
   code={`function list_ref(items, n) {
     return n === 0
            ? head(items)
@@ -64,6 +68,7 @@ list_ref(squares, 3);`}
 Frequentemente usamos `head` e `tail` de forma `caminhando` pela lista inteira. Por exemplo, a função `length`, que retorna o número de itens em uma lista, pode ser implementada recursivamente:
 
 <CodePlayground
+  session="2.2.1"
   code={`function length(items) {
     return is_null(items)
            ? 0
@@ -79,6 +84,7 @@ length(odds);`}
 A função `append` recebe duas listas como argumentos e combina seus elementos para fazer uma nova lista:
 
 <CodePlayground
+  session="2.2.1"
   code={`function append(list1, list2) {
     return is_null(list1)
            ? list2
@@ -94,6 +100,7 @@ append(list(1, 2, 3), list(4, 5, 6));`}
 Uma operação extremamente útil é aplicar alguma transformação a cada elemento em uma lista e gerar a lista de resultados. Por exemplo, a seguinte função escala cada número em uma lista por um dado fator:
 
 <CodePlayground
+  session="2.2.1"
   code={`function scale_list(items, factor) {
     return is_null(items)
            ? null
@@ -108,6 +115,7 @@ scale_list(list(1, 2, 3, 4, 5), 10);`}
 Podemos abstrair este padrão geral e capturá-lo como um padrão comum expresso como uma função de ordem superior, assim como na seção 1.3. A função de ordem superior aqui é chamada `map`:
 
 <CodePlayground
+  session="2.2.1"
   code={`function map(fun, items) {
     return is_null(items)
            ? null
@@ -136,6 +144,7 @@ A função `map` é uma abstração importante porque estabelece uma barreira de
 **Exercício 2.23**: A função `for_each` é similar a `map`, mas não retorna uma lista de resultados. Em vez disso, ela apenas aplica a função a cada elemento por seus efeitos colaterais. Implemente `for_each`.
 
 <CodePlayground
+  session="2.2.1"
   code={`function for_each(fun, items) {
     // Sua implementação aqui
 }

@@ -14,6 +14,7 @@ Uma maneira de ver a abstração de dados é como uma aplicação do "princípio
 A solução é incluir uma *etiqueta de tipo*—o símbolo `rectangular` ou `polar`—como parte de cada número complexo. Isso nos permite distinguir entre formas polares e retangulares:
 
 <CodePlayground
+  session="2.4.2"
   code={`// Sistema de etiquetas
 function attach_tag(type_tag, contents) {
     return pair(type_tag, contents);
@@ -47,6 +48,7 @@ function is_polar(z) {
 Agora modificamos a representação de Ben e Alyssa para incluir etiquetas:
 
 <CodePlayground
+  session="2.4.2"
   code={`// Pacote Retangular de Ben
 function make_from_real_imag_rectangular(x, y) {
     return attach_tag("rectangular", pair(x, y));
@@ -80,6 +82,7 @@ function angle_polar(z) {
 Agora podemos escrever seletores genéricos que verificam a etiqueta e chamam a função apropriada:
 
 <CodePlayground
+  session="2.4.2"
   code={`function real_part(z) {
     return is_rectangular(z)
            ? real_part_rectangular(contents(z))
@@ -119,6 +122,7 @@ function angle(z) {
 Os construtores escolhem automaticamente a representação mais conveniente:
 
 <CodePlayground
+  session="2.4.2"
   code={`function make_from_real_imag(x, y) {
     return make_from_real_imag_rectangular(x, y);
 }

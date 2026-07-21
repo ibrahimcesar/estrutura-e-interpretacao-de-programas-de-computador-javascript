@@ -310,6 +310,7 @@ Um *acumulador* é uma função que é chamada repetidamente com um único argum
 <CodePlayground
   session="3.1.1-ex1"
   code={`const a = make_accumulator(5);`}
+  checks={[{expression: 'a(10)', expected: '15'}, {expression: 'a(10)', expected: '25'}]}
   height={150}
   showLineNumbers={false}
 />
@@ -343,6 +344,7 @@ Em aplicações de teste de software, é útil poder contar o número de vezes q
 <CodePlayground
   session="3.1.1-ex2"
   code={`const s = make_monitored(math_sqrt);`}
+  checks={[{expression: 's(100)', expected: '10'}, {expression: 's("how many calls")', expected: '1'}]}
   height={150}
   showLineNumbers={false}
 />
@@ -376,6 +378,7 @@ Modifique a função `make_account` para que ela crie contas protegidas por senh
 <CodePlayground
   session="3.1.1-ex3"
   code={`const acc = make_account(100, "secret password");`}
+  checks={[{expression: 'acc("secret password", "withdraw")(40)', expected: '60'}, {expression: 'acc("some other password", "deposit")(50)', expected: '"Incorrect password"'}]}
   height={150}
   showLineNumbers={false}
 />

@@ -24,6 +24,7 @@ Desenvolvemos a abstração de dados de números racionais como uma combinação
 Independentemente de qual representação usamos, precisamos das seguintes operações:
 
 <CodePlayground
+  session="2.4.1"
   code={`// Operações aritméticas genéricas
 function add_complex(z1, z2) {
     return make_from_real_imag(
@@ -60,6 +61,7 @@ function div_complex(z1, z2) {
 Ben decide representar números complexos como pares de partes real e imaginária:
 
 <CodePlayground
+  session="2.4.1"
   code={`// Representação Retangular
 function make_from_real_imag(x, y) {
     return pair(x, y);
@@ -93,6 +95,7 @@ function make_from_mag_ang(r, a) {
 Alyssa P. Hacker decide representar números complexos em forma polar como pares (magnitude, ângulo):
 
 <CodePlayground
+  session="2.4.1"
   code={`// Representação Polar
 function make_from_mag_ang(r, a) {
     return pair(r, a);

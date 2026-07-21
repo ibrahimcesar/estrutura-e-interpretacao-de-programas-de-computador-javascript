@@ -17,6 +17,7 @@
 .editorScroll {
   overflow: auto;
   position: relative;
+  min-height: 3.2em;
 }
 
 .editorScroll:focus-within {
@@ -162,4 +163,76 @@
 .entryStatus {
   color: var(--ifm-color-emphasis-600);
   font-style: italic;
+}
+
+/* ---- Barra de ações: extras ---- */
+
+.sessionBadge {
+  font-size: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+  border: 1px dashed var(--ifm-color-emphasis-300);
+  border-radius: 10px;
+  padding: 0.1rem 0.5rem;
+  cursor: help;
+  user-select: none;
+}
+
+.execTime {
+  color: var(--ifm-color-success-darkest);
+  font-weight: 600;
+}
+
+:global([data-theme='dark']) .execTime {
+  color: var(--ifm-color-success-light);
+}
+
+.retryButton {
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+/* ---- Verificações de exercício ---- */
+
+.entryCheckPass {
+  color: var(--ifm-color-success-darkest);
+}
+
+:global([data-theme='dark']) .entryCheckPass {
+  color: var(--ifm-color-success-light);
+}
+
+.entryCheckFail {
+  color: var(--ifm-color-danger-dark);
+}
+
+:global([data-theme='dark']) .entryCheckFail {
+  color: var(--ifm-color-danger-light);
+}
+
+/* ---- Diagrama caixa-e-ponteiro ---- */
+
+.diagramScroll {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  background: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+}
+
+.diagramSvg {
+  display: block;
+  color: var(--ifm-font-color-base);
+}
+
+.diagramSvg rect,
+.diagramSvg line {
+  stroke: currentColor;
+}
+
+.diagramSvg text {
+  fill: currentColor;
+}
+
+.diagramDot {
+  fill: currentColor;
 }

@@ -26,6 +26,7 @@ Imagine uma tabela bidimensional onde:
 - Cada célula contém a função apropriada para aquela operação naquele tipo
 
 <CodePlayground
+  session="2.4.3"
   code={`// Sistema de tabela (interface simplificada)
 // put e get operam em uma tabela global
 
@@ -76,6 +77,7 @@ function install_polar_package() {
 Agora os seletores genéricos são muito mais simples:
 
 <CodePlayground
+  session="2.4.3"
   code={`function apply_generic(op, arg) {
     const type_tag = type_tag(arg);
     const fun = get(op, type_tag);
@@ -108,6 +110,7 @@ function angle(z) {
 Uma alternativa à programação orientada a dados é decompor a tabela de forma diferente. Em vez de ter "operações inteligentes" que fazem dispatch com base no tipo de dados, podemos ter "dados inteligentes" que fazem dispatch com base no nome da operação:
 
 <CodePlayground
+  session="2.4.3"
   code={`function make_from_real_imag(x, y) {
     function dispatch(op) {
         return op === "real_part"

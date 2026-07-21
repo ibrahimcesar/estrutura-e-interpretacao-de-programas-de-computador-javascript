@@ -14,13 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const runnerSrc = readFileSync(join(ROOT, 'src/components/playgroundRunner.js'), 'utf8');
-const match = runnerSrc.match(/const WORKER_SOURCE = `\n([\s\S]*?)\n`;/);
-if (!match) {
-  console.error('WORKER_SOURCE não encontrado em playgroundRunner.js');
-  process.exit(1);
-}
-const WORKER_BODY = match[1];
+const WORKER_BODY = readFileSync(join(ROOT, 'src/components/playgroundWorker.js'), 'utf8');
 
 function makeWorker() {
   const messages = [];
@@ -34,8 +28,8 @@ function makeWorker() {
   vm.runInContext('self = globalThis; globalThis.self = globalThis;', ctx);
   vm.runInContext(WORKER_BODY, ctx);
   return {
-    run(source) {
-      vm.runInContext('self.onmessage', ctx).call(null, { data: { source } });
+    run(source, checks) {
+      vm.runInContext('self.onmessage', ctx).call(null, { data: { source, checks } });
       return messages.splice(0);
     },
   };
@@ -80,14 +74,42 @@ const cases = [
   ['apply_in_underlying_javascript((a, b) => a + b, list(3, 4));', (m) => m[0].text === '7'],
   // Declarações do leitor sobrescrevem a biblioteca
   ['function pair(x, y) { return "custom"; } pair(1, 2);', (m) => m[0].text === '"custom"'],
+  // Tempo de execução no done
+  ['1 + 1;', (m) => typeof m.at(-1).elapsed === 'number'],
+  // Árvore caixa-e-ponteiro: presente para pares, com refs para compartilhamento
+  ['pair(1, pair(2, null));', (m) => m[0].tree && m[0].tree.k === 'pair' && m[0].tree.t.k === 'pair'],
+  ['42;', (m) => m[0].tree == null],
+  ['const a = list(1); pair(a, a);', (m) => m[0].tree.h.k === 'pair' && m[0].tree.t.k === 'ref' && m[0].tree.t.id === m[0].tree.h.id],
+  // Streams
+  ['stream_to_list(stream(1, 2, 3));', (m) => m[0].text === '[1, [2, [3, null]]]'],
+  ['head(stream_tail(stream(1, 2, 3)));', (m) => m[0].text === '2'],
+  ['is_stream(stream(1)) && is_stream(null);', (m) => m[0].text === 'true'],
+  ['stream_to_list(list_to_stream(list(4, 5)));', (m) => m[0].text === '[4, [5, null]]'],
+  // Verificações de exercício
+  ['function f(x) { return x + 1; }', (m) => {
+    const c = m.filter((x) => x.type === 'check');
+    return c.length === 2 && c[0].pass === true && c[1].pass === false && c[1].actual === '2';
+  }, [{ expression: 'f(1)', expected: '2' }, { expression: 'f(1)', expected: '3' }]],
+  // Verificações não rodam se o código principal falhou
+  ['nao_existe;', (m) => m.filter((x) => x.type === 'check').length === 0, [{ expression: '1', expected: '1' }]],
+  // Verificações enxergam const/let do programa (reexecução com thunks)
+  ['const resposta = 41;', (m) => {
+    const c = m.filter((x) => x.type === 'check');
+    return c.length === 1 && c[0].pass === true;
+  }, [{ expression: 'resposta + 1', expected: '42' }]],
+  // Verificações com estado (chamadas sequenciais veem mutações)
+  ['let n = 0; function inc() { n = n + 1; return n; }', (m) => {
+    const c = m.filter((x) => x.type === 'check');
+    return c.length === 2 && c.every((x) => x.pass);
+  }, [{ expression: 'inc()', expected: '1' }, { expression: 'inc()', expected: '2' }]],
 ];
 
 let failures = 0;
-for (const [source, check] of cases) {
+for (const [source, check, checks] of cases) {
   const worker = makeWorker();
   let msgs;
   try {
-    msgs = worker.run(source);
+    msgs = worker.run(source, checks);
   } catch (e) {
     msgs = [{ type: 'HOST-THROW', text: String(e) }];
   }

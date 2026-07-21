@@ -14,6 +14,7 @@ Agora aprenderemos sobre as *declarações de funções*, uma técnica de abstra
 Começamos examinando como expressar a ideia de "multiplicação ao quadrado" *(squaring)*. Podemos dizer: "Para o quadrado perfeito de algo, retorna ele vezes ele mesmo". Isso é expresso em nossa linguagem como
 
 <CodePlayground
+  session="1.1.4"
   code={`function square(x) {
     return x * x;
 }`}
@@ -45,6 +46,7 @@ O *nome* é um símbolo a ser associado à definição da função no ambiente.[
 Tendo declarado `square`, agora podemos usá-lo em uma expressão de *aplicação de função*, que transformamos em uma instrução usando um caractere de ponto e vírgula:
 
 <CodePlayground
+  session="1.1.4"
   code={`square(21);`}
   hiddenCode={`function square(x) {
     return x * x;
@@ -66,6 +68,7 @@ onde a expressão de função da aplicação especifica a função a ser aplicad
    2. Aplique a função que é o valor da expressão de função aos valores das expressões de argumento.
 
 <CodePlayground
+  session="1.1.4"
   code={`square(2 + 5);`}
   hiddenCode={`function square(x) {
     return x * x;
@@ -79,6 +82,7 @@ onde a expressão de função da aplicação especifica a função a ser aplicad
 Aqui, a expressão do argumento é ela própria uma expressão composta, a combinação de operadores `2 + 5`.
 
 <CodePlayground
+  session="1.1.4"
   code={`square(square(3));`}
   hiddenCode={`function square(x) {
     return x * x;
@@ -94,6 +98,7 @@ Aqui, a expressão do argumento é ela própria uma expressão composta, a combi
 Também podemos usar a `square` como um bloco de construção na definição de outras funções. Por exemplo, `x² + y²` pode ser expressada como
 
 <CodePlayground
+  session="1.1.4"
   code={`const x = 3;
 const y = 4;
 square(x) + square(y);`}
@@ -116,6 +121,7 @@ Podemos facilmente declarar uma função `sum_of_squares`[<sup>4</sup>](#footnot
 />
 
 <CodePlayground
+  session="1.1.4"
   code={`sum_of_squares(3, 4);`}
   hiddenCode={`function square(x) {
     return x * x;
@@ -141,6 +147,7 @@ Agora podemos usar `sum_of_squares` como um bloco de construção na construçã
 />
 
 <CodePlayground
+  session="1.1.4"
   code={`f(5);`}
   hiddenCode={`function square(x) {
     return x * x;

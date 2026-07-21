@@ -13,6 +13,7 @@ Nesta seção e na próxima, implementamos os geradores de código para os quais
 Em geral, a saída de cada gerador de código terminará com instruções—geradas pela função `compile_linkage`—que implementam a ligação requerida. Se a ligação é `"return"`, então devemos gerar a instrução `go_to(reg("continue"))`. Isso precisa do registrador `continue` e não modifica nenhum registrador. Se a ligação é `"next"`, então não precisamos incluir nenhuma instrução adicional. Caso contrário, a ligação é um rótulo, e geramos um `go_to` para esse rótulo, uma instrução que não precisa ou modifica nenhum registrador.
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_linkage(linkage) {
     return linkage === "return"
            ? make_instruction_sequence(list("continue"), null,
@@ -28,6 +29,7 @@ Em geral, a saída de cada gerador de código terminará com instruções—gera
 O código de ligação é anexado a uma sequência de instruções por `preserving` o registrador `continue`, já que uma ligação `"return"` exigirá o registrador `continue`: Se a sequência de instruções dada modifica `continue` e o código de ligação precisa dele, `continue` será salvo e restaurado.
 
 <CodePlayground
+  session="5.5.2"
   code={`function end_with_linkage(linkage, instruction_sequence) {
     return preserving(list("continue"),
                       instruction_sequence,
@@ -43,6 +45,7 @@ Os geradores de código para expressões literais e nomes constroem sequências 
 O valor literal é extraído em tempo de compilação do componente sendo compilado e colocado na parte constante da instrução `assign`. Para um nome, uma instrução é gerada para usar a operação `lookup_symbol_value` quando o programa compilado for executado, para procurar o valor associado a um símbolo no ambiente atual. Como um valor literal, o símbolo é extraído em tempo de compilação do componente sendo compilado. Assim, `symbol_of_name(component)` é executado apenas uma vez, quando o programa está sendo compilado, e o símbolo aparece como uma constante na instrução `assign`.
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_literal(component, target, linkage) {
     const literal = literal_value(component);
     return end_with_linkage(linkage,
@@ -68,6 +71,7 @@ Atribuições e declarações são tratadas de modo muito parecido com como são
 A compilação recursiva tem alvo `val` e ligação `"next"` de modo que o código colocará seu resultado em `val` e continuará com o código que é anexado depois dele. A anexação é feita preservando `env`, já que o ambiente é necessário para atualizar a associação símbolo-valor e o código para calcular o valor poderia ser a compilação de uma expressão complexa que poderia modificar os registradores de maneiras arbitrárias.
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_assignment(component, target, linkage) {
     return compile_assignment_declaration(
                assignment_symbol(component),
@@ -134,6 +138,7 @@ function make_label(string) {
 ```
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_conditional(component, target, linkage) {
     const t_branch = make_label("true_branch");
     const f_branch = make_label("false_branch");
@@ -170,6 +175,7 @@ A compilação de sequências de declarações espelha sua avaliação no avalia
 [^2]: O registrador `continue` seria necessário para uma ligação `"return"`, que pode resultar de uma compilação por `compile_and_go` (seção 5.5.7).
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_sequence(seq, target, linkage) {
     return is_empty_sequence(seq)
            ? compile_literal(make_literal(undefined), target, linkage)
@@ -193,6 +199,7 @@ Tratar uma declaração de retorno como se fosse a última declaração em uma s
 Um bloco é compilado prefixando uma instrução `assign` ao corpo compilado do bloco. A atribuição estende o ambiente atual por um quadro que vincula os nomes declarados no bloco ao valor `"*unassigned*"`. Esta operação tanto precisa quanto modifica o registrador `env`.
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_block(stmt, target, linkage) {
     const body = block_body(stmt);
     const locals = scan_out_declarations(body);
@@ -245,6 +252,7 @@ function compiled_function_env(c_fun) {
 ```
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_lambda_expression(exp, target, linkage) {
     const fun_entry = make_label("entry");
     const after_lambda = make_label("after_lambda");
@@ -274,6 +282,7 @@ O corpo aumentado é compilado com alvo `val` de modo que seu valor de retorno s
 [^5]: O corpo de função aumentado é uma sequência terminando com uma declaração de retorno. A compilação de uma sequência de declarações usa a ligação `"next"` para todas as suas declarações componentes exceto a última, para a qual usa a ligação dada. Neste caso, a última declaração é uma declaração de retorno, e como veremos na seção 5.5.3, uma declaração de retorno sempre usa o descritor de ligação `"return"` para sua expressão de retorno. Assim, todos os corpos de função terminarão com uma ligação `"return"`, não a `"next"` que passamos como argumento de ligação para `compile` em `compile_lambda_body`.
 
 <CodePlayground
+  session="5.5.2"
   code={`function compile_lambda_body(exp, fun_entry) {
     const params  = lambda_parameter_symbols(exp);
     return append_instruction_sequences(
@@ -297,6 +306,7 @@ O corpo aumentado é compilado com alvo `val` de modo que seu valor de retorno s
 Para garantir que todas as funções terminem executando uma declaração de retorno, `compile_lambda_body` anexa ao corpo lambda uma declaração de retorno cuja expressão de retorno é o literal `undefined`. Para fazer isso, usa a função `append_return_undefined`, que constrói a representação de lista marcada do analisador sintático (da seção 4.1.2) de uma sequência consistindo do corpo e uma declaração `return undefined;`.
 
 <CodePlayground
+  session="5.5.2"
   code={`function append_return_undefined(body) {
     return list("sequence", list(body,
                                  list("return_statement",

@@ -20,6 +20,7 @@ Na verdade, esta é a única condição que `make_rat`, `numer` e `denom` devem 
 Este ponto de vista pode servir para definir não apenas objetos de dados de "alto nível", como números racionais, mas também objetos de nível mais baixo. Considere a noção de um par, que usamos para definir nossos números racionais. Nunca dissemos realmente o que era um par, apenas que a linguagem fornecia funções `pair`, `head` e `tail` para operar em pares. Mas a única coisa que precisamos saber sobre essas três operações é que, se colarmos dois objetos juntos usando `pair`, podemos recuperar os objetos usando `head` e `tail`. Ou seja, as operações satisfazem a condição de que, para quaisquer objetos `x` e `y`, se `z` é `pair(x, y)`, então `head(z)` é `x` e `tail(z)` é `y`. De fato, mencionamos que essas três funções estão incluídas como primitivas em nossa linguagem. No entanto, qualquer trio de funções que satisfaça a condição acima pode ser usado como base para implementar pares. Este ponto é ilustrado de forma marcante pelo fato de que poderíamos implementar `pair`, `head` e `tail` sem usar nenhuma estrutura de dados, mas apenas usando funções. Aqui estão as definições:
 
 <CodePlayground
+  session="2.1.3"
   code={`function pair(x, y) {
     function dispatch(m) {
         return m === 0
@@ -88,6 +89,7 @@ tail(x);`}
 Mostre que podemos representar pares de inteiros não-negativos usando apenas números e operações aritméticas se representarmos o par a e b como o inteiro que é o produto 2^a 3^b. Dê as definições correspondentes das funções `pair`, `head` e `tail`.
 
 <CodePlayground
+  session="2.1.3"
   code={`function fast_expt(base, n) {
     return n === 0
            ? 1
@@ -120,6 +122,7 @@ tail(pair(3, 4));`}
 Caso representar pares como funções (exercício 2.4) não tenha sido suficientemente alucinante, considere que, em uma linguagem que pode manipular funções, podemos nos virar sem números (pelo menos no que diz respeito aos inteiros não-negativos) implementando 0 e a operação de adicionar 1 como:
 
 <CodePlayground
+  session="2.1.3"
   code={`const zero = f => x => x;
 
 function add_1(n) {

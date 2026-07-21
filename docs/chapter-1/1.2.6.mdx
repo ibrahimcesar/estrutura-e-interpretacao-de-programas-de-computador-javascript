@@ -10,6 +10,7 @@ Esta seção descreve dois métodos para verificar a primalidade de um inteiro $
 Desde os tempos antigos, matemáticos têm sido fascinados por problemas concernentes a números primos, e muitas pessoas trabalharam no problema de determinar maneiras de testar se números são primos. Uma maneira de testar se um número é primo é encontrar os divisores do número. O programa a seguir encontra o menor divisor integral (maior que 1) de um dado número $n$. Ele faz isso de uma maneira direta, testando $n$ para divisibilidade por inteiros sucessivos começando com 2.
 
 <CodePlayground
+  session="1.2.6"
   code={`function smallest_divisor(n) {
     return find_divisor(n, 2);
 }
@@ -33,6 +34,7 @@ function divides(a, b) {
 Podemos testar se um número é primo da seguinte forma: $n$ é primo se e somente se $n$ é seu próprio menor divisor.
 
 <CodePlayground
+  session="1.2.6"
   code={`function is_prime(n) {
     return n === smallest_divisor(n);
 }`}
@@ -73,6 +75,7 @@ Se $n$ não é primo, então, em geral, a maioria dos números $a < n$ não sati
 Para implementar o teste de Fermat, precisamos de uma função que calcule o exponencial de um número módulo outro número:
 
 <CodePlayground
+  session="1.2.6"
   code={`function expmod(base, exp, m) {
     return exp === 0
            ? 1
@@ -96,6 +99,7 @@ Isso é muito similar à função `fast_expt` da seção 1.2.4. Ela usa sucessiv
 O teste de Fermat é realizado escolhendo aleatoriamente um número $a$ entre 1 e $n-1$ inclusive e verificando se o resto módulo $n$ da $n$-ésima potência de $a$ é igual a $a$. O número aleatório $a$ é escolhido usando a função primitiva `math_random`, que retorna um número não-negativo menor que 1. Portanto, para obter um número aleatório entre 1 e $n-1$, multiplicamos o valor de retorno de `math_random` por $n-1$, arredondamos para baixo o resultado com a função primitiva `math_floor`, e adicionamos 1:
 
 <CodePlayground
+  session="1.2.6"
   code={`function fermat_test(n) {
     function try_it(a) {
         return expmod(a, n, n) === a;
@@ -122,6 +126,7 @@ function expmod(base, exp, m) {
 A função a seguir executa o teste um dado número de vezes, conforme especificado por um parâmetro. Seu valor é verdadeiro se o teste tiver sucesso todas as vezes, e falso caso contrário.
 
 <CodePlayground
+  session="1.2.6"
   code={`function fast_is_prime(n, times) {
     return times === 0
            ? true
@@ -174,6 +179,7 @@ Use a função `smallest_divisor` para encontrar o menor divisor de cada um dos 
 Assuma uma função primitiva `get_time` sem argumentos que retorna o número de milissegundos que passaram desde 00:00:00 UTC de quinta-feira, 1 de janeiro de 1970.[<sup>6</sup>](#footnote-6) A função `timed_prime_test` a seguir, quando chamada com um inteiro $n$, imprime $n$ e verifica se $n$ é primo. Se $n$ é primo, a função imprime três asteriscos seguidos pela quantidade de tempo usada para realizar o teste.
 
 <CodePlayground
+  session="1.2.6"
   code={`function timed_prime_test(n) {
     display(n);
     return start_prime_test(n, get_time());

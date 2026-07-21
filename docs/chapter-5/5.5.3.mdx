@@ -19,6 +19,7 @@ Os registradores `env`, `fun` e `argl` podem ter que ser salvos e restaurados du
 O código requerido é gerado por `compile_application`. Isso compila recursivamente a expressão de função para produzir código que coloca a função a ser aplicada em `fun`, e compila as expressões de argumento para produzir código que avalia as expressões de argumento individuais da aplicação. As sequências de instruções para as expressões de argumento são combinadas (por `construct_arglist`) com código que constrói a lista de argumentos em `argl`, e o código da lista de argumentos resultante é combinado com o código da função e o código que realiza a chamada de função (produzido por `compile_function_call`). Ao anexar as sequências de código, o registrador `env` deve ser preservado em torno da avaliação da expressão de função (já que avaliar a expressão de função poderia modificar `env`, que será necessário para avaliar as expressões de argumento), e o registrador `fun` deve ser preservado em torno da construção da lista de argumentos (já que avaliar as expressões de argumento poderia modificar `fun`, que será necessário para a aplicação de função real). O registrador `continue` também deve ser preservado por toda parte, já que é necessário para a ligação na chamada de função.
 
 <CodePlayground
+  session="5.5.3"
   code={`function compile_application(exp, target, linkage) {
     const fun_code = compile(function_expression(exp), "fun", "next");
     const argument_codes = map(arg => compile(arg, "val", "next"),
@@ -55,6 +56,7 @@ assign(argl, constant(null))
 Caso contrário, `construct_arglist` cria código que inicializa `argl` com o último argumento, e anexa código que avalia os argumentos restantes e os junta a `argl` em sucessão. Para processar os argumentos do último ao primeiro, devemos inverter a lista de sequências de código de argumento da ordem fornecida por `compile_application`.
 
 <CodePlayground
+  session="5.5.3"
   code={`function construct_arglist(arg_codes) {
     if (is_null(arg_codes)) {
         return make_instruction_sequence(null, list("argl"),
@@ -109,6 +111,7 @@ Após avaliar os elementos de uma aplicação de função, o código compilado d
 Observe que o ramo compilado deve pular o ramo primitivo. Portanto, se a ligação para a chamada de função original foi `"next"`, o ramo composto deve usar uma ligação que salta para um rótulo que é inserido após o ramo primitivo. (Isso é similar à ligação usada para o ramo verdadeiro em `compile_conditional`.)
 
 <CodePlayground
+  session="5.5.3"
   code={`function compile_function_call(target, linkage) {
     const primitive_branch = make_label("primitive_branch");
     const compiled_branch = make_label("compiled_branch");
@@ -242,6 +245,7 @@ const all_regs = list("env", "fun", "val", "argl", "continue");
 ```
 
 <CodePlayground
+  session="5.5.3"
   code={`function compile_fun_appl(target, linkage) {
     const fun_return = make_label("fun_return");
     return target === "val" && linkage !== "return"
@@ -293,6 +297,7 @@ go_to(reg("continue")) // código de ligação "return"
 As instruções para reverter a pilha usando o marcador e então restaurar `continue` correspondem às instruções geradas por `compile_fun_appl` para salvar `continue` e marcar a pilha. O salto final para `continue` é gerado pelo uso da ligação `"return"` ao compilar a expressão de retorno. A função `compile_return_statement` é diferente de todos os outros geradores de código em que ignora os argumentos alvo e ligação—ela sempre compila a expressão de retorno com alvo `val` e ligação `"return"`.
 
 <CodePlayground
+  session="5.5.3"
   code={`function compile_return_statement(stmt, target, linkage) {
     return append_instruction_sequences(
                make_instruction_sequence(null, list("continue"),

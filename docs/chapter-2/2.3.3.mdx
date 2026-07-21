@@ -20,6 +20,7 @@ As operações básicas incluem:
 ## Conjuntos como Listas Não Ordenadas
 
 <CodePlayground
+  session="2.3.3"
   code={`function is_element_of_set(x, set) {
     return is_null(set)
            ? false
@@ -51,6 +52,7 @@ function intersection_set(set1, set2) {
 Podemos acelerar as operações organizando os elementos do conjunto em ordem crescente:
 
 <CodePlayground
+  session="2.3.3"
   code={`function is_element_of_set(x, set) {
     return is_null(set)
            ? false
@@ -84,6 +86,7 @@ function intersection_set(set1, set2) {
 Podemos fazer melhor usando uma árvore binária. Cada nó contém um elemento e dois ramos. Todos os elementos no ramo esquerdo são menores que o elemento no nó, e todos os elementos no ramo direito são maiores.
 
 <CodePlayground
+  session="2.3.3"
   code={`function entry(tree) { return head(tree); }
 function left_branch(tree) { return head(tail(tree)); }
 function right_branch(tree) { return head(tail(tail(tree))); }

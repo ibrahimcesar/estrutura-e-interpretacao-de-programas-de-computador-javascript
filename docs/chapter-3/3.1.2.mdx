@@ -21,6 +21,7 @@ então a sequência de valores x₁, x₂, x₃, ... terá as propriedades estat
 Podemos implementar `rand` como uma função com uma variável de estado local `x` que é inicializada para algum valor fixo `random_init`. Cada chamada a `rand` calcula `rand_update` do valor atual de `x`, retorna isso como o número aleatório, e também armazena isso como o novo valor de `x`.
 
 <CodePlayground
+  session="3.1.2"
   code={`function make_rand() {
    let x = random_init;
    return () => {
@@ -45,6 +46,7 @@ O método de Monte Carlo consiste em escolher experimentos de amostra aleatoriam
 O coração de nosso programa é uma função `monte_carlo`, que recebe como argumentos o número de vezes para tentar um experimento, juntamente com o experimento, representado como uma função sem argumentos que retornará verdadeiro ou falso cada vez que for executada. A função `monte_carlo` executa o experimento pelo número designado de tentativas e retorna um número indicando a fração das tentativas nas quais o experimento foi considerado verdadeiro.
 
 <CodePlayground
+  session="3.1.2"
   code={`function estimate_pi(trials) {
     return math_sqrt(6 / monte_carlo(trials, dirichlet_test));
 }
@@ -107,6 +109,7 @@ Implemente a integração de Monte Carlo como uma função `estimate_integral` q
 Você achará útil ter uma função que retorna um número escolhido aleatoriamente de um intervalo dado. A seguinte função `random_in_range` implementa isso em termos da função `math_random` usada na seção 1.2.6, que retorna um número não-negativo menor que 1.
 
 <CodePlayground
+  session="3.1.2"
   code={`function random_in_range(low, high) {
     const range = high - low;
     return low + math_random() * range;

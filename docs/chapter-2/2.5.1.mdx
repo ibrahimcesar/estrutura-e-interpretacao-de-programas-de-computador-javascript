@@ -14,6 +14,7 @@ A tarefa de projetar operações aritméticas genéricas é análoga à tarefa d
 Podemos implementar as operações aritméticas genéricas usando a estratégia de programação orientada a dados:
 
 <CodePlayground
+  session="2.5.1"
   code={`function add(x, y) {
     return apply_generic("add", list(x, y));
 }
@@ -39,6 +40,7 @@ Agora podemos instalar cada pacote aritmético:
 ### Pacote de Números JavaScript
 
 <CodePlayground
+  session="2.5.1"
   code={`function install_javascript_number_package() {
     function tag(x) {
         return attach_tag("javascript_number", x);
@@ -63,6 +65,7 @@ Agora podemos instalar cada pacote aritmético:
 ### Pacote de Números Racionais
 
 <CodePlayground
+  session="2.5.1"
   code={`function install_rational_package() {
     // funções internas
     function numer(x) { return head(x); }
@@ -110,6 +113,7 @@ Agora podemos instalar cada pacote aritmético:
 ### Pacote de Números Complexos
 
 <CodePlayground
+  session="2.5.1"
   code={`function install_complex_package() {
     // importar funções dos pacotes retangular e polar
     function make_from_real_imag(x, y) {

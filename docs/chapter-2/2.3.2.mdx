@@ -33,6 +33,7 @@ list("+", list("*", "a", "x"), "b")
 ## O Programa de Diferenciação
 
 <CodePlayground
+  session="2.3.2"
   code={`function deriv(exp, variable) {
     return is_number(exp)
            ? 0
@@ -56,6 +57,7 @@ list("+", list("*", "a", "x"), "b")
 Implementamos os seletores e construtores para expressões:
 
 <CodePlayground
+  session="2.3.2"
   code={`function is_variable(x) {
     return is_string(x);
 }
@@ -103,6 +105,7 @@ function make_product(m1, m2) {
 Podemos melhorar o programa fazendo os construtores realizarem simplificação:
 
 <CodePlayground
+  session="2.3.2"
   code={`function make_sum(a1, a2) {
     return number_equal(a1, 0)
            ? a2

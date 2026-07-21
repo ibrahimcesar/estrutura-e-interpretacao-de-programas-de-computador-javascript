@@ -18,6 +18,7 @@ Esta ideia simples tem muitas vantagens. Uma vantagem é que torna os programas 
 Por exemplo, uma maneira alternativa de abordar o problema de reduzir números racionais aos menores termos é realizar a redução sempre que acessamos as partes de um número racional, em vez de quando o construímos. Isso leva a diferentes funções construtoras e seletoras:
 
 <CodePlayground
+  session="2.1.2"
   code={`function gcd(a, b) {
     return b === 0 ? a : gcd(b, a % b);
 }
@@ -45,6 +46,7 @@ Restringir a dependência da representação a algumas poucas funções de inter
 Considere o problema de representar segmentos de linha em um plano. Cada segmento é representado como um par de pontos: um ponto inicial e um ponto final. Declare um construtor `make_segment` e seletores `start_segment` e `end_segment` que definem a representação de segmentos em termos de pontos. Além disso, um ponto pode ser representado como um par de números: a coordenada x e a coordenada y. Consequentemente, especifique um construtor `make_point` e seletores `x_point` e `y_point` que definem essa representação. Finalmente, usando seus seletores e construtores, declare uma função `midpoint_segment` que recebe um segmento de linha como argumento e retorna seu ponto médio (o ponto cujas coordenadas são a média das coordenadas dos pontos extremos). Para testar suas funções, você precisará de uma maneira de imprimir pontos:
 
 <CodePlayground
+  session="2.1.2"
   code={`function print_point(p) {
     return display("(" + stringify(x_point(p)) + ", "
                        + stringify(y_point(p)) + ")");
@@ -86,6 +88,7 @@ function midpoint_segment(s) {
 Implemente uma representação para retângulos em um plano. (Dica: Você pode querer fazer uso do exercício 2.2.) Em termos de seus construtores e seletores, crie funções que computem o perímetro e a área de um dado retângulo. Agora implemente uma representação diferente para retângulos. Você pode projetar seu sistema com barreiras de abstração adequadas, de modo que as mesmas funções de perímetro e área funcionem usando qualquer uma das representações?
 
 <CodePlayground
+  session="2.1.2"
   code={`// Primeira implementação de retângulo
 function make_rectangle(bottom_left, top_right) {
     // sua implementação

@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useColorMode } from '@docusaurus/theme-common';
 import PlaygroundEditor from './PlaygroundEditor';
+import BoxPointerDiagram from './BoxPointerDiagram';
 import { createRunner } from './playgroundRunner';
 import { registerBlock, getSessionPrefix } from './playgroundSession';
 import styles from './CodePlayground.module.css';
 
 const RUN_TIMEOUT_MS = 5000;
+const RETRY_TIMEOUT_MS = 30000;
 const MAX_RENDERED_ENTRIES = 200;
 
 const ENTRY_CLASS = {
@@ -14,7 +16,36 @@ const ENTRY_CLASS = {
   error: 'entryError',
   result: 'entryResult',
   status: 'entryStatus',
+  checkPass: 'entryCheckPass',
+  checkFail: 'entryCheckFail',
 };
+
+// Dicas em português para os erros mais comuns entre iniciantes.
+function withHint(text) {
+  if (text.includes('Maximum call stack size exceeded')) {
+    return text + ' — dica: a recursão tem um caso base que é alcançado?';
+  }
+  if (text.startsWith('ReferenceError') && text.includes('is not defined')) {
+    return text + ' — dica: o nome precisa ser declarado antes de usar (se for um exercício, implemente-o neste bloco)';
+  }
+  return text;
+}
+
+function formatElapsed(ms) {
+  if (ms < 1) return '<1 ms';
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(1)} s`;
+}
+
+// Chave estável por bloco para persistir edições do leitor: página + hash
+// do código original + ordem de ocorrência (páginas repetem trechos).
+const occurrenceCounters = new Map();
+
+function simpleHash(text) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i += 1) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
 
 /**
  * Playground de Código Interativo
@@ -29,17 +60,19 @@ const ENTRY_CLASS = {
  * @param {string} props.code - Código JavaScript exibido no editor
  * @param {string} props.hiddenCode - Código auxiliar oculto (funções de dependência)
  * @param {string} props.session - Blocos da mesma página com a mesma session compartilham o ambiente: declarações dos blocos anteriores valem nos seguintes
+ * @param {Array<{expression: string, expected: string}>} props.checks - Verificações de exercício: cada expressão é avaliada após o código e comparada ao valor esperado
  * @param {Array<{name: string, code: string, hidden?: boolean}>} props.files - Descontinuado; usa o primeiro arquivo visível
  * @param {string} props.title - Título do exemplo (null oculta a barra)
  * @param {boolean} props.showLineNumbers - Mostrar números de linha (padrão: true)
  * @param {boolean} props.showConsole - Mostrar saída de console.log/warn (padrão: true)
  * @param {boolean} props.autorun - Executar automaticamente ao carregar (padrão: false)
- * @param {number} props.height - Altura do editor (padrão: 300)
+ * @param {number} props.height - Altura máxima do editor (padrão: 300); a altura real acompanha o código
  */
 export default function CodePlayground({
   code,
   hiddenCode,
   session,
+  checks,
   files,
   title = "Exemplo de Código",
   showLineNumbers = true,
@@ -64,11 +97,18 @@ export default function CodePlayground({
   const [editorCode, setEditorCode] = useState(initialCode);
   const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState('idle'); // idle | running | done
+  const [elapsedMs, setElapsedMs] = useState(null);
+  const [timedOut, setTimedOut] = useState(false);
+  const [lastTree, setLastTree] = useState(null);
+  const [showDiagram, setShowDiagram] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const runnerRef = useRef(null); // { worker, timer }
   const pendingRef = useRef([]);
   const rafRef = useRef(null);
   const entryCountRef = useRef(0);
+  const saveTimerRef = useRef(null);
+  const storageKeyRef = useRef(null);
 
   // Identidade estável do bloco na sessão; devolve sempre o programa atual
   // do bloco (hiddenCode + código do editor).
@@ -92,6 +132,41 @@ export default function CodePlayground({
     return registerBlock(key, getCodeRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
+  // Persistência das edições do leitor (por bloco, neste navegador).
+  useEffect(() => {
+    const base = window.location.pathname + '|' + simpleHash(initialCode);
+    const occurrence = occurrenceCounters.get(base) || 0;
+    occurrenceCounters.set(base, occurrence + 1);
+    const key = `pgcode:${base}:${occurrence}`;
+    storageKeyRef.current = key;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved !== null && saved !== initialCode) setEditorCode(saved);
+    } catch (ignored) {
+      // localStorage indisponível (modo privado etc.)
+    }
+    return () => {
+      occurrenceCounters.set(base, (occurrenceCounters.get(base) || 1) - 1);
+      clearTimeout(saveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCodeChange = (nextCode) => {
+    setEditorCode(nextCode);
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const key = storageKeyRef.current;
+      if (!key) return;
+      try {
+        if (nextCode === initialCode) localStorage.removeItem(key);
+        else localStorage.setItem(key, nextCode);
+      } catch (ignored) {
+        // sem persistência disponível
+      }
+    }, 400);
+  };
 
   const flushEntries = () => {
     rafRef.current = null;
@@ -135,11 +210,15 @@ export default function CodePlayground({
 
   useEffect(() => stopRunner, []);
 
-  const run = () => {
+  const run = (timeoutMs = RUN_TIMEOUT_MS) => {
     stopRunner();
     setEntries([]);
     entryCountRef.current = 0;
     setStatus('running');
+    setElapsedMs(null);
+    setTimedOut(false);
+    setLastTree(null);
+    setShowDiagram(false);
 
     const parts = [];
     if (session && sessionKeyRef.current) {
@@ -158,10 +237,19 @@ export default function CodePlayground({
           if (showConsole) pushEntry({ kind: msg.type, text: msg.text });
           break;
         case 'error':
-          pushEntry({ kind: 'error', text: msg.text });
+          pushEntry({ kind: 'error', text: withHint(msg.text) });
           break;
         case 'result':
           if (!msg.isUndefined) pushEntry({ kind: 'result', text: msg.text });
+          if (msg.tree) setLastTree(msg.tree);
+          break;
+        case 'check':
+          pushEntry({
+            kind: msg.pass ? 'checkPass' : 'checkFail',
+            text: msg.pass
+              ? `✓ ${msg.expression} ⟹ ${msg.expected}`
+              : `✗ ${msg.expression}: esperado ${msg.expected}, obteve ${msg.actual}`,
+          });
           break;
         case 'truncated':
           pushEntry({ kind: 'status', text: '— saída truncada —' });
@@ -171,6 +259,7 @@ export default function CodePlayground({
           if (entryCountRef.current === 0) {
             pushEntry({ kind: 'status', text: '✓ Executado (nenhum valor a exibir)' });
           }
+          if (typeof msg.elapsed === 'number') setElapsedMs(msg.elapsed);
           setStatus('done');
           // O worker fica vivo até a próxima execução (ou desmontagem)
           // para que logs assíncronos tardios ainda apareçam.
@@ -180,18 +269,22 @@ export default function CodePlayground({
       }
     };
 
-    const worker = createRunner(source, (msg) => handleMessage(worker)(msg));
+    const worker = createRunner(
+      { source, checks: checks || [] },
+      (msg) => handleMessage(worker)(msg)
+    );
     const timer = setTimeout(() => {
       if (runnerRef.current == null || runnerRef.current.worker !== worker) return;
       stopRunner();
       pushEntry({
         kind: 'error',
         text:
-          'Tempo de execução esgotado (5 segundos). A execução foi interrompida — ' +
-          'verifique se há recursão ou laço infinito.',
+          `Tempo de execução esgotado (${Math.round(timeoutMs / 1000)} segundos). ` +
+          'A execução foi interrompida — verifique se há recursão ou laço infinito.',
       });
+      setTimedOut(timeoutMs < RETRY_TIMEOUT_MS);
       setStatus('done');
-    }, RUN_TIMEOUT_MS);
+    }, timeoutMs);
     runnerRef.current = { worker, timer };
   };
 
@@ -200,6 +293,28 @@ export default function CodePlayground({
     setEditorCode(initialCode);
     setEntries([]);
     setStatus('idle');
+    setElapsedMs(null);
+    setTimedOut(false);
+    setLastTree(null);
+    setShowDiagram(false);
+    const key = storageKeyRef.current;
+    if (key) {
+      try {
+        localStorage.removeItem(key);
+      } catch (ignored) {
+        // sem persistência disponível
+      }
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(editorCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (ignored) {
+      // clipboard indisponível
+    }
   };
 
   useEffect(() => {
@@ -214,20 +329,27 @@ export default function CodePlayground({
       {title && <div className={styles.titleBar}>{title}</div>}
       <PlaygroundEditor
         code={editorCode}
-        onChange={setEditorCode}
+        onChange={handleCodeChange}
         onRun={run}
         isDark={isDark}
         showLineNumbers={showLineNumbers}
-        height={height}
+        maxHeight={height}
       />
       <div className={styles.toolbar}>
         <button
           type="button"
           className="button button--primary button--sm"
-          onClick={run}
+          onClick={() => run()}
           disabled={status === 'running'}
         >
           {status === 'running' ? 'Executando…' : '▶ Executar'}
+        </button>
+        <button
+          type="button"
+          className="button button--secondary button--outline button--sm"
+          onClick={copy}
+        >
+          {copied ? 'Copiado!' : 'Copiar'}
         </button>
         {edited && (
           <button
@@ -238,7 +360,18 @@ export default function CodePlayground({
             Restaurar
           </button>
         )}
-        <span className={styles.hint}>Código editável · Ctrl+Enter executa</span>
+        {session && (
+          <span
+            className={styles.sessionBadge}
+            title="Este bloco compartilha o ambiente da página: as declarações dos blocos anteriores são avaliadas antes dele (edite um bloco anterior e o resultado aqui muda)."
+          >
+            ⛓ sessão
+          </span>
+        )}
+        <span className={styles.hint}>
+          {elapsedMs != null && <span className={styles.execTime}>{formatElapsed(elapsedMs)} · </span>}
+          Código editável · Ctrl+Enter executa
+        </span>
       </div>
       {status !== 'idle' && (
         <div className={styles.output} aria-live="polite">
@@ -250,6 +383,25 @@ export default function CodePlayground({
               {entry.text}
             </div>
           ))}
+          {timedOut && status === 'done' && (
+            <button
+              type="button"
+              className={`button button--secondary button--outline button--sm ${styles.retryButton}`}
+              onClick={() => run(RETRY_TIMEOUT_MS)}
+            >
+              Tentar novamente com {Math.round(RETRY_TIMEOUT_MS / 1000)} s
+            </button>
+          )}
+          {lastTree && (
+            <button
+              type="button"
+              className={`button button--secondary button--outline button--sm ${styles.retryButton}`}
+              onClick={() => setShowDiagram((v) => !v)}
+            >
+              {showDiagram ? 'Esconder diagrama' : 'Ver diagrama caixa-e-ponteiro'}
+            </button>
+          )}
+          {showDiagram && lastTree && <BoxPointerDiagram tree={lastTree} />}
         </div>
       )}
     </div>

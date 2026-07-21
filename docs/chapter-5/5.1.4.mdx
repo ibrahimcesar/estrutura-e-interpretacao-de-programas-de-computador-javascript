@@ -11,6 +11,7 @@ Com as ideias ilustradas até agora, podemos implementar qualquer processo itera
 Implementar processos recursivos, no entanto, requer um mecanismo adicional. Considere o seguinte método recursivo para calcular fatoriais, que examinamos pela primeira vez na seção 1.2.1:
 
 <CodePlayground
+  session="5.1.4"
   code={`function factorial(n) {
     return n === 1
            ? 1
@@ -23,6 +24,7 @@ Implementar processos recursivos, no entanto, requer um mecanismo adicional. Con
 Como vemos pela função, calcular *n*! requer calcular (*n*-1)!. Nossa máquina MDC, modelada na função
 
 <CodePlayground
+  session="5.1.4"
   code={`function gcd(a, b) {
     return b === 0 ? a : gcd(b, a % b);
 }`}
@@ -80,6 +82,7 @@ Embora em princípio o cálculo de fatorial exija uma máquina infinita, a máqu
 Vamos examinar um processo recursivo mais complexo, o cálculo recursivo em árvore dos números de Fibonacci, que introduzimos na seção 1.2.2:
 
 <CodePlayground
+  session="5.1.4"
   code={`function fib(n) {
     return n === 0
            ? 0
@@ -137,6 +140,7 @@ Especifique máquinas de registradores que implementam cada uma das seguintes fu
 a. Exponenciação recursiva:
 
 <CodePlayground
+  session="5.1.4"
   code={`function expt(b, n) {
     return n === 0
            ? 1
@@ -149,6 +153,7 @@ a. Exponenciação recursiva:
 b. Exponenciação iterativa:
 
 <CodePlayground
+  session="5.1.4"
   code={`function expt(b, n) {
     function expt_iter(counter, product) {
         return counter === 0

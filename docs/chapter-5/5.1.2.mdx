@@ -11,6 +11,7 @@ Frequentemente definiremos uma máquina para incluir operações "primitivas" qu
 Considere a máquina MDC. A máquina tem uma instrução que calcula o resto dos conteúdos dos registradores `a` e `b` e atribui o resultado ao registrador `t`. Se quisermos construir a máquina MDC sem usar uma operação de resto primitiva, devemos especificar como calcular restos em termos de operações mais simples, como subtração. De fato, podemos escrever uma função JavaScript que encontra restos desta forma:
 
 <CodePlayground
+  session="5.1.2"
   code={`function remainder(n, d) {
     return n < d
            ? n
@@ -54,6 +55,7 @@ controller(
 Projete uma máquina para calcular raízes quadradas usando o método de Newton, conforme descrito na seção 1.1.7 e implementado com o seguinte código na seção 1.1.8:
 
 <CodePlayground
+  session="5.1.2"
   code={`function sqrt(x) {
     function is_good_enough(guess) {
         return math_abs(square(guess) - x) < 0.001;

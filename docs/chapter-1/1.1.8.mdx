@@ -18,6 +18,7 @@ A importância dessa estratégia de decomposição não é simplesmente que se d
 Assim, considerando apenas os valores que eles retornam, as duas funções a seguir que elevam ao `square` um número devem ser indistinguíveis. Cada um recebe um argumento numérico e produz o `square` desse número como o valor.[<sup>1</sup>](#footnote-1)
 
 <CodePlayground
+  session="1.1.8"
   code={`function square(x) {
   return x * x;
 }
@@ -45,6 +46,7 @@ Portanto, uma função deve ser capaz de suprimir detalhes. Os usuários da fun�
 Um detalhe da implementação de uma função que não deve importar para o usuário da função é a escolha do implementador de nomes para os parâmetros da função. Assim, as seguintes funções não devem ser distinguíveis:
 
 <CodePlayground
+  session="1.1.8"
   code={`function square(x) {
   return x * x;
 }
@@ -55,6 +57,7 @@ square(14);`}
 />
 
 <CodePlayground
+  session="1.1.8"
   code={`function square(y) {
   return y * y;
 }
@@ -67,6 +70,7 @@ square(14);`}
 Esse princípio - de que o significado de uma função deve ser independente dos nomes dos parâmetros usados por seu autor - parece superficialmente evidente, mas suas consequências são profundas. A consequência mais simples é que os nomes dos parâmetros de uma função devem ser locais para o corpo da função. Por exemplo, usamos `square` na declaração de `is_good_enough` em nossa função de raiz quadrada:
 
 <CodePlayground
+  session="1.1.8"
   code={`function is_good_enough(guess, x) {
   return abs(square(guess) - x) < 0.001;
 }
@@ -99,6 +103,7 @@ Na declaração de `is_good_enough` acima, `guess` e x são nomes vinculados, ma
 Temos um tipo de isolamento de nome disponível até agora: os parâmetros de uma função são locais para o corpo da função. O programa de raiz quadrada ilustra outra maneira pela qual gostaríamos de controlar o uso de nomes. O programa existente consiste em funções separadas:
 
 <CodePlayground
+  session="1.1.8"
   code={`function sqrt(x) {
   return sqrt_iter(1, x);
 }
@@ -129,6 +134,7 @@ function average(x, y) {
 O problema com este programa é que a única função importante para os usuários de `sqrt` é `sqrt`. As outras funções (`sqrt_iter`, `is_good_enough` e `improve`) apenas confundem suas mentes. Eles não podem declarar nenhuma outra função chamada `is_good_enough` como parte de outro programa para trabalhar junto com o programa de raiz quadrada, porque `sqrt` precisa disso. O problema é especialmente grave na construção de grandes sistemas por muitos programadores separados. Por exemplo, na construção de uma grande biblioteca de funções numéricas, muitas funções numéricas são calculadas como aproximações sucessivas e, portanto, podem ter funções chamadas `is_good_enough` e `imrpove` como funções auxiliares. Gostaríamos de localizar as subfunções, ocultando-as dentro de `sqrt` para que `sqrt` pudesse coexistir com outras aproximações sucessivas, cada uma com sua própria função privada `is_good_enough`. Para tornar isso possível, permitimos que uma função tenha declarações internas que são locais para essa função. Por exemplo, no problema da raiz quadrada, podemos escrever
 
 <CodePlayground
+  session="1.1.8"
   code={`function sqrt(x) {
   function is_good_enough(guess, x) {
     return abs(square(guess) - x) < 0.001;
@@ -160,6 +166,7 @@ function average(x, y) {
 Qualquer par de chaves correspondente designa um bloco e as declarações dentro do bloco são locais para o bloco. Esse aninhamento de declarações, chamado de estrutura de bloco, é basicamente a solução certa para o problema mais simples de empacotamento de nomes. Mas existe uma ideia melhor escondida aqui. Além de internalizar as declarações das funções auxiliares, podemos simplificá-las. Como x está vinculado à declaração de `sqrt`, as funções `is_good_enough`, `improve` e `sqrt_iter`, que são declaradas internamente como `tosqrt`, estão no escopo de x. Portanto, não é necessário passar x explicitamente para cada uma dessas funções. Em vez disso, permitimos que x seja um nome livre nas declarações internas, conforme mostrado abaixo. Então x obtém seu valor do argumento com o qual a função envolvente `sqrt` é chamada. Esta disciplina é chamada de *escopo léxico*.[<sup>3</sup>](#footnote-3)
 
 <CodePlayground
+  session="1.1.8"
   code={`function sqrt(x) {
   function is_good_enough(guess) {
     return abs(square(guess) - x) < 0.001;
