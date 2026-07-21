@@ -6,12 +6,37 @@ import path from 'node:path';
 
 const DOCS = 'docs';
 const OUT = process.argv[2] || 'ebooks/temp/converted';
+// --sem-exercicios: versão de leitura corrida, sem exercícios nem soluções
+const STRIP_EXERCISES = process.argv.includes('--sem-exercicios');
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
+
+// Remove exercícios: tags <Exercise>…</Exercise> e seções iniciadas por um
+// cabeçalho "Exercício N" (ou "Exercício adicional"), até o próximo
+// cabeçalho que não seja de exercício.
+function stripExercises(text) {
+  text = text.replace(/<Exercise[\s\S]*?<\/Exercise>\n?/g, '');
+  const lines = text.split('\n');
+  const out = [];
+  let dropping = false;
+  for (const line of lines) {
+    const heading = /^#{1,4}\s+(.*)$/.exec(line);
+    if (heading) {
+      const isExercise = /^Exerc[íi]cio(s\b|\s+\d|\s+adicional)/.test(heading[1]);
+      dropping = isExercise;
+    } else if (/^\*\*Exerc[íi]cio\s+\d/.test(line)) {
+      // exercícios em negrito (formato antigo dos capítulos 2 e 3.3.x)
+      dropping = true;
+    }
+    if (!dropping) out.push(line);
+  }
+  return out.join('\n');
+}
 
 function convert(text) {
   // remove frontmatter (pandoc leria como metadados e bagunçaria o título)
   text = text.replace(/^---\n[\s\S]*?\n---\n/, '');
+  if (STRIP_EXERCISES) text = stripExercises(text);
   // remove imports MDX
   text = text.replace(/^import .*$\n?/gm, '');
   // playgrounds viram blocos de código

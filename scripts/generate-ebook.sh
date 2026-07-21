@@ -217,6 +217,97 @@ else
 fi
 
 ###############################################################################
+# Generate PDF (Text-Only Reading Version — sem exercícios)
+###############################################################################
+
+echo -e "${BOLD}${CYAN}📄 Gerando PDF de leitura corrida (sem exercícios)...${NC}"
+echo ""
+
+TEXT_FILES=()
+while IFS= read -r file; do
+    TEXT_FILES+=("$file")
+done < <(node "$SCRIPT_DIR/mdx-to-md.mjs" "$TEMP_DIR/converted-texto" --sem-exercicios)
+
+PDF_TEXTO="$OUTPUT_DIR/SICP-JS-PT-BR-Texto.pdf"
+
+cat > "$TEMP_DIR/metadata-texto.yaml" <<EOF
+---
+title: "Estrutura e Interpretação de Programas de Computador"
+subtitle: "Edição JavaScript - Versão de leitura, sem exercícios"
+author:
+  - Harold Abelson
+  - Gerald Jay Sussman
+translator: Comunidade SICP.js PT-BR
+date: $(date +"%B %Y")
+lang: pt-BR
+documentclass: book
+geometry: "margin=1.5in"
+fontsize: 11pt
+linestretch: 1.15
+toc: true
+toc-depth: 3
+numbersections: true
+links-as-notes: true
+colorlinks: true
+linkcolor: blue
+urlcolor: blue
+---
+EOF
+
+pandoc \
+    "$TEMP_DIR/metadata-texto.yaml" \
+    "${TEXT_FILES[@]}" \
+    -o "$PDF_TEXTO" \
+    --pdf-engine=xelatex \
+    --toc \
+    --toc-depth=3 \
+    --number-sections \
+    --highlight-style=tango \
+    -V geometry:margin=1.5in \
+    -V fontsize=11pt \
+    -V linestretch=1.15 \
+    -V colorlinks=true \
+    -V linkcolor=blue \
+    -V urlcolor=blue \
+    --standalone
+
+if [ -f "$PDF_TEXTO" ]; then
+    PDF_TEXTO_SIZE=$(du -h "$PDF_TEXTO" | cut -f1)
+    echo -e "${BOLD}${GREEN}✅ PDF (leitura corrida) gerado com sucesso!${NC}"
+    echo -e "   ${CYAN}Arquivo:${NC} $PDF_TEXTO"
+    echo -e "   ${CYAN}Tamanho:${NC} $PDF_TEXTO_SIZE"
+    echo ""
+else
+    echo -e "${BOLD}${RED}✗ Erro ao gerar PDF de leitura corrida${NC}"
+    echo ""
+fi
+
+EPUB_TEXTO="$OUTPUT_DIR/SICP-JS-PT-BR-Texto.epub"
+
+echo -e "${BOLD}${CYAN}📖 Gerando EPUB de leitura corrida (sem exercícios)...${NC}"
+echo ""
+
+pandoc \
+    "$TEMP_DIR/metadata-texto.yaml" \
+    "${TEXT_FILES[@]}" \
+    -o "$EPUB_TEXTO" \
+    --epub-cover-image="$ROOT_DIR/static/img/sicp-social-card.jpg" \
+    --toc \
+    --toc-depth=3 \
+    --split-level=2 \
+    --css="$ROOT_DIR/src/css/custom.css" \
+    --highlight-style=tango \
+    --standalone
+
+if [ -f "$EPUB_TEXTO" ]; then
+    echo -e "${BOLD}${GREEN}✅ EPUB (leitura corrida) gerado com sucesso!${NC} ($(du -h "$EPUB_TEXTO" | cut -f1))"
+    echo ""
+else
+    echo -e "${BOLD}${RED}✗ Erro ao gerar EPUB de leitura corrida${NC}"
+    echo ""
+fi
+
+###############################################################################
 # Cleanup and Summary
 ###############################################################################
 

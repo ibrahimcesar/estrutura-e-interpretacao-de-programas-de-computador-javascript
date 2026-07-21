@@ -116,7 +116,9 @@ jobs:
           files: |
             ebooks/SICP-JS-PT-BR.pdf
             ebooks/SICP-JS-PT-BR-Print.pdf
+            ebooks/SICP-JS-PT-BR-Texto.pdf
             ebooks/SICP-JS-PT-BR.epub
+            ebooks/SICP-JS-PT-BR-Texto.epub
           draft: false
           prerelease: false
         env:
