@@ -25,7 +25,7 @@
   </p>
 
   <p>
-    <img src="https://img.shields.io/badge/tradução-em%20andamento-yellow" alt="Translation Progress">
+    <img src="https://img.shields.io/badge/tradução-completa-brightgreen" alt="Translation Progress">
     <img src="https://img.shields.io/badge/idioma-português-green.svg" alt="Portuguese">
     <a href="https://docusaurus.io/">
       <img src="https://img.shields.io/badge/Made%20with-Docusaurus-blue" alt="Made with Docusaurus">
@@ -45,15 +45,21 @@
 
 Tradução em pt-br de [Structure and Interpretation of Computer Programs — JavaScript Adaptation](https://sourceacademy.org/sicpjs/index)
 
+## 📖 Leia online: **[sicpjs.com](https://sicpjs.com)**
+
+O livro completo, com exemplos de código **executáveis e editáveis** direto na página (semântica de REPL, como no livro original), modo escuro e modo de leitura focada.
+
 ## 📚 Sobre o Projeto
 
 Este é um projeto colaborativo de tradução para português brasileiro do livro **SICP (Structure and Interpretation of Computer Programs)** - JavaScript Adaptation. O SICP é um dos livros mais influentes sobre ciência da computação e programação, originalmente escrito por Harold Abelson e Gerald Jay Sussman.
 
+A tradução dos 5 capítulos está **completa** e publicada em [sicpjs.com](https://sicpjs.com). Os exemplos de código rodam na própria página: cada bloco é um pequeno REPL que ecoa o valor da última expressão, com a biblioteca padrão do SICP JS (`pair`, `list`, `head`, `tail`…) disponível e blocos de uma mesma página compartilhando o ambiente, como no interpretador do livro.
+
 ## 🎯 Objetivos
 
-- Traduzir todo o conteúdo do SICP.js para português brasileiro
 - Tornar este conhecimento fundamental acessível para a comunidade de língua portuguesa
 - Manter a qualidade técnica e didática do material original
+- Oferecer uma experiência de leitura interativa, com todos os exemplos executáveis no navegador
 
 ## 🚀 Como Contribuir
 
@@ -77,12 +83,13 @@ make check
 
 ```bash
 make help              # Mostra todos os comandos disponíveis
+make dev               # Servidor de desenvolvimento do site (localhost:3000)
+make build             # Build de produção do site
 make lint              # Verifica formatação Markdown
 make spell-check       # Verifica ortografia em português
 make link-check        # Verifica links quebrados
 make check             # Executa todas as verificações
-make format            # Formata arquivos Markdown
-make translation-status # Mostra progresso da tradução
+npm test               # Testes do playground + auditoria dos exemplos do livro
 ```
 
 ### Guia de Tradução
@@ -105,17 +112,18 @@ scripts/        # Testes dos playgrounds e auditoria dos exemplos
 
 ## 🛠️ Tecnologias
 
-- **Markdown** - Formato dos documentos
-- **markdownlint** - Verificação de formatação
-- **pyspelling** - Verificação ortográfica em português
-- **GitHub Actions** - CI/CD
+- **[Docusaurus 3](https://docusaurus.io/)** + **React** - Site estático
+- **CodePlayground próprio** - Exemplos executáveis em Web Worker com semântica de REPL e biblioteca padrão do SICP JS
+- **KaTeX** e **Mermaid** - Matemática e diagramas
+- **markdownlint** / **pyspelling** - Formatação e ortografia em português
+- **GitHub Actions** - CI (lint, ortografia, testes dos playgrounds) e deploy no GitHub Pages
 
 ## 📋 Status da Tradução
 
 ### Progresso Geral
 
 ```
-Tradução: ✅ Completa (5/5 capítulos) — em revisão
+Tradução: ✅ Completa (5/5 capítulos)
 Site: https://sicpjs.com
 ```
 
@@ -260,7 +268,7 @@ Site: https://sicpjs.com
 - ✅ 4.3 Computação Não-Determinística (4.3.1–4.3.3)
 - ✅ 4.4 Programação Lógica (4.4.1–4.4.4)
 
-**Status: ✅ Completo — em revisão**
+**Status: ✅ Completo**
 
 ---
 
@@ -273,14 +281,14 @@ Site: https://sicpjs.com
 - ✅ 5.4 O Avaliador de Controle Explícito (5.4.1–5.4.4)
 - ✅ 5.5 Compilação (5.5.1–5.5.7)
 
-**Status: ✅ Completo — em revisão**
+**Status: ✅ Completo**
 
 ---
 
-### 🎯 Próximas Prioridades de Tradução
+### 🎯 Próximas Prioridades
 
-1. **Revisão da tradução** dos capítulos 2 a 5
-2. **Exemplos interativos**: estender as sessões de playground (`session`) a mais páginas dos capítulos 2 e 3
+1. **Exemplos interativos**: estender as sessões de playground (`session`) a mais páginas dos capítulos 2 e 3
+2. **Notas de rodapé**: migrar as âncoras legadas para a sintaxe `[^N]` do Markdown
 
 ### 📊 Como Acompanhar o Progresso
 
@@ -296,11 +304,11 @@ Toda tradução é baseada no repositório oficial: [Source Academy SICP](https:
 
 ## 🤝 Código de Conduta
 
-Este projeto adota o [Contributor Covenant](CONTRIBUTING.md). Ao participar, você concorda em seguir seus termos.
+Este projeto adota o [Contributor Covenant](docs/como-contribuir.md). Ao participar, você concorda em seguir seus termos.
 
 ## 📝 Licença
 
-Veja o arquivo [LICENSE](LICENSE) para detalhes.
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br) — a mesma licença da obra original, *Structure and Interpretation of Computer Programs — JavaScript Edition* (Abelson, Sussman, Henz, Wrigstad / MIT Press, Source Academy). Veja o arquivo [LICENSE](LICENSE) para o texto completo.
 
 ## 🙏 Agradecimentos
 
@@ -345,4 +353,4 @@ We believe that quality knowledge should be accessible to everyone, regardless o
 
 ---
 
-**Quer ajudar?** Veja as [issues abertas](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/issues) ou abra uma nova para reivindicar uma seção para traduzir!
+**Quer ajudar?** Veja as [issues abertas](https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/issues), reporte erros de tradução ou sugira melhorias para os exemplos interativos!
