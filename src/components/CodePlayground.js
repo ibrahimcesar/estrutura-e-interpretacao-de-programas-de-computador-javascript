@@ -102,6 +102,7 @@ export default function CodePlayground({
   const [lastTree, setLastTree] = useState(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
 
   const runnerRef = useRef(null); // { worker, timer }
   const pendingRef = useRef([]);
@@ -109,6 +110,9 @@ export default function CodePlayground({
   const entryCountRef = useRef(0);
   const saveTimerRef = useRef(null);
   const storageKeyRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const blockIdRef = useRef(null);
+  const checkStatsRef = useRef({ pass: 0, fail: 0 });
 
   // Identidade estável do bloco na sessão; devolve sempre o programa atual
   // do bloco (hiddenCode + código do editor).
@@ -145,6 +149,24 @@ export default function CodePlayground({
       if (saved !== null && saved !== initialCode) setEditorCode(saved);
     } catch (ignored) {
       // localStorage indisponível (modo privado etc.)
+    }
+    // Âncora estável do bloco (para links diretos e compartilhamento)
+    const blockId = 'pg-' + simpleHash(base + ':' + occurrence);
+    blockIdRef.current = blockId;
+    if (wrapperRef.current) wrapperRef.current.id = blockId;
+    // #pg-xxxx rola até o bloco; #pg-xxxx=<código> também carrega o código
+    const hash = window.location.hash;
+    if (hash === '#' + blockId || hash.startsWith('#' + blockId + '=')) {
+      const encoded = hash.slice(blockId.length + 2);
+      if (encoded) {
+        try {
+          const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+          setEditorCode(decodeURIComponent(escape(atob(b64))));
+        } catch (ignored) {
+          // hash malformado: ignora
+        }
+      }
+      setTimeout(() => wrapperRef.current?.scrollIntoView({ block: 'center' }), 100);
     }
     return () => {
       occurrenceCounters.set(base, (occurrenceCounters.get(base) || 1) - 1);
@@ -219,6 +241,7 @@ export default function CodePlayground({
     setTimedOut(false);
     setLastTree(null);
     setShowDiagram(false);
+    checkStatsRef.current = { pass: 0, fail: 0 };
 
     const parts = [];
     if (session && sessionKeyRef.current) {
@@ -244,6 +267,7 @@ export default function CodePlayground({
           if (msg.tree) setLastTree(msg.tree);
           break;
         case 'check':
+          checkStatsRef.current[msg.pass ? 'pass' : 'fail'] += 1;
           pushEntry({
             kind: msg.pass ? 'checkPass' : 'checkFail',
             text: msg.pass
@@ -260,6 +284,32 @@ export default function CodePlayground({
             pushEntry({ kind: 'status', text: '✓ Executado (nenhum valor a exibir)' });
           }
           if (typeof msg.elapsed === 'number') setElapsedMs(msg.elapsed);
+          if (
+            checks &&
+            checks.length > 0 &&
+            checkStatsRef.current.pass === checks.length &&
+            checkStatsRef.current.fail === 0
+          ) {
+            pushEntry({ kind: 'status', text: '🎉 Exercício concluído!' });
+            const doneKey = storageKeyRef.current?.replace('pgcode:', 'pgdone:');
+            if (doneKey) {
+              try {
+                localStorage.setItem(doneKey, new Date().toISOString());
+              } catch (ignored) {
+                // sem persistência
+              }
+            }
+            import('canvas-confetti').then(({ default: confetti }) => {
+              const rect = wrapperRef.current?.getBoundingClientRect();
+              const origin = rect
+                ? {
+                    x: (rect.left + rect.width / 2) / window.innerWidth,
+                    y: Math.min(rect.bottom, window.innerHeight) / window.innerHeight,
+                  }
+                : { y: 0.7 };
+              confetti({ particleCount: 70, spread: 60, origin, disableForReducedMotion: true });
+            }).catch(() => {});
+          }
           setStatus('done');
           // O worker fica vivo até a próxima execução (ou desmontagem)
           // para que logs assíncronos tardios ainda apareçam.
@@ -317,6 +367,27 @@ export default function CodePlayground({
     }
   };
 
+  const share = async () => {
+    const blockId = blockIdRef.current;
+    if (!blockId) return;
+    let hash = '#' + blockId;
+    if (editorCode !== initialCode) {
+      const b64 = btoa(unescape(encodeURIComponent(editorCode)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+      hash += '=' + b64;
+    }
+    const url = window.location.origin + window.location.pathname + hash;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 1500);
+    } catch (ignored) {
+      // clipboard indisponível
+    }
+  };
+
   useEffect(() => {
     if (autorun) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -325,7 +396,7 @@ export default function CodePlayground({
   const edited = editorCode !== initialCode;
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} ref={wrapperRef}>
       {title && <div className={styles.titleBar}>{title}</div>}
       <PlaygroundEditor
         code={editorCode}
@@ -360,6 +431,14 @@ export default function CodePlayground({
             Restaurar
           </button>
         )}
+        <button
+          type="button"
+          className="button button--secondary button--outline button--sm"
+          onClick={share}
+          title="Copiar link direto para este bloco (inclui suas edições)"
+        >
+          {shared ? 'Link copiado!' : '🔗'}
+        </button>
         {session && (
           <span
             className={styles.sessionBadge}

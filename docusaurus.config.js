@@ -80,7 +80,22 @@ const config = {
     ],
   ],
 
-  themes: ['@docusaurus/theme-mermaid', '@docusaurus/theme-live-codeblock'],
+  themes: [
+    '@docusaurus/theme-mermaid',
+    '@docusaurus/theme-live-codeblock',
+    [
+      '@easyops-cn/docusaurus-search-local',
+      /** @type {import('@easyops-cn/docusaurus-search-local').PluginOptions} */
+      ({
+        hashed: true,
+        language: ['pt'],
+        docsRouteBasePath: '/',
+        indexBlog: false,
+        highlightSearchTermsOnTargetPage: true,
+        searchBarShortcutHint: true,
+      }),
+    ],
+  ],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
@@ -104,6 +119,11 @@ const config = {
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Livro',
+          },
+          {
+            to: '/playground',
+            label: 'Playground',
+            position: 'left',
           },
           {
             href: 'https://sourceacademy.org/sicpjs',

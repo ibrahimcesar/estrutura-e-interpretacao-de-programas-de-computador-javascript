@@ -1,0 +1,32 @@
+---
+title: Playground
+description: Um laboratório livre com toda a biblioteca do SICP JS — experimente ideias fora do livro.
+---
+
+import CodePlayground from '@site/src/components/CodePlaygroundLazy';
+
+# Playground
+
+Um laboratório livre para experimentar. Toda a biblioteca do livro está
+disponível — `pair`, `list`, `head`, `tail`, `display`, `math_*`, streams —
+e o valor da última expressão é ecoado como em um REPL. Quando o resultado
+for uma estrutura de pares, o botão **Ver diagrama caixa-e-ponteiro**
+desenha a notação do livro. Suas edições ficam salvas neste navegador.
+
+<CodePlayground
+  title="Laboratório"
+  code={`// Experimente! Por exemplo:
+const xs = list(1, 2, 3);
+const ys = pair(xs, xs); // estrutura compartilhada (seção 3.3)
+
+display(xs);
+ys;`}
+  height={480}
+  showLineNumbers={true}
+/>
+
+Dicas:
+
+- **Ctrl+Enter** executa; **Esc** e depois **Tab** sai do editor.
+- Laços infinitos são interrompidos em 5 segundos — pode experimentar sem medo.
+- `console.log(...)` e `display(...)` imprimem no painel de saída.
