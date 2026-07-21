@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useColorMode } from '@docusaurus/theme-common';
 import PlaygroundEditor from './PlaygroundEditor';
 import BoxPointerDiagram from './BoxPointerDiagram';
+import CallTreeDiagram from './CallTreeDiagram';
 import { createRunner } from './playgroundRunner';
 import { registerBlock, getSessionPrefix } from './playgroundSession';
 import styles from './CodePlayground.module.css';
@@ -101,6 +102,10 @@ export default function CodePlayground({
   const [timedOut, setTimedOut] = useState(false);
   const [lastTree, setLastTree] = useState(null);
   const [showDiagram, setShowDiagram] = useState(false);
+  const [traceData, setTraceData] = useState(null);
+  const [showTrace, setShowTrace] = useState(false);
+  const [streamActive, setStreamActive] = useState(false);
+  const pullTimerRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -230,7 +235,10 @@ export default function CodePlayground({
     pendingRef.current = [];
   };
 
-  useEffect(() => stopRunner, []);
+  useEffect(() => () => {
+    stopRunner();
+    clearTimeout(pullTimerRef.current);
+  }, []);
 
   const run = (timeoutMs = RUN_TIMEOUT_MS) => {
     stopRunner();
@@ -241,6 +249,10 @@ export default function CodePlayground({
     setTimedOut(false);
     setLastTree(null);
     setShowDiagram(false);
+    setTraceData(null);
+    setShowTrace(false);
+    setStreamActive(false);
+    clearTimeout(pullTimerRef.current);
     checkStatsRef.current = { pass: 0, fail: 0 };
 
     const parts = [];
@@ -265,6 +277,21 @@ export default function CodePlayground({
         case 'result':
           if (!msg.isUndefined) pushEntry({ kind: 'result', text: msg.text });
           if (msg.tree) setLastTree(msg.tree);
+          if (msg.isStream) setStreamActive(true);
+          break;
+        case 'trace':
+          setTraceData({ roots: msg.roots, truncated: msg.truncated });
+          break;
+        case 'streamElement':
+          clearTimeout(pullTimerRef.current);
+          if (msg.text !== undefined) {
+            pushEntry({ kind: 'log', text: `s[${msg.index}] = ${msg.text}` });
+          }
+          if (msg.error) pushEntry({ kind: 'error', text: msg.error });
+          if (msg.end) {
+            pushEntry({ kind: 'status', text: '— fim do stream —' });
+            setStreamActive(false);
+          }
           break;
         case 'check':
           checkStatsRef.current[msg.pass ? 'pass' : 'fail'] += 1;
@@ -336,6 +363,25 @@ export default function CodePlayground({
       setStatus('done');
     }, timeoutMs);
     runnerRef.current = { worker, timer };
+  };
+
+  const pullStream = () => {
+    const runner = runnerRef.current;
+    if (!runner) {
+      setStreamActive(false);
+      return;
+    }
+    runner.worker.postMessage({ streamNext: true });
+    clearTimeout(pullTimerRef.current);
+    pullTimerRef.current = setTimeout(() => {
+      // a cauda do stream travou (é infinita sem produzir?): descarta o worker
+      stopRunner();
+      pushEntry({
+        kind: 'error',
+        text: 'A cauda do stream não respondeu em 5 segundos — execução interrompida.',
+      });
+      setStreamActive(false);
+    }, 5000);
   };
 
   const reset = () => {
@@ -480,7 +526,28 @@ export default function CodePlayground({
               {showDiagram ? 'Esconder diagrama' : 'Ver diagrama caixa-e-ponteiro'}
             </button>
           )}
+          {traceData && (
+            <button
+              type="button"
+              className={`button button--secondary button--outline button--sm ${styles.retryButton}`}
+              onClick={() => setShowTrace((v) => !v)}
+            >
+              {showTrace ? 'Esconder árvore de chamadas' : 'Ver árvore de chamadas'}
+            </button>
+          )}
+          {streamActive && status === 'done' && (
+            <button
+              type="button"
+              className={`button button--secondary button--outline button--sm ${styles.retryButton}`}
+              onClick={pullStream}
+            >
+              Puxar próximo elemento do stream
+            </button>
+          )}
           {showDiagram && lastTree && <BoxPointerDiagram tree={lastTree} />}
+          {showTrace && traceData && (
+            <CallTreeDiagram roots={traceData.roots} truncated={traceData.truncated} />
+          )}
         </div>
       )}
     </div>

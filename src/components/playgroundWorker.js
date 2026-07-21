@@ -185,6 +185,53 @@ self.stream_to_list = function (s) {
   for (var i = out.length - 1; i >= 0; i--) r = [out[i], r];
   return r;
 };
+// Rastreador de chamadas (capítulo 1.2): trace("fib") embrulha a função
+// global fib para registrar cada chamada e retorno — a página desenha a
+// árvore do processo. Também aceita trace(fn), mas para rastrear as
+// chamadas RECURSIVAS internas é preciso reatribuir: fib = trace(fib).
+var traceRoots = [];
+var traceStack = [];
+var traceCount = 0;
+var TRACE_LIMIT = 200;
+function makeTraced(fn, name) {
+  var label = name || fn.name || 'fn';
+  return function () {
+    if (traceCount >= TRACE_LIMIT) return fn.apply(this, arguments);
+    traceCount += 1;
+    var args = Array.prototype.slice.call(arguments);
+    var node = {
+      l: label + '(' + args.map(function (a) { return fmtResult(a); }).join(', ') + ')',
+      v: null,
+      c: [],
+    };
+    if (traceStack.length > 0) traceStack[traceStack.length - 1].c.push(node);
+    else traceRoots.push(node);
+    traceStack.push(node);
+    try {
+      var result = fn.apply(this, arguments);
+      node.v = fmtResult(result);
+      return result;
+    } catch (err) {
+      node.v = '⚠ ' + ((err && err.name) || 'erro');
+      throw err;
+    } finally {
+      traceStack.pop();
+    }
+  };
+}
+self.trace = function (target, name) {
+  if (typeof target === 'string') {
+    if (typeof self[target] !== 'function') {
+      throw new Error('trace: não há função global chamada "' + target + '"');
+    }
+    self[target] = makeTraced(self[target], target);
+    return self[target];
+  }
+  if (typeof target !== 'function') {
+    throw new Error('trace espera uma função ou o nome de uma função global');
+  }
+  return makeTraced(target, name);
+};
 // --- fim da biblioteca ---
 
 self.addEventListener('error', function (e) {
@@ -195,8 +242,37 @@ self.addEventListener('unhandledrejection', function (e) {
   e.preventDefault();
   emit('error', 'Promise rejeitada: ' + fmt(e.reason));
 });
+var streamCursor = undefined; // stream do último resultado, para inspeção
+var streamIndex = 0;
+
 self.onmessage = function (e) {
+  // Pedido de "puxar próximo elemento" do inspetor de streams
+  if (e.data && e.data.streamNext) {
+    if (!self.is_pair(streamCursor)) {
+      post('streamElement', { end: true });
+      return;
+    }
+    var element = streamCursor[0];
+    var idx = streamIndex;
+    streamIndex += 1;
+    try {
+      streamCursor = streamCursor[1]();
+    } catch (errS) {
+      streamCursor = null;
+      post('streamElement', { index: idx, text: fmtResult(element), end: true,
+        error: (errS && errS.message) || String(errS) });
+      return;
+    }
+    post('streamElement', { index: idx, text: fmtResult(element), end: !self.is_pair(streamCursor) && streamCursor === null });
+    return;
+  }
+
   var checks = e.data.checks || [];
+  traceRoots = [];
+  traceStack = [];
+  traceCount = 0;
+  streamCursor = undefined;
+  streamIndex = 0;
   var value;
   var failed = false;
   var t0 = Date.now();
@@ -210,7 +286,12 @@ self.onmessage = function (e) {
   if (!failed) {
     var tree = null;
     try { tree = toTree(value); } catch (ignored) { tree = null; }
-    post('result', { text: fmtResult(value), isUndefined: value === undefined, tree: tree });
+    var isStream = self.is_stream(value) && value !== null;
+    if (isStream) { streamCursor = value; streamIndex = 0; }
+    post('result', { text: fmtResult(value), isUndefined: value === undefined, tree: tree, isStream: isStream });
+    if (traceRoots.length > 0) {
+      post('trace', { roots: traceRoots, truncated: traceCount >= TRACE_LIMIT });
+    }
     if (checks.length > 0) {
       // const/let dentro de um eval indireto não viram globais, então as
       // expressões de verificação não enxergariam o escopo do programa.

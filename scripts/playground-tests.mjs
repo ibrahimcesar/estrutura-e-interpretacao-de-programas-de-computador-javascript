@@ -32,6 +32,10 @@ function makeWorker() {
       vm.runInContext('self.onmessage', ctx).call(null, { data: { source, checks } });
       return messages.splice(0);
     },
+    send(data) {
+      vm.runInContext('self.onmessage', ctx).call(null, { data });
+      return messages.splice(0);
+    },
   };
 }
 
@@ -126,8 +130,34 @@ for (const [source, check, checks] of cases) {
   }
 }
 
+// Testes de protocolo: trace e inspetor de streams
+let extra = 0;
+{
+  extra += 1;
+  const w = makeWorker();
+  const m = w.run('function fib(n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); }\ntrace("fib");\nfib(3);');
+  const t = m.find((x) => x.type === 'trace');
+  const r = m.find((x) => x.type === 'result');
+  const ok = t && t.roots.length === 1 && t.roots[0].l === 'fib(3)' && t.roots[0].c.length === 2 && t.roots[0].v === '2' && r.text === '2';
+  if (!ok) { failures += 1; console.error('FAIL trace:', JSON.stringify(t).slice(0, 200)); }
+}
+{
+  extra += 1;
+  const w = makeWorker();
+  const m0 = w.run('stream(10, 20);');
+  const r = m0.find((x) => x.type === 'result');
+  const p1 = w.send({ streamNext: true });
+  const p2 = w.send({ streamNext: true });
+  const p3 = w.send({ streamNext: true });
+  const ok = r.isStream === true &&
+    p1[0].type === 'streamElement' && p1[0].text === '10' && p1[0].end === false &&
+    p2[0].text === '20' && p2[0].end === true &&
+    p3[0].end === true && p3[0].text === undefined;
+  if (!ok) { failures += 1; console.error('FAIL stream inspector:', JSON.stringify([p1, p2, p3]).slice(0, 200)); }
+}
+
 if (failures) {
-  console.error(`\n${failures}/${cases.length} testes falharam`);
+  console.error(`\n${failures}/${cases.length + extra} testes falharam`);
   process.exit(1);
 }
-console.log(`OK: ${cases.length} testes de semântica do playground passaram`);
+console.log(`OK: ${cases.length + extra} testes de semântica do playground passaram`);
