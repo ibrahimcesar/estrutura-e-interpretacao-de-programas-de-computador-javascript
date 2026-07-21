@@ -84,6 +84,41 @@ tail(x);`}
   height={300}
 />
 
+<Solution>
+
+**Verificação por substituição:**
+
+```
+head(pair(x, y))
+head(m => m(x, y))
+(m => m(x, y))((p, q) => p)
+((p, q) => p)(x, y)
+x
+```
+
+E o `tail` correspondente escolhe o outro argumento:
+
+<CodePlayground
+  code={`function pair(x, y) {
+    return m => m(x, y);
+}
+function head(z) {
+    return z((p, q) => p);
+}
+function tail(z) {
+    return z((p, q) => q);
+}
+
+display(head(pair(1, 2)));
+tail(pair(1, 2));`}
+  height={340}
+  showLineNumbers={false}
+/>
+
+O "par" não é uma estrutura de dados — é uma função esperando que lhe digam qual metade entregar. Dados e funções são a mesma substância.
+
+</Solution>
+
 ## Exercício 2.5
 
 Mostre que podemos representar pares de inteiros não-negativos usando apenas números e operações aritméticas se representarmos o par a e b como o inteiro que é o produto 2^a 3^b. Dê as definições correspondentes das funções `pair`, `head` e `tail`.
@@ -116,6 +151,44 @@ function tail(p) {
 tail(pair(3, 4));`}
   height={450}
 />
+
+<Solution>
+
+**Por que funciona.** Pela fatoração única em primos, $2^a 3^b$ determina $a$ e $b$: o expoente de 2 no número é `a`, o de 3 é `b`. Os seletores contam divisões:
+
+<CodePlayground
+  code={`function fast_expt(b, n) {
+    return n === 0
+           ? 1
+           : n % 2 === 0
+           ? fast_expt(b * b, n / 2)
+           : b * fast_expt(b, n - 1);
+}
+function pair(a, b) {
+    return fast_expt(2, a) * fast_expt(3, b);
+}
+function count_factor(n, f) {
+    let count = 0;
+    let rest = n;
+    while (rest % f === 0) {
+        rest = rest / f;
+        count = count + 1;
+    }
+    return count;
+}
+function head(p) { return count_factor(p, 2); }
+function tail(p) { return count_factor(p, 3); }
+
+display(pair(5, 3));
+display(head(pair(5, 3)));
+tail(pair(5, 3));`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+`pair(5, 3)` é o número 864 — e `head`/`tail` recuperam 5 e 3 dele. Um par inteiro guardado num único inteiro.
+
+</Solution>
 
 ## Exercício 2.6
 
@@ -165,5 +238,40 @@ function church_to_number(c) {
 
 church_to_number(three);
 ```
+
+<Solution>
+
+Avaliando `add_1(zero)` por substituição chega-se a `f => x => f(x)` — **one** aplica `f` uma vez; **two** aplica duas:
+
+<CodePlayground
+  code={`const zero = f => x => x;
+function add_1(n) {
+    return f => x => f(n(f)(x));
+}
+
+const one = f => x => f(x);
+const two = f => x => f(f(x));
+
+// soma direta: aplicar f "m vezes" e depois "n vezes"
+function plus(m, n) {
+    return f => x => m(f)(n(f)(x));
+}
+
+// para enxergar: converter para inteiro comum
+function to_int(n) {
+    return n(k => k + 1)(0);
+}
+
+display(to_int(zero));
+display(to_int(one));
+display(to_int(two));
+to_int(plus(two, plus(one, two)));`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+São os **numerais de Church**: o número $n$ *é* a operação de compor uma função $n$ vezes. `plus(m, n)` compõe $m$ aplicações em cima de $n$ aplicações — nada de números em lugar nenhum, até a gente pedir com `to_int`.
+
+</Solution>
 
 <HelpFooter />

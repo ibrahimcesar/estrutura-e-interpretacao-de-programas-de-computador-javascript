@@ -253,4 +253,36 @@ function make_rat(n, d) {
   height={250}
 />
 
+<Solution>
+
+**Ideia.** Normalize tudo de uma vez: reduza pelo `gcd` e force o sinal para o numerador, testando só o denominador.
+
+<CodePlayground
+  code={`function gcd(a, b) {
+    return b === 0 ? a : gcd(b, a % b);
+}
+function make_rat(n, d) {
+    const g = gcd(math_abs(n), math_abs(d));
+    return d < 0
+           ? pair(-n / g, -d / g)
+           : pair(n / g, d / g);
+}
+function numer(x) { return head(x); }
+function denom(x) { return tail(x); }
+function print_rat(x) {
+    return display(stringify(numer(x)) + " / " + stringify(denom(x)));
+}
+
+print_rat(make_rat(6, 9));
+print_rat(make_rat(-6, 9));
+print_rat(make_rat(6, -9));
+print_rat(make_rat(-6, -9));`}
+  height={460}
+  showLineNumbers={false}
+/>
+
+**Por que funciona.** Se `d < 0`, negamos os dois termos — isso cobre tanto `6/-9` (vira `-2/3`) quanto `-6/-9` (vira `2/3`); se `d > 0`, o sinal de `n` já está certo. Como o `gcd` recebe valores absolutos, a redução não interfere na normalização.
+
+</Solution>
+
 <HelpFooter />

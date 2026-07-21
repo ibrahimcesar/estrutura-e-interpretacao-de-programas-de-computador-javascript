@@ -79,21 +79,252 @@ Para dividir dois intervalos, Alyssa multiplica o primeiro pelo recíproco do se
 
 O programa de Alyssa está incompleto porque ela não especificou a implementação da abstração de intervalo. Defina os seletores `upper_bound` e `lower_bound` para completar a implementação.
 
+<Solution>
+
+Com `make_interval` construindo o par na ordem (inferior, superior), os seletores são diretos:
+
+```javascript
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+```
+
+(Se quiséssemos aceitar argumentos em qualquer ordem, bastaria `math_min`/`math_max` dos dois componentes — mas a convenção do construtor torna isso desnecessário.)
+
+</Solution>
+
 ## Exercício 2.8
 
 Usando um raciocínio análogo ao de Alyssa, descreva como a diferença de dois intervalos pode ser calculada. Defina uma função correspondente chamada `sub_interval`.
+
+<Solution>
+
+**Raciocínio.** O menor valor da diferença $x - y$ ocorre com o menor $x$ e o **maior** $y$; o maior, com o maior $x$ e o menor $y$:
+
+<CodePlayground
+  code={`function sub_interval(x, y) {
+    return make_interval(lower_bound(x) - upper_bound(y),
+                         upper_bound(x) - lower_bound(y));
+}
+
+print_interval(sub_interval(make_interval(5, 10),
+                            make_interval(1, 2)));`}
+  hiddenCode={`function make_interval(x, y) {
+    return pair(x, y);
+}
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+function add_interval(x, y) {
+    return make_interval(lower_bound(x) + lower_bound(y),
+                         upper_bound(x) + upper_bound(y));
+}
+function mul_interval(x, y) {
+    const p1 = lower_bound(x) * lower_bound(y);
+    const p2 = lower_bound(x) * upper_bound(y);
+    const p3 = upper_bound(x) * lower_bound(y);
+    const p4 = upper_bound(x) * upper_bound(y);
+    return make_interval(math_min(p1, p2, p3, p4),
+                         math_max(p1, p2, p3, p4));
+}
+function print_interval(i) {
+    return display("[" + stringify(lower_bound(i)) + ", "
+                       + stringify(upper_bound(i)) + "]");
+}`}
+  height={230}
+  showLineNumbers={false}
+/>
+
+Equivalente a somar com o intervalo negado $[-u_y, -l_y]$ — repare a troca dos extremos, o detalhe de que o exercício trata.
+
+</Solution>
 
 ## Exercício 2.9
 
 A *largura* de um intervalo é metade da diferença entre seus limites superior e inferior. A largura é uma medida da incerteza do número especificado pelo intervalo. Para algumas operações aritméticas, a largura do resultado de combinar dois intervalos é uma função apenas das larguras dos intervalos argumentos, enquanto para outras a largura do intervalo resultado da combinação não é uma função das larguras dos intervalos argumentos. Mostre que a largura da soma (ou diferença) de dois intervalos é uma função apenas das larguras dos intervalos sendo adicionados (ou subtraídos). Dê exemplos para mostrar que isso não é verdadeiro para multiplicação ou divisão.
 
+<Solution>
+
+**Soma:** com $x = [l_x, u_x]$, $y = [l_y, u_y]$,
+
+$$w(x + y) = \frac{(u_x + u_y) - (l_x + l_y)}{2} = \frac{u_x - l_x}{2} + \frac{u_y - l_y}{2} = w(x) + w(y)$$
+
+e a subtração é idêntica (os extremos trocados não mudam a diferença). A largura do resultado depende **só** das larguras.
+
+**Multiplicação não:** dois pares de intervalos com as mesmas larguras produzem larguras de produto diferentes —
+
+<CodePlayground
+  code={`function width(i) {
+    return (upper_bound(i) - lower_bound(i)) / 2;
+}
+
+// mesmas larguras (1 e 1), produtos com larguras diferentes:
+display(width(mul_interval(make_interval(0, 2),
+                           make_interval(0, 2))));
+width(mul_interval(make_interval(4, 6),
+                   make_interval(4, 6)));`}
+  hiddenCode={`function make_interval(x, y) {
+    return pair(x, y);
+}
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+function add_interval(x, y) {
+    return make_interval(lower_bound(x) + lower_bound(y),
+                         upper_bound(x) + upper_bound(y));
+}
+function mul_interval(x, y) {
+    const p1 = lower_bound(x) * lower_bound(y);
+    const p2 = lower_bound(x) * upper_bound(y);
+    const p3 = upper_bound(x) * lower_bound(y);
+    const p4 = upper_bound(x) * upper_bound(y);
+    return make_interval(math_min(p1, p2, p3, p4),
+                         math_max(p1, p2, p3, p4));
+}
+function print_interval(i) {
+    return display("[" + stringify(lower_bound(i)) + ", "
+                       + stringify(upper_bound(i)) + "]");
+}`}
+  height={250}
+  showLineNumbers={false}
+/>
+
+$[0,2] \times [0,2] = [0,4]$ tem largura 2, enquanto $[4,6] \times [4,6] = [16,36]$ tem largura 10 — larguras de entrada iguais, saídas diferentes. Logo a largura do produto (e da divisão, que multiplica pelo recíproco) depende também da *posição* dos intervalos, não apenas das larguras.
+
+</Solution>
+
 ## Exercício 2.10
 
 Ben Bitdiddle, um especialista programador, observa que não faz sentido dividir por um intervalo que abrange zero. Modifique o código de Alyssa para verificar essa condição e sinalizar um erro se isso ocorrer.
 
+<Solution>
+
+Um intervalo "atravessa zero" quando $l \le 0 \le u$ — dividir por ele não faz sentido (o recíproco explode):
+
+<CodePlayground
+  code={`function div_interval(x, y) {
+    return lower_bound(y) <= 0 && upper_bound(y) >= 0
+           ? error("intervalo do divisor atravessa zero -- div_interval")
+           : mul_interval(x, make_interval(1 / upper_bound(y),
+                                           1 / lower_bound(y)));
+}
+
+print_interval(div_interval(make_interval(1, 2),
+                            make_interval(4, 5)));
+div_interval(make_interval(1, 2), make_interval(-1, 1));`}
+  hiddenCode={`function make_interval(x, y) {
+    return pair(x, y);
+}
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+function add_interval(x, y) {
+    return make_interval(lower_bound(x) + lower_bound(y),
+                         upper_bound(x) + upper_bound(y));
+}
+function mul_interval(x, y) {
+    const p1 = lower_bound(x) * lower_bound(y);
+    const p2 = lower_bound(x) * upper_bound(y);
+    const p3 = upper_bound(x) * lower_bound(y);
+    const p4 = upper_bound(x) * upper_bound(y);
+    return make_interval(math_min(p1, p2, p3, p4),
+                         math_max(p1, p2, p3, p4));
+}
+function print_interval(i) {
+    return display("[" + stringify(lower_bound(i)) + ", "
+                       + stringify(upper_bound(i)) + "]");
+}`}
+  height={270}
+  showLineNumbers={false}
+/>
+
+A segunda chamada dispara o erro — execute e veja.
+
+</Solution>
+
 ## Exercício 2.11
 
 Em passando por esse código, Ben também observa que é possível melhorar a eficiência de `mul_interval` usando o fato de que os pontos extremos dos intervalos são números. Mostre que existem nove casos para computar o produto de dois intervalos com base nos sinais dos pontos extremos, e reescreva `mul_interval` para levar vantagem disso.
+
+<Solution>
+
+Cada extremo pode ser negativo ou não-negativo; classificando os dois intervalos pelos sinais de $(l, u)$ há $3 \times 3 = 9$ combinações — e em oito delas os extremos do produto são conhecidos de antemão. Só quando **ambos** atravessam zero é preciso comparar produtos:
+
+<CodePlayground
+  code={`function mul_interval(x, y) {
+    const xl = lower_bound(x);
+    const xu = upper_bound(x);
+    const yl = lower_bound(y);
+    const yu = upper_bound(y);
+    return xl >= 0
+           ? yl >= 0
+             ? make_interval(xl * yl, xu * yu)
+             : yu <= 0
+             ? make_interval(xu * yl, xl * yu)
+             : make_interval(xu * yl, xu * yu)
+           : xu <= 0
+           ? yl >= 0
+             ? make_interval(xl * yu, xu * yl)
+             : yu <= 0
+             ? make_interval(xu * yu, xl * yl)
+             : make_interval(xl * yu, xl * yl)
+           : yl >= 0
+           ? make_interval(xl * yu, xu * yu)
+           : yu <= 0
+           ? make_interval(xu * yl, xl * yl)
+           : make_interval(math_min(xl * yu, xu * yl),
+                           math_max(xl * yl, xu * yu));
+}
+
+print_interval(mul_interval(make_interval(-2, 3),
+                            make_interval(-4, 5)));
+print_interval(mul_interval(make_interval(2, 3),
+                            make_interval(-5, -4)));
+"nove casos, duas multiplicações em oito deles";`}
+  hiddenCode={`function make_interval(x, y) {
+    return pair(x, y);
+}
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+function add_interval(x, y) {
+    return make_interval(lower_bound(x) + lower_bound(y),
+                         upper_bound(x) + upper_bound(y));
+}
+function mul_interval(x, y) {
+    const p1 = lower_bound(x) * lower_bound(y);
+    const p2 = lower_bound(x) * upper_bound(y);
+    const p3 = upper_bound(x) * lower_bound(y);
+    const p4 = upper_bound(x) * upper_bound(y);
+    return make_interval(math_min(p1, p2, p3, p4),
+                         math_max(p1, p2, p3, p4));
+}
+function print_interval(i) {
+    return display("[" + stringify(lower_bound(i)) + ", "
+                       + stringify(upper_bound(i)) + "]");
+}`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+Se vale a pena? Ben ganharia duas multiplicações ao custo de uma pirâmide de testes — o próprio livro sugere ceticismo com "otimizações" assim.
+
+</Solution>
 
 ## Exercício 2.12
 
@@ -144,5 +375,62 @@ Essas duas funções produzem resultados diferentes! Isso ocorre porque a aritm�
 ## Exercícios 2.13-2.16
 
 Os exercícios restantes exploram mais profundamente este problema da dependência, derivando fórmulas para tolerância percentual em produtos, investigando por que `par2` produz resultados melhores que `par1`, e explorando se é possível projetar um sistema de aritmética de intervalos que evite completamente esse problema.
+
+<Solution>
+
+<CodePlayground
+  code={`function make_center_width(c, w) {
+    return make_interval(c - w, c + w);
+}
+function center(i) {
+    return (lower_bound(i) + upper_bound(i)) / 2;
+}
+function width(i) {
+    return (upper_bound(i) - lower_bound(i)) / 2;
+}
+
+function make_center_percent(c, p) {
+    return make_center_width(c, c * p / 100);
+}
+function percent(i) {
+    return width(i) / center(i) * 100;
+}
+
+const r = make_center_percent(6.8, 10);
+print_interval(r);
+display(center(r));
+percent(r);`}
+  hiddenCode={`function make_interval(x, y) {
+    return pair(x, y);
+}
+function lower_bound(i) {
+    return head(i);
+}
+function upper_bound(i) {
+    return tail(i);
+}
+function add_interval(x, y) {
+    return make_interval(lower_bound(x) + lower_bound(y),
+                         upper_bound(x) + upper_bound(y));
+}
+function mul_interval(x, y) {
+    const p1 = lower_bound(x) * lower_bound(y);
+    const p2 = lower_bound(x) * upper_bound(y);
+    const p3 = upper_bound(x) * lower_bound(y);
+    const p4 = upper_bound(x) * upper_bound(y);
+    return make_interval(math_min(p1, p2, p3, p4),
+                         math_max(p1, p2, p3, p4));
+}
+function print_interval(i) {
+    return display("[" + stringify(lower_bound(i)) + ", "
+                       + stringify(upper_bound(i)) + "]");
+}`}
+  height={460}
+  showLineNumbers={false}
+/>
+
+A tolerância percentual é só a largura relativa ao centro; os resistores de "6,8 kΩ com 10%" do texto viram `[6.12, 7.48]`. (Para centros negativos seria preciso um `math_abs` no `percent` — os resistores do livro, felizmente, são positivos.)
+
+</Solution>
 
 <HelpFooter />

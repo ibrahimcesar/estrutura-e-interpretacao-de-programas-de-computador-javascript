@@ -25,6 +25,7 @@ const EXPECTED_FAILURES = {
   'chapter-3/3.1.1.mdx': ['make_accumulator', 'make_monitored', 'make_account'],
   'chapter-3/3.1.3.mdx': ['make_joint'],
   'chapter-3/3.5.3.mdx': ['Maximum call stack size exceeded'],
+  'chapter-2/2.1.4.mdx': ['atravessa zero -- div_interval'],
 };
 
 function runProgram(source) {

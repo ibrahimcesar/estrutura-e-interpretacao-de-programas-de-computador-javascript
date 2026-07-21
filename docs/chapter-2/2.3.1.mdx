@@ -87,12 +87,60 @@ member("red", list("red", "shoes", "blue", "socks"));`}
   height={350}
 />
 
+<Solution>
+
+Na notação de caixas desta edição (execute o bloco acima e confira):
+
+| Expressão | Valor |
+|---|---|
+| `list("a", "b", "c")` | `["a", ["b", ["c", null]]]` |
+| `list(list("george"))` | `[["george", null], null]` |
+| `tail(list(list("x1","x2"), list("y1","y2")))` | `[["y1", ["y2", null]], null]` |
+| `tail(head(list(list("x1","x2"), list("y1","y2"))))` | `["x2", null]` |
+| `member("red", list(list("red","shoes"), list("blue","socks")))` | `null` |
+| `member("red", list("red","shoes","blue","socks"))` | `["red", ["shoes", ["blue", ["socks", null]]]]` |
+
+O quinto caso pega muita gente: as *cabeças* daquela lista são **listas** (`list("red","shoes")` etc.), nunca a string `"red"` — o `member` compara com `===` e não entra dentro delas.
+
+</Solution>
+
 ## Exercício 2.54
 
 Duas listas são consideradas `equal` se contêm elementos iguais organizados na mesma ordem. Implemente `equal` como uma função.
 
+<Solution>
+
+**Ideia.** Igualdade estrutural: ou os dois são pares com cabeças iguais e caudas iguais, ou são primitivos idênticos.
+
+<CodePlayground
+  code={`function equal(a, b) {
+    return is_pair(a) && is_pair(b)
+           ? equal(head(a), head(b)) && equal(tail(a), tail(b))
+           : a === b;
+}
+
+display(equal(list("a", "b", list("c")),
+              list("a", "b", list("c"))));
+display(equal(list("a", "b"), list("a", list("b"))));
+equal(null, null);`}
+  height={340}
+  showLineNumbers={false}
+/>
+
+O caso base cobre strings, números e o `null` do fim das listas de uma vez — `===` faz o trabalho quando não há mais estrutura para descer.
+
+</Solution>
+
 ## Exercício 2.55
 
 Explique o que acontece quando você avalia uma string com a função `display` e por que isso difere da avaliação normal.
+
+<Solution>
+
+Avaliar uma string sozinha — `"abracadabra";` — faz o interpretador **ecoar o valor** na sua representação de programa: entre aspas, `"abracadabra"`. Já `display("abracadabra")` **imprime o conteúdo** da string, sem aspas, e devolve a string (que o REPL então ecoa com aspas).
+
+A diferença é entre o *valor* e a *notação que o denota*: o eco do interpretador responde "que expressão produziria este valor" (por isso as aspas, como `stringify` faz); `display` responde "que texto este valor contém". Para números a distinção é invisível — para strings, as aspas são exatamente a fronteira entre dados e código.
+
+</Solution>
 
 <HelpFooter />

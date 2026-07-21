@@ -12,7 +12,7 @@ Cada exercício traz sua solução oficial escondida atrás de um botão **"Most
 | Capítulo | Soluções |
 | --- | --- |
 | Capítulo 1 | ✅ 39/39 exercícios |
-| Capítulo 2 | ⬜ em breve |
+| Capítulo 2 | ✅ 15/15 exercícios |
 | Capítulo 3 | ✅ 52/52 exercícios |
 | Capítulo 4 | ⬜ em breve |
 | Capítulo 5 | ⬜ em breve |
@@ -30,6 +30,14 @@ Cada exercício traz sua solução oficial escondida atrás de um botão **"Most
 - **Seção 1.3.1**: exercícios [1.29](/chapter-1/1.3.1#exercício-129), [1.30](/chapter-1/1.3.1#exercício-130), [1.31](/chapter-1/1.3.1#exercício-131), [1.32](/chapter-1/1.3.1#exercício-132), [1.33](/chapter-1/1.3.1#exercício-133)
 - **Seção 1.3.2**: exercícios [1.34](/chapter-1/1.3.2#exercício-134)
 - **Seção 1.3.3**: exercícios [1.35](/chapter-1/1.3.3#exercício-135), [1.36](/chapter-1/1.3.3#exercício-136), [1.37](/chapter-1/1.3.3#exercício-137), [1.38](/chapter-1/1.3.3#exercício-138), [1.39](/chapter-1/1.3.3#exercício-139)
+
+## Capítulo 2
+
+- **Seção 2.1.1**: exercícios [2.1](/chapter-2/2.1.1#exercício-21)
+- **Seção 2.1.2**: exercícios [2.2](/chapter-2/2.1.2#exercício-22), [2.3](/chapter-2/2.1.2#exercício-23)
+- **Seção 2.1.3**: exercícios [2.4](/chapter-2/2.1.3#exercício-24), [2.5](/chapter-2/2.1.3#exercício-25), [2.6](/chapter-2/2.1.3#exercício-26)
+- **Seção 2.1.4**: exercícios [2.7](/chapter-2/2.1.4#exercício-27), [2.8](/chapter-2/2.1.4#exercício-28), [2.9](/chapter-2/2.1.4#exercício-29), [2.10](/chapter-2/2.1.4#exercício-210), [2.11](/chapter-2/2.1.4#exercício-211), [2.12](/chapter-2/2.1.4#exercício-212)
+- **Seção 2.3.1**: exercícios [2.53](/chapter-2/2.3.1#exercício-253), [2.54](/chapter-2/2.3.1#exercício-254), [2.55](/chapter-2/2.3.1#exercício-255)
 
 ## Capítulo 3
 

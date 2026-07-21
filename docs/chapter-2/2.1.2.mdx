@@ -83,6 +83,39 @@ function midpoint_segment(s) {
   height={500}
 />
 
+<Solution>
+
+<CodePlayground
+  code={`function make_point(x, y) { return pair(x, y); }
+function x_point(p) { return head(p); }
+function y_point(p) { return tail(p); }
+
+function make_segment(start, end) { return pair(start, end); }
+function start_segment(s) { return head(s); }
+function end_segment(s) { return tail(s); }
+
+function average(a, b) { return (a + b) / 2; }
+function midpoint_segment(s) {
+    return make_point(
+        average(x_point(start_segment(s)), x_point(end_segment(s))),
+        average(y_point(start_segment(s)), y_point(end_segment(s))));
+}
+
+function print_point(p) {
+    return display("(" + stringify(x_point(p)) + ", "
+                       + stringify(y_point(p)) + ")");
+}
+
+print_point(midpoint_segment(
+    make_segment(make_point(0, 0), make_point(4, 6))));`}
+  height={520}
+  showLineNumbers={false}
+/>
+
+Dois níveis de abstração empilhados: segmentos sobre pontos, pontos sobre pares. `midpoint_segment` só fala a linguagem de segmentos e pontos — nunca menciona `pair`, `head` ou `tail`.
+
+</Solution>
+
 ## Exercício 2.3
 
 Implemente uma representação para retângulos em um plano. (Dica: Você pode querer fazer uso do exercício 2.2.) Em termos de seus construtores e seletores, crie funções que computem o perímetro e a área de um dado retângulo. Agora implemente uma representação diferente para retângulos. Você pode projetar seu sistema com barreiras de abstração adequadas, de modo que as mesmas funções de perímetro e área funcionem usando qualquer uma das representações?
@@ -111,5 +144,54 @@ function perimeter_rect(rect) {
 }`}
   height={350}
 />
+
+<Solution>
+
+**Ideia.** Escreva `perimeter` e `area` em função de apenas duas medidas — `width_rect` e `height_rect` — e faça de *cada representação* a responsável por fornecê-las.
+
+<CodePlayground
+  code={`// representação 1: dois cantos opostos
+function make_rect(bottom_left, top_right) {
+    return pair(bottom_left, top_right);
+}
+function width_rect(r) {
+    return math_abs(x_point(tail(r)) - x_point(head(r)));
+}
+function height_rect(r) {
+    return math_abs(y_point(tail(r)) - y_point(head(r)));
+}
+
+// funções que dependem SÓ da barreira width/height:
+function perimeter(r) {
+    return 2 * (width_rect(r) + height_rect(r));
+}
+function area(r) {
+    return width_rect(r) * height_rect(r);
+}
+
+function make_point(x, y) { return pair(x, y); }
+function x_point(p) { return head(p); }
+function y_point(p) { return tail(p); }
+
+const r = make_rect(make_point(1, 1), make_point(5, 4));
+display(perimeter(r));
+area(r);`}
+  height={560}
+  showLineNumbers={false}
+/>
+
+**A segunda representação** — canto + largura + altura — troca só o construtor e os dois seletores:
+
+```javascript
+function make_rect(corner, width, height) {
+    return pair(corner, pair(width, height));
+}
+function width_rect(r) { return head(tail(r)); }
+function height_rect(r) { return tail(tail(r)); }
+```
+
+`perimeter` e `area` não mudam uma vírgula: é a barreira de abstração fazendo o trabalho — quem consome retângulos não sabe (nem quer saber) como eles são feitos por dentro.
+
+</Solution>
 
 <HelpFooter />
