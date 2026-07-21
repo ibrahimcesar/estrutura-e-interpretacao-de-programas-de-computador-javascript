@@ -132,3 +132,7 @@ ebooks/.vscode/branch-timer.json
 ebooks/temp/
 ebooks/*.pdf
 ebooks/*.epub
+
+# Playwright
+test-results/
+playwright-report/

@@ -15,7 +15,8 @@
     "lint": "markdownlint **/*.md --ignore node_modules --config .github/markdownlint.yml",
     "lint:fix": "markdownlint **/*.md --ignore node_modules --config .github/markdownlint.yml --fix",
     "link-check": "find . -name '*.md' -not -path './node_modules/*' -exec markdown-link-check --quiet --config .github/markdown-link-check.json {} \\;",
-    "test": "node scripts/playground-tests.mjs && node scripts/audit-playgrounds.mjs"
+    "test": "node scripts/playground-tests.mjs && node scripts/audit-playgrounds.mjs",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.2",
@@ -37,6 +38,7 @@
     "@docusaurus/module-type-aliases": "^3.9.2",
     "@docusaurus/tsconfig": "^3.9.2",
     "@docusaurus/types": "^3.9.2",
+    "@playwright/test": "^1.61.1",
     "glob": "^11.1.0",
     "markdown-link-check": "^3.14.1",
     "markdownlint-cli": "^0.49.1",

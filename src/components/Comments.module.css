@@ -1,0 +1,24 @@
+.comments {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.openButton {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px dashed var(--ifm-color-emphasis-400);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.openButton:hover {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
