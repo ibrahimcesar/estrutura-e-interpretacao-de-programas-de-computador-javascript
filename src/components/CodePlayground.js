@@ -653,7 +653,10 @@ export default function CodePlayground({
                         )}
                       </div>
                       {envTreeName === b.name && b.tree && (
-                        <BoxPointerDiagram tree={b.tree} />
+                        <BoxPointerDiagram
+                          tree={b.tree}
+                          label={`Diagrama caixa-e-ponteiro de ${b.name} = ${b.text}`}
+                        />
                       )}
                     </React.Fragment>
                   ))}

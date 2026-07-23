@@ -464,8 +464,19 @@ body.reading-mode nav.theme-doc-breadcrumbs {
 
 /* SC 1.4.3: teclas <kbd> (atalho da busca na navbar) — o padrão do tema
    punha cinza-claro sobre cinza (1.5:1); o CI (Linux) pegou no axe */
-kbd {
-  color: var(--ifm-font-color-base);
+kbd,
+kbd[class*='searchHint'] {
+  color: var(--ifm-font-color-base) !important;
   background-color: var(--ifm-color-emphasis-200);
   border: 1px solid var(--ifm-color-emphasis-400);
+}
+
+/* SC 1.4.10: tabelas largas (glossário) rolam dentro de si em telas
+   estreitas em vez de estourar a página */
+@media (max-width: 640px) {
+  .markdown table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

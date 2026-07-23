@@ -69,7 +69,7 @@ function Arrow({ fromX, fromY, toX, toY }) {
   );
 }
 
-export default function BoxPointerDiagram({ tree }) {
+export default function BoxPointerDiagram({ tree, label }) {
   if (!tree || tree.k !== 'pair') return null;
   const { cells, maxCol, maxRow } = layout(tree);
   const width = PAD_X * 2 + (maxCol + 1) * COL_W;
@@ -135,7 +135,7 @@ export default function BoxPointerDiagram({ tree }) {
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label="Diagrama caixa-e-ponteiro do resultado"
+        aria-label={label || 'Diagrama caixa-e-ponteiro do resultado'}
         className={styles.diagramSvg}
       >
         <defs>
