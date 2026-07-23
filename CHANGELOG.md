@@ -5,6 +5,27 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [2.3.0] - 2026-07-23
+
+### ✨ Adicionado
+
+- **TypeScript 7** (compilador nativo) como verificador de tipos do projeto:
+  `npm run typecheck` (~0,4s) no CI; `src/lib` migrado para `.ts`, specs E2E
+  em TypeScript, e o protocolo página↔worker dos playgrounds especificado em
+  tipos (`src/lib/playgroundProtocol.ts`) — o worker permanece JavaScript puro
+  de propósito (é executado literalmente e é material didático)
+- Portão de acessibilidade no CI: axe-core em 6 páginas × 2 temas, falha em
+  qualquer violação WCAG A/AA serious/critical
+
+### 🔧 Modificado
+
+- **Acessibilidade WCAG 2.2 AA** (lotes A–C da auditoria): contraste corrigido
+  em todo o tema claro (amarelo saiu dos papéis de texto; tema Prism, botões,
+  links, texto secundário), links sublinhados no corpo e rodapé, foco visível
+  no editor + anel global de 2px, foco gerido em navegação SPA, exercícios
+  como cabeçalhos reais, tabelas com rolagem própria a 320px, movimento
+  respeitando prefers-reduced-motion, nomes acessíveis nos controles
+
 ## [2.2.0] - 2026-07-21
 
 ### ✨ Adicionado
@@ -144,7 +165,8 @@ Exemplo de releases futuras:
 
 <!-- spellcheck: disable -->
 
-[Não Lançado]: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/compare/v2.2.0...HEAD
+[Não Lançado]: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/ibrahimcesar/estrutura-e-interpretacao-de-programas-de-computador-javascript/compare/v1.0.0...v2.0.0

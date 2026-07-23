@@ -1,6 +1,13 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import type * as axe from 'axe-core';
+
+declare global {
+  interface Window {
+    axe: typeof axe;
+  }
+}
 
 /**
  * Portão de acessibilidade (A11Y-PLAN, "Technical Check" do Definition of

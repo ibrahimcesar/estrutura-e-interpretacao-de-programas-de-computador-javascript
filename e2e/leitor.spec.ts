@@ -1,5 +1,5 @@
 // @ts-check
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * A jornada do leitor, de ponta a ponta, contra o build de produção:
@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  */
 
 /** o playground (wrapper) cujo editor contém o trecho dado */
-async function blockWith(page, snippet) {
+async function blockWith(page: Page, snippet: string) {
   const editors = page.locator('textarea');
   const count = await editors.count();
   for (let i = 0; i < count; i += 1) {

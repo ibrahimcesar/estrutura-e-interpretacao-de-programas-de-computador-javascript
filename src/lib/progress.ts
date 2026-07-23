@@ -11,32 +11,39 @@
 const PREFIX = 'exmark:';
 export const CHANGE_EVENT = 'exmark-change';
 
-export function isMarked(exercise) {
+export interface ExmarkChangeDetail {
+  exercise: string;
+  marked: boolean;
+}
+
+export function isMarked(exercise: string): boolean {
   try {
     return localStorage.getItem(PREFIX + exercise) !== null;
-  } catch (ignored) {
+  } catch {
     return false;
   }
 }
 
-export function setMarked(exercise, marked) {
+export function setMarked(exercise: string, marked: boolean): void {
   try {
     if (marked) localStorage.setItem(PREFIX + exercise, new Date().toISOString());
     else localStorage.removeItem(PREFIX + exercise);
-    window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: { exercise, marked } }));
-  } catch (ignored) {
+    window.dispatchEvent(
+      new CustomEvent<ExmarkChangeDetail>(CHANGE_EVENT, { detail: { exercise, marked } })
+    );
+  } catch {
     // sem persistência disponível (modo privado etc.)
   }
 }
 
-export function allMarked() {
-  const marked = new Set();
+export function allMarked(): Set<string> {
+  const marked = new Set<string>();
   try {
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i);
       if (key && key.startsWith(PREFIX)) marked.add(key.slice(PREFIX.length));
     }
-  } catch (ignored) {
+  } catch {
     // sem persistência disponível
   }
   return marked;

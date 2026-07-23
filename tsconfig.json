@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": false,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "noEmit": true,
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@site/*": ["./*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "e2e/**/*.ts"],
+  "exclude": ["node_modules", "build", ".docusaurus"]
+}

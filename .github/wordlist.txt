@@ -590,6 +590,7 @@ Press
 Prettier
 Princeton
 Principles
+Prism
 Probabilistic
 Probability
 Problem
@@ -781,6 +782,7 @@ Troubleshooting
 Turbak
 Turing
 Type
+TypeScript
 URLs
 UTF
 Ultimate
@@ -896,6 +898,7 @@ automated
 autorun
 average
 ax
+axe-core
 background
 backtracking
 badge
@@ -1005,6 +1008,7 @@ create
 create-a-doc
 createElement
 creativecommons
+critical
 crossChapter
 cryptosystems
 cs
@@ -1344,6 +1348,7 @@ pp
 pr
 prefaces
 prefacios
+prefers-reduced-motion
 present
 previousText
 primalidade
@@ -1419,6 +1424,7 @@ search
 seconds
 self-hosted
 sequential
+serious
 server
 seu-dominio
 shields
@@ -1450,6 +1456,7 @@ source-academy
 sourceacademy
 special-purpose
 specification
+specs
 spell-check
 spell-checker
 spoiler
@@ -1572,6 +1579,7 @@ with
 with-Docusaurus-blue
 withdraw
 work
+worker
 workflows
 www
 yml

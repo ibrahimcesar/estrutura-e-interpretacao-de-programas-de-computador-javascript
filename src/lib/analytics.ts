@@ -6,7 +6,14 @@
  * Nenhum dado pessoal é enviado — apenas nomes de eventos e
  * parâmetros descritivos (página, resultado, capítulo).
  */
-export function track(event, params = {}) {
+
+declare global {
+  interface Window {
+    gtag?: (command: 'event', event: string, params?: Record<string, unknown>) => void;
+  }
+}
+
+export function track(event: string, params: Record<string, unknown> = {}): void {
   if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     window.gtag('event', event, params);
   }
