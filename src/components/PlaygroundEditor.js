@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { Highlight, themes } from 'prism-react-renderer';
+import { Highlight } from 'prism-react-renderer';
+import { lightCodeTheme, darkCodeTheme } from '@site/src/lib/codeThemes';
 import styles from './CodePlayground.module.css';
 
 /**
@@ -72,7 +73,7 @@ export default function PlaygroundEditor({
     <Highlight
       code={code}
       language="javascript"
-      theme={isDark ? themes.dracula : themes.github}
+      theme={isDark ? darkCodeTheme : lightCodeTheme}
     >
       {({ tokens, getLineProps, getTokenProps, style }) => (
         <div

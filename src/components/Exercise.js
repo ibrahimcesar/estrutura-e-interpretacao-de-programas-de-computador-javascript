@@ -20,7 +20,7 @@ export default function Exercise({ id, children }) {
         <div style={{
           fontWeight: 'bold',
           marginBottom: '1rem',
-          color: 'var(--ifm-color-primary)'
+          color: 'var(--sicp-text-accent)'
         }}>
           Exercício {id}
         </div>

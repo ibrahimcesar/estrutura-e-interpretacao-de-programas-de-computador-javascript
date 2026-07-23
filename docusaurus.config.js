@@ -4,7 +4,7 @@
 // There are various equivalent ways to declare your Docusaurus config.
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
-import {themes as prismThemes} from 'prism-react-renderer';
+import { lightCodeTheme, darkCodeTheme } from './src/lib/codeThemes.js';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
@@ -248,8 +248,8 @@ const config = {
         copyright: `Tradução de <a href="https://sourceacademy.org/sicpjs/index" target="_blank" rel="noopener noreferrer"><em>Structure and Interpretation of Computer Programs — JavaScript Edition</em></a>, de Harold Abelson e Gerald Jay Sussman, adaptado para JavaScript por Martin Henz e Tobias Wrigstad (MIT Press / Source Academy), licenciado sob CC BY-SA 4.0. Este trabalho está licenciado sob <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>.`,
       },
       prism: {
-        theme: prismThemes.github,
-        darkTheme: prismThemes.dracula,
+        theme: lightCodeTheme,
+        darkTheme: darkCodeTheme,
         additionalLanguages: ['javascript', 'typescript', 'jsx', 'tsx'],
       },
       colorMode: {

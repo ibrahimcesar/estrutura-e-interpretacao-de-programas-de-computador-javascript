@@ -50,13 +50,13 @@
 .count {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
 }
 
 .chapter summary {
   cursor: pointer;
   font-size: 0.9rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   user-select: none;
 }
 
@@ -104,5 +104,5 @@
 .footnote {
   margin-top: 2rem;
   font-size: 0.85rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
 }

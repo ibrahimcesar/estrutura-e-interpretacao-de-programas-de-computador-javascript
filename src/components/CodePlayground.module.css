@@ -102,7 +102,7 @@
 .hint {
   margin-left: auto;
   font-size: 0.75rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
 }
 
 @media (max-width: 600px) {
@@ -131,7 +131,7 @@
 }
 
 .resultPrompt {
-  color: var(--ifm-color-primary-darkest);
+  color: var(--sicp-text-accent);
   font-weight: bold;
   user-select: none;
 }
@@ -161,7 +161,7 @@
 }
 
 .entryStatus {
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   font-style: italic;
 }
 
@@ -169,7 +169,7 @@
 
 .sessionBadge {
   font-size: 0.75rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   border: 1px dashed var(--ifm-color-emphasis-300);
   border-radius: 10px;
   padding: 0.1rem 0.5rem;
@@ -252,7 +252,7 @@
 .envTitle {
   font-family: var(--ifm-font-family-base);
   font-size: 0.78rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   margin-bottom: 0.5rem;
 }
 
@@ -270,13 +270,13 @@
 
 .envKind {
   flex: 0 0 4.2em;
-  color: var(--ifm-color-emphasis-500);
+  color: var(--ifm-color-emphasis-700);
   font-size: 0.78rem;
 }
 
 .envName {
   font-weight: 700;
-  color: var(--ifm-color-primary-darkest);
+  color: var(--sicp-text-accent);
 }
 
 [data-theme='dark'] .envName {
@@ -292,7 +292,7 @@
 .envInherited {
   font-family: var(--ifm-font-family-base);
   font-size: 0.72rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 999px;
   padding: 0 0.45em;

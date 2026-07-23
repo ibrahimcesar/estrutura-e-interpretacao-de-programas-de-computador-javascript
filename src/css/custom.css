@@ -14,9 +14,17 @@
   --ifm-color-primary-lighter: #f9ea66;
   --ifm-color-primary-lightest: #fbf08a;
 
-  /* Links - Azul com bom contraste no modo claro */
-  --ifm-link-color: #1976d2;
-  --ifm-link-hover-color: #1565c0;
+  /* Links - Azul com contraste AA até nos fundos cinza (5.3:1 em #f5f6f7) */
+  --ifm-link-color: #1565c0;
+  --ifm-link-hover-color: #0d5cab;
+
+  /* Acento LEGÍVEL para papéis de texto no claro (WCAG AA 6.8:1 no branco).
+     O amarelo #f7df1e fica para fundos e acentos — como TEXTO ele tem 1.3:1
+     e é ilegível; nunca usar --ifm-color-primary como cor de texto no claro. */
+  --sicp-text-accent: #6b5a00;
+  --ifm-navbar-link-active-color: var(--sicp-text-accent);
+  --ifm-menu-color-active: var(--sicp-text-accent);
+  --ifm-breadcrumb-color-active: var(--sicp-text-accent);
 
   /* Código */
   --ifm-code-font-size: 95%;
@@ -47,6 +55,12 @@
   /* Links - Amarelo funciona bem no modo escuro */
   --ifm-link-color: #f7df1e;
   --ifm-link-hover-color: #f9ea66;
+
+  /* No escuro o próprio amarelo é legível como texto (8.7:1) */
+  --sicp-text-accent: var(--ifm-color-primary);
+  --ifm-navbar-link-active-color: var(--sicp-text-accent);
+  --ifm-menu-color-active: var(--sicp-text-accent);
+  --ifm-breadcrumb-color-active: var(--sicp-text-accent);
 
   --ifm-background-color: #1b1b1d;
   --ifm-background-surface-color: #242526;
@@ -373,4 +387,58 @@ body.reading-mode nav.theme-doc-breadcrumbs {
   max-width: 760px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* ===== Acessibilidade (Lote A do A11Y-PLAN) ===== */
+
+/* SC 1.4.1: links do corpo distinguíveis sem depender de cor.
+   Exclui âncoras de cabeçalho, cards e navegação, que têm outros affordances. */
+.markdown a:not(.hash-link):not(.card) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* SC 1.4.3: links no rodapé escuro — o azul do tema claro tinha 2.6:1 ali */
+.footer--dark {
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-lighter);
+}
+
+/* Estados ativos que o Infima pinta com --ifm-color-primary (1.3:1 no claro) */
+[data-theme='light'] .navbar__link--active,
+[data-theme='light'] .breadcrumbs__item--active .breadcrumbs__link,
+[data-theme='light'] .menu__link--active,
+[data-theme='light'] .table-of-contents__link:hover,
+[data-theme='light'] .table-of-contents__link--active,
+[data-theme='light'] .pagination-nav__link:hover .pagination-nav__label {
+  color: var(--sicp-text-accent);
+}
+
+/* SC 2.3.3 (regra da casa): respeitar preferência por menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .markdown > * {
+    animation: none;
+  }
+
+  .reading-progress-bar-fill,
+  .pagination-nav__link,
+  .menu__link,
+  .table-of-contents__link {
+    transition: none !important;
+  }
+}
+
+/* SC 1.4.3: botões primários — o Infima põe texto claro sobre o amarelo
+   (1.6:1); preto dá 12.3:1 e casa com a barra de título dos playgrounds */
+.button--primary {
+  --ifm-button-color: #1c1e21;
 }
