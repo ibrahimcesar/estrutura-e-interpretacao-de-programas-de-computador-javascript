@@ -105,10 +105,19 @@ test('exercício com verificação: código correto celebra e auto-marca', async
 test('compartilhar: copia link com âncora do bloco', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('chapter-1/1.1.1');
-  await page.getByRole('button', { name: '🔗' }).first().click();
-  await expect(page.getByRole('button', { name: 'Link copiado!' })).toBeVisible();
+  await page.getByRole('button', { name: 'Copiar link direto para este bloco' }).first().click();
+  await expect(page.getByRole('button', { name: 'Link copiado!' }).first()).toBeVisible();
   const url = await page.evaluate(() => navigator.clipboard.readText());
   expect(url).toContain('#pg-');
+});
+
+test('a11y: navegação SPA move o foco para o título da nova página', async ({ page }) => {
+  await page.goto('chapter-1/1.1.1');
+  await page.click('a.pagination-nav__link--next');
+  await page.waitForURL(/1\.1\.2/);
+  await expect
+    .poll(async () => page.evaluate(() => document.activeElement?.tagName))
+    .toBe('H1');
 });
 
 test('glossário e solucoes acessíveis pela navegação', async ({ page }) => {

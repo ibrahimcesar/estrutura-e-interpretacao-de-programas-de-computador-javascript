@@ -124,6 +124,10 @@ export default function ReadingProgressBar() {
   }, [typeof window !== 'undefined' ? window.location.pathname : '']);
 
   const triggerConfetti = () => {
+    // respeita a preferência por menos movimento (SC 2.3.3)
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
     const duration = 2000; // 2 seconds
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
@@ -163,6 +167,7 @@ export default function ReadingProgressBar() {
   return (
     <div
       className="reading-progress-bar"
+      aria-hidden="true"
       style={{
         position: 'fixed',
         top: 'var(--ifm-navbar-height, 60px)',

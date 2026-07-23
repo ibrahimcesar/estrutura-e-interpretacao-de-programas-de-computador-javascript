@@ -21,7 +21,8 @@
 }
 
 .editorScroll:focus-within {
-  outline: 2px solid var(--ifm-color-primary);
+  /* amarelo era invisível no claro (1.2:1); o acento tem 4.9:1+ nos dois temas */
+  outline: 2px solid var(--sicp-text-accent);
   outline-offset: -2px;
 }
 
@@ -301,7 +302,7 @@
 
 .envTreeButton {
   font-family: var(--ifm-font-family-base);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 999px;
   background: none;

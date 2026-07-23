@@ -526,6 +526,7 @@ export default function CodePlayground({
           type="button"
           className="button button--secondary button--outline button--sm"
           onClick={share}
+          aria-label={shared ? 'Link copiado!' : 'Copiar link direto para este bloco'}
           title="Copiar link direto para este bloco (inclui suas edições)"
         >
           {shared ? 'Link copiado!' : '🔗'}
@@ -536,11 +537,15 @@ export default function CodePlayground({
             title="Este bloco compartilha o ambiente da página: as declarações dos blocos anteriores são avaliadas antes dele (edite um bloco anterior e o resultado aqui muda)."
           >
             ⛓ sessão
+            <span className="sr-only">
+              {' '}— este bloco compartilha o ambiente da página: as declarações
+              dos blocos anteriores são avaliadas antes dele
+            </span>
           </span>
         )}
         <span className={styles.hint}>
           {elapsedMs != null && <span className={styles.execTime}>{formatElapsed(elapsedMs)} · </span>}
-          Código editável · Ctrl+Enter executa
+          Código editável · Ctrl+Enter executa · Esc solta o foco
         </span>
       </div>
       {status !== 'idle' && (

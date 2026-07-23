@@ -84,6 +84,8 @@ const config = {
     ],
   ],
 
+  clientModules: ['./src/clientModules/routeFocus.js'],
+
   plugins: [
     [
       '@docusaurus/plugin-pwa',

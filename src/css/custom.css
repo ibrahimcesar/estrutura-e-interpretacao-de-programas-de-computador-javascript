@@ -442,3 +442,30 @@ body.reading-mode nav.theme-doc-breadcrumbs {
 .button--primary {
   --ifm-button-color: #1c1e21;
 }
+
+/* Regra da casa (SC 2.4.13-inspirada): anel de foco de 2px consistente */
+:focus-visible {
+  outline: 2px solid var(--sicp-text-accent);
+  outline-offset: 2px;
+}
+
+/* Texto apenas para leitores de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* SC 1.4.3: teclas <kbd> (atalho da busca na navbar) — o padrão do tema
+   punha cinza-claro sobre cinza (1.5:1); o CI (Linux) pegou no axe */
+kbd {
+  color: var(--ifm-font-color-base);
+  background-color: var(--ifm-color-emphasis-200);
+  border: 1px solid var(--ifm-color-emphasis-400);
+}
