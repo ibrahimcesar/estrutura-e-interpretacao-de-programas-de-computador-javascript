@@ -133,6 +133,22 @@ test('página restaurada 3.4.2 exibe conteúdo completo', async ({ page }) => {
   await expect(page.locator('article')).toContainText('serializador');
 });
 
+test('Figure: imagens carregam sob o baseUrl /pt_BR/', async ({ page }) => {
+  // regressão: <Figure src="/img/..."> sem useBaseUrl resolvia contra a
+  // raiz do domínio (ignorando /pt_BR/) e quebrava em produção
+  for (const path of ['chapter-4/4.1.1', 'chapter-4/4.4.4']) {
+    await page.goto(path);
+    const images = page.locator('article img');
+    const count = await images.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i += 1) {
+      await expect(images.nth(i)).toHaveJSProperty('complete', true);
+      const width = await images.nth(i).evaluate((img: HTMLImageElement) => img.naturalWidth);
+      expect(width, `imagem ${i} em /${path}`).toBeGreaterThan(0);
+    }
+  }
+});
+
 test('comentários: seção presente no rodapé das páginas de conteúdo', async ({ page }) => {
   await page.goto('chapter-1/1.1.1');
   await expect(
